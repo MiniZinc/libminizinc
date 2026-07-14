@@ -4,6 +4,10 @@ include "fzn_table_int.mzn";
 include "fzn_table_int_reif.mzn";
 include "fzn_table_int_opt.mzn";
 
+predicate fzn_table_bool(array [int] of var bool: xs, array [int, int] of bool: tuples);
+predicate fzn_table_int(array [int] of var int: xs, array [int, int] of int: tuples);
+predicate fzn_table_int_opt(array [int] of var opt int: xs, array [int, int] of opt int: tuples);
+
 /** @group globals.extensional
   Represents the constraint \a xs in \a tuples where we
   consider each row in \a tuples to be a tuple and \a tuples as a set of tuples.

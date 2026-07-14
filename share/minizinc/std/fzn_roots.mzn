@@ -1,4 +1,4 @@
-predicate fzn_roots(array [int] of var int: x, var set of int: s, var set of int: t) =
-  % All values in 's' must map to a value in 't'.
-  forall (i in ub(s)) (i in s -> x[i] in t) /\
-    forall (i in ub(t)) (i in t -> forall (j in index_set(x)) (x[j] = i -> j in s));
+predicate fzn_roots(array [int] of var int: xs, var set of int: preimage, var set of int: image) =
+  % All values in 'preimage' must map to a value in 'image'.
+  forall (i in ub(preimage)) (i in preimage -> xs[i] in image) /\
+    forall (i in ub(image)) (i in image -> forall (j in index_set(xs)) (xs[j] = i -> j in preimage));

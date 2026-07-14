@@ -4,6 +4,16 @@ include "fzn_value_precede_chain_int_opt.mzn";
 include "fzn_value_precede_chain_set.mzn";
 include "fzn_value_precede_chain_set_reif.mzn";
 
+predicate fzn_value_precede_chain_int(array [int] of int: order, array [int] of var int: xs);
+predicate fzn_value_precede_chain_int_opt(
+  array [int] of int: order,
+  array [int] of var opt int: xs,
+);
+predicate fzn_value_precede_chain_set(
+  array [int] of int: order,
+  array [int] of var set of int: xs,
+);
+
 /** @group globals.lexicographic
   Requires that \a order[\p i] precedes \a order[\p i +1] in the array \a xs.
   

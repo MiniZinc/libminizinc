@@ -4,9 +4,9 @@ predicate fzn_dwst_reif(
   array [int] of int: from,
   array [int] of int: to,
   array [int] of int: w,
-  var int: r,
+  var int: root,
   array [int] of var bool: es,
-  var int: K,
+  var int: weight_bound,
   var bool: b,
 ) = abort("Reified dwst constraint is not supported");
 

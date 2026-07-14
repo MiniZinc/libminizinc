@@ -4,6 +4,10 @@ include "fzn_value_precede_int_opt.mzn";
 include "fzn_value_precede_set.mzn";
 include "fzn_value_precede_set_reif.mzn";
 
+predicate fzn_value_precede_int(int: before, int: after, array [int] of var int: xs);
+predicate fzn_value_precede_int_opt(int: before, int: after, array [int] of var opt int: xs);
+predicate fzn_value_precede_set(int: before, int: after, array [int] of var set of int: xs);
+
 /** @group globals.lexicographic
   Requires that \a before precede \a after in the array \a xs.
 

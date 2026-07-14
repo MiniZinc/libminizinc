@@ -1,6 +1,8 @@
 include "fzn_link_set_to_booleans.mzn";
 include "fzn_link_set_to_booleans_reif.mzn";
 
+predicate fzn_link_set_to_booleans(var set of int: s, array [int] of var bool: bs);
+
 /** @group globals.channeling
   Constrains the array of Booleans \a bs to be a representation of the set \a s:
   \p i in \a s \( \leftrightarrow \) \a bs[\p i].

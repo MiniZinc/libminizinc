@@ -3,6 +3,13 @@ include "disjunctive.mzn";
 include "fzn_cumulative.mzn";
 include "fzn_cumulative_reif.mzn";
 
+predicate fzn_cumulative(
+  array [int] of var int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  var int: capacity,
+);
+
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a starts, durations \a durations, and
   resource requirements \a resources, never require more than a global resource bound

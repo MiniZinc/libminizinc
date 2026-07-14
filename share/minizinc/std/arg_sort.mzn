@@ -2,6 +2,9 @@ include "fzn_arg_sort_int.mzn";
 include "fzn_arg_sort_float.mzn";
 include "analyse_all_different.mzn";
 
+predicate fzn_arg_sort_int(array [int] of var int: xs, array [int] of var int: permutation);
+predicate fzn_arg_sort_float(array [int] of var float: xs, array [int] of var int: permutation);
+
 /** @group globals.sort
 Constrains \a permutation to be the permutation which causes \a xs to be in sorted order hence
 \a xs[\a permutation[\p i]] <= \a xs[\a permutation[\p i+1]].

@@ -3,7 +3,7 @@ include "subgraph.mzn";
 predicate fzn_reachable(
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -14,7 +14,7 @@ predicate fzn_reachable(
     array [1..2 * E] of NODE: dto = to ++ from;
     array [1..2 * E] of var bool: des = es ++ es;
     array [NODE] of var bool: dns = array1d(NODE, ns);
-    var NODE: dr = r;
+    var NODE: dr = root;
   } in /* duplicate the edges so that we can use directed graph reachability */
   fzn_dreachable(dfrom, dto, dr, dns, des);
 

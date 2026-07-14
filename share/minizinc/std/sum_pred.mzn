@@ -1,6 +1,13 @@
 include "fzn_sum_pred.mzn";
 include "fzn_sum_pred_reif.mzn";
 
+predicate fzn_sum_pred(
+  var int: idx,
+  array [int] of set of int: sets,
+  array [int] of int: coefficients,
+  var int: total,
+);
+
 /** @group globals.math
   Requires that the sum of \a coefficients[\p i1]..\a coefficients[\p iN] equals \a total,
   where \p i1..\p iN are the elements of the \a idx th set in \a sets.

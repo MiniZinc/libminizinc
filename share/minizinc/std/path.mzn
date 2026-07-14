@@ -7,6 +7,43 @@ include "fzn_dpath_int_reif.mzn";
 include "fzn_dpath_enum.mzn";
 include "fzn_dpath_enum_reif.mzn";
 
+predicate fzn_path(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_path(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dpath(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dpath(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a source to \a sink.
 

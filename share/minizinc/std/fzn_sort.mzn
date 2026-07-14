@@ -1,7 +1,7 @@
 include "alldifferent.mzn";
 include "increasing.mzn";
 
-predicate fzn_sort(array [int] of var int: x, array [int] of var int: y) =
+predicate fzn_sort(array [int] of var int: xs, array [int] of var int: ys) =
   let {
-    array [index_set(x)] of var index_set(y): p;
-  } in forall (i in index_set(x)) (y[p[i]] == x[i]) /\ alldifferent(p) /\ increasing(y);
+    array [index_set(xs)] of var index_set(ys): p;
+  } in forall (i in index_set(xs)) (ys[p[i]] == xs[i]) /\ alldifferent(p) /\ increasing(ys);

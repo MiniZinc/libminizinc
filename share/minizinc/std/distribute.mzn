@@ -1,6 +1,12 @@
 include "fzn_distribute.mzn";
 include "fzn_distribute_reif.mzn";
 
+predicate fzn_distribute(
+  array [int] of var int: counts,
+  array [int] of var int: cover,
+  array [int] of var int: xs,
+);
+
 /** @group globals.counting
   Requires that \a counts[\p i] is the number of occurrences of \a cover[\p i] in
   \a xs. The values in \a cover need not be distinct.

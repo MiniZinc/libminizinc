@@ -1,2 +1,2 @@
-predicate fzn_disjoint_reif(var set of int: s1, var set of int: s2, var bool: b) =
-  b <-> s1 intersect s2 == {};
+predicate fzn_disjoint_reif(var set of int: s, var set of int: t, var bool: b) =
+  b <-> s intersect t == {};

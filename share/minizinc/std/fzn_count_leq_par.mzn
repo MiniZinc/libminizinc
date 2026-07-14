@@ -1,5 +1,5 @@
 include "fzn_count_leq.mzn";
 
-predicate fzn_count_leq_par(array [int] of var int: x, int: y, int: c) = fzn_count_leq(x, y, c);
+predicate fzn_count_leq_par(array [int] of var int: xs, int: value, int: n) = fzn_count_leq(xs, value, n);
 
 %-----------------------------------------------------------------------------%

@@ -1,6 +1,6 @@
 predicate fzn_sum_set(
-  array [int] of int: vs,
-  array [int] of int: ws,
-  var set of int: x,
-  var int: s,
-) = s == sum (j in index_set(vs)) ((vs[j] in x) * ws[j]);
+  array [int] of int: values,
+  array [int] of int: weights,
+  var set of int: selected,
+  var int: total,
+) = total == sum (j in index_set(values)) ((values[j] in selected) * weights[j]);

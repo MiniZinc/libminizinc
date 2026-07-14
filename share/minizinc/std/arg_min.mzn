@@ -5,6 +5,13 @@ include "fzn_arg_min_bool_opt.mzn";
 include "fzn_arg_min_float.mzn";
 include "fzn_arg_min_float_opt.mzn";
 
+predicate fzn_minimum_arg_bool(array [int] of var bool: xs, var int: idx);
+predicate fzn_minimum_arg_bool_opt(array [int] of var opt bool: xs, var int: idx);
+predicate fzn_minimum_arg_float(array [int] of var float: xs, var int: idx);
+predicate fzn_minimum_arg_float_opt(array [int] of var opt float: xs, var int: idx);
+predicate fzn_minimum_arg_int(array [int] of var int: xs, var int: idx);
+predicate fzn_minimum_arg_int_opt(array [int] of var opt int: xs, var int: idx);
+
 /** @group globals.math
 	Returns the index of the minimum value in the array \a xs.
 	When breaking ties the least index is returned.

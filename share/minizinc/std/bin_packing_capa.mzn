@@ -2,6 +2,17 @@ include "fzn_bin_packing_capa.mzn";
 include "fzn_bin_packing_capa_reif.mzn";
 include "fzn_bin_packing_capa_opt.mzn";
 
+predicate fzn_bin_packing_capa(
+  array [int] of int: capacities,
+  array [int] of var int: bins,
+  array [int] of int: weights,
+);
+predicate fzn_bin_packing_capa_opt(
+  array [int] of int: capacities,
+  array [int] of var opt int: bins,
+  array [int] of int: weights,
+);
+
 /**  @group globals.packing
   Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
   that the sum of the weights of the items in each bins \p b does not exceed the

@@ -1,7 +1,7 @@
 predicate fzn_distribute_reif(
-  array [int] of var int: card,
-  array [int] of var int: value,
-  array [int] of var int: base,
+  array [int] of var int: counts,
+  array [int] of var int: cover,
+  array [int] of var int: xs,
   var bool: b,
 ) =
-   b <-> forall (i in index_set(card)) (card[i] == sum (j in index_set(base)) (value[i] = base[j]));
+   b <-> forall (i in index_set(counts)) (counts[i] == sum (j in index_set(xs)) (cover[i] = xs[j]));

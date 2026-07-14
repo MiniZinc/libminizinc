@@ -4,8 +4,8 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_lesseq_bool(
-  array [int] of var bool: x :: promise_ctx_antitone,
-  array [int] of var bool: y :: promise_ctx_monotone,
-) = lex_lesseq_std_decomposition(x, y);
+  array [int] of var bool: xs :: promise_ctx_antitone,
+  array [int] of var bool: ys :: promise_ctx_monotone,
+) = lex_lesseq_std_decomposition(xs, ys);
 
 %-----------------------------------------------------------------------------%

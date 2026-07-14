@@ -2,9 +2,9 @@
 % Requires that the array 'x' is in increasing order iff b is true
 %-----------------------------------------------------------------------------%
 
-predicate fzn_increasing_float_opt_reif(array [int] of var opt float: x, var bool: b) =
+predicate fzn_increasing_float_opt_reif(array [int] of var opt float: xs, var bool: b) =
   let {
-    array [int] of var opt float: xx = array1d(x);
+    array [int] of var opt float: xx = array1d(xs);
     array [1..length(xx)] of var float: y;
     constraint
       forall (i in 1..length(xx)) (

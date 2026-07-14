@@ -7,6 +7,17 @@ include "fzn_lex_lesseq_int_reif.mzn";
 include "fzn_lex_lesseq_set.mzn";
 include "fzn_lex_lesseq_set_reif.mzn";
 
+predicate fzn_lex_lesseq_bool(
+  array [int] of var bool: xs :: promise_ctx_antitone,
+  array [int] of var bool: ys :: promise_ctx_monotone,
+);
+predicate fzn_lex_lesseq_float(array [int] of var float: xs, array [int] of var float: ys);
+predicate fzn_lex_lesseq_int(
+  array [int] of var int: xs :: promise_ctx_antitone,
+  array [int] of var int: ys :: promise_ctx_monotone,
+);
+predicate fzn_lex_lesseq_set(array [int] of var set of int: xs, array [int] of var set of int: ys);
+
 /** @group globals.lexicographic
   Requires that the array \a xs is lexicographically less than or equal to
   array \a ys. Compares them from first to last element, regardless of indices.

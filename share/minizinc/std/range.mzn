@@ -1,6 +1,8 @@
 include "fzn_range.mzn";
 include "fzn_range_reif.mzn";
 
+predicate fzn_range(array [int] of var int: xs, var set of int: domain, var set of int: image);
+
 /** @group globals.math
   Requires that the image of function \a xs (represented as an array) on set
   of values \a domain is \a image.  ub(\a domain) must be a subset of index_set(\a xs) otherwise an

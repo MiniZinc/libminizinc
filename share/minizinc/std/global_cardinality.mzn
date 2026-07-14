@@ -8,6 +8,40 @@ include "fzn_global_cardinality_low_up_reif.mzn";
 include "fzn_global_cardinality_low_up_opt.mzn";
 include "fzn_global_cardinality_low_up_set.mzn";
 
+predicate fzn_global_cardinality(
+  array [int] of var int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+predicate fzn_global_cardinality_low_up(
+  array [int] of var int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+predicate fzn_global_cardinality_low_up_opt(
+  array [int] of var opt int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+predicate fzn_global_cardinality_low_up_set(
+  array [int] of var set of int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+predicate fzn_global_cardinality_opt(
+  array [int] of var opt int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+predicate fzn_global_cardinality_set(
+  array [int] of var set of int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+
 /** @group globals.counting
   Requires that the number of occurrences of \a cover[\p i] in \a xs is \a counts[\p i].
 */

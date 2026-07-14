@@ -1,4 +1,4 @@
 include "count_fn.mzn";
 
-predicate fzn_count_leq_set(array [int] of var set of int: x, var set of int: y, var int: c) =
-  sum (x_i in x) (x_i == y) >= c;
+predicate fzn_count_leq_set(array [int] of var set of int: xs, var set of int: value, var int: n) =
+  sum (x_i in xs) (x_i == value) >= n;

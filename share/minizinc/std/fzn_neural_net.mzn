@@ -3,18 +3,18 @@ predicate fzn_neural_net(
   array [int] of int: input_ids,
   array [int] of var float: outputs,
   array [int] of int: output_ids,
-  array [int] of float: bias,
-  array [int] of float: edge_weight,
-  array [int] of int: edge_parent,
-  array [int] of int: first_edge,
+  array [int] of float: biases,
+  array [int] of float: edge_weights,
+  array [int] of int: edge_parents,
+  array [int] of int: first_edges,
   NEURON_TYPE: neuron_type,
 ) =
   let {
-    set of int: NODE = index_set(bias);
+    set of int: NODE = index_set(biases);
   } in let {
     set of int: INPUTS = array2set(input_ids);
   } in let {
-    set of int: EDGE = index_set(edge_weight);
+    set of int: EDGE = index_set(edge_weights);
   } in let {
     array [NODE] of var float: neuron;
   } in forall (i in index_set(inputs)) (neuron[input_ids[i]] = inputs[i]) /\
@@ -23,11 +23,11 @@ predicate fzn_neural_net(
       i in NODE diff INPUTS,
     ) (
       let {
-        int: first = first_edge[i];
-        int: last = if i = max(NODE) then max(EDGE) else first_edge[i + 1] - 1 endif;
-        array [int] of var float: ins = [neuron[edge_parent[j]] | j in first..last];
-        array [int] of float: ws = [edge_weight[j] | j in first..last];
-        float: b = bias[i];
+        int: first = first_edges[i];
+        int: last = if i = max(NODE) then max(EDGE) else first_edges[i + 1] - 1 endif;
+        array [int] of var float: ins = [neuron[edge_parents[j]] | j in first..last];
+        array [int] of float: ws = [edge_weights[j] | j in first..last];
+        float: b = biases[i];
       } in neuron[i] =
         if neuron_type = NT_RELU then
           neuron_relu(ins, ws, b)

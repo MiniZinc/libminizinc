@@ -4,6 +4,28 @@ include "fzn_dsteiner.mzn";
 include "fzn_dsteiner_reif.mzn";
 include "weighted_spanning_tree.mzn";
 
+predicate fzn_dsteiner(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+predicate fzn_steiner(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+
 /** @group globals.graph
     Constrains the subgraph \a  ns and \a es of a given directed graph to be a weighted spanning tree rooted at \a root of weight \a W.
 

@@ -1,6 +1,8 @@
 include "fzn_disjunctive_strict.mzn";
 include "fzn_disjunctive_strict_reif.mzn";
 
+predicate fzn_disjunctive_strict(array [int] of var int: starts, array [int] of var int: durations);
+
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a starts and durations \a durations
   do not overlap in time. Tasks with duration 0 CANNOT be scheduled at any time,

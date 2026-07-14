@@ -1,5 +1,5 @@
 predicate fzn_regular(
-  array [int] of var int: x,
+  array [int] of var int: xs,
   int: Q,
   set of int: S,
   array [int, int] of int: d,

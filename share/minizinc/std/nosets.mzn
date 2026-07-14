@@ -351,8 +351,8 @@ predicate set_subset_imp(var set of int: s, var set of int: t, var bool: b) =
 predicate set_superset(var set of int: s, var set of int: t) :: promise_total = set_subset(t, s);
 predicate set_superset_reif(var set of int: s, var set of int: t, var bool: b) :: promise_total =
   set_subset_reif(t, s, b);
-predicate set_superset_imp(var set of int: x, var set of int: y, var bool: b) =
-  set_subset_imp(y, x, b);
+predicate set_superset_imp(var set of int: s, var set of int: t, var bool: b) =
+  set_subset_imp(t, s, b);
 
 function var set of int: set_intersect(var set of int: x, var set of int: y)
   :: promise_total

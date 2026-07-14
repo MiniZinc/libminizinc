@@ -1,7 +1,7 @@
 predicate fzn_dreachable_reif(
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
   var bool: b,

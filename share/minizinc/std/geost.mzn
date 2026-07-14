@@ -7,6 +7,41 @@ include "fzn_geost_smallest_bb_reif.mzn";
 include "fzn_geost_nonoverlap_k.mzn";
 include "fzn_geost_nonoverlap_k_reif.mzn";
 
+predicate fzn_geost(
+  int: k,
+  array [int, int] of int: rect_size,
+  array [int, int] of int: rect_offset,
+  array [int] of set of int: shape,
+  array [int, int] of var int: xs,
+  array [int] of var int: kind,
+);
+predicate fzn_geost_bb(
+  int: k,
+  array [int, int] of int: rect_size,
+  array [int, int] of int: rect_offset,
+  array [int] of set of int: shape,
+  array [int, int] of var int: xs,
+  array [int] of var int: kind,
+  array [int] of var int: lower_bounds,
+  array [int] of var int: upper_bounds,
+);
+predicate fzn_geost_smallest_bb(
+  int: k,
+  array [int, int] of int: rect_size,
+  array [int, int] of int: rect_offset,
+  array [int] of set of int: shape,
+  array [int, int] of var int: xs,
+  array [int] of var int: kind,
+  array [int] of var int: lower_bounds,
+  array [int] of var int: upper_bounds,
+);
+predicate fzn_geost_nonoverlap_k(
+  array [int] of var int: x1,
+  array [int] of int: w1,
+  array [int] of var int: x2,
+  array [int] of int: w2,
+);
+
 /** @group globals.packing
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap.
     

@@ -3,6 +3,9 @@ include "fzn_lex_chain_less_bool_reif.mzn";
 include "fzn_lex_chain_less_int.mzn";
 include "fzn_lex_chain_less_int_reif.mzn";
 
+predicate fzn_lex_chain_less_bool(array [int, int] of var bool: xs);
+predicate fzn_lex_chain_less_int(array [int, int] of var int: xs);
+
 /** @group globals.lexicographic
   Requires that the columns of matrix \a xs are lexicographically sorted,
   strictly increasing.

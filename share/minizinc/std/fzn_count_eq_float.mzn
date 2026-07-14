@@ -1,8 +1,8 @@
 %-----------------------------------------------------------------------------%
-% Constrains 'c' to be the number of occurrences of 'y' in 'x'.
+% Constrains 'n' to be the number of occurrences of 'value' in 'xs'.
 %-----------------------------------------------------------------------------%
 
-predicate fzn_count_eq_float(array [int] of var float: x, var float: y, var int: c) =
-  c = sum (x_i in x) (x_i == y);
+predicate fzn_count_eq_float(array [int] of var float: xs, var float: value, var int: n) =
+  n = sum (x_i in xs) (x_i == value);
 
 %-----------------------------------------------------------------------------%

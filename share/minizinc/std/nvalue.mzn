@@ -1,6 +1,8 @@
 include "fzn_nvalue.mzn";
 include "fzn_nvalue_reif.mzn";
 
+predicate fzn_nvalue(var int: n, array [int] of var int: xs);
+
 /** @group globals.alldifferent
   Requires that the number of distinct values in \a xs is \a n.
 */

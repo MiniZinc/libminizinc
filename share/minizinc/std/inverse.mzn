@@ -3,6 +3,9 @@ include "fzn_inverse_opt.mzn";
 include "fzn_inverse_reif.mzn";
 include "analyse_all_different.mzn";
 
+predicate fzn_inverse(array [int] of var int: f, array [int] of var int: invf);
+predicate fzn_inverse_opt(array [int] of var opt int: f, array [int] of var opt int: invf);
+
 /** @group globals.channeling
   Constrains two arrays of int variables, \a f and \a invf, to represent
   inverse functions.  All the values in each array must be within the index

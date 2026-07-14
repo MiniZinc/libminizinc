@@ -3,6 +3,21 @@ include "fzn_subgraph_int_reif.mzn";
 include "fzn_subgraph_enum.mzn";
 include "fzn_subgraph_enum_reif.mzn";
 
+predicate fzn_subgraph(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_subgraph(
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+
 /** @group globals.graph
     Constrains that \a ns and \a es is a subgraph of a given directed graph.
 

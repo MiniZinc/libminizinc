@@ -9,6 +9,12 @@ include "fzn_member_set_reif.mzn";
 include "fzn_set_member.mzn";
 include "fzn_set_member_reif.mzn";
 
+predicate fzn_member_bool(array [int] of var bool: x, var bool: y);
+predicate fzn_member_float(array [int] of var float: x, var float: y);
+predicate fzn_member_int(array [int] of var int: x, var int: y);
+predicate fzn_member_set(array [int] of var set of int: x, var set of int: y);
+predicate fzn_set_member(var set of int: x, var int: y);
+
 /** @group globals.array
   Requires that \a y occurs in the array \a x.
 */

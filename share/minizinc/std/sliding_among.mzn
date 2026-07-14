@@ -1,6 +1,9 @@
 include "fzn_sliding_among_int.mzn";
 include "fzn_sliding_among_bool.mzn";
 
+predicate fzn_sliding_among_int(int: low, int: up, int: window_size, array [int] of var int: xs, set of int: values);
+predicate fzn_sliding_among_bool(int: low, int: up, int: window_size, array [int] of var bool: xs, bool: value);
+
 /**  @group globals.counting
  Every subsequence of \a xs of length \a window_size has at least \a low and at most \a up occurrences
  of the values in \a values

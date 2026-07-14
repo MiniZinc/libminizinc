@@ -7,6 +7,39 @@ include "fzn_dreachable_int_reif.mzn";
 include "fzn_dreachable_enum.mzn";
 include "fzn_dreachable_enum_reif.mzn";
 
+predicate fzn_dreachable(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dreachable(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_reachable(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_reachable(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+
 /** @group globals.graph
     Constrains the subgraph \a ns and \a es of a given directed graph to be reachable from \a root.
 

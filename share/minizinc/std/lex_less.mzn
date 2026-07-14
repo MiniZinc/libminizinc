@@ -7,6 +7,11 @@ include "fzn_lex_less_int_reif.mzn";
 include "fzn_lex_less_set.mzn";
 include "fzn_lex_less_set_reif.mzn";
 
+predicate fzn_lex_less_bool(array [int] of var bool: xs, array [int] of var bool: ys);
+predicate fzn_lex_less_float(array [int] of var float: xs, array [int] of var float: ys);
+predicate fzn_lex_less_int(array [int] of var int: xs, array [int] of var int: ys);
+predicate fzn_lex_less_set(array [int] of var set of int: xs, array [int] of var set of int: ys);
+
 /** @group globals.lexicographic
   Requires that the array \a xs is strictly lexicographically less than
   array \a ys. Compares them from first to last element, regardless of indices.

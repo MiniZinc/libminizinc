@@ -1,6 +1,13 @@
 include "fzn_cumulative_opt.mzn";
 include "fzn_cumulative_opt_reif.mzn";
 
+predicate fzn_cumulative_opt(
+  array [int] of var opt int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  var int: capacity,
+);
+
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a starts, durations \a durations, and
   resource requirements \a resources, never require more than a global resource bound

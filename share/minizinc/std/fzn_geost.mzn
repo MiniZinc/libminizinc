@@ -5,7 +5,7 @@ predicate fzn_geost(
   array [int, int] of int: rect_size,
   array [int, int] of int: rect_offset,
   array [int] of set of int: shape,
-  array [int, int] of var int: x,
+  array [int, int] of var int: xs,
   array [int] of var int: kind,
 ) =
   % A few useful definitions
@@ -20,9 +20,9 @@ predicate fzn_geost(
           kind[o1] = s1 /\ kind[o2] = s2 ->
             forall (r1 in shape[s1], r2 in shape[s2]) (
               fzn_geost_nonoverlap_k(
-                [x[o1, j] + rect_offset[r1, j] | j in DIMS],
+                [xs[o1, j] + rect_offset[r1, j] | j in DIMS],
                 [rect_size[r1, j] | j in DIMS],
-                [x[o2, j] + rect_offset[r2, j] | j in DIMS],
+                [xs[o2, j] + rect_offset[r2, j] | j in DIMS],
                 [rect_size[r2, j] | j in DIMS],
               )
             )

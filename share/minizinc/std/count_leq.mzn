@@ -15,6 +15,19 @@ include "fzn_count_leq_float_par_reif.mzn";
 include "fzn_count_leq_set_par.mzn";
 include "fzn_count_leq_set_par_reif.mzn";
 
+predicate fzn_count_leq(array [int] of var int: xs, var int: value, var int: n);
+predicate fzn_count_leq_bool(array [int] of var bool: xs, var bool: value, var int: n);
+predicate fzn_count_leq_bool_par(array [int] of var bool: xs, bool: value, int: n);
+predicate fzn_count_leq_float(array [int] of var float: xs, var float: value, var int: n);
+predicate fzn_count_leq_float_par(array [int] of var float: xs, float: value, int: n);
+predicate fzn_count_leq_par(array [int] of var int: xs, int: value, int: n);
+predicate fzn_count_leq_set(array [int] of var set of int: xs, var set of int: value, var int: n);
+predicate fzn_count_leq_set_par(
+  array [int] of var set of int: xs,
+  set of int: value,
+  int: n,
+);
+
 /** @group globals.counting
   Constrains \a n to be less than or equal to the number of occurrences
   of \a value in \a xs. 

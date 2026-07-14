@@ -3,6 +3,9 @@ include "fzn_seq_precede_chain_int_reif.mzn";
 include "fzn_seq_precede_chain_set.mzn";
 include "fzn_seq_precede_chain_set_reif.mzn";
 
+predicate fzn_seq_precede_chain_int(array [int] of var int: xs);
+predicate fzn_seq_precede_chain_set(array [int] of var set of int: xs);
+
 /** @group globals.lexicographic
   Requires that \a i precedes \a i+1 in the array \a xs for all positive \a i.
 */

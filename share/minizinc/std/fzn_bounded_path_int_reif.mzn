@@ -6,10 +6,10 @@ predicate fzn_bounded_path_reif(
   array [int] of int: from,
   array [int] of int: to,
   array [int] of int: w,
-  var int: s,
-  var int: t,
+  var int: source,
+  var int: sink,
   array [int] of var bool: ns,
   array [int] of var bool: es,
-  var int: K,
+  var int: weight_bound,
   var bool: b,
-) = b <-> (path(N, E, from, to, s, t, ns, es) /\ K = sum (e in 1..E) (es[e] * w[e]));
+) = b <-> (path(N, E, from, to, source, sink, ns, es) /\ weight_bound = sum (e in 1..E) (es[e] * w[e]));

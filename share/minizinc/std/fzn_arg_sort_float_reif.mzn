@@ -1,14 +1,14 @@
 include "all_different.mzn";
 
 predicate fzn_arg_sort_float_reif(
-  array [int] of var float: x,
-  array [int] of var int: p,
+  array [int] of var float: xs,
+  array [int] of var int: permutation,
   var bool: b,
 ) =
   b <->
     (
-      all_different(p) /\
-        forall (j in 1..length(x) - 1) (
-          x[p[j]] <= x[p[j + 1]] /\ (x[p[j]] == x[p[j + 1]] -> p[j] < p[j + 1])
+      all_different(permutation) /\
+        forall (j in 1..length(xs) - 1) (
+          xs[permutation[j]] <= xs[permutation[j + 1]] /\ (xs[permutation[j]] == xs[permutation[j + 1]] -> permutation[j] < permutation[j + 1])
         )
     );

@@ -1,8 +1,8 @@
 %-----------------------------------------------------------------------------%
-% Requires that the array 'x' is in increasing order (duplicates are allowed).
+% Requires that the array 'xs' is in increasing order (duplicates are allowed).
 %-----------------------------------------------------------------------------%
 
-predicate fzn_increasing_bool(array [int] of var bool: x) =
-  if length(x) > 1 then
-    forall (i in index_set(x) diff {min(index_set(x))}) (x[i - 1] <= x[i])
+predicate fzn_increasing_bool(array [int] of var bool: xs) =
+  if length(xs) > 1 then
+    forall (i in index_set(xs) diff {min(index_set(xs))}) (xs[i - 1] <= xs[i])
   endif;

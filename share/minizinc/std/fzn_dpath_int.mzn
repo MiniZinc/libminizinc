@@ -6,10 +6,10 @@ predicate fzn_dpath(
   int: E,
   array [int] of int: from,
   array [int] of int: to,
-  var int: s,
-  var int: t,
+  var int: source,
+  var int: sink,
   array [int] of var bool: ns,
   array [int] of var bool: es,
-) = dtree(N, E, from, to, s, ns, es) /\ dtree(N, E, to, from, t, ns, es);
+) = dtree(N, E, from, to, source, ns, es) /\ dtree(N, E, to, from, sink, ns, es);
 
 %-----------------------------------------------------------------------------%

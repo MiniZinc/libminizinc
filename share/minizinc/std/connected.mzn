@@ -3,6 +3,19 @@ include "fzn_connected_reif.mzn";
 include "fzn_dconnected.mzn";
 include "fzn_dconnected_reif.mzn";
 
+predicate fzn_connected(
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dconnected(
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be connected.
 

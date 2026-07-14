@@ -34,20 +34,20 @@ predicate fzn_piecewise_linear_non_continuous(
   var float: y,
   array [int] of float: x_start,
   array [int] of float: x_end,
-  array [int] of float: v_start,
-  array [int] of float: v_end,
+  array [int] of float: y_start,
+  array [int] of float: y_end,
 ) =
   let {
     set of int: is = index_set(x_start);
     constraint
       assert(
-        is == index_set(v_start) /\
-          is == index_set(v_end) /\
+        is == index_set(y_start) /\
+          is == index_set(y_end) /\
           is == index_set(x_end) /\
            0 < card(is),
         "fzn_pwl: index sets unequal or empty",
       );
     array [int, int] of var float: fs = fzn_piecewise_linear_non_continuous_base(x, x_start, x_end);
-  } in y == sum (i in is) (v_start[i] * fs[1, i] + (v_end[i] - v_start[i]) * fs[2, i]);
+  } in y == sum (i in is) (y_start[i] * fs[1, i] + (y_end[i] - y_start[i]) * fs[2, i]);
 
 %-----------------------------------------------------------------------------%

@@ -2,9 +2,9 @@
 % Requires that the array 'x' is in strict increasing order
 %-----------------------------------------------------------------------------%
 
-predicate fzn_strictly_increasing_int_opt(array [int] of var opt int: x) =
+predicate fzn_strictly_increasing_int_opt(array [int] of var opt int: xs) =
   let {
-    array [int] of var opt int: xx = array1d(x);
+    array [int] of var opt int: xx = array1d(xs);
     array [1..length(xx)] of var int: y;
     constraint
       forall (i in 1..length(xx)) (

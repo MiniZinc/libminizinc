@@ -1,6 +1,13 @@
 include "fzn_span.mzn";
 include "fzn_span_reif.mzn";
 
+predicate fzn_span(
+  var opt int: span_start,
+  var int: span_duration,
+  array [int] of var opt int: starts,
+  array [int] of var int: durations,
+);
+
 /** @group globals.scheduling
   Span constraint for optional tasks. Task (\a span_start,\a span_duration) spans the optional
   tasks (\a starts[\p i],\a durations[\p i]) in the array arguments.

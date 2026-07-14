@@ -1,6 +1,8 @@
 include "fzn_lex_chain_lesseq_orbitope.mzn";
 include "fzn_lex_chain_lesseq_orbitope_reif.mzn";
 
+predicate fzn_lex_chain_lesseq_orbitope(array [int, int] of var int: xs, int: _kind);
+
 /** @group globals.lexicographic
   Requires that the columns of binary matrix \a xs are
   lexicographically sorted, non-decreasing.

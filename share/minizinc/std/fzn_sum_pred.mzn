@@ -1,9 +1,9 @@
 predicate fzn_sum_pred(
-  var int: i,
+  var int: idx,
   array [int] of set of int: sets,
-  array [int] of int: cs,
-  var int: s,
+  array [int] of int: coefficients,
+  var int: total,
 ) =
   let {
-    array [index_set(sets)] of int: sums = [sum (k in sets[j]) (cs[k]) | j in index_set(sets)];
-  } in sums[i] = s;
+    array [index_set(sets)] of int: sums = [sum (k in sets[j]) (coefficients[k]) | j in index_set(sets)];
+  } in sums[idx] = total;

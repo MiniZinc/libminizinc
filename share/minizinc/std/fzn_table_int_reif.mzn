@@ -33,18 +33,22 @@
 %   ... false
 %
 
-predicate fzn_table_int_reif(array [int] of var int: x, array [int, int] of int: t, var bool: b) =
+predicate fzn_table_int_reif(
+  array [int] of var int: xs,
+  array [int, int] of int: tuples,
+  var bool: b,
+) =
   let {
-    int: n_vars = length(x);
+    int: n_vars = length(xs);
   } in assert(
     n_vars in 1..5,
     "'table' constraints in a reified context " ++ "are only supported for 1..5 variables.",
     if n_vars = 1 then
-      x[1] in {t[it, 1] | it in index_set_1of2(t)} <-> b
+      xs[1] in {tuples[it, 1] | it in index_set_1of2(tuples)} <-> b
     else
       let {
-        set of int: ix = index_set(x);
-        set of int: full_size = 1..product (i in ix) (dom_size(x[i]));
+        set of int: ix = index_set(xs);
+        set of int: full_size = 1..product (i in ix) (dom_size(xs[i]));
         array [full_size, 1..n_vars + 1] of int: t_b =
           array2d(
             full_size,
@@ -53,9 +57,9 @@ predicate fzn_table_int_reif(array [int] of var int: x, array [int, int] of int:
               [
                 let {
                   array [ix] of int: tpl = [i1, i2];
-                } in (tpl ++ [bool2int(aux_is_in_table(tpl, t))])[p] |
-                  i1 in dom(x[1]),
-                  i2 in dom(x[2]),
+                } in (tpl ++ [bool2int(aux_is_in_table(tpl, tuples))])[p] |
+                  i1 in dom(xs[1]),
+                  i2 in dom(xs[2]),
                   p in 1..n_vars + 1,
               ]
             else
@@ -63,10 +67,10 @@ predicate fzn_table_int_reif(array [int] of var int: x, array [int, int] of int:
                 [
                   let {
                     array [ix] of int: tpl = [i1, i2, i3];
-                  } in (tpl ++ [bool2int(aux_is_in_table(tpl, t))])[p] |
-                    i1 in dom(x[1]),
-                    i2 in dom(x[2]),
-                    i3 in dom(x[3]),
+                  } in (tpl ++ [bool2int(aux_is_in_table(tpl, tuples))])[p] |
+                    i1 in dom(xs[1]),
+                    i2 in dom(xs[2]),
+                    i3 in dom(xs[3]),
                     p in 1..n_vars + 1,
                 ]
               else
@@ -74,11 +78,11 @@ predicate fzn_table_int_reif(array [int] of var int: x, array [int, int] of int:
                   [
                     let {
                       array [ix] of int: tpl = [i1, i2, i3, i4];
-                    } in (tpl ++ [bool2int(aux_is_in_table(tpl, t))])[p] |
-                      i1 in dom(x[1]),
-                      i2 in dom(x[2]),
-                      i3 in dom(x[3]),
-                      i4 in dom(x[4]),
+                    } in (tpl ++ [bool2int(aux_is_in_table(tpl, tuples))])[p] |
+                      i1 in dom(xs[1]),
+                      i2 in dom(xs[2]),
+                      i3 in dom(xs[3]),
+                      i4 in dom(xs[4]),
                       p in 1..n_vars + 1,
                   ]
                 else
@@ -86,19 +90,19 @@ predicate fzn_table_int_reif(array [int] of var int: x, array [int, int] of int:
                   [
                     let {
                       array [ix] of int: tpl = [i1, i2, i3, i4, i5];
-                    } in (tpl ++ [bool2int(aux_is_in_table(tpl, t))])[p] |
-                      i1 in dom(x[1]),
-                      i2 in dom(x[2]),
-                      i3 in dom(x[3]),
-                      i4 in dom(x[4]),
-                      i5 in dom(x[5]),
+                    } in (tpl ++ [bool2int(aux_is_in_table(tpl, tuples))])[p] |
+                      i1 in dom(xs[1]),
+                      i2 in dom(xs[2]),
+                      i3 in dom(xs[3]),
+                      i4 in dom(xs[4]),
+                      i5 in dom(xs[5]),
                       p in 1..n_vars + 1,
                   ]
                 endif
               endif
             endif,
           );
-      } in fzn_table_int(x ++ [bool2int(b)], t_b)
+      } in fzn_table_int(xs ++ [bool2int(b)], t_b)
     endif,
   );
 

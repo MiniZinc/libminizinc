@@ -4,9 +4,9 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_lesseq_bool_reif(
-  array [int] of var bool: x,
-  array [int] of var bool: y,
+  array [int] of var bool: xs,
+  array [int] of var bool: ys,
   var bool: c,
-) = c <-> lex_lesseq_std_decomposition(x, y);
+) = c <-> lex_lesseq_std_decomposition(xs, ys);
 
 %-----------------------------------------------------------------------------%

@@ -6,7 +6,7 @@ predicate fzn_steiner_reif(
   array [int] of int: w,
   array [int] of var bool: ns,
   array [int] of var bool: es,
-  var int: K,
+  var int: weight_bound,
   var bool: b,
 ) = abort("Reified steiner constraint is not supported");
 

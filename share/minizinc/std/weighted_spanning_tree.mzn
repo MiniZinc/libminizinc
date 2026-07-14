@@ -3,6 +3,26 @@ include "fzn_wst_reif.mzn";
 include "fzn_dwst.mzn";
 include "fzn_dwst_reif.mzn";
 
+predicate fzn_dwst(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: root,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+predicate fzn_wst(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+
 /** @group globals.graph
     Constrains the set of edges \a es of a given directed graph to be a weighted spanning tree rooted at \a root of weight \a W.
 

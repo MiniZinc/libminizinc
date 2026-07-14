@@ -4,8 +4,8 @@ include "subgraph.mzn";
 predicate fzn_path_reif(
   array [int] of int: from,
   array [int] of int: to,
-  var int: s,
-  var int: t,
+  var int: source,
+  var int: sink,
   array [int] of var bool: ns,
   array [int] of var bool: es,
   var bool: b,

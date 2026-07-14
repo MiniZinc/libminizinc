@@ -1,26 +1,26 @@
-predicate fzn_minimum_arg_float(array [int] of var float: x, var int: i) =
+predicate fzn_minimum_arg_float(array [int] of var float: xs, var int: idx) =
   let {
-    int: l = min(index_set(x));
-    int: u = max(index_set(x));
-    float: ly = lb_array(x);
-  } in if exists (j in l..u) (ub(x[j]) = ly) then
+    int: l = min(index_set(xs));
+    int: u = max(index_set(xs));
+    float: ly = lb_array(xs);
+  } in if exists (j in l..u) (ub(xs[j]) = ly) then
     let {
       array [l..u] of var bool: d;
     } in % min is known to be ly
-    x[i] = ly /\ % ith case must be equal to ub
-      forall (j in l..u) (x[j] = ly -> i <= j) /\ % lower bound
-      d[l] = (x[l] != ly) /\
-      forall (j in l + 1..u) (d[j] <-> (d[j - 1] /\ (x[j] != ly))) /\
-      forall (j in l..u) (d[j] -> i >= j + 1) % upper bound
+    xs[idx] = ly /\ % ith case must be equal to ub
+      forall (j in l..u) (xs[j] = ly -> idx <= j) /\ % lower bound
+      d[l] = (xs[l] != ly) /\
+      forall (j in l + 1..u) (d[j] <-> (d[j - 1] /\ (xs[j] != ly))) /\
+      forall (j in l..u) (d[j] -> idx >= j + 1) % upper bound
   else
     let {
-      float: uy = ub_array(x);
+      float: uy = ub_array(xs);
       array [l..u] of var ly..uy: y;
       array [l..u] of var l..u: mi;
-    } in y[l] = x[l] /\
+    } in y[l] = xs[l] /\
       mi[l] = l /\
-      i = mi[u] /\
+      idx = mi[u] /\
       forall (j in l + 1..u) (
-        y[j] == min(x[j], y[j - 1]) /\ mi[j] = if y[j - 1] <= x[j] then mi[j - 1] else j endif
+        y[j] == min(xs[j], y[j - 1]) /\ mi[j] = if y[j - 1] <= xs[j] then mi[j - 1] else j endif
       )
   endif;

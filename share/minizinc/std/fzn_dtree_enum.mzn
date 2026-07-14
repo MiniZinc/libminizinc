@@ -3,7 +3,7 @@ include "subgraph.mzn";
 predicate fzn_dtree(
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -11,9 +11,9 @@ predicate fzn_dtree(
     set of int: EDGE = index_set(es);
     array [index_set(ns)] of var 0..length(ns) - 1: dist; /* distance from root */
     array [index_set(ns)] of var index_set(ns): parent; /* parent */
-  } in ns[r] /\ % the root must be chosen
-    dist[r] = 0 /\ % root is at distance 0
-    parent[r] = r /\ % root is its own parent
+  } in ns[root] /\ % the root must be chosen
+    dist[root] = 0 /\ % root is at distance 0
+    parent[root] = root /\ % root is its own parent
     forall (
       n in index_set(ns), % nonselected nodes have parent 0
     ) (not ns[n] -> parent[n] = n) /\
@@ -22,7 +22,7 @@ predicate fzn_dtree(
     ) (not ns[n] -> dist[n] = 0) /\
     forall (
       n in index_set(ns), % each in node except root must have a parent
-    ) (ns[n] -> (n = r \/ parent[n] != n)) /\
+    ) (ns[n] -> (n = root \/ parent[n] != n)) /\
     forall (
       n in index_set(ns), % each in node with a parent must be in and also its parent
     ) (parent[n] != n -> (ns[n] /\ ns[parent[n]])) /\

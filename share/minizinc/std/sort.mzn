@@ -1,6 +1,8 @@
 include "fzn_sort.mzn";
 include "fzn_sort_reif.mzn";
 
+predicate fzn_sort(array [int] of var int: xs, array [int] of var int: ys);
+
 /** @group globals.sort
   Requires that the multiset of values in \a xs are the same as the
   multiset of values in \a ys but \a ys is in sorted order.

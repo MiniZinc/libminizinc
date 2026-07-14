@@ -3,6 +3,8 @@ include "among_fn.mzn";
 include "fzn_among.mzn";
 include "fzn_among_reif.mzn";
 
+predicate fzn_among(var int: n, array [int] of var int: xs, set of int: values);
+
 /**  @group globals.counting
   Requires exactly \a n variables in \a xs to take one of the values in \a values.
 */

@@ -1,13 +1,15 @@
 predicate fzn_int_set_channel_reif(
-  array [int] of var int: x,
-  array [int] of var set of int: y,
+  array [int] of var int: ints,
+  array [int] of var set of int: sets,
   var bool: b,
 ) =
   b <->
     (
-      forall (i in index_set(x)) (x[i] in index_set(y)) /\
-        forall (j in index_set(y)) (y[j] subset index_set(x)) /\
-        forall (i in index_set(x), j in index_set(y)) (x[i] = j <-> i in y[j])
+      forall (i in index_set(ints)) (ints[i] in index_set(sets)) /\
+        forall (j in index_set(sets)) (sets[j] subset index_set(ints)) /\
+        forall (
+          i in index_set(ints), j in index_set(sets),
+        ) (ints[i] = j <-> i in sets[j])
     );
 
 %-----------------------------------------------------------------------------%

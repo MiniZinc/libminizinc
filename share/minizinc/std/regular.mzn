@@ -11,6 +11,24 @@ include "fzn_regular_set_reif.mzn";
 opt bool: fzn_regular_is_decomposed;
 opt bool: fzn_regular_set_is_decomposed;
 
+predicate fzn_regular(
+  array [int] of var int: xs,
+  int: Q,
+  int: S,
+  array [int, int] of int: d,
+  int: q0,
+  set of int: F,
+);
+
+predicate fzn_regular_set(
+  array [int] of var int: xs,
+  int: Q,
+  set of int: S,
+  array [int, int] of int: d,
+  int: q0,
+  set of int: F,
+);
+
 /** @group globals.extensional
   The sequence of values in array \a xs
   is accepted by the DFA with transition function \a d, initial state \a q0

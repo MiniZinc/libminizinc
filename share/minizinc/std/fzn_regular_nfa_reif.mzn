@@ -1,5 +1,5 @@
 predicate fzn_regular_nfa_reif(
-  array [int] of var int: x,
+  array [int] of var int: xs,
   int: Q,
   int: S,
   array [int, int] of set of int: d,

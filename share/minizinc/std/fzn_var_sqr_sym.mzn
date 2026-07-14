@@ -1,12 +1,12 @@
 include "fzn_var_perm_sym.mzn";
 
 predicate fzn_var_sqr_sym(
-  array [int, int] of var int: x,
+  array [int, int] of var int: xs,
 ) =
   let {
-    int: n = card(index_set_1of2(x));
+    int: n = card(index_set_1of2(xs));
     int: l = n * n;
-    array [1..l] of var int: y = [x[i, j] | i in index_set_1of2(x), j in index_set_2of2(x)];
+    array [1..l] of var int: y = [xs[i, j] | i in index_set_1of2(xs), j in index_set_2of2(xs)];
     array [1..8, 1..l] of 1..l: p =
       array2d(
         1 ..

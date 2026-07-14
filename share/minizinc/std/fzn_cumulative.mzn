@@ -1,23 +1,23 @@
 predicate fzn_cumulative(
-  array [int] of var int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
-  var int: b,
+  array [int] of var int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  var int: capacity,
 ) =
   let {
-    set of int: Tasks = {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0};
+    set of int: Tasks = {i | i in index_set(starts) where ub(resources[i]) > 0 /\ ub(durations[i]) > 0};
   } in if 0 == card(Tasks) then
     /*true*/
-    0 == card(index_set(s)) \/ b >= 0
+    0 == card(index_set(starts)) \/ capacity >= 0
   else
     let {
-      int: early = min([lb(s[i]) | i in Tasks]);
-      int: late = max([ub(s[i]) + ub(d[i]) | i in Tasks]);
+      int: early = min([lb(starts[i]) | i in Tasks]);
+      int: late = max([ub(starts[i]) + ub(durations[i]) | i in Tasks]);
     } in (
       if late - early > 5000 then
-        fzn_cumulative_task(s, d, r, b)
+        fzn_cumulative_task(starts, durations, resources, capacity)
       else
-        fzn_cumulative_time(s, d, r, b)
+        fzn_cumulative_time(starts, durations, resources, capacity)
       endif
     )
   endif;

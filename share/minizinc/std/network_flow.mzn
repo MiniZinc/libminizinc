@@ -3,6 +3,19 @@ include "fzn_network_flow_reif.mzn";
 include "fzn_network_flow_cost.mzn";
 include "fzn_network_flow_cost_reif.mzn";
 
+predicate fzn_network_flow(
+  array [int, 1..2] of int: arcs,
+  array [int] of int: balances,
+  array [int] of var int: flows,
+);
+predicate fzn_network_flow_cost(
+  array [int, 1..2] of int: arcs,
+  array [int] of int: balances,
+  array [int] of int: weights,
+  array [int] of var int: flows,
+  var int: total_cost,
+);
+
 /** @group globals.graph
   Defines a network flow constraint.
 

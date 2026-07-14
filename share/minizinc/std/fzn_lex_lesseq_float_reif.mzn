@@ -4,9 +4,9 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_lesseq_float_reif(
-  array [int] of var float: x,
-  array [int] of var float: y,
+  array [int] of var float: xs,
+  array [int] of var float: ys,
   var bool: c,
-) = c <-> lex_lesseq_std_decomposition(x, y);
+) = c <-> lex_lesseq_std_decomposition(xs, ys);
 
 %-----------------------------------------------------------------------------%

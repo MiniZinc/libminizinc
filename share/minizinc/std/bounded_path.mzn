@@ -1,3 +1,48 @@
+predicate fzn_bounded_dpath(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+predicate fzn_bounded_dpath(
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+predicate fzn_bounded_path(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+predicate fzn_bounded_path(
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  var int: source,
+  var int: sink,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+  var int: weight_bound,
+);
+
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a source to \a sink of weight \a weight_bound.
 

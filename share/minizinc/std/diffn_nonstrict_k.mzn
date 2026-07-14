@@ -1,6 +1,11 @@
 include "fzn_diffn_nonstrict_k.mzn";
 include "fzn_diffn_nonstrict_k_reif.mzn";
 
+predicate fzn_diffn_nonstrict_k(
+  array [int, int] of var int: box_posn,
+  array [int, int] of var int: box_size,
+);
+
 /** @group globals.packing
   Constrains \p k-dimensional boxes to be non-overlapping. For each box \p i
   and dimension \p j, \a box_posn[\p i, \p j] is the base position of the box

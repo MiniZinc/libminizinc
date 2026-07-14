@@ -1,10 +1,10 @@
 %-----------------------------------------------------------------------------%
-% Requires that the array 'x' is in increasing order
+% Requires that the array 'xs' is in increasing order
 %-----------------------------------------------------------------------------%
 
-predicate fzn_increasing_float_opt(array [int] of var opt float: x) =
+predicate fzn_increasing_float_opt(array [int] of var opt float: xs) =
   let {
-    array [int] of var opt float: xx = array1d(x);
+    array [int] of var opt float: xx = array1d(xs);
     array [1..length(xx)] of var float: y;
     constraint
       forall (i in 1..length(xx)) (

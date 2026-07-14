@@ -1,6 +1,8 @@
 include "fzn_at_most1.mzn";
 include "fzn_at_most1_reif.mzn";
 
+predicate fzn_at_most1(array [int] of var set of int: xs);
+
 /**  @group globals.counting
   Requires that each pair of sets in \a xs overlap in at most one element.
 */

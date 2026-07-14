@@ -1,5 +1,7 @@
 include "fzn_var_sqr_sym.mzn";
 
+predicate fzn_var_sqr_sym(array [int, int] of var int: xs);
+
 /** @group globals.lexicographic
   Requires that the square array \a xs is lex least under the 7 symmetries:
   3 rotations and 4 reflections

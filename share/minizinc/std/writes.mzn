@@ -1,6 +1,13 @@
 include "fzn_writes.mzn";
 include "fzn_writes_reif.mzn";
 
+predicate fzn_writes(
+  array [int] of var int: I,
+  array [int] of var int: P,
+  array [int] of var int: V,
+  array [int] of var int: O,
+);
+
 /** @group globals.array
     Creates a new array \a O from an input array \a I with a simultaneous change at positions \a P to values \a V
 

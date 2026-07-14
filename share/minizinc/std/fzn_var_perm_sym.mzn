@@ -1,15 +1,15 @@
 include "lex_lesseq.mzn";
 
-predicate fzn_var_perm_sym(array [int] of var int: x, array [int, int] of int: p) =
+predicate fzn_var_perm_sym(array [int] of var int: xs, array [int, int] of int: permutations) =
   let {
-    int: l = min(index_set_1of2(p));
-    int: u = max(index_set_1of2(p));
-    array [1..length(x)] of var int: y = [x[i] | i in index_set(x)];
+    int: l = min(index_set_1of2(permutations));
+    int: u = max(index_set_1of2(permutations));
+    array [1..length(xs)] of var int: y = [xs[i] | i in index_set(xs)];
   } in forall (i, j in l..u where i != j) (
     fzn_var_perm_sym_pairwise(
       y,
-      [p[i, k] | k in index_set_2of2(p)],
-      [p[j, k] | k in index_set_2of2(p)],
+      [permutations[i, k] | k in index_set_2of2(permutations)],
+      [permutations[j, k] | k in index_set_2of2(permutations)],
     )
   );
 

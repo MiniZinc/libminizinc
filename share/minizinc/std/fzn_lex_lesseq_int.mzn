@@ -4,8 +4,8 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_lesseq_int(
-  array [int] of var int: x :: promise_ctx_antitone,
-  array [int] of var int: y :: promise_ctx_monotone,
-) = lex_lesseq_std_decomposition(x, y);
+  array [int] of var int: xs :: promise_ctx_antitone,
+  array [int] of var int: ys :: promise_ctx_monotone,
+) = lex_lesseq_std_decomposition(xs, ys);
 
 %-----------------------------------------------------------------------------%

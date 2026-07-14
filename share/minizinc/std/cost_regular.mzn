@@ -1,6 +1,17 @@
 include "fzn_cost_regular.mzn";
 include "fzn_cost_regular_reif.mzn";
 
+predicate fzn_cost_regular(
+  array [int] of var int: xs,
+  int: Q,
+  int: S,
+  array [int, int] of int: d,
+  int: q0,
+  set of int: F,
+  array [int, int] of int: costs,
+  var int: total_cost,
+);
+
 /** @group globals.extensional
   The sequence of values in array \a xs (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition

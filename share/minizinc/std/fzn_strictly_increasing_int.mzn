@@ -1,6 +1,6 @@
 %-----------------------------------------------------------------------------%
-% Requires that the array 'x' is in strict increasing order
+% Requires that the array 'xs' is in strict increasing order
 %-----------------------------------------------------------------------------%
 
-predicate fzn_strictly_increasing_int(array [int] of var int: x) =
-  forall (i in index_set(x) diff {min(index_set(x))}) (x[i - 1] < x[i]);
+predicate fzn_strictly_increasing_int(array [int] of var int: xs) =
+  forall (i in index_set(xs) diff {min(index_set(xs))}) (xs[i - 1] < xs[i]);

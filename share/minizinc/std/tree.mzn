@@ -7,6 +7,39 @@ include "fzn_dtree_int_reif.mzn";
 include "fzn_dtree_enum.mzn";
 include "fzn_dtree_enum_reif.mzn";
 
+predicate fzn_tree(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_tree(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dtree(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+predicate fzn_dtree(
+  array [int] of int: from,
+  array [int] of int: to,
+  var int: root,
+  array [int] of var bool: ns,
+  array [int] of var bool: es,
+);
+
 /** @group globals.graph
     Constrains the subgraph \a ns and \a es of a given directed graph to be a tree rooted at \a root.
 

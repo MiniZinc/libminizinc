@@ -1,6 +1,13 @@
 include "fzn_alternative.mzn";
 include "fzn_alternative_reif.mzn";
 
+predicate fzn_alternative(
+  var opt int: span_start,
+  var int: span_duration,
+  array [int] of var opt int: starts,
+  array [int] of var int: durations,
+);
+
 /** @group globals.scheduling
 Alternative constraint for optional tasks. The task with start time \a span_start and
 duration \a span_duration spans the

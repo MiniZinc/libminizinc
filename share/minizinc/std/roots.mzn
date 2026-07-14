@@ -1,6 +1,8 @@
 include "fzn_roots.mzn";
 include "fzn_roots_reif.mzn";
 
+predicate fzn_roots(array [int] of var int: xs, var set of int: preimage, var set of int: image);
+
 /** @group globals.set
   Requires that \a xs[\p i] in \a image for all \p i in \a preimage, i.e.
   \a preimage is the set of indices \p i for which \a xs[\p i] is in \a image.

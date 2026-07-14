@@ -6,10 +6,10 @@ predicate fzn_geost_bb_reif(
   array [int, int] of int: rect_size,
   array [int, int] of int: rect_offset,
   array [int] of set of int: shape,
-  array [int, int] of var int: x,
+  array [int, int] of var int: xs,
   array [int] of var int: kind,
-  array [int] of var int: l,
-  array [int] of var int: u,
+  array [int] of var int: lower_bounds,
+  array [int] of var int: upper_bounds,
   var bool: b,
 ) =
   % Two useful definitions
@@ -19,14 +19,14 @@ predicate fzn_geost_bb_reif(
   } in b <->
     (
       % Posting the geost constraint
-      fzn_geost(k, rect_size, rect_offset, shape, x, kind) /\
+      fzn_geost(k, rect_size, rect_offset, shape, xs, kind) /\
         % Posting the bounding box constraints
         forall (o in OBJECTS) (
           forall (s in dom(kind[o])) ((
             kind[o] = s ->
               forall (r in shape[s], j in DIMS) (
-                x[o, j] + rect_offset[r, j] >= l[j] /\
-                  x[o, j] + rect_offset[r, j] + rect_size[r, j] <= u[j]
+                xs[o, j] + rect_offset[r, j] >= lower_bounds[j] /\
+                  xs[o, j] + rect_offset[r, j] + rect_size[r, j] <= upper_bounds[j]
               )
           ))
         )

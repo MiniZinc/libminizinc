@@ -8,6 +8,40 @@ include "fzn_global_cardinality_low_up_closed_reif.mzn";
 include "fzn_global_cardinality_low_up_closed_opt.mzn";
 include "fzn_global_cardinality_low_up_closed_set.mzn";
 
+predicate fzn_global_cardinality_closed(
+  array [int] of var int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+predicate fzn_global_cardinality_closed_opt(
+  array [int] of var opt int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+predicate fzn_global_cardinality_closed_set(
+  array [int] of var set of int: xs,
+  array [int] of int: cover,
+  array [int] of var int: counts,
+);
+predicate fzn_global_cardinality_low_up_closed(
+  array [int] of var int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+predicate fzn_global_cardinality_low_up_closed_opt(
+  array [int] of var opt int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+predicate fzn_global_cardinality_low_up_closed_set(
+  array [int] of var set of int: xs,
+  array [int] of int: cover,
+  array [int] of int: lbound,
+  array [int] of int: ubound,
+);
+
 /** @group globals.counting
   Requires that the number of occurrences of \a cover[\p i] in \a xs is \a counts[\p i].
 

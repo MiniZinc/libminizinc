@@ -5,6 +5,13 @@ include "fzn_arg_val_float_opt.mzn";
 include "fzn_arg_val_int.mzn";
 include "fzn_arg_val_int_opt.mzn";
 
+predicate fzn_arg_val_bool(array [int] of var bool: xs, var bool: value, var int: idx);
+predicate fzn_arg_val_bool_opt(array [int] of var opt bool: xs, var opt bool: value, var int: idx);
+predicate fzn_arg_val_float(array [int] of var float: xs, var float: value, var int: idx);
+predicate fzn_arg_val_float_opt(array [int] of var opt float: xs, var opt float: value, var int: idx);
+predicate fzn_arg_val_int(array [int] of var int: xs, var int: value, var int: idx);
+predicate fzn_arg_val_int_opt(array [int] of var opt int: xs, var opt int: value, var int: idx);
+
 /** @group globals.math
 	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.

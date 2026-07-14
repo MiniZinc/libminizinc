@@ -4,8 +4,8 @@ include "subgraph.mzn";
 predicate fzn_path(
   array [int] of int: from,
   array [int] of int: to,
-  var int: s,
-  var int: t,
+  var int: source,
+  var int: sink,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -17,6 +17,6 @@ predicate fzn_path(
   } in /* ensure that the directed edges selected agree with undirected edges */
   forall (e in 1..E) (es[e - 1 + min(index_set(es))] <-> (des[e] \/ des[e + E])) /\
     /* duplicate the edges so that the we can use directed graph path */
-    fzn_dpath(dfrom, dto, s, t, ns, des);
+    fzn_dpath(dfrom, dto, source, sink, ns, des);
 
 %-----------------------------------------------------------------------------%

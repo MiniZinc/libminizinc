@@ -1,6 +1,18 @@
 include "fzn_cost_mdd.mzn";
 include "fzn_cost_mdd_reif.mzn";
 
+predicate fzn_cost_mdd(
+  array [int] of var int: xs,
+  int: N,
+  array [int] of int: level,
+  int: E,
+  array [int] of int: from,
+  array [int] of set of int: label,
+  array [int] of int: costs,
+  array [int] of int: to,
+  var int: total_cost,
+);
+
 /** @group globals.extensional
    Requires that \a xs defines a path in the costs MDD with total edge weight \a total_cost.
 

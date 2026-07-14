@@ -1,7 +1,7 @@
 include "fzn_regular.mzn";
 
 predicate fzn_regular_reif(
-  array [int] of var int: x,
+  array [int] of var int: xs,
   int: Q,
   int: S,
   array [int, int] of int: d,
@@ -13,19 +13,19 @@ predicate fzn_regular_reif(
     % Direct decomposition. Track the DFA state with an explicit dead state 0 (which
     % is absorbing and not accepting), so a rejected string yields b = false instead
     % of making the constraint unsatisfiable.
-    if length(x) = 0 then
+    if length(xs) = 0 then
       b = (q0 in F)
     else
       let {
-        int: m = min(index_set(x));
-        int: n = max(index_set(x)) + 1;
+        int: m = min(index_set(xs));
+        int: n = max(index_set(xs)) + 1;
         array [0..Q, 1..S] of int: dd =
           array2d(0..Q, 1..S, [if r = 0 then 0 else d[r, c] endif | r in 0..Q, c in 1..S]);
         array [m..n] of var 0..Q: a;
       } in
         a[m] = q0 /\
-        forall (i in index_set(x)) (
-          a[i + 1] = if x[i] in 1..S then dd[a[i], x[i]] else 0 endif
+        forall (i in index_set(xs)) (
+          a[i + 1] = if xs[i] in 1..S then dd[a[i], xs[i]] else 0 endif
         ) /\
         b = (a[n] in F)
     endif
@@ -54,7 +54,7 @@ predicate fzn_regular_reif(
             0
           endif
         | r in 1..QQ, c in 1..SS]);
-      array [int] of var int: y = x ++ [S + 1 + bool2int(b)];
+      array [int] of var int: y = xs ++ [S + 1 + bool2int(b)];
     } in
       fzn_regular(y, QQ, SS, dd, q0, {ACC})
   endif;

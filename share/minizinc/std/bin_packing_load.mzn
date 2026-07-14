@@ -4,6 +4,17 @@ include "fzn_bin_packing_load.mzn";
 include "fzn_bin_packing_load_opt.mzn";
 include "fzn_bin_packing_load_reif.mzn";
 
+predicate fzn_bin_packing_load(
+  array [int] of var int: loads,
+  array [int] of var int: bins,
+  array [int] of int: weights,
+);
+predicate fzn_bin_packing_load_opt(
+  array [int] of var int: loads,
+  array [int] of var opt int: bins,
+  array [int] of int: weights,
+);
+
 /**  @group globals.packing
   Requires that each item \p i with weight \a weights[\p i], be put into \a bins[\p i] such
   that the sum of the weights of the items in each bins \p b is equal to

@@ -1,7 +1,7 @@
 predicate fzn_tree(
   array [int] of int: from,
   array [int] of int: to,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
@@ -13,6 +13,6 @@ predicate fzn_tree(
   } in /* ensure that the directed edges selected agree with undirected edges */
   forall (e in 1..E) (es[e - 1 + min(index_set(es))] <-> (des[e] \/ des[e + E])) /\
     /* duplicate the edges so that the we can use directed graph reachability */
-    fzn_dtree(dfrom, dto, r, ns, des);
+    fzn_dtree(dfrom, dto, root, ns, des);
 
 %-----------------------------------------------------------------------------%

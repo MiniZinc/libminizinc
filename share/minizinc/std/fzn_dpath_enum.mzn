@@ -4,32 +4,32 @@ include "subgraph.mzn";
 predicate fzn_dpath(
   array [int] of int: from,
   array [int] of int: to,
-  var int: s,
-  var int: t,
+  var int: source,
+  var int: sink,
   array [int] of var bool: ns,
   array [int] of var bool: es,
 ) =
   let {
     set of int: EDGE = index_set(es);
     array [index_set(ns)] of var 0..length(ns) - 1: dist; /* distance from root */
-  } in ns[s] /\ % source is selected
-    ns[t] /\ % dest is selected
-    dist[s] = 0 /\ % distance of source is zero
+  } in ns[source] /\ % source is selected
+    ns[sink] /\ % dest is selected
+    dist[source] = 0 /\ % distance of source is zero
     forall (
       n in index_set(ns), % nonselected nodes have distance 0
     ) (not ns[n] -> dist[n] = 0) /\
     forall (
       n in index_set(ns), % 1 incoming edge
-    ) ((ns[n] /\ n != s) -> exists (e in EDGE where to[e] = n) (es[e])) /\
+    ) ((ns[n] /\ n != source) -> exists (e in EDGE where to[e] = n) (es[e])) /\
     forall (
       n in index_set(ns), % 1 outgoing edge
-    ) ((ns[n] /\ n != t) -> exists (e in EDGE where from[e] = n) (es[e])) /\
+    ) ((ns[n] /\ n != sink) -> exists (e in EDGE where from[e] = n) (es[e])) /\
     forall (
       n in index_set(ns), % 1 incoming edge
-    ) ((ns[n] /\ n != s) -> sum (e in EDGE where to[e] = n) (es[e]) <= 1) /\
+    ) ((ns[n] /\ n != source) -> sum (e in EDGE where to[e] = n) (es[e]) <= 1) /\
     forall (
       n in index_set(ns), % 1 outgoing edge
-    ) ((ns[n] /\ n != t) -> sum (e in EDGE where from[e] = n) (es[e]) <= 1) /\
+    ) ((ns[n] /\ n != sink) -> sum (e in EDGE where from[e] = n) (es[e]) <= 1) /\
     % alternate for the previous 8 lines
     %   forall(n in index_set(ns))   % 1 incoming edge
     %         ((ns[n] /\ n != s) -> sum(e in EDGE where to[e] = n)(es[e]) = 1) /\

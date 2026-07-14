@@ -1,6 +1,15 @@
 include "fzn_piecewise_linear_non_continuous.mzn";
 include "fzn_piecewise_linear_non_continuous_reif.mzn";
 
+predicate fzn_piecewise_linear_non_continuous(
+  var float: x,
+  var float: y,
+  array [int] of float: x_start,
+  array [int] of float: x_end,
+  array [int] of float: y_start,
+  array [int] of float: y_end,
+);
+
 /** @group globals.math
   Return the piecewise-linear function of \a x
   on the given (possibly disconnected) intervals.

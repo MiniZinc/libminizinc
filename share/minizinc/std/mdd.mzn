@@ -1,6 +1,16 @@
 include "fzn_mdd.mzn";
 include "fzn_mdd_reif.mzn";
 
+predicate fzn_mdd(
+  array [int] of var int: xs,
+  int: N,
+  array [int] of int: level,
+  int: E,
+  array [int] of int: from,
+  array [int] of set of int: label,
+  array [int] of int: to,
+);
+
 /** @group globals.extensional
   Requires that \a xs defines a path from root to true node T through the (deterministic)
   Multivalued Decision Diagram (MDD) defined by the parameters.

@@ -1,10 +1,10 @@
 include "fzn_count_gt_float_reif.mzn";
 
 predicate fzn_count_gt_float_par_reif(
-  array [int] of var float: x,
-  float: y,
-  int: c,
+  array [int] of var float: xs,
+  float: value,
+  int: n,
   var bool: b,
-) = fzn_count_gt_float_reif(x, y, c, b);
+) = fzn_count_gt_float_reif(xs, value, n, b);
 
 %-----------------------------------------------------------------------------%

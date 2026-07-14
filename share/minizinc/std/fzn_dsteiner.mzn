@@ -6,10 +6,10 @@ predicate fzn_dsteiner(
   array [int] of int: from,
   array [int] of int: to,
   array [int] of int: w,
-  var int: r,
+  var int: root,
   array [int] of var bool: ns,
   array [int] of var bool: es,
-  var int: K,
-) = dtree(N, E, from, to, r, ns, es) /\ K = sum (e in 1..E) (es[e] * w[e]);
+  var int: weight_bound,
+) = dtree(N, E, from, to, root, ns, es) /\ weight_bound = sum (e in 1..E) (es[e] * w[e]);
 
 %-----------------------------------------------------------------------------%

@@ -3,6 +3,9 @@ include "fzn_at_most_int_reif.mzn";
 include "fzn_at_most_set.mzn";
 include "fzn_at_most_set_reif.mzn";
 
+predicate fzn_at_most_int(int: n, array [int] of var int: xs, int: value);
+predicate fzn_at_most_set(int: n, array [int] of var set of int: xs, set of int: value);
+
 /**  @group globals.deprecated
   Requires at most \a n variables in \a xs to take the value \a value.
 

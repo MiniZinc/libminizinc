@@ -3,6 +3,15 @@ include "fzn_regular_nfa_reif.mzn";
 include "fzn_regular_nfa_set.mzn";
 include "fzn_regular_nfa_set_reif.mzn";
 
+predicate fzn_regular_nfa(
+  array [int] of var int: xs,
+  int: Q,
+  int: S,
+  array [int, int] of set of int: d,
+  int: q0,
+  set of int: F,
+);
+
 /** @group globals.extensional
   The sequence of values in array \a xs
   is accepted by the NFA with transition

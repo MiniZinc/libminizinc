@@ -1,6 +1,14 @@
 include "fzn_knapsack.mzn";
 include "fzn_knapsack_reif.mzn";
 
+predicate fzn_knapsack(
+  array [int] of int: weights,
+  array [int] of int: profits,
+  array [int] of var int: xs,
+  var int: total_weight,
+  var int: total_profit,
+);
+
 /**  @group globals.packing
   Requires that items are packed in a knapsack with certain weight and profit restrictions.
 
