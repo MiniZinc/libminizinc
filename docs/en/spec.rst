@@ -2453,6 +2453,8 @@ is equivalent to
 
 For backwards compatibility with older versions of MiniZinc, items inside the ``let`` can also be separated by commas instead of semicolons.
 
+.. _spec-Call-Expressions:
+
 Call Expressions
 ++++++++++++++++
 
@@ -2477,8 +2479,9 @@ predicate/function must also be appropriate for the calling context.
 
 Arguments may be passed by position, as above, or by name using the syntax
 :mzn:`name: expr`, where ``name`` is a parameter name of the called
-operation.  For example, given the declaration
-:mzn:`predicate foo(int: x, int: y)`, the following calls are equivalent:
+operation.  For example, given the user-defined operation
+:mzn:`predicate foo(int: x, int: y) = ...`, the following calls are
+equivalent:
 
 .. code-block:: minizinc
 
@@ -2493,6 +2496,17 @@ corresponding position, and the named arguments bind the remaining
 parameters.  Each parameter must be bound exactly once, so a named argument
 may not refer to a parameter that has already been bound positionally, and
 no parameter name may appear more than once.
+
+Named arguments are supported for user-defined operations and for the
+operations provided by the MiniZinc library.  They are not yet supported for
+the low-level operations that a solver supports natively, that is, those
+declared without a body (see :ref:`spec-preds-and-fns`).  Such an operation is
+positional-only, and supplying one of its arguments by name is a type error.
+*Rationale: the parameter names of a native operation become part of its
+public interface only once every solver library agrees on them.  Until the
+solver ecosystem has converged on a common set of names, native operations are
+called positionally, so that a model resolves identically against every
+solver.*
 
 Parameter names that start with an underscore (``_``) are not part of the
 public interface of an operation: they may be used inside the body but
@@ -3001,17 +3015,28 @@ number.
     predicate even(var int: x) =
         x mod 2 = 0;
 
-A predicate supported natively by the target solver can be declared as
-follows:
+A predicate supported natively by the target solver is declared without a
+body; the solver's library supplies the definition, or leaves it body-less so
+that the constraint is passed straight to the solver.  By convention these
+interface predicates carry the ``fzn_`` prefix, and the user-facing global
+constraints are ordinary library predicates that call them.  For example,
+native all-different support is provided through
 
 .. code-block:: minizinc
 
-    predicate alldifferent(array [int] of var int: xs);
+    predicate fzn_all_different_int(array [int] of var int: xs);
 
-Predicate declarations that are natively supported 
+while :mzn:`all_different` itself is a library predicate whose body calls
+:mzn:`fzn_all_different_int`.  A solver overrides the ``fzn_`` interface
+predicates, never the user-facing globals.
+
+Predicate declarations that are natively supported
 in MiniZinc are restricted to using FlatZinc
 types (for instance, multi-dimensional and non-1-based arrays are
-forbidden).
+forbidden).  A body-less declaration also fixes the parameter names for its
+overload family, reserving them as the canonical interface; because such an
+operation is positional-only in the current release (see
+:ref:`spec-Call-Expressions`), those names are not yet used at call sites.
 
 .. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
 
@@ -3077,12 +3102,14 @@ in a model.  For example:
 Because arguments may be passed by name, overloadings are distinguished by the
 *names* of their parameters as well as by their types.  Two overloadings of an
 operation may therefore share their parameter types provided they do not share
-their parameter names:
+their parameter names (this applies to operations with a body, since a call
+that selects between such overloadings by name is not available for the
+positional-only native operations):
 
 .. code-block:: minizinc
 
-    predicate interval(var int: start, var int: end);
-    predicate interval(var int: start, var int: duration);   % ok
+    predicate interval(var int: start, var int: end) = ...;
+    predicate interval(var int: start, var int: duration) = ...;   % ok
 
 Conversely, it is a type-inst error to declare two overloadings that a call
 supplying all of its arguments by name could not tell apart, that is, two

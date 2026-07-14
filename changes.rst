@@ -67,6 +67,12 @@ Language changes:
    that a call supplying all of its arguments by name could not tell apart,
    i.e. two overloads that give the same name and type to every parameter
    that has to be supplied.
+   Named arguments are available for user-defined and library operations. The
+   low-level operations a solver supports natively (those declared without a
+   body) remain positional-only for now, until solver libraries have converged
+   on a common set of parameter names; calling one by name is an error. The new
+   ``--warn-non-authoritative-names`` option helps solver implementers audit
+   their libraries against the standard-library names ahead of that change.
 -  Add support for default values for function and parameter arguments.
 -  Add support for set cardinality declarations using the syntax
    ``set(e) of T: s;``.  When ``e`` has type ``int`` or ``var int``, this

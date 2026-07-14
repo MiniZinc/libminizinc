@@ -996,21 +996,66 @@ A solver can declare that it supports a non-standard constraint by overriding on
 
 .. code-block:: minizinc
 
-  predicate fzn_all_different_int(array[int] of var int: x) =
-    forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
+  predicate fzn_all_different_int(array[int] of var int: xs) =
+    forall(i,j in index_set(xs) where i < j) ( xs[i] != xs[j] );
 
 A solver, let's call it *OptiSolve*, that supports this constraint natively can place a file with the same name, ``fzn_all_different_int.mzn``, in its library, and redefine it as follows:
 
 .. code-block:: minizinc
 
-  predicate optisolve_alldifferent(array[int] of var int: x);
+  predicate optisolve_alldifferent(array[int] of var int: xs);
 
-  predicate fzn_all_different_int(array[int] of var int: x) =
-    optisolve_alldifferent(x);
+  predicate fzn_all_different_int(array[int] of var int: xs) =
+    optisolve_alldifferent(xs);
 
 When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, the generated FlatZinc will contain calls to the newly defined predicate ``optisolve_alldifferent``.
 
 **Note:** The solver-specific library has been reorganised for MiniZinc version 2.3.0. Previously, a solver library would contain e.g. the file ``bin_packing.mzn`` in order to override the :mzn:`bin_packing` constraint. With version 2.3.0, this is still possible (in order to maintain backwards compatibility). However, the predicate :mzn:`bin_packing` from file ``bin_packing.mzn`` now delegates to the predicate :mzn:`fzn_bin_packing` in ``fzn_bin_packing.mzn``. This enables the :mzn:`bin_packing` predicate to check that the arguments are correct using assertions, before delegating to the solver-specific predicate. If your solver still uses the old library layout (i.e., overriding ``bin_packing.mzn`` instead of ``fzn_bin_packing.mzn``), you should consider updating it to the new standard.
+
+.. _fzn-parameter-names:
+
+Parameter names in solver-specific libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The parameter names in the standard library's predicate declarations are part
+of the interface: they are the names by which a constraint's arguments may be
+given as named arguments (see :ref:`spec-Call-Expressions`).  When a solver
+redefines a standard predicate, its declaration should use the *same*
+parameter names as the standard-library declaration.  The standard
+``fzn_all_different_int``, for instance, names its parameter ``xs``, so a
+redefinition should too:
+
+.. code-block:: minizinc
+
+  predicate fzn_all_different_int(array[int] of var int: xs);   % names match the standard library
+
+Using different names (for example ``x`` instead of ``xs``) does not change how
+the predicate resolves — the compiler matches these low-level predicates by
+argument type, not by name, so a renamed library behaves exactly as before.
+It does, however, mean the constraint cannot be reached by those names once
+named arguments are enabled for native predicates.
+
+To audit a library against the canonical names, compile any model with the
+``--warn-non-authoritative-names`` option (:numref:`ch-cmdline`).  It reports
+every predicate declaration whose parameter names differ from the standard
+library's body-less declaration for the same signature.
+
+Named arguments are being extended to native predicates in stages, so that
+existing solver libraries keep working while the ecosystem converges on a
+common set of names:
+
+#. In the current release, native (body-less) predicates are positional-only.
+   They resolve by argument type, named calls to them are rejected, and
+   ``--warn-non-authoritative-names`` is off by default — so a library with
+   divergent names still works unchanged.
+#. In a later release, the warning will be on by default, prompting solver
+   authors to align their libraries.
+#. In a release after that, the divergence will become an error and named
+   arguments will be enabled for native predicates.
+
+Solver implementers are encouraged to adopt the standard-library parameter
+names now, so their libraries are ready when named arguments reach the native
+layer.
 
 .. _fzn-half-reif:
 

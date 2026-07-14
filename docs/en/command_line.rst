@@ -416,6 +416,14 @@ These options control how the MiniZinc compiler produces the resulting FlatZinc 
 
     Turn warnings into errors
 
+.. option::  --warn-non-authoritative-names
+
+    Warn when a library's predicate or function parameter names differ from the
+    canonical names fixed by the standard library's body-less (native)
+    declaration for the same signature.  Off by default; intended for
+    solver-library implementers auditing their libraries (see
+    :ref:`fzn-parameter-names`).
+
 Solution output options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
