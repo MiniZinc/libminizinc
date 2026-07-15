@@ -268,7 +268,11 @@ public:
   /// Warn about `_reif`/`_imp` predicates whose leading parameter names disagree
   /// with the base predicate that has exactly the same leading parameter types.
   /// A call is re-resolved to its reification by matching the base's parameter
-  /// names, so a disagreement means the reification cannot be found by name.
+  /// names, so a disagreement can hide the reification. When the base's family is
+  /// anchored (a body-less builtin) the re-match falls back to a type-only lookup,
+  /// so the disagreement is harmless; those families are only reported when opted
+  /// in via EnvI::warnNonAuthoritativeNames. Non-anchored families are always
+  /// reported.
   void checkReifParameterNames(EnvI& env) const;
   /// Warn about declarations whose parameter names disagree with the body-less
   /// declaration that anchors their overload family (same identifier, same

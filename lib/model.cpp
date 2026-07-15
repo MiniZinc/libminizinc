@@ -2055,6 +2055,16 @@ void Model::checkReifParameterNames(EnvI& env) const {
       if (exactBase == nullptr || nameCompatibleBaseExists) {
         continue;
       }
+      // If the base's family is anchored (a body-less builtin), the reif/imp re-match falls
+      // back to a type-only lookup (see matchReifByNames / isFnAnchored), so a name
+      // disagreement is harmless: the reification is still found by type. Such families are
+      // positional-only this release, so by default we stay silent about them, matching the
+      // opt-in treatment of the authoritative-name check. Only when the implementer opts in
+      // via --warn-non-authoritative-names do we also report these. Non-anchored families are
+      // always reported, because there a name disagreement can genuinely hide the reification.
+      if (!env.warnNonAuthoritativeNames && isFnAnchored(env, exactBase)) {
+        continue;
+      }
       std::ostringstream mism;
       bool any = false;
       for (unsigned int j = 0; j < lead; j++) {
