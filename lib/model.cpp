@@ -329,7 +329,7 @@ namespace {
 // interval(start:, duration:) vs interval(start:, end:)). Anonymous
 // parameters get an empty-string id (lib/parser.yxx ti_expr_and_id_or_anon),
 // so anon-vs-anon compares equal.
-bool sameParameterNames(FunctionI* a, FunctionI* b) {
+bool same_parameter_names(FunctionI* a, FunctionI* b) {
   assert(a->paramCount() == b->paramCount());
   for (unsigned int i = 0; i < a->paramCount(); i++) {
     Id* ai = a->param(i)->id();
@@ -357,7 +357,7 @@ bool exact_redeclaration(FunctionI* a, FunctionI* b) {
       return false;
     }
   }
-  return sameParameterNames(a, b);
+  return same_parameter_names(a, b);
 }
 
 // A parameter can be supplied by name at a call site iff it has a real identifier that
@@ -457,7 +457,7 @@ bool has_name_only_sibling(const std::vector<Model::FnEntry>& v, FunctionI* fi) 
         break;
       }
     }
-    if (sameTypes && !sameParameterNames(fe.fi, fi)) {
+    if (sameTypes && !same_parameter_names(fe.fi, fi)) {
       return true;
     }
   }
@@ -491,7 +491,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
         // they share parameter names with their polymorphic source by
         // construction.
         if (!entry.isPolymorphicVariant && !toAdd.isPolymorphicVariant &&
-            !sameParameterNames(entry.fi, toAdd.fi)) {
+            !same_parameter_names(entry.fi, toAdd.fi)) {
           continue;
         }
         bool more_specific = true;
@@ -666,7 +666,7 @@ bool Model::registerFn(EnvI& env, FunctionI* fi, bool keepSorted, bool throwIfDu
         }
         if (alleq) {
           if ((i.fi->e() != nullptr) && (fi->e() != nullptr) && !i.isPolymorphic) {
-            if (!sameParameterNames(i.fi, fi)) {
+            if (!same_parameter_names(i.fi, fi)) {
               // Identical types but different parameter names: a distinct overload
               // under named-arguments. Fall through to addPolymorphicInstances so
               // this decl is inserted as its own entry rather than treated as a
@@ -1006,7 +1006,7 @@ void Model::checkFnOverloading(EnvI& env) {
             break;
           }
         }
-        if (allEqual && sameParameterNames(cur, cmp)) {
+        if (allEqual && same_parameter_names(cur, cmp)) {
           throw TypeError(env, cur->loc(),
                           "unsupported type of overloading. \nFunction/predicate with equivalent "
                           "signature defined in " +
@@ -1303,7 +1303,7 @@ FunctionI* Model::matchParVersion(EnvI& env, FunctionI* f, const std::vector<Typ
           break;
         }
       }
-      if (sameTypes && !sameParameterNames(fi_par, f)) {
+      if (sameTypes && !same_parameter_names(fi_par, f)) {
         fi_par = f;
       }
     }
@@ -1419,7 +1419,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   Expression* botarg = nullptr;
   for (const auto& i : v) {
     if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
-        i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
+        i.fi->paramCount() == c->decl()->paramCount() && !same_parameter_names(i.fi, c->decl())) {
       // Skip a candidate that is a genuine name-only sibling of the call's
       // resolved decl (identical parameter types, different parameter names):
       // re-resolution by type must not silently switch to it. (Candidates that
@@ -1499,10 +1499,10 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     // is never overridden; if none exists the first match is returned
     // unchanged, leaving genuinely name-disagreeing overloads untouched.
     if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
-        i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
+        i.fi->paramCount() == c->decl()->paramCount() && !same_parameter_names(i.fi, c->decl())) {
       for (const auto& i2 : v) {
         if (i2.fi != i.fi && i2.t == i.t && i2.fi->paramCount() == c->decl()->paramCount() &&
-            sameParameterNames(i2.fi, c->decl())) {
+            same_parameter_names(i2.fi, c->decl())) {
           return i2.fi;
         }
       }
@@ -1516,7 +1516,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       // distinguishable through named arguments, so require them rather
       // than silently picking one.
       for (const auto& i2 : v) {
-        if (i2.fi != i.fi && i2.t == i.t && !sameParameterNames(i2.fi, i.fi)) {
+        if (i2.fi != i.fi && i2.t == i.t && !same_parameter_names(i2.fi, i.fi)) {
           std::ostringstream oss;
           oss << "call to `" << c->id()
               << "' is ambiguous: it matches overloads that differ only in "
@@ -1622,7 +1622,7 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
     return nullptr;
   }
   const std::vector<FnEntry>& v = it->second;
-  const unsigned int k = static_cast<unsigned int>(positional.size());
+  const auto k = static_cast<unsigned int>(positional.size());
   const unsigned int total = k + static_cast<unsigned int>(named.size());
 
   std::vector<FunctionI*> matched;
@@ -1758,7 +1758,7 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
     // fail rather than resolve to whichever sibling comes first. A skipAnchored
     // probe ignores builtin siblings, which cannot be named anyway.
     for (const auto& fe2 : v) {
-      if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
+      if (fe2.fi != fi && fe2.t == fe.t && !same_parameter_names(fe2.fi, fi) &&
           nameCompatible(fe2.fi) && !(skipAnchored && isFnAnchored(env, fe2.fi))) {
         std::ostringstream oss;
         oss << "call to `" << c->id()
