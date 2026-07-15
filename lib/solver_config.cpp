@@ -362,6 +362,8 @@ SolverConfig SolverConfig::load(const string& filename) {
             sc._needsSolns2Out = get_bool(ai);
           } else if (ai->id() == "isGUIApplication") {
             sc._isGUIApplication = get_bool(ai);
+          } else if (ai->id() == "isInteractive") {
+            sc._isInteractive = get_bool(ai);
           } else if (ai->id() == "needsMznExecutable") {
             sc._needsMznExecutable = get_bool(ai);
           } else if (ai->id() == "needsStdlibDir") {
@@ -537,7 +539,8 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   oss << "  \"needsMznExecutable\": " << (needsMznExecutable() ? "true" : "false") << ",\n";
   oss << "  \"needsStdlibDir\": " << (needsStdlibDir() ? "true" : "false") << ",\n";
   oss << "  \"needsPathsFile\": " << (needsPathsFile() ? "true" : "false") << ",\n";
-  oss << "  \"isGUIApplication\": " << (isGUIApplication() ? "true" : "false") << "\n";
+  oss << "  \"isGUIApplication\": " << (isGUIApplication() ? "true" : "false") << ",\n";
+  oss << "  \"isInteractive\": " << (isInteractive() ? "true" : "false") << "\n";
   oss << "}";
 
   return oss.str();

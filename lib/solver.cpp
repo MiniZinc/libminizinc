@@ -844,6 +844,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             if (!sc.needsSolns2Out()) {
               additionalArgs.emplace_back("--fzn-output-passthrough");
             }
+            if (sc.isInteractive()) {
+              additionalArgs.emplace_back("--fzn-interactive");
+            }
             int i = 0;
             for (i = 0; i < additionalArgs.size(); ++i) {
               bool success = _sf->processOption(_siOpt, i, additionalArgs);

@@ -33,6 +33,13 @@ public:
   bool fznNeedsPaths = false;
   bool fznOutputPassthrough = false;
 
+  /// Interactive solver: share the user's terminal stdin with the solver and
+  /// scan its stdout for solution blocks delimited by the markers below, which
+  /// are routed through solns2out; all other output is echoed verbatim.
+  bool interactive = false;
+  std::string interactiveBegin = "%%%mzn-sol-begin";
+  std::string interactiveEnd = "%%%mzn-sol-end";
+
   /// Whether solver accepts input in traditional FlatZinc or JSON
   enum FZNFormat { FF_FZN, FF_JSON };
   FZNFormat fznFormat = FF_FZN;

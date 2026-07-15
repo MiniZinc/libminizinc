@@ -92,6 +92,9 @@ protected:
   int _timelimit;
   bool _sigint;
   int _cleanupTime;
+  /// Interactive solver: share the parent's terminal stdin with the child and
+  /// let it own Ctrl-C, instead of isolating it in a pipe + own process group.
+  bool _interactive;
 #ifdef _WIN32
   static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
@@ -104,6 +107,12 @@ protected:
       default:
         return FALSE;
     }
+  }
+  /// Interactive solver: swallow Ctrl-C so MiniZinc does not tear down the
+  /// session, while the child (which shares the console) still receives and
+  /// handles it itself.
+  static BOOL WINAPI ignoreInterrupt(DWORD fdwCtrlType) {
+    return fdwCtrlType == CTRL_C_EVENT ? TRUE : FALSE;
   }
   static std::mutex _interruptMutex;
   static std::condition_variable _interruptCondition;
@@ -120,13 +129,23 @@ protected:
   static bool hadInterrupt;
 
 public:
-  Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si, int cleanupTime = 1000)
-      : _fzncmd(fzncmd), _pS2Out(pso), _timelimit(tl), _sigint(si), _cleanupTime(cleanupTime) {
+  Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si, int cleanupTime = 1000,
+          bool interactive = false)
+      : _fzncmd(fzncmd),
+        _pS2Out(pso),
+        _timelimit(tl),
+        _sigint(si),
+        _cleanupTime(cleanupTime),
+        _interactive(interactive) {
     assert(nullptr != _pS2Out);
   }
   int run() {
 #ifdef _WIN32
-    SetConsoleCtrlHandler(handleInterrupt, TRUE);
+    // Interactive mode lets the solver own Ctrl-C; MiniZinc only swallows it so
+    // it does not tear down the session.
+    PHANDLER_ROUTINE ctrlHandler =
+        _interactive ? &Process::ignoreInterrupt : &Process::handleInterrupt;
+    SetConsoleCtrlHandler(ctrlHandler, TRUE);
 
     SECURITY_ATTRIBUTES saAttr;
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -174,7 +193,9 @@ public:
     siStartInfo.cb = sizeof(STARTUPINFOW);
     siStartInfo.hStdError = g_hChildStd_ERR_Wr;
     siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
-    siStartInfo.hStdInput = g_hChildStd_IN_Rd;
+    // Interactive: let the child read the real console directly so the user can
+    // type commands; otherwise feed it through the (immediately closed) pipe.
+    siStartInfo.hStdInput = _interactive ? GetStdHandle(STD_INPUT_HANDLE) : g_hChildStd_IN_Rd;
     siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
     std::string cmdline = FileUtils::combine_cmd_line(_fzncmd);
@@ -232,6 +253,12 @@ public:
     thread thrTimeout([&] {
       auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
       std::unique_lock<std::mutex> lck(_interruptMutex);
+      if (_interactive) {
+        // The solver drives its own session and owns Ctrl-C; wait for it to
+        // finish on its own without enforcing a time limit or terminating it.
+        _interruptCondition.wait(lck, [&] { return doneStderr && doneStdout; });
+        return;
+      }
       if (_timelimit != 0) {
         if (!_interruptCondition.wait_for(lck, std::chrono::milliseconds(_timelimit), shouldStop)) {
           // If we timed out, generate an interrupt but ignore it ourselves
@@ -274,7 +301,7 @@ public:
             _interruptCondition.notify_all();
           }
           thrTimeout.join();
-          SetConsoleCtrlHandler(handleInterrupt, FALSE);
+          SetConsoleCtrlHandler(ctrlHandler, FALSE);
           std::rethrow_exception(std::current_exception());
         }
       }
@@ -295,7 +322,7 @@ public:
     }
     CloseHandle(piProcInfo.hProcess);
 
-    SetConsoleCtrlHandler(handleInterrupt, FALSE);
+    SetConsoleCtrlHandler(ctrlHandler, FALSE);
     SetDllDirectoryW(L"");
     if (hadInterrupt) {
       // Re-trigger signal if it was not caused by our own timeout
@@ -314,6 +341,75 @@ public:
       close(pipes[1][1]);
       close(pipes[2][1]);
       close(pipes[0][1]);
+
+      if (_interactive) {
+        // The child shares our terminal stdin and process group, so a terminal
+        // Ctrl-C is delivered to it directly. Ignore SIGINT here so the solver
+        // (not MiniZinc) owns the interrupt; then just pump the solver's stdout
+        // through the marker filter and its stderr to the log until it exits.
+        struct sigaction sa_ign;
+        struct sigaction old_sa_int;
+        sa_ign.sa_handler = SIG_IGN;
+        sa_ign.sa_flags = 0;
+        sigemptyset(&sa_ign.sa_mask);
+        sigaction(SIGINT, &sa_ign, &old_sa_int);
+
+        bool done = false;
+        bool watchErr = true;  // stop watching stderr once it closes, to avoid a busy-wait
+        while (!done) {
+          fd_set ifdset;
+          FD_ZERO(&ifdset);  // NOLINT(readability-isolate-declaration)
+          FD_SET(pipes[1][0], &ifdset);
+          if (watchErr) {
+            FD_SET(pipes[2][0], &ifdset);
+          }
+          int sel = select(FD_SETSIZE, &ifdset, nullptr, nullptr, nullptr);
+          if (sel == -1) {
+            if (errno == EINTR) {
+              continue;
+            }
+            sigaction(SIGINT, &old_sa_int, nullptr);
+            throw Error(std::string("Error in communication with solver: ") + strerror(errno));
+          }
+          if (FD_ISSET(pipes[1][0], &ifdset)) {
+            char buffer[1000];
+            ssize_t count = read(pipes[1][0], buffer, sizeof(buffer) - 1);
+            if (count > 0) {
+              buffer[count] = 0;
+              try {
+                _pS2Out->feedRawDataChunk(buffer);
+              } catch (...) {
+                kill(childPID, SIGKILL);
+                sigaction(SIGINT, &old_sa_int, nullptr);
+                throw;
+              }
+            } else {
+              _pS2Out->feedRawDataChunk("\n");  // flush any unterminated last line
+              done = true;
+            }
+          }
+          if (watchErr && FD_ISSET(pipes[2][0], &ifdset)) {
+            char buffer[1000];
+            ssize_t count = read(pipes[2][0], buffer, sizeof(buffer) - 1);
+            if (count > 0) {
+              buffer[count] = 0;
+              _pS2Out->getLog() << buffer << std::flush;
+            } else {
+              watchErr = false;
+            }
+          }
+        }
+
+        close(pipes[1][0]);
+        close(pipes[2][0]);
+        int exitStatus = 1;
+        int childStatus;
+        if (waitpid(childPID, &childStatus, 0) > 0 && WIFEXITED(childStatus)) {
+          exitStatus = WEXITSTATUS(childStatus);
+        }
+        sigaction(SIGINT, &old_sa_int, nullptr);
+        return exitStatus;
+      }
 
       fd_set fdset;
       FD_ZERO(&fdset);  // NOLINT(readability-isolate-declaration)
@@ -474,13 +570,23 @@ public:
       }
       return exitStatus;
     }
-    if (setpgid(0, 0) == -1) {
-      throw Error("Failed to set pgid of subprocess");
+    if (!_interactive) {
+      // Isolate the child in its own process group so the parent can signal the
+      // whole group on time-out. In interactive mode the child must stay in the
+      // terminal's foreground group, otherwise reading the tty raises SIGTTIN.
+      if (setpgid(0, 0) == -1) {
+        throw Error("Failed to set pgid of subprocess");
+      }
     }
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-    close(STDIN_FILENO);
-    dup2(pipes[0][0], STDIN_FILENO);
+    if (!_interactive) {
+      // Batch mode: the child's stdin is the (already write-closed) pipe, so it
+      // sees EOF. Interactive mode leaves STDIN_FILENO inherited from the parent
+      // so the solver reads the user's terminal directly.
+      close(STDIN_FILENO);
+      dup2(pipes[0][0], STDIN_FILENO);
+    }
     dup2(pipes[1][1], STDOUT_FILENO);
     dup2(pipes[2][1], STDERR_FILENO);
     close(pipes[0][0]);

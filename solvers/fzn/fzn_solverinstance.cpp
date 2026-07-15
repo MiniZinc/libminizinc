@@ -67,6 +67,10 @@ void FZNSolverFactory::printHelp(ostream& os) {
      << "  --cleanup-time-limit <ms>\n"
         "     Set grace period for solver cleanup before forced termination (default 1000)\n"
      << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
+     << "  --fzn-interactive\n     Run the backend as an interactive solver: pass the user's "
+        "terminal stdin\n     through to it and echo its stdout verbatim, except for solution "
+        "blocks bracketed\n     by `%%%mzn-sol-begin` / `%%%mzn-sol-end`, which are processed "
+        "normally.\n"
      << "  -n <n>, --num-solutions <n>\n"
      << "    An upper bound on the number of solutions to output for satisfaction problems. The "
         "default should be 1.\n"
@@ -127,6 +131,8 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.fznNeedsPaths = true;
   } else if (cop.getOption("--fzn-output-passthrough")) {
     _opt.fznOutputPassthrough = true;
+  } else if (cop.getOption("--fzn-interactive")) {
+    _opt.interactive = true;
   } else if (cop.getOption("--fzn-flag --flatzinc-flag --backend-flag", &buffer)) {
     _opt.fznFlags.push_back(buffer);
   } else if (_opt.supportsN && cop.getOption("-n --num-solutions", &nn)) {
@@ -344,6 +350,20 @@ SolverInstance::Status FZNSolverInstance::solve() {
     cmd_line.push_back(pathsFile->name());
   }
 
+  if (opt.interactive) {
+    // Share the user's terminal stdin with the solver; scan its stdout for
+    // marker-delimited solution blocks (routed through solns2out) and echo
+    // everything else verbatim.
+    Solns2OutInteractive wrapper(*getSolns2Out(), opt.interactiveBegin, opt.interactiveEnd);
+    Process<Solns2OutInteractive> proc(cmd_line, &wrapper, timelimit, sigint, cleanupTime,
+                                       /* interactive = */ true);
+    int exitStatus = proc.run();
+    // The solver drives its own interactive session, so there is no overall
+    // search status to report: suppress the trailing =====UNKNOWN=====/status
+    // line the driver would otherwise print when the session ends.
+    getSolns2Out()->fStatusPrinted = true;
+    return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
+  }
   if (!opt.fznOutputPassthrough) {
     Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint, cleanupTime);
     int exitStatus = proc.run();

@@ -754,6 +754,79 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
   return true;
 }
 
+namespace {
+/// True if \a s could still grow into \a marker (i.e. it is a prefix of, or
+/// equal to, the marker). Used to decide whether an incomplete line must be
+/// held back because it might turn out to be a marker.
+bool is_marker_prefix(const std::string& s, const std::string& marker) {
+  return s.size() <= marker.size() && marker.compare(0, s.size(), s) == 0;
+}
+}  // namespace
+
+bool Solns2OutInteractive::processCompleteLine(const std::string& line) {
+  // Anything before _echoed is a prompt prefix already shown to the user (a
+  // prompt has no trailing newline, so the marker that follows it ends up glued
+  // onto the same line in the solver's output stream). Only the not-yet-echoed
+  // remainder is eligible to be a marker, or fresh verbatim/solution text.
+  std::string rest = line.substr(_echoed);
+  std::string marker = rest;
+  if (!marker.empty() && '\r' == marker.back()) {
+    marker.pop_back();  // tolerate CRLF when matching markers
+  }
+  if (!_inSolution) {
+    if (marker == _beginMarker) {
+      _inSolution = true;  // consume the marker (any prompt prefix stays shown)
+      return true;
+    }
+    // Verbatim solver chatter: echo whatever has not been echoed yet.
+    _inner.getOutput() << rest << '\n';
+    _inner.getOutput().flush();
+    return true;
+  }
+  if (marker == _endMarker) {
+    _inSolution = false;  // consume the marker, back to verbatim mode
+    return true;
+  }
+  // FlatZinc solution text: hand it to the real output processor.
+  std::string forwarded = rest + '\n';
+  return _inner.feedRawDataChunk(forwarded.c_str());
+}
+
+bool Solns2OutInteractive::feedRawDataChunk(const char* data) {
+  // Split the (arbitrarily chunked) raw stream into whole lines, mirroring the
+  // partial-line handling in Solns2Out::feedRawDataChunk. Marker detection is
+  // line-based, but to keep an interactive prompt (text with no trailing
+  // newline) in sync we echo the incomplete trailing line eagerly, holding it
+  // back only while it could still become the begin marker.
+  std::istringstream solstream(data);
+  bool ret = true;
+  while (solstream.good()) {
+    std::string line;
+    std::getline(solstream, line);
+    line = _linePart + line;  // prepend any carried-over partial line
+    if (solstream.eof()) {    // incomplete line: carry it over to the next chunk
+      _linePart = line;
+      if (!_inSolution) {
+        std::string remainder = _linePart.substr(_echoed);
+        if (!remainder.empty() && !is_marker_prefix(remainder, _beginMarker)) {
+          // The remainder cannot (yet) be the begin marker: flush it now so a
+          // prompt without a trailing newline appears immediately.
+          _inner.getOutput() << remainder << std::flush;
+          _echoed = _linePart.size();
+        }
+      }
+      break;
+    }
+    // `line` is now a complete line (without its terminating '\n').
+    if (!processCompleteLine(line)) {
+      ret = false;
+    }
+    _linePart.clear();
+    _echoed = 0;
+  }
+  return ret;
+}
+
 std::vector<std::string> Solns2Out::resolveAssumptionCore(const std::string& payload) const {
   std::vector<std::string> result;
   // Trim and strip a surrounding pair of square brackets.

@@ -208,4 +208,34 @@ public:
   std::ostream& getLog() { return _errLog; }
 };
 
+/// Marker-filtering wrapper around a Solns2Out, for interactive solvers.
+///
+/// An interactive solver shares the user's terminal and replies in its own
+/// vocabulary. When it wants to report a solution it brackets it with marker
+/// lines (\a beginMarker ... \a endMarker). This wrapper scans the solver's raw
+/// stdout: lines between the markers are forwarded to the wrapped Solns2Out as
+/// FlatZinc solution text (so they pass through the normal output/.ozn
+/// processing), the marker lines themselves are consumed, and everything else
+/// is echoed verbatim to the wrapped output stream. It satisfies the same
+/// concept Process<S2O> expects (feedRawDataChunk + getLog).
+class Solns2OutInteractive {
+private:
+  Solns2Out& _inner;
+  std::string _beginMarker;
+  std::string _endMarker;
+  std::string _linePart;               // unfinished line carried over from the previous chunk
+  std::string::size_type _echoed = 0;  // chars of _linePart already echoed verbatim
+  bool _inSolution = false;            // currently between a begin and end marker
+
+  /// Handle one complete line (without its trailing newline): consume markers,
+  /// forward solution text, or echo verbatim. Returns false to stop.
+  bool processCompleteLine(const std::string& line);
+
+public:
+  Solns2OutInteractive(Solns2Out& inner, std::string beginMarker, std::string endMarker)
+      : _inner(inner), _beginMarker(std::move(beginMarker)), _endMarker(std::move(endMarker)) {}
+  bool feedRawDataChunk(const char* data);
+  std::ostream& getLog() { return _inner.getLog(); }
+};
+
 }  // namespace MiniZinc

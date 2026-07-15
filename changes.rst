@@ -38,6 +38,9 @@ Changes:
    ``blackbox_bounds`` constraint. Supporting solvers invoke the external code
    during search to propagate values or bounds; solvers without support abort
    with a clear message.
+-  Add support for interactive FlatZinc solvers. These can read commands
+   from standard input while running, and output both solutions and
+   messages.
 
 Language changes:
 ^^^^^^^^^^^^^^^^^

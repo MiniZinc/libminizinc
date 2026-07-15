@@ -78,6 +78,8 @@ protected:
   bool _needsSolns2Out = true;
   /// Whether solver is a GUI application
   bool _isGUIApplication = false;
+  /// Whether solver runs an interactive command-line session (shares the user's terminal)
+  bool _isInteractive = false;
   /// Whether solver needs path to minizinc executable (passed as --minizinc-exe)
   bool _needsMznExecutable = false;
   /// Whether solver needs path to MiniZinc standard library (passed as --stdlib-dir)
@@ -169,6 +171,11 @@ public:
   bool isGUIApplication() const { return _isGUIApplication; }
   /// Set whether solver is a GUI application
   void isGUIApplication(bool b) { _isGUIApplication = b; }
+
+  /// Whether solver runs an interactive command-line session
+  bool isInteractive() const { return _isInteractive; }
+  /// Set whether solver runs an interactive command-line session
+  void isInteractive(bool b) { _isInteractive = b; }
 
   /// Whether solver needs path to minizinc executable (passed as --minizinc-exe)
   bool needsMznExecutable() const { return _needsMznExecutable; }
