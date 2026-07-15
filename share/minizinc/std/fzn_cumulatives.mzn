@@ -1,14 +1,14 @@
 include "fzn_cumulatives_decomp.mzn";
 
-% min_m is the first machine (which is the minimum, of the index set of b).
-% For native implementations, you can subtract (min_m - 1) from the m array
+% min_machine is the first machine (which is the minimum, of the index set of bounds).
+% For native implementations, you can subtract (min_machine - 1) from the machines array
 % values to obtain 1-based machine numbers.
 predicate fzn_cumulatives(
-  array [int] of var int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
-  array [int] of var int: m,
-  array [int] of var int: b,
-  bool: upper,
-  int: min_m,
-) = fzn_cumulatives_decomp(s, d, r, m, b, upper);
+  array [int] of var int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  array [int] of var int: machines,
+  array [int] of var int: bounds,
+  bool: is_upper_bound,
+  int: min_machine,
+) = fzn_cumulatives_decomp(starts, durations, resources, machines, bounds, is_upper_bound);

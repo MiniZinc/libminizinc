@@ -1,14 +1,14 @@
 include "cumulatives.mzn";
 
 predicate fzn_cumulatives_opt(
-  array [int] of var opt int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
-  array [int] of var int: m,
-  array [int] of var int: b,
-  bool: upper,
-  int: min_m,
-) = cumulatives(
-    [si default 0 | si in s],
-    [if occurs(s[i]) then d[i] else 0 endif | i in index_set(s)],
-    r, m, b, upper);
+  array [int] of var opt int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  array [int] of var int: machines,
+  array [int] of var int: bounds,
+  bool: is_upper_bound,
+  int: min_machine,
+) = cumulatives_helper(
+    [si default 0 | si in starts],
+    [if occurs(starts[i]) then durations[i] else 0 endif | i in index_set(starts)],
+    resources, machines, bounds, is_upper_bound);

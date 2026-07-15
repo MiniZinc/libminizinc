@@ -13,6 +13,11 @@ expected: !Result
     makespan: 11
 ***/
 
+% Backwards-compatibility test: the deprecated positional 6-argument form of
+% cumulatives (with the trailing Boolean flag) must still solve to the same
+% result as the named upper_bounds/lower_bounds overloads. It emits a
+% deprecation warning, which does not affect the expected solution.
+
 include "cumulatives.mzn";
 
 set of int: TIME = 1..20;
@@ -63,9 +68,9 @@ constraint cumulatives(
   duration,
   resource,
   machine,
-  upper_bounds: bound
+  bound,
+  true
 );
 
 var int: makespan :: output = max (t in TASK) (start[t] + duration[t]);
 solve minimize makespan;
-

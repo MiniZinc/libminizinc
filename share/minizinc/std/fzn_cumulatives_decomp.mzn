@@ -1,27 +1,50 @@
 % Decomposition provided by Mats Carlsson
 predicate fzn_cumulatives_decomp(
-  array [int] of var int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
-  array [int] of var int: m,
-  array [int] of var int: b,
-  bool: upper,
+  array [int] of var int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  array [int] of var int: machines,
+  array [int] of var int: bounds,
+  bool: is_upper_bound,
 ) =
   let {
-    set of int: Tasks = index_set(s);
+    set of int: Tasks = index_set(starts);
   } in forall (j in Tasks) (
     let {
-      var bool: cov1 = exists (i in Tasks) (fzn_cumulatives_task_at(s[i], d[i], m[i], s[j], m[j]));
+      var bool: cov1 =
+        exists (i in Tasks) (
+          fzn_cumulatives_task_at(starts[i], durations[i], machines[i], starts[j], machines[j])
+        );
       var bool: cov2 =
-        exists (i in Tasks) (fzn_cumulatives_task_at(s[i], d[i], m[i], s[j] + d[j], m[j]));
+        exists (i in Tasks) (
+          fzn_cumulatives_task_at(
+            starts[i],
+            durations[i],
+            machines[i],
+            starts[j] + durations[j],
+            machines[j],
+          )
+        );
       var int: load1 =
-        sum (i in Tasks) (r[i] * fzn_cumulatives_task_at(s[i], d[i], m[i], s[j], m[j]));
+        sum (i in Tasks) (
+          resources[i] *
+            fzn_cumulatives_task_at(starts[i], durations[i], machines[i], starts[j], machines[j])
+        );
       var int: load2 =
-        sum (i in Tasks) (r[i] * fzn_cumulatives_task_at(s[i], d[i], m[i], s[j] + d[j], m[j]));
-    } in (upper /\ cov1 -> load1 <= b[m[j]]) /\
-      (upper /\ cov2 -> load2 <= b[m[j]]) /\
-      (not upper /\ cov1 -> load1 >= b[m[j]]) /\
-      (not upper /\ cov2 -> load2 >= b[m[j]])
+        sum (i in Tasks) (
+          resources[i] *
+            fzn_cumulatives_task_at(
+              starts[i],
+              durations[i],
+              machines[i],
+              starts[j] + durations[j],
+              machines[j],
+            )
+        );
+    } in (is_upper_bound /\ cov1 -> load1 <= bounds[machines[j]]) /\
+      (is_upper_bound /\ cov2 -> load2 <= bounds[machines[j]]) /\
+      (not is_upper_bound /\ cov1 -> load1 >= bounds[machines[j]]) /\
+      (not is_upper_bound /\ cov2 -> load2 >= bounds[machines[j]])
   );
 
 predicate fzn_cumulatives_task_at(
