@@ -1488,47 +1488,45 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   }
   if (best != nullptr) {
     const auto& i = *best;
-        // Tie-break by parameter name among identically-typed candidates: if
-        // the first (most concrete) match has different parameter names than
-        // the call's resolved decl, prefer an equally-typed sibling whose
-        // names match decl. These are name-only overloads and their
-        // auto-generated par/present copies (e.g. two par copies, both
-        // `(par int)`, differing only in a parameter name); the bucket-order
-        // first match could otherwise run the wrong sibling's body. The
-        // alternative must have identical registered types, so concreteness
-        // is never overridden; if none exists the first match is returned
-        // unchanged, leaving genuinely name-disagreeing overloads untouched.
-        if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
-            i.fi->paramCount() == c->decl()->paramCount() &&
-            !sameParameterNames(i.fi, c->decl())) {
-          for (const auto& i2 : v) {
-            if (i2.fi != i.fi && i2.t == i.t &&
-                i2.fi->paramCount() == c->decl()->paramCount() &&
-                sameParameterNames(i2.fi, c->decl())) {
-              return i2.fi;
-            }
-          }
+    // Tie-break by parameter name among identically-typed candidates: if
+    // the first (most concrete) match has different parameter names than
+    // the call's resolved decl, prefer an equally-typed sibling whose
+    // names match decl. These are name-only overloads and their
+    // auto-generated par/present copies (e.g. two par copies, both
+    // `(par int)`, differing only in a parameter name); the bucket-order
+    // first match could otherwise run the wrong sibling's body. The
+    // alternative must have identical registered types, so concreteness
+    // is never overridden; if none exists the first match is returned
+    // unchanged, leaving genuinely name-disagreeing overloads untouched.
+    if (!anchored && c->decl() != nullptr && i.fi != c->decl() &&
+        i.fi->paramCount() == c->decl()->paramCount() && !sameParameterNames(i.fi, c->decl())) {
+      for (const auto& i2 : v) {
+        if (i2.fi != i.fi && i2.t == i.t && i2.fi->paramCount() == c->decl()->paramCount() &&
+            sameParameterNames(i2.fi, c->decl())) {
+          return i2.fi;
         }
-        if (throwIfNotFound && c->decl() == nullptr) {
-          // Fresh resolution of a positional call that did not name enough
-          // arguments to be unambiguous: if another overload has identical
-          // parameter types but different parameter names (a name-only
-          // sibling), the call could run either body and the choice would
-          // depend on registration order. Such overloads are only
-          // distinguishable through named arguments, so require them rather
-          // than silently picking one.
-          for (const auto& i2 : v) {
-            if (i2.fi != i.fi && i2.t == i.t && !sameParameterNames(i2.fi, i.fi)) {
-              std::ostringstream oss;
-              oss << "call to `" << c->id()
-                  << "' is ambiguous: it matches overloads that differ only in "
-                     "parameter names (defined in "
-                  << i.fi->loc().toString() << " and " << i2.fi->loc().toString()
-                  << "). Use named arguments to select one.";
-              throw TypeError(env, Expression::loc(c), oss.str());
-            }
-          }
+      }
+    }
+    if (throwIfNotFound && c->decl() == nullptr) {
+      // Fresh resolution of a positional call that did not name enough
+      // arguments to be unambiguous: if another overload has identical
+      // parameter types but different parameter names (a name-only
+      // sibling), the call could run either body and the choice would
+      // depend on registration order. Such overloads are only
+      // distinguishable through named arguments, so require them rather
+      // than silently picking one.
+      for (const auto& i2 : v) {
+        if (i2.fi != i.fi && i2.t == i.t && !sameParameterNames(i2.fi, i.fi)) {
+          std::ostringstream oss;
+          oss << "call to `" << c->id()
+              << "' is ambiguous: it matches overloads that differ only in "
+                 "parameter names (defined in "
+              << i.fi->loc().toString() << " and " << i2.fi->loc().toString()
+              << "). Use named arguments to select one.";
+          throw TypeError(env, Expression::loc(c), oss.str());
         }
+      }
+    }
     return i.fi;
   }
   if (matched.empty()) {
@@ -1748,29 +1746,29 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
   if (best != nullptr) {
     FunctionI* fi = best->fi;
     const auto& fe = *best;
-      // An ambiguous named call is always a hard error, independent of
-      // throwIfNotFound: if another candidate has identical parameter types but
-      // different names (a name-only sibling) and is equally name-compatible
-      // with this call, the choice between them depends only on registration
-      // order. Require enough named arguments to disambiguate instead of
-      // silently picking one. (Identical types make the subtype check above
-      // redundant for the sibling, so only its name-compatibility needs
-      // re-checking.) This must not be gated by throwIfNotFound: the front-end
-      // gate probes with throwIfNotFound=false, and an ambiguous call must still
-      // fail rather than resolve to whichever sibling comes first. A skipAnchored
-      // probe ignores builtin siblings, which cannot be named anyway.
-      for (const auto& fe2 : v) {
-        if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
-            nameCompatible(fe2.fi) && !(skipAnchored && isFnAnchored(env, fe2.fi))) {
-          std::ostringstream oss;
-          oss << "call to `" << c->id()
-              << "' is ambiguous: it matches overloads that differ only in "
-                 "parameter names (defined in "
-              << fi->loc().toString() << " and " << fe2.fi->loc().toString()
-              << "). Name more arguments to select one.";
-          throw TypeError(env, Expression::loc(c), oss.str());
-        }
+    // An ambiguous named call is always a hard error, independent of
+    // throwIfNotFound: if another candidate has identical parameter types but
+    // different names (a name-only sibling) and is equally name-compatible
+    // with this call, the choice between them depends only on registration
+    // order. Require enough named arguments to disambiguate instead of
+    // silently picking one. (Identical types make the subtype check above
+    // redundant for the sibling, so only its name-compatibility needs
+    // re-checking.) This must not be gated by throwIfNotFound: the front-end
+    // gate probes with throwIfNotFound=false, and an ambiguous call must still
+    // fail rather than resolve to whichever sibling comes first. A skipAnchored
+    // probe ignores builtin siblings, which cannot be named anyway.
+    for (const auto& fe2 : v) {
+      if (fe2.fi != fi && fe2.t == fe.t && !sameParameterNames(fe2.fi, fi) &&
+          nameCompatible(fe2.fi) && !(skipAnchored && isFnAnchored(env, fe2.fi))) {
+        std::ostringstream oss;
+        oss << "call to `" << c->id()
+            << "' is ambiguous: it matches overloads that differ only in "
+               "parameter names (defined in "
+            << fi->loc().toString() << " and " << fe2.fi->loc().toString()
+            << "). Name more arguments to select one.";
+        throw TypeError(env, Expression::loc(c), oss.str());
       }
+    }
     return fi;
   }
   if (matched.empty()) {

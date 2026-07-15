@@ -637,14 +637,14 @@ public:
       const bool callIsImp = call->id().endsWith("_imp");
       std::vector<Type> concrete_types = lookup.argTypes;
       // The call's own role is authoritative; sibling roles are resolved by name.
-      auto* nonReif = callIsReif || callIsImp ? matchRole(lookup.baseName, concrete_types)
-                                              : call->decl();
+      auto* nonReif =
+          callIsReif || callIsImp ? matchRole(lookup.baseName, concrete_types) : call->decl();
       // Push additional var bool for reified versions
       concrete_types.push_back(Type::varbool());
-      auto* reified = callIsReif ? call->decl()
-                                 : matchRole(_env.reifyId(lookup.baseName), concrete_types);
-      auto* halfReif = callIsImp ? call->decl()
-                                 : matchRole(EnvI::halfReifyId(lookup.baseName), concrete_types);
+      auto* reified =
+          callIsReif ? call->decl() : matchRole(_env.reifyId(lookup.baseName), concrete_types);
+      auto* halfReif =
+          callIsImp ? call->decl() : matchRole(EnvI::halfReifyId(lookup.baseName), concrete_types);
       assert(call->decl() == nonReif || call->decl() == reified || call->decl() == halfReif);
       std::vector<std::pair<FunctionI*, std::vector<Type>>> matches(
           {{nonReif, lookup.argTypes}, {reified, concrete_types}, {halfReif, concrete_types}});

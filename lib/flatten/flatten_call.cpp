@@ -1149,9 +1149,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
         argtypes.push_back(Type::varbool());
         GCLock lock;
-        FunctionI* reif_decl =
-            env.model->matchReifByNames(env, c, env.fopts.enableHalfReification && ctx.b == C_POS,
-                                        false);
+        FunctionI* reif_decl = env.model->matchReifByNames(
+            env, c, env.fopts.enableHalfReification && ctx.b == C_POS, false);
         if (reif_decl == nullptr) {
           reif_decl = env.model->matchReification(
               env, cid, argtypes, env.fopts.enableHalfReification && ctx.b == C_POS, false);

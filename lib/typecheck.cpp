@@ -3050,16 +3050,15 @@ public:
           ASTString name = vd->id()->v();
           if (!namedSeen.insert(name).second) {
             std::ostringstream ss;
-            ss << "named argument `" << name << ":` given more than once in call to `"
-               << call->id() << "`";
+            ss << "named argument `" << name << ":` given more than once in call to `" << call->id()
+               << "`";
             throw TypeError(_env, Expression::loc(call), ss.str());
           }
           named.emplace_back(name, vd->e());
         } else {
           if (sawNamed) {
             std::ostringstream ss;
-            ss << "positional argument after named argument in call to `"
-               << call->id() << "`";
+            ss << "positional argument after named argument in call to `" << call->id() << "`";
             throw TypeError(_env, Expression::loc(call), ss.str());
           }
           positional.push_back(a);
@@ -3071,8 +3070,7 @@ public:
         // overload families are anchored by a body-less declaration. Resolve
         // among the non-anchored overloads first: a user's own overload of a
         // builtin name, or a bodied global, still works by name.
-        const unsigned int total =
-            static_cast<unsigned int>(positional.size() + named.size());
+        const auto total = static_cast<unsigned int>(positional.size() + named.size());
         fi = _model->matchFnNamed(_env, call, positional, named, true, false, true);
         if (fi == nullptr) {
           // Nothing non-anchored matched. If a builtin overload of matching
@@ -3090,7 +3088,7 @@ public:
           fi = _model->matchFnNamed(_env, call, positional, named, true, true, false);
         }
         assert(fi != nullptr);
-        const unsigned int k = static_cast<unsigned int>(positional.size());
+        const auto k = static_cast<unsigned int>(positional.size());
         std::vector<Expression*> newArgs(fi->paramCount());
         for (unsigned int i = 0; i < k; i++) {
           newArgs[i] = positional[i];

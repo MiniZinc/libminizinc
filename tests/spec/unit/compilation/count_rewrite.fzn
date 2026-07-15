@@ -1,4 +1,4 @@
-predicate fzn_count_eq(array [int] of var int: x,var int: y,var int: c);
+predicate fzn_count_eq(array [int] of var int: xs,var int: value,var int: n);
 array [1..2] of int: X_INTRODUCED_4_ = [-1,1];
 var 1..10: X_INTRODUCED_0_;
 var 1..10: X_INTRODUCED_1_;
