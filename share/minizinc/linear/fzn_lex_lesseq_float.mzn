@@ -3,12 +3,12 @@
 % array 'y'.  Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate fzn_lex_lesseq_float(array [int] of var float: x, array [int] of var float: y) =
+predicate fzn_lex_lesseq_float(array [int] of var float: xs, array [int] of var float: ys) =
   assert(
-    length(x) == length(y), %% SCIP cannot
-    "lex_lesseq_float(\(x), \(y)): arrays of different lengths",
+    length(xs) == length(ys), %% SCIP cannot
+    "lex_lesseq_float(\(xs), \(ys)): arrays of different lengths",
   ) /\
-    fzn_lex_lesseq_float__MIP(x, y);
+    fzn_lex_lesseq_float__MIP(xs, ys);
 
 predicate fzn_lex_lesseq_float__MIP(array [int] of var float: x, array [int] of var float: y) =
   if length(x) = 0 then

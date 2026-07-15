@@ -7,10 +7,11 @@
 % See also the equality encoding of the 'element' constraint.
 %-----------------------------------------------------------------------------%
 
-predicate fzn_table_int(array [int] of var int: x, array [int, int] of int: t) =
+predicate fzn_table_int(array [int] of var int: xs, array [int, int] of int: tuples) =
   let {
-    set of int: it = index_set_1of2(t);
+    set of int: it = index_set_1of2(tuples);
     array [it] of var 0..1: lmda;
-  } in sum(lmda) = 1 /\ forall (j in index_set(x)) (sum (i in it) (t[i, j] * lmda[i]) = x[j]);
+  } in sum(lmda) = 1 /\
+    forall (j in index_set(xs)) (sum (i in it) (tuples[i, j] * lmda[i]) = xs[j]);
 
 %-----------------------------------------------------------------------------%

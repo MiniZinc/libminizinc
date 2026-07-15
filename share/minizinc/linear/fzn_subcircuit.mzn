@@ -1,21 +1,21 @@
 include "alldifferent.mzn";
 
 %% Linear version
-predicate fzn_subcircuit(array [int] of var int: x) =
-  if length(x) = 0 then
+predicate fzn_subcircuit(array [int] of var int: xs) =
+  if length(xs) = 0 then
     true
   else
     let {
-      set of int: S = index_set(x);
+      set of int: S = index_set(xs);
       int: l = min(S);
       int: u = max(S);
       int: n = card(S);
       array [S] of var 1..n: order;
-      array [S] of var bool: ins = array1d(S, [x[i] != i | i in S]);
+      array [S] of var bool: ins = array1d(S, [xs[i] != i | i in S]);
       var l..u + 1: firstin = min([u + 1 + bool2int(ins[i]) * (i - u - 1) | i in S]); %% ...
       var S: lastin;
       var bool: empty = (firstin == u + 1);
-    } in alldifferent(x) /\
+    } in alldifferent(xs) /\
       (
         % NO   alldifferent(order) /\
         % If the subcircuit is empty then each node points at itself.
@@ -36,7 +36,7 @@ predicate fzn_subcircuit(array [int] of var int: x) =
             % The lastin node is greater than firstin.
             lastin > firstin /\
             % The lastin node points at firstin.
-            x[lastin] = firstin /\
+            xs[lastin] = firstin /\
             % And both are in
             ins[lastin] /\
             ins[firstin] /\
@@ -47,7 +47,7 @@ predicate fzn_subcircuit(array [int] of var int: x) =
             %       ) /\
             %%% MTZ model. Note that INTEGER order vars seem better!:
             forall (i, j in S where i != j) (
-              order[i] - order[j] + n * bool2int(x[i] == j /\ i != lastin) <=
+              order[i] - order[j] + n * bool2int(xs[i] == j /\ i != lastin) <=
                 %  + (n-2)*bool2int(x[j]==i)     %% the Desrochers & Laporte '91 term
                 n - 1
             ) /\

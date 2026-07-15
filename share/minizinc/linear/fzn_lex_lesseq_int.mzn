@@ -7,24 +7,24 @@ opt bool: UseCPLexLesseq; %% When not UseOrbisack, use CP decomposition
 opt bool: OrbisackAlwaysModelConstraint; %% Use with SCIP 7.0.2
 
 predicate fzn_lex_lesseq_int(
-  array [int] of var int: x :: promise_ctx_antitone,
-  array [int] of var int: y :: promise_ctx_monotone,
+  array [int] of var int: xs :: promise_ctx_antitone,
+  array [int] of var int: ys :: promise_ctx_monotone,
 ) =
   assert(
-    length(x) == length(y), %% SCIP cannot
-    "lex_lesseq_int(\(x), \(y)): arrays of different lengths",
+    length(xs) == length(ys), %% SCIP cannot
+    "lex_lesseq_int(\(xs), \(ys)): arrays of different lengths",
   ) /\
-    if MZN__Orbisack /\ dom_array(x) subset 0..1 /\ dom_array(y) subset 0..1 then
+    if MZN__Orbisack /\ dom_array(xs) subset 0..1 /\ dom_array(ys) subset 0..1 then
       fzn_lex_lesseq__orbisack(
-        x,
-        y,
+        xs,
+        ys,
         (occurs(OrbisackAlwaysModelConstraint) /\ deopt(OrbisackAlwaysModelConstraint)) \/
           not mzn_in_symmetry_breaking_constraint(),
       )
     elseif occurs(UseCPLexLesseq) /\ deopt(UseCPLexLesseq) then
-      lex_lesseq_std_decomposition(x, y)
+      lex_lesseq_std_decomposition(xs, ys)
     else
-      fzn_lex_lesseq_int__MIP(x, y)
+      fzn_lex_lesseq_int__MIP(xs, ys)
     endif;
 
 predicate fzn_lex_lesseq_int__MIP(

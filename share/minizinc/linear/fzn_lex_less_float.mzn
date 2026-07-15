@@ -3,9 +3,9 @@
 % array 'y'.  Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate fzn_lex_less_float(array [int] of var float: x, array [int] of var float: y) =
-  assert(length(x) == length(y), "lex_less_float(\(x), \(y)): arrays of different lengths") /\
-    fzn_lex_less_float__MIP(x, y);
+predicate fzn_lex_less_float(array [int] of var float: xs, array [int] of var float: ys) =
+  assert(length(xs) == length(ys), "lex_less_float(\(xs), \(ys)): arrays of different lengths") /\
+    fzn_lex_less_float__MIP(xs, ys);
 
 predicate fzn_lex_less_float__MIP(array [int] of var float: x, array [int] of var float: y) =
   if length(y) = 0 then

@@ -1,17 +1,17 @@
 include "lex_lesseq.mzn";
 include "fzn_lex_chain_lesseq_orbitope.mzn";
 
-predicate fzn_lex_chain_lesseq_int(array [int, int] of var int: a) =
-  if MZN__Orbitope /\ dom_array(a) subset 0..1 then
+predicate fzn_lex_chain_lesseq_int(array [int, int] of var int: xs) =
+  if MZN__Orbitope /\ dom_array(xs) subset 0..1 then
     fzn_lex_chain_lesseq__orbitope(
-      array1d(a),
-      card(index_set_1of2(a)),
+      array1d(xs),
+      card(index_set_1of2(xs)),
       0,
       true,
       not mzn_in_symmetry_breaking_constraint(),
     )
   else
-    fzn_lex_chain_lesseq_int__CP(a)
+    fzn_lex_chain_lesseq_int__CP(xs)
   endif;
 
 predicate fzn_lex_chain_lesseq_int__CP(array [int, int] of var int: a) =

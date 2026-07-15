@@ -10,26 +10,29 @@
 */
 
 predicate fzn_cumulative(
-  array [int] of var int: s,
-  array [int] of var int: d,
-  array [int] of var int: r,
-  var int: b :: promise_ctx_monotone,
+  array [int] of var int: starts,
+  array [int] of var int: durations,
+  array [int] of var int: resources,
+  var int: capacity :: promise_ctx_monotone,
 ) =
   if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
     true
   else
     let {
-      set of int: tasks = {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0};
-      set of int: times = dom_array([s[i] | i in tasks]);
+      set of int: tasks = {
+        i | i in index_set(starts) where ub(resources[i]) > 0 /\ ub(durations[i]) > 0,
+      };
+      set of int: times = dom_array([starts[i] | i in tasks]);
     } in if 0 == card(tasks) then
       /*true*/
-      0 == card(index_set(s)) \/ b >= 0
-    elseif MZN__Cumulative_Fixed_d_r /\ is_fixed(d) /\ is_fixed(r) /\ is_fixed(b) then
-      fzn_cumulative_fixed_d_r(s, fix(d), fix(r), fix(b))
+      0 == card(index_set(starts)) \/ capacity >= 0
+    elseif MZN__Cumulative_Fixed_d_r /\ is_fixed(durations) /\ is_fixed(resources) /\
+      is_fixed(capacity) then
+      fzn_cumulative_fixed_d_r(starts, fix(durations), fix(resources), fix(capacity))
     elseif nMZN__UnarySizeMax_cumul >= card(times) * card(tasks) then
-      cumulative_time_decomp(s, d, r, b, times)
+      cumulative_time_decomp(starts, durations, resources, capacity, times)
     else
-      cumulative_task_decomp(s, d, r, b)
+      cumulative_task_decomp(starts, durations, resources, capacity)
     endif
   endif;
 
