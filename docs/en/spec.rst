@@ -2513,6 +2513,26 @@ public interface of an operation: they may be used inside the body but
 cannot be supplied as a named argument at a call site.  This lets a
 declaration leave such parameter names unspecified for callers.
 
+Because parameter names form part of the public interface, the MiniZinc
+library names them according to a consistent convention, so that named
+arguments read well and additions to the library stay predictable.  When an
+argument's role is clear from the operation itself, a short generic name is
+used: a scalar is ``x``, ``y`` or ``z``; a set is ``s``, then ``t``; an array
+of decision variables is ``xs``, then ``ys``; an array of coefficients is
+``as``; and an array index is ``idx``.  Otherwise a descriptive name is
+chosen, as in :mzn:`cumulative(start, duration, resource, capacity)`.  For a
+descriptive array, the grammatical number reflects its role.  When several
+parallel arrays together describe one collection of objects (one array per
+field, all indexed in lock-step) each array is named in the *singular* after
+the field it holds, as if it were a member of the object; thus
+:mzn:`disjunctive(start, duration)` passes the start and duration of every
+task as two arrays.  An array that is itself a collection of values instead
+takes a *plural* name, such as ``weights`` or ``tuples``.  Two parameters of
+the same function or predicate are never distinguished only by the case of a
+letter, such as ``c`` and ``C``, because the two are too easy to confuse at a
+named call site; at least one of them is spelled out in full (for example
+``capacity`` and ``cost``).
+
 Note that a call to a function or predicate with no arguments is
 syntactically indistinguishable from the use of a variable, and so must be
 determined during type-inst checking.
