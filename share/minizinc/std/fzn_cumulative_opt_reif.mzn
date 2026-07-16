@@ -1,26 +1,26 @@
 predicate fzn_cumulative_opt_reif(
-  array [int] of var opt int: starts,
-  array [int] of var int: durations,
-  array [int] of var int: resources,
+  array [int] of var opt int: start,
+  array [int] of var int: duration,
+  array [int] of var int: resource,
   var int: capacity,
   var bool: bb,
 ) =
   let {
     set of int: Tasks = {
       i |
-        i in index_set(starts) where ub(occurs(starts[i])) > 0 /\ ub(resources[i]) > 0 /\ ub(durations[i]) > 0,
+        i in index_set(start) where ub(occurs(start[i])) > 0 /\ ub(resource[i]) > 0 /\ ub(duration[i]) > 0,
     };
   } in if 0 == card(Tasks) then
-    bb <-> (0 == card(index_set(starts)) \/ capacity >= 0)
+    bb <-> (0 == card(index_set(start)) \/ capacity >= 0)
   else
     let {
-      int: early = min([lb(starts[i]) | i in Tasks]);
-      int: late = max([ub(starts[i]) + ub(durations[i]) | i in Tasks]);
+      int: early = min([lb(start[i]) | i in Tasks]);
+      int: late = max([ub(start[i]) + ub(duration[i]) | i in Tasks]);
     } in (
       if late - early > 5000 then
-        fzn_cumulative_opt_task_reif(starts, durations, resources, capacity, bb)
+        fzn_cumulative_opt_task_reif(start, duration, resource, capacity, bb)
       else
-        fzn_cumulative_opt_time_reif(starts, durations, resources, capacity, bb)
+        fzn_cumulative_opt_time_reif(start, duration, resource, capacity, bb)
       endif
     )
   endif;

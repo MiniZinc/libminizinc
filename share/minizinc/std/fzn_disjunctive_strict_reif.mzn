@@ -1,12 +1,12 @@
 predicate fzn_disjunctive_strict_reif(
-  array [int] of var int: starts,
-  array [int] of var int: durations,
+  array [int] of var int: start,
+  array [int] of var int: duration,
   var bool: b,
 ) =
   b <->
     (
-      forall (i in index_set(durations)) (durations[i] >= 0) /\
-        forall (i, j in index_set(durations) where i < j) (
-          starts[i] + durations[i] <= starts[j] \/ starts[j] + durations[j] <= starts[i]
+      forall (i in index_set(duration)) (duration[i] >= 0) /\
+        forall (i, j in index_set(duration) where i < j) (
+          start[i] + duration[i] <= start[j] \/ start[j] + duration[j] <= start[i]
         )
     );

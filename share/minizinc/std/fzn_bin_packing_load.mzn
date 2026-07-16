@@ -1,12 +1,12 @@
 predicate fzn_bin_packing_load(
-  array [int] of var int: loads,
-  array [int] of var int: bins,
-  array [int] of int: weights,
+  array [int] of var int: load,
+  array [int] of var int: bin,
+  array [int] of int: weight,
 ) =
-  sum(loads) = sum(weights) /\
-    forall (i in index_set(bins)) (
-      min(index_set(loads)) <= bins[i] /\ bins[i] <= max(index_set(loads))
+  sum(load) = sum(weight) /\
+    forall (i in index_set(bin)) (
+      min(index_set(load)) <= bin[i] /\ bin[i] <= max(index_set(load))
     ) /\
-    forall (b in index_set(loads)) (loads[b] = sum (i in index_set(bins)) (weights[i] * (bins[i] = b)));
+    forall (b in index_set(load)) (load[b] = sum (i in index_set(bin)) (weight[i] * (bin[i] = b)));
 
 %-----------------------------------------------------------------------------%

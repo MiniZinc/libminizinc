@@ -23,16 +23,16 @@ function array [int, int] of var 0.0..1.0: fzn_piecewise_linear_base(
 predicate fzn_piecewise_linear(
   var float: x,
   var float: y,
-  array [int] of float: x_knots,
-  array [int] of float: y_knots,
+  array [int] of float: x_knot,
+  array [int] of float: y_knot,
 ) =
   let {
-    set of int: is = index_set(x_knots);
+    set of int: is = index_set(x_knot);
     constraint assert(
-      is == index_set(y_knots) /\ 0 < card(is), "fzn_pwl: index sets unequal or empty"
+      is == index_set(y_knot) /\ 0 < card(is), "fzn_pwl: index sets unequal or empty"
     );
     set of int: is_1 = is diff {max(is)};
-    array [int, int] of var float: fs = fzn_piecewise_linear_base(x, x_knots);
-  } in y == sum (i in is_1) (y_knots[i] * fs[1, i] + (y_knots[i + 1] - y_knots[i]) * fs[2, i]);
+    array [int, int] of var float: fs = fzn_piecewise_linear_base(x, x_knot);
+  } in y == sum (i in is_1) (y_knot[i] * fs[1, i] + (y_knot[i + 1] - y_knot[i]) * fs[2, i]);
 
 %-----------------------------------------------------------------------------%

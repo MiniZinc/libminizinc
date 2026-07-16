@@ -63,7 +63,7 @@ constraint cumulatives(
   duration,
   resource,
   machine,
-  upper_bounds: bound
+  upper_bound: bound
 );
 
 var int: makespan :: output = max (t in TASK) (start[t] + duration[t]);

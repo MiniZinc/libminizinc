@@ -1,33 +1,33 @@
 include "fzn_cumulatives_decomp.mzn";
 
 predicate fzn_cumulatives(
-  array [int] of var int: starts,
-  array [int] of var int: durations,
-  array [int] of var int: resources,
-  array [int] of var int: machines,
-  array [int] of var int: bounds,
+  array [int] of var int: start,
+  array [int] of var int: duration,
+  array [int] of var int: resource,
+  array [int] of var int: machine,
+  array [int] of var int: bound,
   bool: is_upper_bound,
   int: min_machine,
 ) =
-  if is_fixed(bounds) then
-    % Propagator only supports fixed bounds
+  if is_fixed(bound) then
+    % Propagator only supports fixed bound
     gecode_cumulatives(
-      starts,
-      durations,
-      resources,
-      [m_i - min_machine | m_i in machines],
-      fix(bounds),
+      start,
+      duration,
+      resource,
+      [m_i - min_machine | m_i in machine],
+      fix(bound),
       is_upper_bound,
     )
   else
-    fzn_cumulatives_decomp(starts, durations, resources, machines, bounds, is_upper_bound)
+    fzn_cumulatives_decomp(start, duration, resource, machine, bound, is_upper_bound)
   endif;
 
 predicate gecode_cumulatives(
-  array [int] of var int: starts,
-  array [int] of var int: durations,
-  array [int] of var int: resources,
-  array [int] of var int: machines,
-  array [int] of int: bounds,
+  array [int] of var int: start,
+  array [int] of var int: duration,
+  array [int] of var int: resource,
+  array [int] of var int: machine,
+  array [int] of int: bound,
   bool: is_upper_bound,
 );

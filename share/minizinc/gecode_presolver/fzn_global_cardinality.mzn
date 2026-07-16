@@ -37,7 +37,7 @@
 predicate fzn_global_cardinality(
   array [int] of var int: x,
   array [int] of int: cover,
-  array [int] of var int: counts,
+  array [int] of var int: count,
 );
 
 predicate global_cardinality_old(array [int] of var int: x, array [int] of var int: c) =

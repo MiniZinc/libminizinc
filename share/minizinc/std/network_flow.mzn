@@ -5,14 +5,14 @@ include "fzn_network_flow_cost_reif.mzn";
 
 predicate fzn_network_flow(
   array [int, 1..2] of int: arcs,
-  array [int] of int: balances,
-  array [int] of var int: flows,
+  array [int] of int: balance,
+  array [int] of var int: flow,
 );
 predicate fzn_network_flow_cost(
   array [int, 1..2] of int: arcs,
-  array [int] of int: balances,
-  array [int] of int: weights,
-  array [int] of var int: flows,
+  array [int] of int: balance,
+  array [int] of int: weight,
+  array [int] of var int: flow,
   var int: total_cost,
 );
 
@@ -20,21 +20,21 @@ predicate fzn_network_flow_cost(
   Defines a network flow constraint.
 
 @param arcs: the directed arcs of the flow network. Arc \p i connects node \a arcs[\p i,1] to node \a arcs[\p i,2].
-@param balances: the amount of flow added or removed by each node. If the balance is positive then flow is added by the node, and it is removed when it is negative, i.e., ``balance = output - input``.
-@param flows: the flow going through each arc.
+@param balance: the amount of flow added or removed by each node. If the balance is positive then flow is added by the node, and it is removed when it is negative, i.e., ``balance = output - input``.
+@param flow: the flow going through each arc.
 */
 predicate network_flow(
   array [$$E, 1..2] of $$N: arcs,
-  array [$$N] of int: balances,
-  array [$$E] of var int: flows,
+  array [$$N] of int: balance,
+  array [$$E] of var int: flow,
 ) =
   let {
     any: ARCS = index_set_1of2(arcs);
-    any: NODES = index_set(balances);
+    any: NODES = index_set(balance);
   } in assert(
-    ARCS == index_set(flows),
+    ARCS == index_set(flow),
     "network_flow: index set of arcs, \(ARCS), does not match the index set of flow, \(
-      index_set(flows)
+      index_set(flow)
     )",
   ) /\
     assert(
@@ -43,41 +43,41 @@ predicate network_flow(
         dom_bounds_array(arcs)
       ), do not match the index set of balance \(NODES)",
     ) /\
-    if sum(balances) != 0 then
+    if sum(balance) != 0 then
       false
     else
-      fzn_network_flow(index2int(enum2int(arcs)), index2int(balances), index2int(flows))
+      fzn_network_flow(index2int(enum2int(arcs)), index2int(balance), index2int(flow))
     endif;
 
 /** @group globals.graph
   Defines a network flow constraint with cost.
 
 @param arcs: the directed arcs of the flow network. Arc \p i connects node \a arcs[\p i,1] to node \a arcs[\p i,2].
-@param balances: the amount of flow added or removed by each node. If the balance is positive then flow is added by the node, and it is removed when it is negative, i.e., ``balance = output - input``.
-@param weights: the unit cost of the flow through the arc.
-@param flows: the flow going through each arc.
+@param balance: the amount of flow added or removed by each node. If the balance is positive then flow is added by the node, and it is removed when it is negative, i.e., ``balance = output - input``.
+@param weight: the unit cost of the flow through the arc.
+@param flow: the flow going through each arc.
 @param total_cost: the overall cost of the flow.
 */
 predicate network_flow_cost(
   array [$$E, 1..2] of $$N: arcs,
-  array [$$N] of int: balances,
-  array [$$E] of int: weights,
-  array [$$E] of var int: flows,
+  array [$$N] of int: balance,
+  array [$$E] of int: weight,
+  array [$$E] of var int: flow,
   var int: total_cost,
 ) =
   let {
     any: ARCS = index_set_1of2(arcs);
-    any: NODES = index_set(balances);
+    any: NODES = index_set(balance);
   } in assert(
-    ARCS == index_set(flows),
+    ARCS == index_set(flow),
     "network_flow_cost: index set of arcs, \(ARCS), does not match the index set of flow, \(
-      index_set(flows)
+      index_set(flow)
     )",
   ) /\
     assert(
-      ARCS == index_set(weights),
+      ARCS == index_set(weight),
       "network_flow_cost: index set of arcs, \(ARCS), does not match the index set of weight, \(
-        index_set(weights)
+        index_set(weight)
       )",
     ) /\
     assert(
@@ -86,14 +86,14 @@ predicate network_flow_cost(
         dom_bounds_array(arcs)
       ), do not match the index set of balance \(NODES)",
     ) /\
-    if sum(balances) != 0 then
+    if sum(balance) != 0 then
       false
     else
       fzn_network_flow_cost(
         index2int(enum2int(arcs)),
-        index2int(balances),
-        index2int(weights),
-        index2int(flows),
+        index2int(balance),
+        index2int(weight),
+        index2int(flow),
         total_cost,
       )
     endif;

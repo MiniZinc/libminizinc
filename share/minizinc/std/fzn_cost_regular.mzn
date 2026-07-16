@@ -5,7 +5,7 @@ predicate fzn_cost_regular(
   array [int, int] of int: d,
   int: q0,
   set of int: F,
-  array [int, int] of int: costs,
+  array [int, int] of int: cost,
   var int: total_cost,
 ) =
   if length(xs) = 0 then
@@ -27,7 +27,7 @@ predicate fzn_cost_regular(
       ) (
         xs[i] in 1..S /\ % Do this in case it's a var.
           a[i + 1] = d[a[i], xs[i]] /\ % Determine a[i+1].
-          cc[i + 1] = costs[a[i], xs[i]] + cc[i] % Calculate new cost sum
+          cc[i + 1] = cost[a[i], xs[i]] + cc[i] % Calculate new cost sum
       ) /\
       a[n] in F /\ % Check the final state is in F.
       total_cost = cc[n] % return final cost

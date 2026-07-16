@@ -5,20 +5,20 @@ predicate fzn_cost_mdd(
   int: E, % number of edges
   array [int] of int: from, % edge leaving node  1..N
   array [int] of set of int: label, % values of variable on edge
-  array [int] of int: costs, % costs of using edge
+  array [int] of int: cost, % cost of using edge
   array [int] of int: to, % edge entering node 0..N where 0 = T node
-  var int: total_cost, % total costs of path
+  var int: total_cost, % total cost of path
 ) =
   let {
     set of int: NODE = 1..N;
     set of int: EDGE = 1..E;
     int: L = length(xs);
     array [1..L] of int: maxlevelcost = [
-      max (e in EDGE where level[from[e]] = l) (costs[e]) |
+      max (e in EDGE where level[from[e]] = l) (cost[e]) |
         l in 1..L,
     ];
     array [1..L] of int: minlevelcost = [
-      min([0] ++ [costs[e] | e in EDGE where level[from[e]] = l /\ costs[e] < 0]) |
+      min([0] ++ [cost[e] | e in EDGE where level[from[e]] = l /\ cost[e] < 0]) |
         l in 1..L,
     ];
     int: maxcost = sum(maxlevelcost);
@@ -51,14 +51,14 @@ predicate fzn_cost_mdd(
     forall (n in NODE) (
       ln[n] =
         min (e in EDGE where from[e] = n) (
-          ln[to[e]] + costs[e] + (not be[e]) * (maxcost + 1 - costs[e])
+          ln[to[e]] + cost[e] + (not be[e]) * (maxcost + 1 - cost[e])
         )
     ) /\
     forall (n in 2..N) (
       un[n] =
         min (e in EDGE where to[e] = n) (
-          un[from[e]] + costs[e] + (not be[e]) * (maxcost + 1 - costs[e])
+          un[from[e]] + cost[e] + (not be[e]) * (maxcost + 1 - cost[e])
         )
     ) /\
-    forall (e in EDGE) (be[e] -> un[from[e]] + costs[e] + ln[to[e]] <= maxcost) /\
+    forall (e in EDGE) (be[e] -> un[from[e]] + cost[e] + ln[to[e]] <= maxcost) /\
     total_cost = ln[1];

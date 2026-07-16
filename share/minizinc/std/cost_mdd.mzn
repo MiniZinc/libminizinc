@@ -8,22 +8,22 @@ predicate fzn_cost_mdd(
   int: E,
   array [int] of int: from,
   array [int] of set of int: label,
-  array [int] of int: costs,
+  array [int] of int: cost,
   array [int] of int: to,
   var int: total_cost,
 );
 
 /** @group globals.extensional
-   Requires that \a xs defines a path in the costs MDD with total edge weight \a total_cost.
+   Requires that \a xs defines a path in the cost MDD with total edge weight \a total_cost.
 
    @param N: the number of nodes, the root node is node 1
    @param level: the level of each node, the root is level 1, T is level \a length(xs)+1
    @param E: the number of edges
    @param from: the leaving node (1..\a N)for each edge
    @param label: the set of value of the xs variable for each edge
-   @param costs: the costs for each edge
+   @param cost: the cost for each edge
    @param to: the entering node for each edge, where 0 = T node
-   @param total_cost: the total costs of the path defined by \a xs  
+   @param total_cost: the total cost of the path defined by \a xs  
 
 */
 predicate cost_mdd(
@@ -33,9 +33,9 @@ predicate cost_mdd(
   int: E, % number of edges
   array [int] of int: from, % edge leaving node  1..N
   array [int] of set of int: label, % values of variable on edge
-  array [int] of int: costs, % costs of using edge
+  array [int] of int: cost, % cost of using edge
   array [int] of int: to, % edge entering node 0..N where 0 = T node
-  var int: total_cost, % total costs of path
+  var int: total_cost, % total cost of path
 ) =
   let {
     set of int: NODE = 1..N;
@@ -50,7 +50,7 @@ predicate cost_mdd(
     assert(index_set(from) = EDGE, "cost_mdd: from argument must be of length E = \(E)") /\
     assert(index_set(to) = EDGE, "cost_mdd: to argument must be of length E = \(E)") /\
     assert(index_set(label) = EDGE, "cost_mdd: label argument must be of length E = \(E)") /\
-    assert(index_set(costs) = EDGE, "cost_mdd: costs argument must be of length E = \(E)") /\
+    assert(index_set(cost) = EDGE, "cost_mdd: cost argument must be of length E = \(E)") /\
     forall (e in EDGE) (assert(from[e] in NODE, "cost_mdd: from[\(e)] must be in \(NODE)")) /\
     forall (e in EDGE) (assert(to[e] in 0..N, "cost_mdd: to[\(e)] must be in 0..\(N)")) /\
     forall (e in EDGE) (
@@ -66,7 +66,7 @@ predicate cost_mdd(
         "cost_mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels",
       )
     ) /\
-    fzn_cost_mdd(xs, N, level, E, from, label, costs, to, total_cost);
+    fzn_cost_mdd(xs, N, level, E, from, label, cost, to, total_cost);
 
 % Example consider an MDD over 3 variables
 % 5 nodes and 8 edges
@@ -74,7 +74,7 @@ predicate cost_mdd(
 % level 2      2   3
 % level 3      4   5
 % level 4        T
-% with edges (from,label,costs,to) given by 
+% with edges (from,label,cost,to) given by 
 %            (1,{1,3},3,2), (1,{2},1,3),  
 %            (2,{2},4,4), (2,{3},2,5),
 %            (3,{3},3,4), (3,{2},5,5),

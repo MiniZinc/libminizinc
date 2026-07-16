@@ -8,7 +8,7 @@ predicate fzn_cost_regular(
   array [int, int] of int: d,
   int: q0,
   set of int: F,
-  array [int, int] of int: costs,
+  array [int, int] of int: cost,
   var int: total_cost,
 );
 
@@ -17,8 +17,8 @@ predicate fzn_cost_regular(
   is accepted by the DFA of \a Q states with input 1..\a S and transition
   function \a d (which maps (1..\a Q, 1..\a S) -> 0..\a Q)) and initial state \a q0
   (which must be in 1..\a Q) and accepting states \a F (which all must be in
-  1..\a Q).  We reserve state 0 to be an always failing state. Each edge has an associated cost \a costs,
-  and \a total_cost is the sum of costs taken on the accepting path for \a xs.
+  1..\a Q).  We reserve state 0 to be an always failing state. Each edge has an associated cost \a cost,
+  and \a total_cost is the sum of cost taken on the accepting path for \a xs.
 */
 predicate cost_regular(
   array [int] of var int: xs,
@@ -27,7 +27,7 @@ predicate cost_regular(
   array [int, int] of int: d,
   int: q0,
   set of int: F,
-  array [int, int] of int: costs,
+  array [int, int] of int: cost,
   var int: total_cost,
 ) =
   assert(
@@ -40,8 +40,8 @@ predicate cost_regular(
         index_set_1of2(d) = 1..Q /\ index_set_2of2(d) == 1..S,
         "cost_regular: the transition function 'd' must be [1..Q,1..S]",
         assert(
-          index_set_1of2(costs) = 1..Q /\ index_set_2of2(costs) == 1..S,
-          "cost_regular: the transition cost function 'costs' must be [1..Q,1..S]",
+          index_set_1of2(cost) = 1..Q /\ index_set_2of2(cost) == 1..S,
+          "cost_regular: the transition cost function 'cost' must be [1..Q,1..S]",
           assert(
             forall([d[i, j] in 0..Q | i in 1..Q, j in 1..S]),
             "cost_regular: transition function 'd' points to states outside 0..Q",
@@ -53,7 +53,7 @@ predicate cost_regular(
               assert(
                 F subset 1..Q,
                 "cost_regular: final states in 'F' contain states outside 1..Q",
-                fzn_cost_regular(xs, Q, S, d, q0, F, costs, total_cost),
+                fzn_cost_regular(xs, Q, S, d, q0, F, cost, total_cost),
               ),
             ),
           ),

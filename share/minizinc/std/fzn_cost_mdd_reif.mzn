@@ -5,7 +5,7 @@ predicate fzn_cost_mdd_reif(
   int: E, % number of edges
   array [int] of int: from, % edge leaving node  1..N
   array [int] of set of int: label, % values of variable on edge
-  array [int] of int: costs, % cost of using edge
+  array [int] of int: cost, % cost of using edge
   array [int] of int: to, % edge entering node 0..N where 0 = T node
   var int: total_cost, % total cost of path
   var bool: b, % reification variable

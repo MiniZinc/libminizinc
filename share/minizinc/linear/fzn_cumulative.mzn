@@ -1,5 +1,5 @@
 /** @group globals.scheduling
-  Requires that a set of tasks given by start times \a s, durations \a d, and
+  Requires that a set of tasks given by start times \a s, duration \a d, and
   resource requirements \a r, never require more than a global resource bound
   \a b at any one time.
 
@@ -10,9 +10,9 @@
 */
 
 predicate fzn_cumulative(
-  array [int] of var int: starts,
-  array [int] of var int: durations,
-  array [int] of var int: resources,
+  array [int] of var int: start,
+  array [int] of var int: duration,
+  array [int] of var int: resource,
   var int: capacity :: promise_ctx_monotone,
 ) =
   if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
@@ -20,19 +20,19 @@ predicate fzn_cumulative(
   else
     let {
       set of int: tasks = {
-        i | i in index_set(starts) where ub(resources[i]) > 0 /\ ub(durations[i]) > 0,
+        i | i in index_set(start) where ub(resource[i]) > 0 /\ ub(duration[i]) > 0,
       };
-      set of int: times = dom_array([starts[i] | i in tasks]);
+      set of int: times = dom_array([start[i] | i in tasks]);
     } in if 0 == card(tasks) then
       /*true*/
-      0 == card(index_set(starts)) \/ capacity >= 0
-    elseif MZN__Cumulative_Fixed_d_r /\ is_fixed(durations) /\ is_fixed(resources) /\
+      0 == card(index_set(start)) \/ capacity >= 0
+    elseif MZN__Cumulative_Fixed_d_r /\ is_fixed(duration) /\ is_fixed(resource) /\
       is_fixed(capacity) then
-      fzn_cumulative_fixed_d_r(starts, fix(durations), fix(resources), fix(capacity))
+      fzn_cumulative_fixed_d_r(start, fix(duration), fix(resource), fix(capacity))
     elseif nMZN__UnarySizeMax_cumul >= card(times) * card(tasks) then
-      cumulative_time_decomp(starts, durations, resources, capacity, times)
+      cumulative_time_decomp(start, duration, resource, capacity, times)
     else
-      cumulative_task_decomp(starts, durations, resources, capacity)
+      cumulative_task_decomp(start, duration, resource, capacity)
     endif
   endif;
 
@@ -49,7 +49,7 @@ predicate cumulative_set_times(
     "cumulative: the 3 array arguments must have identical index sets",
     assert(
       lb_array(d) >= 0 /\ lb_array(r) >= 0,
-      "cumulative: durations and resource usages must be non-negative",
+      "cumulative: duration and resource usages must be non-negative",
       let {
         set of int: tasks = {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0};
         set of int: times = dom_array([s[i] | i in tasks]) intersect TIMES01;

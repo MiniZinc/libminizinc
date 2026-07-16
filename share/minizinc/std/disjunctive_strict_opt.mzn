@@ -1,21 +1,21 @@
 include "fzn_disjunctive_strict_opt.mzn";
 include "fzn_disjunctive_strict_opt_reif.mzn";
 
-predicate fzn_disjunctive_strict_opt(array [int] of var opt int: starts, array [int] of var int: durations);
+predicate fzn_disjunctive_strict_opt(array [int] of var opt int: start, array [int] of var int: duration);
 
 /** @group globals.scheduling
-  Requires that a set of tasks given by start times \a starts and durations \a durations
+  Requires that a set of tasks given by start times \a start and duration \a duration
   do not overlap in time. Tasks with duration 0 CANNOT be scheduled at any time,
   but only when no other task is running. Start times are optional variables, so
   that absent tasks do not need to be scheduled.
 
   Assumptions:
 
-  - forall \p i, \a durations[\p i] >= 0
+  - forall \p i, \a duration[\p i] >= 0
 */
-predicate disjunctive_strict(array [$$T] of var opt int: starts, array [$$T] of var int: durations) =
+predicate disjunctive_strict(array [$$T] of var opt int: start, array [$$T] of var int: duration) =
   assert(
-    index_sets_agree(starts, durations),
+    index_sets_agree(start, duration),
     "disjunctive: the array arguments must have identical index sets",
-    fzn_disjunctive_strict_opt(index2int(starts), index2int(durations)),
+    fzn_disjunctive_strict_opt(index2int(start), index2int(duration)),
   );

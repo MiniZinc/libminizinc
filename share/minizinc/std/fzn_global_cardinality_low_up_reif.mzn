@@ -3,7 +3,7 @@ include "count_fn.mzn";
 predicate fzn_global_cardinality_low_up_reif(
   array [int] of var int: xs,
   array [int] of int: cover,
-  array [int] of int: lbound,
-  array [int] of int: ubound,
+  array [int] of int: lower_bound,
+  array [int] of int: upper_bound,
   var bool: b,
-) = b <-> forall (i in index_set(cover)) (count(xs, cover[i]) in lbound[i]..ubound[i]);
+) = b <-> forall (i in index_set(cover)) (count(xs, cover[i]) in lower_bound[i]..upper_bound[i]);

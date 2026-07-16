@@ -11,6 +11,6 @@ function array [$X] of var int: distribute(
   :: promise_total =
   let {
     array [int] of var int: value1d = array1d(enum2int(cover));
-    array [index_set(value1d)] of var 0..length(xs): counts :: is_defined_var;
-    constraint distribute(counts, value1d, array1d(enum2int(xs))) :: defines_var(counts);
-  } in arrayXd(cover, counts);
+    array [index_set(value1d)] of var 0..length(xs): count :: is_defined_var;
+    constraint distribute(count, value1d, array1d(enum2int(xs))) :: defines_var(count);
+  } in arrayXd(cover, count);
