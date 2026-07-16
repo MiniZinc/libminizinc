@@ -14,7 +14,7 @@ build:
     - fonts-inconsolata
   jobs:
     pre_build:
-      - curl -L "https://raw.githubusercontent.com/Gecode/gecode/release/6.3.0/gecode/flatzinc/mznlib/gecode.mzn" -o share/minizinc/std/gecode.mzn
+      - curl -L "https://raw.githubusercontent.com/Gecode/gecode/main/gecode/flatzinc/mznlib/gecode.mzn" -o share/minizinc/std/gecode.mzn
       - curl -L "https://raw.githubusercontent.com/chuffed/chuffed/stable/chuffed/flatzinc/mznlib/chuffed.mzn" -o share/minizinc/std/chuffed.mzn
       - cmake -S . -B build -G"Ninja" -DCMAKE_BUILD_TYPE=Debug
       - cmake --build build --target mzn2doc
