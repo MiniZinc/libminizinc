@@ -1971,11 +1971,12 @@ Expression* b_default(EnvI& env, Call* call) {
       return call->arg(1);
     }
     if (Expression::type(call->arg(0)).isOpt() && Expression::type(call->arg(0)).dim() == 0) {
-      if (Expression::type(arg0.r()).isPar()) {
-        if (Expression::type(arg0.r()).isOpt() && arg0.r() == env.constants.absent) {
+      auto* arg0_r = follow_id_to_value(arg0.r());
+      if (Expression::type(arg0_r).isPar()) {
+        if (Expression::type(arg0_r).isOpt() && arg0_r == env.constants.absent) {
           return call->arg(1);
         }
-        return arg0.r();
+        return arg0_r;
       }
 
       if (def_t.isPar() && def_t.isint() && eval_int(env, call->arg(1)) == 0) {

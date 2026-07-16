@@ -120,6 +120,8 @@ Bug fixes:
 -  Fix index-set checking for arrays nested inside other arrays, where
    an outer array does not have a declared index set but the inner array
    does.
+-  Fix ``default`` operator for ``var opt`` LHS expressions which end up being
+   fixed to ``<>`` (:bugref:`1030`).
 
 .. _v2.9.7:
 
