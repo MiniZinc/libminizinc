@@ -131,7 +131,7 @@ add_library(mzn
 )
 
 if(WIN32)
-  target_compile_definitions(mzn PUBLIC NOMINMAX)
+  target_compile_definitions(mzn PUBLIC NOMINMAX _WIN32_WINNT=0x0600)
 endif()
 
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})

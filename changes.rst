@@ -4,6 +4,21 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
+.. _upcoming:
+
+`Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Changes:
+^^^^^^^^
+-  Harden how external FlatZinc solvers are launched. On POSIX, the solver
+   is now started with ``posix_spawn`` in its own process group, using
+   close-on-exec pipes and full error checking. On Windows, the solver
+   inherits only the three standard I/O handles (instead of every
+   inheritable handle) and is placed in a kill-on-close job object, so it
+   is reliably terminated together with MiniZinc. Several descriptor and
+   handle leaks were fixed in the process.
+
 .. _v2.10.0:
 
 `Version 2.10.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.10.0>`__
