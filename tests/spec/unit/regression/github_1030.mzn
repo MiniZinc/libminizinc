@@ -17,4 +17,4 @@ array[1..2] of var opt 1..4: xy;
 constraint 
   let {
     array [int] of var int: xx = [xy[i] default 0 | i in index_set(xy)];
-  } in all_different(xx, except: {0});
+  } in all_different_except(xx, {0});
