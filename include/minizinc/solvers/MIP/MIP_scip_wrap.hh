@@ -156,6 +156,12 @@ public:
   SCIP_RETCODE(__stdcall* SCIPgetSolVals)
   (SCIP* scip, SCIP_SOL* sol, int nvars, SCIP_VAR** vars, SCIP_Real* vals);
   // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPcreatePartialSol)(SCIP* scip, SCIP_SOL** sol, void* heur);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPsetSolVal)(SCIP* scip, SCIP_SOL* sol, SCIP_VAR* var, SCIP_Real val);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  SCIP_RETCODE(__stdcall* SCIPaddSolFree)(SCIP* scip, SCIP_SOL** sol, SCIP_Bool* stored);
+  // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_SOL*(__stdcall* SCIPgetBestSol)(SCIP* scip);
   // NOLINTNEXTLINE(readability-identifier-naming)
   SCIP_Longint(__stdcall* SCIPgetNTotalNodes)(SCIP* scip);
@@ -388,6 +394,9 @@ public:
 
   void solve() override { SCIP_PLUGIN_CALL(solveSCIP()); }
   virtual SCIP_RETCODE solveSCIP();
+
+  // Pass a (partial) warm-start / MIP-start solution to SCIP.
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
 
 protected:
   // NOLINTNEXTLINE(readability-identifier-naming)

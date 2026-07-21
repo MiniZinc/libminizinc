@@ -41,6 +41,7 @@ Changes:
 -  Add support for interactive FlatZinc solvers. These can read commands
    from standard input while running, and output both solutions and
    messages.
+-  Add support for warm starts to HiGHS and SCIP interfaces.
 
 Language changes:
 ^^^^^^^^^^^^^^^^^

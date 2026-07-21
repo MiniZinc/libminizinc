@@ -94,6 +94,10 @@ public:
                                 // NOLINTNEXTLINE(readability-identifier-naming)
                                 double* row_value, double* row_dual);
   // NOLINTNEXTLINE(readability-identifier-naming)
+  HighsInt (*Highs_setSparseSolution)(void* highs, const HighsInt num_entries,
+                                      // NOLINTNEXTLINE(readability-identifier-naming)
+                                      const HighsInt* index, const double* value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
   double (*Highs_getObjectiveValue)(const void* highs);
   // NOLINTNEXTLINE(readability-identifier-naming)
   HighsInt (*Highs_getIntInfoValue)(const void* highs, const char* info, int* value);
@@ -218,6 +222,9 @@ public:
 
   // Method to optimize the current MIP program
   void solve() override;
+
+  // Set a (partial) warm-start / MIP-start solution to the current MIP program.
+  bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
 
   // Change variable bounds
   void setVarBounds(int iVar, double lb, double ub) override {

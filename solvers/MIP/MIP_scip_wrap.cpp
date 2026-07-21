@@ -107,6 +107,9 @@ void ScipPlugin::load() {
   load_symbol_dynamic(_inner, SCIPgetPrimalbound);
   load_symbol_dynamic(_inner, SCIPgetDualbound);
   load_symbol_dynamic(_inner, SCIPgetSolVals);
+  load_symbol_dynamic(_inner, SCIPcreatePartialSol);
+  load_symbol_dynamic(_inner, SCIPsetSolVal);
+  load_symbol_dynamic(_inner, SCIPaddSolFree);
   load_symbol_dynamic(_inner, SCIPgetBestSol);
   load_symbol_dynamic(_inner, SCIPgetNTotalNodes);
   load_symbol_dynamic(_inner, SCIPgetNNodes);
@@ -786,6 +789,36 @@ MIPScipWrapper::Status MIPScipWrapper::convertStatus(SCIP_STATUS scipStatus) {
 }
 
 SCIP_DECL_MESSAGEWARNING(print_msg) { cerr << msg << flush; }
+
+bool MIPScipWrapper::addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) {
+  assert(vars.size() == vals.size());
+  if (vars.empty()) {
+    return true;
+  }
+  // Change the default behavior of SCIP's completesol heuristic to accept a warm start
+  // solution with a low fraction of fixed variables, since flattened MiniZinc models
+  // often have many auxiliary variables.
+  SCIP_PLUGIN_CALL(_plugin->SCIPsetRealParam(_scip, "heuristics/completesol/maxunknownrate", 0.99),
+                   "SCIP Error: unable to relax completesol maxunknownrate");
+  // Set to 0 so any strictly-improving completion becomes an incumbent solution.
+  SCIP_PLUGIN_CALL(_plugin->SCIPsetRealParam(_scip, "heuristics/completesol/minimprove", 0.0),
+                   "SCIP Error: unable to zero completesol minimprove");
+  SCIP_SOL* sol = nullptr;
+  SCIP_PLUGIN_CALL(_plugin->SCIPcreatePartialSol(_scip, &sol, nullptr),
+                   "SCIP Error: unable to create warm start solution");
+  for (size_t i = 0; i < vars.size(); ++i) {
+    SCIP_PLUGIN_CALL(_plugin->SCIPsetSolVal(_scip, sol, _scipVars[vars[i]], vals[i]),
+                     "SCIP Error: unable to set warm start value");
+  }
+  SCIP_Bool stored = 0;
+  SCIP_PLUGIN_CALL(_plugin->SCIPaddSolFree(_scip, &sol, &stored),
+                   "SCIP Error: unable to add warm start solution");
+  if (stored == 0) {
+    std::cerr << "% warning: SCIP rejected the warm start" << std::endl;
+    return false;
+  }
+  return true;
+}
 
 SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
 

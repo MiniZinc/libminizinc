@@ -67,6 +67,7 @@ HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
   load_symbol(plugin, Highs_writeModel);
   load_symbol(plugin, Highs_run);
   load_symbol(plugin, Highs_getSolution);
+  load_symbol(plugin, Highs_setSparseSolution);
   load_symbol(plugin, Highs_getModelStatus);
   load_symbol(plugin, Highs_getObjectiveValue);
   load_symbol(plugin, Highs_getIntInfoValue);
@@ -273,6 +274,27 @@ void MIPHiGHSWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType 
   }
   auto res = _plugin->Highs_addRow(_highs, rlb, rub, nnz, rmatind, rmatval);
   checkHiGHSReturn(res, "HiGHS Error: Unable to add linear constraint");
+}
+
+bool MIPHiGHSWrapper::addWarmStart(const std::vector<VarId>& vars,
+                                   const std::vector<double>& vals) {
+  assert(vars.size() == vals.size());
+  if (vars.empty()) {
+    return true;
+  }
+  std::vector<HighsInt> index(vars.size());
+  std::vector<double> value(vals.size());
+  for (size_t i = 0; i < vars.size(); ++i) {
+    index[i] = static_cast<HighsInt>(vars[i]);
+    value[i] = vals[i];
+  }
+  HighsInt stat = _plugin->Highs_setSparseSolution(_highs, static_cast<HighsInt>(index.size()),
+                                                   index.data(), value.data());
+  if (stat == kHighsStatusError) {
+    std::cerr << "% warning: HiGHS rejected the warm start" << std::endl;
+    return false;
+  }
+  return true;
 }
 
 void MIPHiGHSWrapper::solve() {
