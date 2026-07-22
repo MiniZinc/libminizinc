@@ -959,45 +959,24 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
     return al;
   }
 
-  // Check if any indexes are missing
-  int missing_index = -1;
-  bool needs_call = false;
+  // Construct index set arguments for an "arrayXd" call.
+  std::vector<Expression*> args(ti->ranges().size() + 1);
   for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr || Expression::isa<AnonVar>(nti->domain())) {
-      if (missing_index != -1) {
-        return al;  // More than one index set is missing. Cannot compute correct index sets.
-      }
-      missing_index = static_cast<int>(i);
-      needs_call = true;
+      args[i] = new SetLit(Location().introduce(), IntSetVal::a(1, IntVal::infinity()));
     } else {
-      needs_call = true;
+      args[i] = nti->domain();
     }
-  }
-
-  // Construct index set arguments for an "arrayXd" call.
-  std::vector<Expression*> args(ti->ranges().size() + 1);
-  Expression* missing_max = missing_index >= 0 ? IntLit::a(al->size()) : nullptr;
-  for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
-    if (i != missing_index) {
-      assert(ti->ranges()[i]->domain() != nullptr);
-      args[i] = ti->ranges()[i]->domain();
-      if (missing_index >= 0) {
-        missing_max = new BinOp(loc.introduce(), missing_max, BOT_IDIV,
-                                Call::a(Location().introduce(), "card", {args[i]}));
-      }
-    }
-  }
-  if (missing_index >= 0) {
-    args[missing_index] = new BinOp(loc.introduce(), IntLit::a(1), BOT_DOTDOT, missing_max);
   }
   args[args.size() - 1] = al;
-
-  std::string name = "array" + std::to_string(ti->ranges().size()) + "d";
-  Call* c = Call::a(Expression::loc(al).introduce(), name, args);
-  if (al->dims() != 1) {
-    Expression::addAnnotation(c, Constants::constants().ann.array_check_form);
+  ASTString name;
+  if (al->dims() == 1) {
+    name = ASTString("array" + std::to_string(ti->ranges().size()) + "d");
+  } else {
+    name = ASTString("array_index_shift");
   }
+  Call* c = Call::a(Expression::loc(al).introduce(), name, args);
   return c;
 }
 

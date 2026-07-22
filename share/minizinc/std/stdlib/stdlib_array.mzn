@@ -529,6 +529,89 @@ annotation array_check_form;
 */
 function array [$T] of any $V: arrayXd(array [$T] of any $X: x, array [$U] of any $V: y);
 
+/** @group stdlib.builtins.array Return an index set with the same cardinality as \a s,
+  starting at the minimum value of \a idx.
+*/
+function set of $$E: shift_index_set(set of $$E: idx, set of $$F: s) =
+  min(idx)..to_enum(enum_of(idx), enum2int(min(idx))+card(s)-1);
+
+/** @group stdlib.builtins.array Return array \a y with its index set shifted to start at \a idx. */
+function array[$$E] of any $V: array_index_shift(set of $$E: idx, array[$$F] of any $V: y) =
+  array1d(shift_index_set(idx, index_set(y)), y);
+
+/** @group stdlib.builtins.array Return array \a y with each index set shifted to start at \a idx1 and \a idx2. */
+function array[$$E,$$F] of any $V: array_index_shift(set of $$E: idx1, set of $$F: idx2, array[$$G,$$H] of any $V: y) =
+  array2d(shift_index_set(idx1, index_set_1of2(y)), shift_index_set(idx2, index_set_2of2(y)), y);
+
+/** @group stdlib.builtins.array Return array \a y with each index set shifted to start at \a idx1, \a idx2 and \a idx3. */
+function array[$$E,$$F,$$G] of any $V: array_index_shift(
+  set of $$E: idx1,
+  set of $$F: idx2,
+  set of $$G: idx3,
+  array[$$H,$$I,$$J] of any $V: y,
+) =
+  array3d(
+    shift_index_set(idx1, index_set_1of3(y)),
+    shift_index_set(idx2, index_set_2of3(y)),
+    shift_index_set(idx3, index_set_3of3(y)),
+    y,
+  );
+
+/** @group stdlib.builtins.array Return array \a y with each index set shifted to start at \a idx1, \a idx2, \a idx3 and \a idx4. */
+function array[$$E,$$F,$$G,$$H] of any $V: array_index_shift(
+  set of $$E: idx1,
+  set of $$F: idx2,
+  set of $$G: idx3,
+  set of $$H: idx4,
+  array[$$I,$$J,$$K,$$L] of any $V: y,
+) =
+  array4d(
+    shift_index_set(idx1, index_set_1of4(y)),
+    shift_index_set(idx2, index_set_2of4(y)),
+    shift_index_set(idx3, index_set_3of4(y)),
+    shift_index_set(idx4, index_set_4of4(y)),
+    y,
+  );
+
+/** @group stdlib.builtins.array Return array \a y with each index set shifted to start at \a idx1, \a idx2, \a idx3, \a idx4 and \a idx5. */
+function array[$$E,$$F,$$G,$$H,$$I] of any $V: array_index_shift(
+  set of $$E: idx1,
+  set of $$F: idx2,
+  set of $$G: idx3,
+  set of $$H: idx4,
+  set of $$I: idx5,
+  array[$$J,$$K,$$L,$$M,$$N] of any $V: y,
+) =
+  array5d(
+    shift_index_set(idx1, index_set_1of5(y)),
+    shift_index_set(idx2, index_set_2of5(y)),
+    shift_index_set(idx3, index_set_3of5(y)),
+    shift_index_set(idx4, index_set_4of5(y)),
+    shift_index_set(idx5, index_set_5of5(y)),
+    y,
+  );
+
+/** @group stdlib.builtins.array Return array \a y with each index set shifted to start at \a idx1, \a idx2, \a idx3, \a idx4, \a idx5 and \a idx6. */
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of any $V: array_index_shift(
+  set of $$E: idx1,
+  set of $$F: idx2,
+  set of $$G: idx3,
+  set of $$H: idx4,
+  set of $$I: idx5,
+  set of $$J: idx6,
+  array[$$K,$$L,$$M,$$N,$$O,$$P] of any $V: y,
+) =
+  array6d(
+    shift_index_set(idx1, index_set_1of6(y)),
+    shift_index_set(idx2, index_set_2of6(y)),
+    shift_index_set(idx3, index_set_3of6(y)),
+    shift_index_set(idx4, index_set_4of6(y)),
+    shift_index_set(idx5, index_set_5of6(y)),
+    shift_index_set(idx6, index_set_6of6(y)),
+    y,
+  );
+
+
 /** @group stdlib.builtins.array Return row \a r of array \a x */
 function array [$$E] of any $T: row(array [$$F, $$E] of any $T: x, $$F: r) = x[r, ..];
 

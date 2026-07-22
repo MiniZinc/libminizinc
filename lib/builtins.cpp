@@ -1279,18 +1279,11 @@ IntSetVal* b_compute_pow_bounds(EnvI& env, Call* call) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
   GCLock lock;
-  bool check_form = Expression::ann(call).contains(env.constants.ann.array_check_form);
   ArrayLit* al = eval_array_lit(env, call->arg(d));
   std::vector<std::pair<int, int>> dims(d);
   unsigned int dim1d = 1;
 
-  if (check_form && d != al->dims()) {
-    std::ostringstream ss;
-    ss << "number of dimensions of original array (" << al->dims()
-       << ") does not match the given number of index sets (" << d << ")";
-    throw EvalError(env, Expression::loc(call), ss.str());
-  }
-
+  int infinite_dim = -1;
   for (int i = 0; i < d; i++) {
     IntSetVal* di = eval_intset(env, call->arg(i));
     if (di->empty()) {
@@ -1299,17 +1292,32 @@ ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     } else if (di->size() != 1) {
       throw EvalError(env, Expression::loc(call->arg(i)), "arrayXd only defined for ranges");
     } else {
-      dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
-                                    static_cast<int>(di->max(0).toInt()));
-      dim1d *= dims[i].second - dims[i].first + 1;
-      if (check_form && dims[i].second - dims[i].first != al->max(i) - al->min(i)) {
-        std::ostringstream ss;
-        ss << "index set " << i + 1 << " (" << dims[i].first << ".." << dims[i].second
-           << ") does not match index set " << i + 1 << " of original array (" << al->min(i) << ".."
-           << al->max(i) << ")";
-        throw EvalError(env, Expression::loc(call->arg(i)), ss.str());
+      if (di->min(0).isFinite() && di->max(0).isFinite()) {
+        dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
+                                      static_cast<int>(di->max(0).toInt()));
+        dim1d *= dims[i].second - dims[i].first + 1;
+      } else if (infinite_dim == -1) {
+        if (di->min(0).isFinite()) {
+          dims[i] = std::pair<int, int>(static_cast<int>(di->min(0).toInt()),
+                                        static_cast<int>(di->min(0).toInt()));
+        } else {
+          throw EvalError(env, Expression::loc(al), "index set must have finite lower bound");
+        }
+        infinite_dim = i;
+      } else {
+        throw EvalError(env, Expression::loc(al), "more than one infinite dimension given");
       }
     }
+  }
+  if (infinite_dim != -1) {
+    if (al->size() % dim1d != 0) {
+      std::stringstream ss;
+      ss << "mismatch in array dimensions: the array contains " << al->size() << " elements, "
+         << "which does not match the declared dimensions.";
+      throw EvalError(env, Expression::loc(al), ss.str());
+    }
+    dims[infinite_dim].second += static_cast<int>((al->size() / dim1d) - 1);
+    dim1d *= (al->size() / dim1d);
   }
   if (dim1d != al->size()) {
     std::stringstream ss;
