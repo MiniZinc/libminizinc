@@ -4,10 +4,12 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _upcoming:
+.. _v2.10.0:
 
-`Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`Version 2.10.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.10.0>`__
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 23 July 2026)
 
 Changes:
 ^^^^^^^^
