@@ -14,6 +14,7 @@
 #endif
 
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils.hh>
 
 #include <cmath>
@@ -1205,3 +1206,7 @@ John Forrest
 
 
  */
+
+namespace MiniZinc {
+void register_osicbc_solver() { static MIPSolverFactory<MIPosicbcWrapper> _osicbc_solver_factory; }
+}  // namespace MiniZinc

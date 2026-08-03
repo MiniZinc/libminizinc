@@ -670,4 +670,5 @@ bool ChuffedSolverFactory::processOption(SolverInstanceBase::Options* opt, int& 
   return true;
 }
 
+void register_chuffed_solver() { static ChuffedSolverFactory _chuffed_solverfactory; }
 }  // namespace MiniZinc

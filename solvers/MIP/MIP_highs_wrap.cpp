@@ -12,6 +12,7 @@
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/solvers/MIP/MIP_highs_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
 #include <ostream>
@@ -536,3 +537,7 @@ void MIPHiGHSWrapper::callback(const int callback_type, const char* message,
       break;
   }
 }
+
+namespace MiniZinc {
+void register_highs_solver() { static MIPSolverFactory<MIPHiGHSWrapper> _highs_solver_factory; }
+}  // namespace MiniZinc

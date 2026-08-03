@@ -112,9 +112,7 @@ if __name__ == "__main__":
 """
         ignore = {"CPXLONG", "CPXPUBLIC"}
         usage = [
-            root / "solvers/MIP/MIP_cplex_solverfactory.cpp",
             root / "solvers/MIP/MIP_cplex_wrap.cpp",
-            root / "include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh",
             root / "include/minizinc/solvers/MIP/MIP_cplex_wrap.hh",
         ]
 
@@ -149,9 +147,7 @@ if __name__ == "__main__":
         source_names = ["gurobi_c.h"]
         prepend = STDCALL_PREPEND
         usage = [
-            root / "solvers/MIP/MIP_gurobi_solverfactory.cpp",
             root / "solvers/MIP/MIP_gurobi_wrap.cpp",
-            root / "include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh",
             root / "include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh",
         ]
         for ver in [
@@ -218,9 +214,7 @@ if __name__ == "__main__":
 #endif
 """
         usage = [
-            root / "solvers/MIP/MIP_scip_solverfactory.cpp",
             root / "solvers/MIP/MIP_scip_wrap.cpp",
-            root / "include/minizinc/solvers/MIP/MIP_scip_solverfactory.hh",
             root / "include/minizinc/solvers/MIP/MIP_scip_wrap.hh",
         ]
     elif solver == "XPRESS":
@@ -265,9 +259,7 @@ if __name__ == "__main__":
             "XB_MIP_UNBOUNDED",
         }
         usage = [
-            root / "solvers/MIP/MIP_xpress_solverfactory.cpp",
             root / "solvers/MIP/MIP_xpress_wrap.cpp",
-            root / "include/minizinc/solvers/MIP/MIP_xpress_solverfactory.hh",
             root / "include/minizinc/solvers/MIP/MIP_xpress_wrap.hh",
         ]
         search_path.extend(

@@ -4,10 +4,8 @@ if(atlantis_FOUND)
 
   ### Compile target for the Atlantis interface
   add_library(minizinc_atlantis OBJECT
-    solvers/atlantis/atlantis_solverfactory.cpp
     solvers/atlantis/atlantis_solverinstance.cpp
 
-    include/minizinc/solvers/atlantis_solverfactory.hh
     include/minizinc/solvers/atlantis_solverinstance.hh
   )
   target_link_libraries(minizinc_atlantis PRIVATE atlantis::atlantis)

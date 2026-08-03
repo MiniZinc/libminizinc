@@ -16,6 +16,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils_savestream.hh>
 
 #include <cmath>
@@ -1066,3 +1067,7 @@ void MIPGurobiWrapper::setObjSense(int s) {
   _error = dll_GRBsetintattr(_model, GRB_INT_ATTR_MODELSENSE, s > 0 ? GRB_MAXIMIZE : GRB_MINIMIZE);
   wrapAssert(_error == 0, "Failed to set obj sense.");
 }
+
+namespace MiniZinc {
+void register_gurobi_solver() { static MIPSolverFactory<MIPGurobiWrapper> _gurobi_solver_factory; }
+}  // namespace MiniZinc

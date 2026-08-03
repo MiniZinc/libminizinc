@@ -195,4 +195,5 @@ void MZNSolverInstance::processFlatZinc() {}
 
 void MZNSolverInstance::resetSolver() {}
 
+void register_mzn_solver() { static MZNSolverFactory _mzn_solverfactory; }
 }  // namespace MiniZinc

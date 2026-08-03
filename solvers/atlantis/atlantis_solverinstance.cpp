@@ -200,4 +200,5 @@ bool AtlantisSolverFactory::processOption(SolverInstanceBase::Options* opt, int&
   return true;
 }
 
+void register_atlantis_solver() { static AtlantisSolverFactory _atlantis_solverfactory; }
 }  // namespace MiniZinc

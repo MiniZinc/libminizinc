@@ -3,10 +3,8 @@
 if (NOT DEFINED EMSCRIPTEN)
 	### Compile target for the Gurobi interface
 	add_library(minizinc_gurobi OBJECT
-		solvers/MIP/MIP_gurobi_solverfactory.cpp
 		solvers/MIP/MIP_gurobi_wrap.cpp
 
-		include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
 		include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
 		)
 	add_dependencies(minizinc_gurobi minizinc_mip)

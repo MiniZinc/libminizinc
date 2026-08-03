@@ -2560,4 +2560,6 @@ FloatValBranch GecodeSolverInstance::ann2fvalsel(const ASTString s, std::string&
   return FLOAT_VAL_SPLIT_MIN();
 }
 #endif
+
+void register_gecode_solver() { static GecodeSolverFactory _gecode_solverfactory; }
 }  // namespace MiniZinc

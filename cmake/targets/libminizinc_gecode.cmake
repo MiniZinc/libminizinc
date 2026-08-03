@@ -9,13 +9,11 @@ if(GECODE_FOUND)
     solvers/gecode/aux_brancher.hh
     solvers/gecode/fzn_space.cpp
     solvers/gecode/gecode_constraints.cpp
-    solvers/gecode/gecode_solverfactory.cpp
     solvers/gecode/gecode_solverinstance.cpp
 
     include/minizinc/passes/gecode_pass.hh
     include/minizinc/solvers/gecode/fzn_space.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
-    include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode_solverinstance.hh
   )
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_INCLUDE_DIRS}")

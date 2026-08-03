@@ -10,6 +10,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/solvers/MIP/MIP_xpress_wrap.hh>
 #include <minizinc/utils.hh>
 
@@ -1210,3 +1211,7 @@ void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
   term.z = z;
   _bilinearTerms.push_back(term);
 }
+
+namespace MiniZinc {
+void register_xpress_solver() { static MIPSolverFactory<MIPxpressWrapper> _xpress_solver_factory; }
+}  // namespace MiniZinc

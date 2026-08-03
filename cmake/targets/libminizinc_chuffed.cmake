@@ -4,10 +4,8 @@ if(CHUFFED_FOUND)
 
   ### Compile target for the Chuffed interface
   add_library(minizinc_chuffed OBJECT
-    solvers/chuffed/chuffed_solverfactory.cpp
     solvers/chuffed/chuffed_solverinstance.cpp
 
-    include/minizinc/solvers/chuffed_solverfactory.hh
     include/minizinc/solvers/chuffed_solverinstance.hh
   )
   target_include_directories(minizinc_chuffed PRIVATE "${CHUFFED_INCLUDE_DIRS}")

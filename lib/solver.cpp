@@ -23,8 +23,13 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <minizinc/exception.hh>
 #include <minizinc/param_config.hh>
 #include <minizinc/solver.hh>
+#include <minizinc/solvers/fzn_solverinstance.hh>
+#include <minizinc/solvers/mzn_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/utils.hh>
 
 #include <chrono>
 #include <ctime>
@@ -35,82 +40,84 @@
 #include <ratio>
 #include <sstream>
 
-#ifdef HAS_OSICBC
-#include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
-#endif
-#ifdef HAS_XPRESS
-#include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
-#endif
-#ifdef HAS_GECODE
-#include <minizinc/solvers/gecode_solverfactory.hh>
-#endif
-#ifdef HAS_GEAS
-#include <minizinc/solvers/geas_solverfactory.hh>
-#endif
-#ifdef HAS_ATLANTIS
-#include <minizinc/solvers/atlantis_solverfactory.hh>
-#endif
-#ifdef HAS_CHUFFED
-#include <minizinc/solvers/chuffed_solverfactory.hh>
-#endif
-#ifdef HAS_SCIP
-#include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
-#endif
-#ifdef HAS_CPLEX
-#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
-#endif
-#ifdef HAS_GUROBI
-#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
-#endif
-#ifdef HAS_HIGHS
-#include <minizinc/solvers/MIP/MIP_highs_solverfactory.hh>
-#endif
-#include <minizinc/exception.hh>
-#include <minizinc/solvers/fzn_solverfactory.hh>
-#include <minizinc/solvers/fzn_solverinstance.hh>
-#include <minizinc/solvers/mzn_solverfactory.hh>
-#include <minizinc/solvers/mzn_solverinstance.hh>
-#include <minizinc/solvers/nl/nl_solverfactory.hh>
-#include <minizinc/solvers/nl/nl_solverinstance.hh>
-#include <minizinc/utils.hh>
-
 using namespace std;
 using namespace MiniZinc;
 
-SolverInitialiser::SolverInitialiser() {
-#ifdef HAS_OSICBC
-  static OSICBCSolverFactoryInitialiser _osicbc_init;
-#endif
-#ifdef HAS_XPRESS
-  static XpressSolverFactoryInitialiser _xpress_init;
-#endif
-#ifdef HAS_GECODE
-  static GecodeSolverFactoryInitialiser _gecode_init;
-#endif
-#ifdef HAS_GEAS
-  static GeasSolverFactoryInitialiser _geas_init;
-#endif
+namespace MiniZinc {
+/// Register a solver backend with the SolverRegistry. Each is defined in that backend's own
+/// translation unit, which is only compiled when the backend was enabled at configure time
+/// — hence the guards, which match the calls in SolverInitialiser below. Calling one twice
+/// is harmless: the factory is a function-local static.
 #ifdef HAS_ATLANTIS
-  static AtlantisSolverFactoryInitialiser _atlantis_init;
+void register_atlantis_solver();
 #endif
 #ifdef HAS_CHUFFED
-  static ChuffedSolverFactoryInitialiser _chuffed_init;
-#endif
-#ifdef HAS_SCIP
-  static SCIPSolverFactoryInitialiser _scip_init;
+void register_chuffed_solver();
 #endif
 #ifdef HAS_CPLEX
-  static CplexSolverFactoryInitialiser _cplex_init;
+void register_cplex_solver();
 #endif
-  static FZNSolverFactoryInitialiser _fzn_init;
+#ifdef HAS_GEAS
+void register_geas_solver();
+#endif
+#ifdef HAS_GECODE
+void register_gecode_solver();
+#endif
 #ifdef HAS_GUROBI
-  static GurobiSolverFactoryInitialiser _gurobi_init;
+void register_gurobi_solver();
 #endif
 #ifdef HAS_HIGHS
-  static HiGHSSolverFactoryInitialiser _highs_init;
+void register_highs_solver();
 #endif
-  static MZNSolverFactoryInitialiser _mzn_init;
-  static NLSolverFactoryInitialiser _nl_init;
+#ifdef HAS_OSICBC
+void register_osicbc_solver();
+#endif
+#ifdef HAS_SCIP
+void register_scip_solver();
+#endif
+#ifdef HAS_XPRESS
+void register_xpress_solver();
+#endif
+/// Always built.
+void register_fzn_solver();
+void register_mzn_solver();
+void register_nl_solver();
+}  // namespace MiniZinc
+
+SolverInitialiser::SolverInitialiser() {
+#ifdef HAS_OSICBC
+  register_osicbc_solver();
+#endif
+#ifdef HAS_XPRESS
+  register_xpress_solver();
+#endif
+#ifdef HAS_GECODE
+  register_gecode_solver();
+#endif
+#ifdef HAS_GEAS
+  register_geas_solver();
+#endif
+#ifdef HAS_ATLANTIS
+  register_atlantis_solver();
+#endif
+#ifdef HAS_CHUFFED
+  register_chuffed_solver();
+#endif
+#ifdef HAS_SCIP
+  register_scip_solver();
+#endif
+#ifdef HAS_CPLEX
+  register_cplex_solver();
+#endif
+  register_fzn_solver();
+#ifdef HAS_GUROBI
+  register_gurobi_solver();
+#endif
+#ifdef HAS_HIGHS
+  register_highs_solver();
+#endif
+  register_mzn_solver();
+  register_nl_solver();
 }
 
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {

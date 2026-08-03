@@ -1,10 +1,8 @@
 # ## MiniZinc HiGHS Solver Target
 
 add_library(minizinc_highs OBJECT
-  solvers/MIP/MIP_highs_solverfactory.cpp
   solvers/MIP/MIP_highs_wrap.cpp
 
-  include/minizinc/solvers/MIP/MIP_highs_solverfactory.hh
   include/minizinc/solvers/MIP/MIP_highs_wrap.hh
 )
 

@@ -303,4 +303,5 @@ void NLSolverInstance::analyse(const Item* i) {
   }  // END OF SWITCH
 }
 
+void register_nl_solver() { static NLSolverFactory _nl_solverfactory; }
 }  // namespace MiniZinc

@@ -3,10 +3,8 @@
 if (NOT DEFINED EMSCRIPTEN)
 	### Compile target for the CPlex interface
 	add_library(minizinc_cplex OBJECT
-		solvers/MIP/MIP_cplex_solverfactory.cpp
 		solvers/MIP/MIP_cplex_wrap.cpp
 
-		include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
 		include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
 	)
 

@@ -776,4 +776,6 @@ void GeasSolverFactory::printHelp(std::ostream& os) {
      << std::endl
      << std::endl;
 }
+
+void register_geas_solver() { static GeasSolverFactory _geas_solverfactory; }
 }  // namespace MiniZinc

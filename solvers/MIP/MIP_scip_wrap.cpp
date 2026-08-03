@@ -15,6 +15,7 @@
 
 #include <minizinc/exception.hh>
 #include <minizinc/solvers/MIP/MIP_scip_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils.hh>
 
 #include <array>
@@ -976,3 +977,7 @@ SCIP_RETCODE MIPScipWrapper::setObjSenseSCIP(int s) {
                                   _scip, s > 0 ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
   return SCIP_OKAY;
 }
+
+namespace MiniZinc {
+void register_scip_solver() { static MIPSolverFactory<MIPScipWrapper> _scip_solver_factory; }
+}  // namespace MiniZinc

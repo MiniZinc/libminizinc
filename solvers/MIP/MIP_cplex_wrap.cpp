@@ -15,6 +15,7 @@
 
 #include <minizinc/config.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils.hh>
 
 #include <cmath>
@@ -1339,3 +1340,7 @@ void MIPCplexWrapper::setObjSense(int s) {
   _status = dll_CPXchgobjsen(_env, _lp, -s);  // +1 for min in CPLEX
   wrapAssert(_status == 0, "Failed to set obj sense.");
 }
+
+namespace MiniZinc {
+void register_cplex_solver() { static MIPSolverFactory<MIPCplexWrapper> _cplex_solver_factory; }
+}  // namespace MiniZinc

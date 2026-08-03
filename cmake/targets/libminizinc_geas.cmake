@@ -5,11 +5,9 @@ if(GEAS_FOUND)
   ### Compile target for the Geas interface
   add_library(minizinc_geas OBJECT
     solvers/geas/geas_constraints.cpp
-    solvers/geas/geas_solverfactory.cpp
     solvers/geas/geas_solverinstance.cpp
 
     include/minizinc/solvers/geas/geas_constraints.hh
-    include/minizinc/solvers/geas_solverfactory.hh
     include/minizinc/solvers/geas_solverinstance.hh
   )
   target_include_directories(minizinc_geas PRIVATE "${GEAS_INCLUDE_DIRS}")

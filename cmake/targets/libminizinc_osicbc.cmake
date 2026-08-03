@@ -5,10 +5,8 @@ if(OSICBC_FOUND)
   ### Compile target for the OsiCBC interface
   add_library(minizinc_osicbc OBJECT
 
-    solvers/MIP/MIP_osicbc_solverfactory.cpp
     solvers/MIP/MIP_osicbc_wrap.cpp
 
-    include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
   )
   target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDE_DIRS})

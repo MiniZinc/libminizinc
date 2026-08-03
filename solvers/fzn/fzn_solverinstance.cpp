@@ -383,4 +383,6 @@ Expression* FZNSolverInstance::getSolutionValue(Id* id) {
   assert(false);
   return nullptr;
 }
+
+void register_fzn_solver() { static FZNSolverFactory _fzn_solverfactory; }
 }  // namespace MiniZinc
