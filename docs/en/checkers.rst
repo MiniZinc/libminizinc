@@ -39,17 +39,12 @@ the provided output annotation and prints
   ----------
   ==========
 
-which can be added as an extra ``.dzn`` file. The process of compilation for autonomous checking and re-solving
-with the output variables fixed,
-is automated by a Python script ``tests/benchmarking/mzn-test.py``. To solve an instance with autonomous
-checking by variable value substitution, run, e.g.,
+which can be added as an extra ``.dzn`` file.
 
-.. code-block:: bash
-
-  mzn-test.py --solver gecode model.mzn data.dzn
-
-Moreover, ``mzn-test.py`` provides facility to run a list of instances and compare results
-from various test runs and different solvers.
+This process of re-compiling and re-solving with the output variables fixed is automated by
+`mzn-bench <https://github.com/MiniZinc/mzn-bench>`_, which can check the solutions of a
+benchmark run against the original models and detect inconsistent claims of optimality or
+unsatisfiability. It can be installed with ``pip install mzn-bench``.
 
 
 Model Validation: Automatic Solution Checking with a Checker Model

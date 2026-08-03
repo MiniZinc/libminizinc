@@ -960,7 +960,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             ss.add("eliminatedLinearConstraints", stats.n_lin_del);
           }
 
-          /// Objective / SAT. These messages are used by mzn-test.py.
+          /// Objective / SAT.
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {
             if (solveItem->st() == SolveI::SolveType::ST_MAX) {
