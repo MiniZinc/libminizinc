@@ -205,16 +205,10 @@ public:
 /// Return thread-local GC object.
 /// Defined inline (rather than out-of-line in gc.cpp) so that the very hot
 /// allocation and root-management paths pay a single, CSE-able thread-local
-/// load instead of a cross-TU function call. The function-local `static
-/// __thread` still resolves to one instance per thread across all TUs.
+/// load instead of a cross-TU function call. The function-local `thread_local`
+/// still resolves to one instance per thread across all TUs.
 inline GC*& GC::gc() {
-#ifdef HAS_DECLSPEC_THREAD
-  __declspec(thread) static GC* gc = nullptr;
-#elif defined(HAS_ATTR_THREAD)
-  static __thread GC* gc = nullptr;
-#else
-#error Need thread-local storage
-#endif
+  static thread_local GC* gc = nullptr;
   return gc;
 }
 

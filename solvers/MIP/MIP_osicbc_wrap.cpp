@@ -967,7 +967,10 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     vector<string> argvS;
     MiniZinc::split(cbcCmdOptions, argvS);
     vector<const char*> argv;
-    MiniZinc::vec_string2vec_pchar(argvS, argv);
+    argv.reserve(argvS.size());
+    for (const auto& s : argvS) {
+      argv.push_back(s.c_str());
+    }
     if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'..." << endl;
     CbcMain1(argv.size(), argv.data(), model, callBack);
 #endif

@@ -14,14 +14,6 @@
 #include <iostream>
 #include <vector>
 
-#ifndef HAS_MEMCPY_S
-namespace {
-void memcpy_s(char* dest, size_t /*size*/, const char* src, size_t count) {
-  memcpy(dest, src, count);
-}
-}  // namespace
-#endif
-
 namespace MiniZinc {
 
 int ASTString::levenshteinDistance(const ASTString& other) const {

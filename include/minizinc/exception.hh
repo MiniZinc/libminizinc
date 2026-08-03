@@ -52,13 +52,6 @@ public:
   virtual void json(std::ostream& os) const;
 };
 
-class ParseException : public Exception {
-public:
-  ParseException(const std::string& msg) : Exception(msg) {}
-  ~ParseException() throw() override {}
-  const char* what() const throw() override { return ""; }
-};
-
 class InternalError : public Exception {
 public:
   InternalError(const std::string& msg) : Exception(msg) {}

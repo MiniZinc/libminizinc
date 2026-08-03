@@ -8,17 +8,11 @@
 
 #define MZN_STATIC_STDLIB_DIR "${MZN_STATIC_STDLIB_DIR}"
 
-#cmakedefine HAS_DECLSPEC_THREAD
-
-#cmakedefine HAS_ATTR_THREAD
-
 #cmakedefine HAS_PIDPATH
 
 #cmakedefine HAS_GETMODULEFILENAME
 
 #cmakedefine HAS_GETFILEATTRIBUTES
-
-#cmakedefine HAS_MEMCPY_S
 
 #cmakedefine COMPILE_BOOST_MINCUT
 

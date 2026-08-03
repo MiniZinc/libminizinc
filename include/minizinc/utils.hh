@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cerrno>
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <ctime>
 #include <iomanip>
@@ -26,22 +27,12 @@
 #include <ratio>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
-#ifdef MZN_HAS_LLROUND
-#include <cmath>
 namespace MiniZinc {
-inline long long int round_to_longlong(double v) { return ::llround(v); }
-}  // namespace MiniZinc
-#else
-namespace MiniZinc {
-inline long long int round_to_longlong(double v) {
-  return static_cast<long long int>(v < 0 ? v - 0.5 : v + 0.5);
-}
-}  // namespace MiniZinc
-#endif
 
-namespace MiniZinc {
+inline long long int round_to_longlong(double v) { return ::llround(v); }
 
 int parse_int(const std::string& value);
 long parse_long(const std::string& value);
@@ -176,31 +167,6 @@ public:
   }
 };  // class CLOParser
 
-/// This class prints a value if non-0 and adds comma if not 1st time
-class HadOne {
-  bool _fHadOne = false;
-
-public:
-  template <class N>
-  std::string operator()(const N& val, const char* descr = nullptr) {
-    std::ostringstream oss;
-    if (val) {
-      if (_fHadOne) {
-        oss << ", ";
-      }
-      _fHadOne = true;
-      oss << val;
-      if (descr) {
-        oss << descr;
-      }
-    }
-    return oss.str();
-  }
-  void reset() { _fHadOne = false; }
-  operator bool() const { return _fHadOne; }
-  bool operator!() const { return !_fHadOne; }
-};
-
 /// Split a string into words
 /// Add the words into the given vector
 inline void split(const std::string& str, std::vector<std::string>& words) {
@@ -209,16 +175,6 @@ inline void split(const std::string& str, std::vector<std::string>& words) {
   while (iss) {
     iss >> buf;
     words.push_back(buf);
-  }
-}
-
-/// Puts the strings' c_str()s into the 2nd argument.
-/// The latter is only valid as long as the former isn't changed.
-inline void vec_string2vec_pchar(const std::vector<std::string>& vS,
-                                 std::vector<const char*>& vPC) {
-  vPC.resize(vS.size());
-  for (size_t i = 0; i < vS.size(); ++i) {
-    vPC[i] = vS[i].c_str();
   }
 }
 
@@ -277,33 +233,13 @@ public:
     patch = parseComponent(version.substr(begin, end - begin));
   }
   bool operator<(const SemanticVersion& other) const {
-    if (major < other.major) {
-      return true;
-    }
-    if (minor < other.minor) {
-      return true;
-    }
-    if (patch < other.patch) {
-      return true;
-    }
-
-    return false;
+    return std::tie(major, minor, patch) < std::tie(other.major, other.minor, other.patch);
   }
   bool operator<=(const SemanticVersion& other) const {
-    if (major > other.major) {
-      return false;
-    }
-    if (minor > other.minor) {
-      return false;
-    }
-    if (patch > other.patch) {
-      return false;
-    }
-
-    return true;
+    return std::tie(major, minor, patch) <= std::tie(other.major, other.minor, other.patch);
   }
   bool operator==(const SemanticVersion& other) const {
-    return major == other.major && minor == other.minor && patch == other.patch;
+    return std::tie(major, minor, patch) == std::tie(other.major, other.minor, other.patch);
   }
   friend std::ostream& operator<<(std::ostream& stream, const SemanticVersion& ver) {
     stream << ver.major;

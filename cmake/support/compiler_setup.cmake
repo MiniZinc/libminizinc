@@ -19,21 +19,12 @@ set(CMAKE_REQUIRED_QUIET $<NOT:${VERBOSE}>)
 
 include(CheckCXXCompilerFlag)
 
-set(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
 check_cxx_compiler_flag(-Werror HAS_WERROR)
 
 if(HAS_WERROR)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
-check_cxx_source_compiles("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
-
-if(NOT HAS_ATTR_THREAD)
-  check_cxx_source_compiles("int main(void) { __declspec(thread) static int x; (void)x; return 0;}" HAS_DECLSPEC_THREAD)
-endif()
-
-check_cxx_source_compiles("#include <cstdlib>
-int main(void) { long long int x = atoll(\"123\"); (void)x; }" HAS_ATOLL)
 check_cxx_source_compiles("
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,10 +56,3 @@ int main (int argc, char* argv[]) {
   (void) GetFileAttributes(NULL);
   return 0;
 }" HAS_GETFILEATTRIBUTES)
-
-check_cxx_source_compiles("
-#include <string.h>
-int main (int argc, char* argv[]) {
-  (void) memcpy_s(NULL,0,NULL,0);
-  return 0;
-}" HAS_MEMCPY_S)
