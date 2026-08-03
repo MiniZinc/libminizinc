@@ -2,7 +2,6 @@
 
 add_library(minizinc_mip OBJECT
   lib/algorithms/min_cut.cpp
-  lib/utils_savestream.cpp
 
   solvers/MIP/MIP_solverinstance.cpp
 

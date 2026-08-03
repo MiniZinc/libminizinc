@@ -17,7 +17,6 @@
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
-#include <minizinc/utils_savestream.hh>
 
 #include <cmath>
 #include <cstring>
@@ -288,6 +287,16 @@ void dll_close(void* dll) {
   dlclose(dll);
 #endif
 }
+/// Write Gurobi's log output to stderr, keeping stdout free for the solution stream.
+/// Gurobi echoes every parameter assignment, including the LogToConsole one that openGUROBI
+/// makes itself purely to set this redirection up; that echo is dropped rather than reported
+/// as if the user had asked for it.
+int __stdcall gurobi_log_to_stderr(char* msg, void* /*logdata*/) {
+  if (msg != nullptr && !MiniZinc::beginswith(msg, "Set parameter LogToConsole")) {
+    cerr << msg;
+  }
+  return 0;
+}
 }  // namespace
 
 void MIPGurobiWrapper::checkDLL() {
@@ -326,11 +335,6 @@ void MIPGurobiWrapper::checkDLL() {
   *(void**)(&dll_GRBgetenv) = dll_sym(_gurobiDll, "GRBgetenv");
   *(void**)(&dll_GRBgeterrormsg) = dll_sym(_gurobiDll, "GRBgeterrormsg");
   *(void**)(&dll_GRBgetintattr) = dll_sym(_gurobiDll, "GRBgetintattr");
-  *(void**)(&dll_GRBloadenv) = try_dll_sym(_gurobiDll, "GRBloadenv");
-  if (dll_GRBloadenv == nullptr) {
-    // Workaround for missing symbol in 12.0.0
-    *(void**)(&dll_GRBloadenvinternal) = dll_sym(_gurobiDll, "GRBloadenvinternal");
-  }
   *(void**)(&dll_GRBgetconcurrentenv) = dll_sym(_gurobiDll, "GRBgetconcurrentenv");
   *(void**)(&dll_GRBnewmodel) = dll_sym(_gurobiDll, "GRBnewmodel");
   *(void**)(&dll_GRBoptimize) = dll_sym(_gurobiDll, "GRBoptimize");
@@ -353,6 +357,8 @@ void MIPGurobiWrapper::checkDLL() {
     // Workaround for missing symbol in 12.0.0
     *(void**)(&dll_GRBemptyenvinternal) = dll_sym(_gurobiDll, "GRBemptyenvinternal");
   }
+  *(void**)(&dll_GRBstartenv) = dll_sym(_gurobiDll, "GRBstartenv");
+  *(void**)(&dll_GRBsetlogcallbackfuncenv) = dll_sym(_gurobiDll, "GRBsetlogcallbackfuncenv");
   *(void**)(&dll_GRBgetnumparams) = dll_sym(_gurobiDll, "GRBgetnumparams");
   *(void**)(&dll_GRBgetparamname) = dll_sym(_gurobiDll, "GRBgetparamname");
   *(void**)(&dll_GRBgetparamtype) = dll_sym(_gurobiDll, "GRBgetparamtype");
@@ -364,21 +370,29 @@ void MIPGurobiWrapper::checkDLL() {
 void MIPGurobiWrapper::openGUROBI() {
   checkDLL();
 
-  /* Initialize the GUROBI environment */
-  {
-    //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
-    MiniZinc::StreamRedir redirStdout(stdout, stderr);
-    if (dll_GRBloadenv == nullptr) {
-      // Workaround for missing symbol in 12.0.0
-      _error = dll_GRBloadenvinternal(&_env, nullptr, 12, 0, 0);
-    } else {
-      _error = dll_GRBloadenv(&_env, nullptr);
-    }
+  // Initialize the GUROBI environment.
+  //
+  // The environment is created empty and started explicitly so that its logging can be
+  // configured before start-up: while starting, Gurobi emits its license banner ("Academic
+  // license...") to stdout, which we have to redirect to stderr before
+  // `GRBstartenv`. Afterwards we disable solver logging via `OutputFlag`.
+  if (dll_GRBemptyenv == nullptr) {
+    // Workaround for missing symbol in 12.0.0
+    _error = dll_GRBemptyenvinternal(&_env, 12, 0, 0);
+  } else {
+    _error = dll_GRBemptyenv(&_env);
   }
+  wrapAssert(_error == 0, "Could not create GUROBI environment.");
+  _error = dll_GRBsetlogcallbackfuncenv(_env, gurobi_log_to_stderr, nullptr);
+  wrapAssert(_error == 0, "Could not redirect GUROBI log output.");
+  _error = dll_GRBsetintparam(_env, "LogToConsole", 0);
+  wrapAssert(_error == 0, "Could not switch off GUROBI console output.");
+  _error = dll_GRBstartenv(_env);
   wrapAssert(_error == 0, "Could not open GUROBI environment.");
   _error = dll_GRBsetintparam(_env, "OutputFlag", 0);  // Switch off output
   //   _error = dll_GRBsetintparam(_env, "LogToConsole",
   //                            fVerbose ? 1 : 0);  // also when flagIntermediate?  TODO
+  wrapAssert(_error == 0, "Could not switch off GUROBI output.");
   /* Create the problem. */
   _error =
       dll_GRBnewmodel(_env, &_model, "mzn_gurobi", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
