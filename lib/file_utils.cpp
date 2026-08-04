@@ -23,8 +23,6 @@
 #include <sstream>
 #include <string>
 
-#include <minizinc/_thirdparty/b64/decode.h>
-#include <minizinc/_thirdparty/b64/encode.h>
 #include <minizinc/_thirdparty/miniz.h>
 
 #ifdef HAS_PIDPATH
@@ -817,25 +815,64 @@ std::string deflate_string(const std::string& s) {
   return ret;
 }
 
+namespace {
+const char* const BASE64_ALPHABET =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+}  // namespace
+
 std::string encode_base64(const std::string& s) {
-  base64::encoder E;
-  std::ostringstream oss;
-  oss << "@";  // add leading "@" to distinguish from valid MiniZinc code
-  std::istringstream iss(s);
-  E.encode(iss, oss);
-  return oss.str();
+  // Exact encoded size, so every character below can be written by index
+  std::string ret(1 + (s.size() + 2) / 3 * 4, '\0');
+  ret[0] = '@';  // leading "@" distinguishes it from valid MiniZinc code
+  size_t out = 1;
+  for (size_t i = 0; i < s.size(); i += 3) {
+    const size_t rest = s.size() - i;
+    unsigned int block = static_cast<unsigned int>(static_cast<unsigned char>(s[i])) << 16;
+    if (rest > 1) {
+      block |= static_cast<unsigned int>(static_cast<unsigned char>(s[i + 1])) << 8;
+    }
+    if (rest > 2) {
+      block |= static_cast<unsigned int>(static_cast<unsigned char>(s[i + 2]));
+    }
+    ret[out++] = BASE64_ALPHABET[(block >> 18) & 0x3f];
+    ret[out++] = BASE64_ALPHABET[(block >> 12) & 0x3f];
+    ret[out++] = rest > 1 ? BASE64_ALPHABET[(block >> 6) & 0x3f] : '=';
+    ret[out++] = rest > 2 ? BASE64_ALPHABET[block & 0x3f] : '=';
+  }
+  return ret;
 }
 
 std::string decode_base64(const std::string& s) {
   if (s.empty() || s[0] != '@') {
     throw InternalError("string is not base64 encoded");
   }
-  base64::decoder D;
-  std::ostringstream oss;
-  std::istringstream iss(s);
-  (void)iss.get();  // remove leading "@"
-  D.decode(iss, oss);
-  return oss.str();
+  // Reverse of BASE64_ALPHABET; any value above 63 marks padding, line breaks and other filler,
+  // which are skipped. Built per call: it costs a memset and 64 stores, which even for a few
+  // hundred bytes of input is far cheaper than a static with the thread-safe-initialisation
+  // guard the inner loop would then pay on every character.
+  unsigned char value[256];
+  std::memset(value, 0xff, sizeof(value));
+  for (unsigned int i = 0; i < 64; i++) {
+    value[static_cast<unsigned char>(BASE64_ALPHABET[i])] = static_cast<unsigned char>(i);
+  }
+  std::string ret(s.size() / 4 * 3 + 3, '\0');  // upper bound, trimmed once decoded
+  size_t out = 0;
+  unsigned int block = 0;
+  int bits = 0;
+  for (size_t i = 1; i < s.size(); i++) {
+    const unsigned int v = value[static_cast<unsigned char>(s[i])];
+    if (v > 63) {
+      continue;
+    }
+    block = (block << 6) | v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      ret[out++] = static_cast<char>((block >> bits) & 0xff);
+    }
+  }
+  ret.resize(out);
+  return ret;
 }
 
 #ifdef _WIN32

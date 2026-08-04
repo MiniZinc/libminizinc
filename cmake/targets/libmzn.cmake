@@ -41,8 +41,6 @@ add_library(mzn
   lib/htmlprinter.cpp
   lib/json_parser.cpp
   lib/lexer.lxx
-  lib/thirdparty/cdecode.c
-  lib/thirdparty/cencode.c
   lib/thirdparty/miniz.c
   lib/model.cpp
   lib/optimize.cpp
@@ -112,10 +110,6 @@ add_library(mzn
   include/minizinc/stackdump.hh
   include/minizinc/statistics.hh
   include/minizinc/support/regex.hh
-  include/minizinc/_thirdparty/b64/cdecode.h
-  include/minizinc/_thirdparty/b64/cencode.h
-  include/minizinc/_thirdparty/b64/decode.h
-  include/minizinc/_thirdparty/b64/encode.h
   include/minizinc/_thirdparty/miniz.h
   include/minizinc/timer.hh
   include/minizinc/type.hh
