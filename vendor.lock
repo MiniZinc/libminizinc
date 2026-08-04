@@ -1,0 +1,13 @@
+# Pinned minizinc-vendor dependency versions consumed by this build.
+# One line per dependency: <dep>=<version>. Each is downloaded individually from
+# its per-dependency release in MiniZinc/minizinc-vendor. Bumped automatically by
+# minizinc-vendor's publish.yml (one bot/bump-<dep> PR per dependency).
+#
+# NOTE: cbc is temporarily absent (deactivated in minizinc-vendor pending a fix for
+# the cbc:win64 libtool bug). Re-add `cbc=<version>` here when it is published again.
+gecode=6.4.0
+chuffed=0.14.0
+highs=v1.15.1
+or-tools=v9.15
+# win64 only: runtime DLLs the IDE's Windows installer bundles.
+openssl=3.5.1

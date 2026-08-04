@@ -1,0 +1,323 @@
+name: Build & Test
+
+# Build the MiniZinc compiler (all platforms) against the pinned minizinc-vendor
+# release, run the test suite, and build the handbook. Build logic lives in the
+# reusable _build.yml. Lint is in lint.yml, benchmarks in benchmark.yml.
+
+on:
+  push:
+    # TODO: drop feat/github_actions before merging; it is here only so the
+    # migration branch keeps building while it has no PR.
+    branches: [develop, feat/github_actions]
+    tags: ["*"]
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      full_tests:
+        description: "Run the full test suite (pytest --all-suites)."
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux,       triple: x86_64-linux-gnu,   runner: ubuntu-24.04,     container: "quay.io/pypa/manylinux_2_28_x86_64",  setup: "",                                                   generator: "Unix Makefiles" }
+          - { platform: linux-arm64, triple: aarch64-linux-gnu,  runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64", setup: "",                                                   generator: "Unix Makefiles" }
+          - { platform: musl,        triple: x86_64-linux-musl,  runner: ubuntu-24.04,     container: "alpine:3.20",                         setup: "apk add --no-cache bash build-base cmake ninja git", generator: "Ninja" }
+          - { platform: musl-arm64,  triple: aarch64-linux-musl, runner: ubuntu-24.04-arm, container: "alpine:3.20",                         setup: "apk add --no-cache bash build-base cmake ninja git", generator: "Ninja" }
+          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-14,       container: "",                                    setup: "",                                                   generator: "Ninja" }
+          - { platform: win64,       triple: x86_64-windows,     runner: windows-2022,     container: "",                                    setup: "",                                                   generator: "Ninja" }
+    uses: ./.github/workflows/_build.yml
+    with:
+      platform:  ${{ matrix.platform }}
+      triple:    ${{ matrix.triple }}
+      runner:    ${{ matrix.runner }}
+      container: ${{ matrix.container }}
+      setup:     ${{ matrix.setup }}
+      generator: ${{ matrix.generator }}
+
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux, triple: x86_64-linux-gnu,        runner: ubuntu-24.04 }
+          - { platform: osx,   triple: aarch64-apple-darwin,    runner: macos-14 }
+          - { platform: win64, triple: x86_64-windows,          runner: windows-2022 }
+    runs-on: ${{ matrix.runner }}
+    name: test (${{ matrix.platform }})
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # cbc temporarily removed (deactivated in minizinc-vendor); re-add when reactivated.
+      MZN_TEST_TAGS_PRESENT: gecode_presolver,cplex,highs,scip,gurobi,xpress
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: minizinc-${{ matrix.platform }}
+          path: minizinc
+      - name: Fetch pinned vendor solvers
+        shell: bash
+        run: bash scripts/fetch_vendor.sh ${{ matrix.triple }} gecode chuffed highs or-tools
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Run pytest (linux/osx)
+        if: matrix.platform != 'win64'
+        shell: bash
+        run: |
+          set -eux
+          chmod +x minizinc/bin/minizinc || true
+          export PATH="$PWD/minizinc/bin:$PATH"
+          export MZN_SOLVER_PATH="$PWD/vendor/chuffed/share/minizinc/solvers/:$PWD/vendor/gecode/share/minizinc/solvers/"
+          case "${{ matrix.platform }}" in
+            linux) export LD_LIBRARY_PATH="$PWD/vendor/highs/lib64:${LD_LIBRARY_PATH:-}" ;;
+            osx)   export DYLD_LIBRARY_PATH="$PWD/vendor/highs/lib:${DYLD_LIBRARY_PATH:-}" ;;
+          esac
+          minizinc --solvers
+          cd tests
+          python -m venv env
+          # shellcheck disable=SC1091
+          source env/bin/activate
+          pip install -r requirements.txt
+          if [ "${{ github.event.inputs.full_tests }}" = "true" ]; then
+            pytest --all-suites
+          else
+            pytest
+          fi
+
+      # Windows runs under cmd.exe, matching the old GitLab `.tests_win64` job.
+      # Not cosmetic: MiniZinc implements both --time-limit and its external
+      # interrupt via console control events (GenerateConsoleCtrlEvent). Git Bash
+      # (MSYS2) emulates the console rather than providing a real one, so those
+      # events are never delivered and the solver-termination tests hang.
+      - name: Run pytest (win64)
+        if: matrix.platform == 'win64'
+        shell: cmd
+        run: |
+          set PATH=%CD%\minizinc\bin;%CD%\vendor\highs\bin;%PATH%
+          set MZN_SOLVER_PATH=%CD%\vendor\chuffed\share\minizinc\solvers\;%CD%\vendor\gecode\share\minizinc\solvers\
+          minizinc --solvers || exit /b 1
+          cd tests
+          python -m venv env || exit /b 1
+          call env\Scripts\activate.bat
+          pip install -r requirements.txt || exit /b 1
+          if "${{ github.event.inputs.full_tests }}"=="true" (pytest --all-suites) else (pytest)
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-output-${{ matrix.platform }}
+          path: tests/output/
+          if-no-files-found: ignore
+
+  # Handbook build lives here (not a separate workflow) so it reuses the linux
+  # compiler artifact from the `build` matrix instead of rebuilding it.
+  documentation:
+    name: handbook
+    needs: build
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: minizinc-linux
+          path: minizinc
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install Sphinx + LaTeX toolchain
+        run: |
+          pip install sphinx -r docs/requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended texlive-xetex texlive-lang-chinese \
+            texlive-binaries xindy \
+            fonts-noto-cjk fonts-noto-core fonts-lato fonts-inconsolata
+          # Sphinx's LaTeX index rule is *named* "makeindex" but actually execs
+          # xindy; without it latexmk aborts and reports the failure as hundreds
+          # of unresolved references, which hides the real cause.
+          for t in makeindex xindy latexmk; do
+            command -v "$t" >/dev/null || { echo "missing required tool: $t"; exit 1; }
+          done
+      - name: Fetch pinned vendor deps (gecode + chuffed)
+        shell: bash
+        run: bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode chuffed
+      - name: Build handbook (EN + ZH, HTML + PDF)
+        run: ROOT="$PWD" bash scripts/build_docs.sh
+      - uses: actions/upload-artifact@v7
+        with:
+          name: documentation
+          path: docs-deploy/
+
+  # Here rather than a separate workflow: artifacts only flow within one run.
+  # develop -> rolling `edge` prerelease; tag X.Y.Z -> release X.Y.Z.
+  package:
+    name: package (${{ matrix.platform }})
+    needs: build
+    # TODO: drop the feat/github_actions clause before merging.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/feat/github_actions' || startsWith(github.ref, 'refs/tags/'))
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux,       triple: x86_64-linux-gnu,     runner: ubuntu-24.04 }
+          - { platform: linux-arm64, triple: aarch64-linux-gnu,    runner: ubuntu-24.04-arm }
+          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-14 }
+          - { platform: win64,       triple: x86_64-windows,       runner: windows-2022 }
+    runs-on: ${{ matrix.runner }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: minizinc-${{ matrix.platform }}
+          path: minizinc
+      - name: Fetch pinned solvers
+        shell: bash
+        run: bash scripts/fetch_vendor.sh ${{ matrix.triple }} gecode chuffed highs or-tools
+      - name: Build CLI package
+        shell: bash
+        run: |
+          set -eux
+          chmod +x minizinc/bin/* 2>/dev/null || true
+          ROOT="$PWD" bash scripts/package_cli.sh "${{ matrix.triple }}" \
+            "${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('build{0}', github.run_id) }}"
+      - name: Smoke test the package
+        shell: bash
+        run: |
+          set -eux
+          pkg=$(ls -d MiniZinc-*-${{ matrix.triple }})
+          "$pkg/bin/minizinc" --solvers
+          for s in gecode chuffed cp-sat highs; do
+            "$pkg/bin/minizinc" --solvers | grep -qi "$s" || { echo "missing solver: $s"; exit 1; }
+          done
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.platform }}
+          path: dist/
+
+  publish:
+    name: publish release
+    needs: [build, test, package]
+    # TODO: drop the feat/github_actions clause before merging.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/feat/github_actions' || startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+      - name: Assemble release assets
+        shell: bash
+        run: |
+          set -eux
+          mkdir -p upload
+          declare -A TRIPLES=(
+            [linux]=x86_64-linux-gnu [linux-arm64]=aarch64-linux-gnu
+            [musl]=x86_64-linux-musl [musl-arm64]=aarch64-linux-musl
+            [osx]=aarch64-apple-darwin [win64]=x86_64-windows
+          )
+          for plat in "${!TRIPLES[@]}"; do
+            d="artifacts/minizinc-$plat"
+            [ -d "$d" ] || continue
+            # `compiler-only`: the compiler without solvers. Not a user download --
+            # the MiniZinc IDE combines it with gecode_gist etc. The user-facing
+            # bundle is MiniZinc-<version>-<triple>, which includes the solvers.
+            tar -czf "upload/minizinc-compiler-only-${TRIPLES[$plat]}.tar.gz" -C "$d" .
+          done
+          cp artifacts/cli-*/* upload/ 2>/dev/null || true
+          cp vendor.lock upload/
+          ls -l upload/
+      - name: Publish
+        shell: bash
+        run: |
+          set -eux
+          if [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
+            TAG="${{ github.ref_name }}"
+            # Wording matches the existing releases.
+            NOTES="This release"
+            case "$TAG" in *.*.0) NOTES="$NOTES adds several new features and" ;; esac
+            NOTES="$NOTES fixes a number of bugs, see https://docs.minizinc.dev/en/$TAG/changelog.html"
+            NOTES="$NOTES for a full change log."
+            NOTES="$NOTES"$'\n\n'"The packages attached here contain the MiniZinc command line tools and solvers."
+            NOTES="$NOTES Full bundles that also include the MiniZinc IDE are available at"
+            NOTES="$NOTES https://github.com/MiniZinc/MiniZincIDE/releases."
+            gh release create "$TAG" --title "MiniZinc $TAG" --verify-tag \
+              --notes "$NOTES" 2>/dev/null || true
+          else
+            TAG=edge
+            TITLE="MiniZinc Edge (unstable development release)"
+            cat > edge_notes <<'EOF'
+          This release is continuously updated to point to the latest development version of MiniZinc.
+
+          The packages provided here are unstable, and not guaranteed to work. However, they may be useful if you wish to try out upcoming features/bug fixes.
+
+          These packages contain the MiniZinc command line tools and solvers. Full bundles that also include the MiniZinc IDE are available at https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge
+
+          Please refer to the change log for details:
+          https://docs.minizinc.dev/en/latest/changelog.html#unreleased
+          EOF
+            # Update the rolling prerelease IN PLACE. Deleting and recreating it
+            # would send a "new release" notification to every watcher on every
+            # develop build, so instead: move the tag, edit the release, and swap
+            # the assets. Pushing the tag with GITHUB_TOKEN does not re-trigger
+            # workflows, so this cannot set off the tag-driven release path.
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f -a -m "Development build of MiniZinc" "$TAG" "$GITHUB_SHA"
+            git push -f origin "refs/tags/$TAG"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release edit "$TAG" --prerelease --title "$TITLE" --notes-file edge_notes
+              # Drop assets from the previous build: their names embed the run id,
+              # so --clobber alone would leave them behind forever.
+              gh release view "$TAG" --json assets --jq '.assets[].name' \
+                | while read -r a; do [ -n "$a" ] && gh release delete-asset "$TAG" "$a" -y; done
+            else
+              gh release create "$TAG" --prerelease --title "$TITLE" --notes-file edge_notes
+            fi
+          fi
+          gh release upload "$TAG" upload/* --clobber
+
+  # After publish, so the IDE does not race and pull the previous edge assets.
+  # GITHUB_TOKEN cannot trigger workflows cross-repo, hence the App token.
+  notify-ide:
+    name: trigger IDE rebuild
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ secrets.MINIZINC_BOT_APP_ID }}
+          private-key: ${{ secrets.MINIZINC_BOT_APP_KEY }}
+          owner: MiniZinc
+          repositories: MiniZincIDE
+      - name: Dispatch
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          # workflow_dispatch, not repository_dispatch: the latter always runs the
+          # default branch's workflow, so it could not rebuild develop.
+          gh workflow run ci.yml --repo MiniZinc/MiniZincIDE --ref develop \
+            -f minizinc_release=edge

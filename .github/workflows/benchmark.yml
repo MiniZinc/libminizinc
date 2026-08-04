@@ -1,0 +1,52 @@
+name: Benchmarks
+
+# SLURM flattening benchmarks. Manual-dispatch only (GitHub-hosted runners cannot
+# reach SLURM); the bench job targets a self-hosted runner. Builds linux via the
+# reusable _build.yml, then flattens a benchmark set through the compiler.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  build:
+    name: linux
+    uses: ./.github/workflows/_build.yml
+    with:
+      platform:  linux
+      triple:    x86_64-linux-gnu
+      runner:    ubuntu-24.04
+      container: "quay.io/pypa/manylinux_2_28_x86_64"
+      generator: "Unix Makefiles"
+
+  bench:
+    name: flatten (${{ matrix.mznlib }})
+    needs: build
+    strategy:
+      matrix:
+        mznlib: [std, linear]
+    runs-on: [self-hosted, slurm]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: minizinc-linux
+          path: minizinc
+      - name: Flatten benchmark
+        run: |
+          cd tests/flattening
+          mkdir -p results
+          curl --retry 10 --location --silent https://gitlab.com/-/snippets/2095682/raw/master/instances.csv | tr -d '\r' > instances.csv
+          git clone https://github.com/minizinc/minizinc-benchmarks.git
+          python3 flatten.py --minizinc="$PWD/../../minizinc/bin/minizinc" \
+            --prefix-args="srun -w critical001 --nice --mem=8192 -t 10" \
+            --args="-G ${{ matrix.mznlib }}" --parallel="-1" instances.csv results/stats.csv
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bench-${{ matrix.mznlib }}
+          path: tests/flattening/results/

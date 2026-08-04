@@ -1,0 +1,94 @@
+name: Code Quality
+
+# clang-format + clang-tidy over the whole tree, gated on C/C++ changes.
+# Independent of the compiler build artifacts, so it lives in its own workflow
+# for fast feedback.
+#
+# The clang tools are pinned (the old GitLab `docker-build-environment:clang-tools`
+# image was `FROM alpine` + `apk add clang`, so what it enforced drifted with the
+# base image). Bumping these pins may surface new findings that need fixing here.
+
+on:
+  push:
+    # develop only; feature branches are covered by their PR.
+    # TODO: drop feat/github_actions before merging (see ci.yml).
+    branches: [develop, feat/github_actions]
+  pull_request: {}
+  workflow_dispatch: {}
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  # Separate versions: the PyPI packages do not publish identical patch releases.
+  CLANG_FORMAT_VERSION: "18.1.8"
+  CLANG_TIDY_VERSION: "18.1.8"
+
+jobs:
+  changes:
+    name: detect C/C++ changes
+    runs-on: ubuntu-24.04
+    outputs:
+      cpp: ${{ steps.f.outputs.cpp }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: f
+        with:
+          filters: |
+            cpp:
+              - '**/*.cpp'
+              - '**/*.c'
+              - '**/*.h'
+              - '**/*.hh'
+              - '**/*.hpp'
+              - '.clang-format'
+              - '.clang-tidy'
+
+  format:
+    name: clang-format
+    needs: changes
+    if: needs.changes.outputs.cpp == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install clang-format
+        run: pip install "clang-format==${CLANG_FORMAT_VERSION}"
+      - name: clang-format (check only)
+        run: |
+          cmake -S . -B build -DCLANG_FORMAT_FLAGS="--dry-run --Werror --color=1"
+          cmake --build build --target format
+
+  analyse:
+    name: clang-tidy
+    needs: changes
+    if: needs.changes.outputs.cpp == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install clang-tidy + ninja
+        run: |
+          pip install "clang-tidy==${CLANG_TIDY_VERSION}"
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
+      # TODO: re-add `cbc` (fetch + -DOsiCBC_ROOT) once cbc:win64 is fixed / reactivated.
+      - name: Fetch pinned vendor deps (gecode)
+        shell: bash
+        run: bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode
+      - name: clang-tidy
+        run: |
+          cmake -S . -B build -GNinja \
+            -DCMAKE_CXX_CLANG_TIDY="clang-tidy" \
+            -DCMAKE_BUILD_TYPE="Debug" \
+            -DGecode_ROOT="$PWD/vendor/gecode"
+              cmake --build build --config Debug -- -k 0

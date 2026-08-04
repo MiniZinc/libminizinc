@@ -1,0 +1,68 @@
+name: Compiler build (reusable)
+
+# Reusable: compile the MiniZinc compiler for ONE platform against the pinned
+# minizinc-vendor release (vendor.lock) and upload it as the `minizinc-<platform>`
+# artifact. Called by ci.yml (matrixed over all platforms) and benchmark.yml
+# (linux only). Not triggered directly.
+#
+# Same build model as minizinc-vendor: glibc-linux builds run in a manylinux
+# container (low glibc floor), musl in alpine, osx/win64 natively. A per-platform
+# `setup` installs whatever the bare base image lacks, then scripts/build.sh runs.
+
+on:
+  workflow_call:
+    inputs:
+      platform:  { type: string, required: true }
+      triple:    { type: string, required: true }
+      runner:    { type: string, required: true }
+      container: { type: string, default: "" }
+      setup:     { type: string, default: "" }         # deps to install in the container
+      generator: { type: string, default: "Ninja" }    # manylinux -> "Unix Makefiles"
+
+permissions:
+  contents: read
+
+env:
+  # Lets `gh release download` read minizinc-vendor's (public) releases.
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner }}
+    name: build
+    steps:
+      - uses: actions/checkout@v7
+
+      # TODO: re-add `cbc` (fetch here + -DOsiCBC_ROOT in scripts/build.sh) once
+      # cbc:win64 is fixed and CBC is reactivated in minizinc-vendor.
+      - name: Fetch pinned vendor deps (gecode)
+        shell: bash
+        run: bash scripts/fetch_vendor.sh ${{ inputs.triple }} gecode
+
+      - name: Set up MSVC (win64)
+        if: inputs.platform == 'win64'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure & build
+        shell: bash
+        run: |
+          set -eux
+          SETUP='${{ inputs.setup }}'
+          if [ -n "${{ inputs.container }}" ]; then
+            docker run --rm -v "$PWD:/work" -w /work \
+              -e ROOT=/work \
+              -e CMAKE_GENERATOR="${{ inputs.generator }}" \
+              -e BUILD_REF="${{ github.run_id }}" \
+              "${{ inputs.container }}" \
+              sh -c "${SETUP}${SETUP:+ && }bash scripts/build.sh"
+          else
+            ROOT="$PWD" \
+            CMAKE_GENERATOR="${{ inputs.generator }}" \
+            BUILD_REF="${{ github.run_id }}" \
+            bash scripts/build.sh
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: minizinc-${{ inputs.platform }}
+          path: minizinc/
