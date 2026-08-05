@@ -28,6 +28,12 @@
 #define XPRS_SOLSTATUS                                               1053
 #define XPRS_NODES                                                   1013
 #define XPRS_ACTIVENODES                                             1015
+#define XPRS_CUTROUNDS                                               1121
+#define XPRS_INPUTCOLS                                               1409
+
+// Per-objective controls (for multi-objective problems)
+#define XPRS_OBJECTIVE_PRIORITY                                      20001
+#define XPRS_OBJECTIVE_WEIGHT                                        20002
 
 // XPRS_SOLSTATUS values
 #define XPRS_SOLSTATUS_NOTFOUND                                      0

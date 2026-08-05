@@ -14,9 +14,16 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
+#include <memory>
+
 #include <minizinc/_thirdparty/xpress_interface.h>
 
 using namespace std;
+
+// Callback payloads (defined in MIP_xpress_wrap.cpp); held by unique_ptr members below so
+// they outlive the solve and are freed with the wrapper rather than leaked.
+struct UserSolutionCallbackData;
+struct UserCutCallbackData;
 
 class XpressPlugin {
 public:
@@ -92,6 +99,14 @@ public:
                                                           const char* msg, int len, int msgtype),
                                  void* p, int priority);
   // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSremovecbintsol)(XPRSprob prob,
+                                   void(XPRS_CC* f_intsol)(XPRSprob prob, void* vContext), void* p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSremovecbmessage)(XPRSprob prob,
+                                    void(XPRS_CC* f_message)(XPRSprob prob, void* vContext,
+                                                             const char* msg, int len, int msgtype),
+                                    void* p);
+  // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSgetcontrolinfo)(XPRSprob prob, const char* sCaName, int* iHeaderId,
                                    int* iTypeinfo);
   // NOLINTNEXTLINE(readability-identifier-naming)
@@ -114,8 +129,34 @@ public:
   int(XPRS_CC* XPRSaddindicators)(XPRSprob prob, int nrows, const int rowind[], const int colind[],
                                   const int complement[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
-  int(XPRS_CC* XPRSaddqmatrix)(XPRSprob prob, int row, int ncoefs, const int rowqcol1[],
-                               const int rowqcol2[], const double rowqcoef[]);
+  int(XPRS_CC* XPRSchgqrowcoeff)(XPRSprob prob, int row, int rowqcol1, int rowqcol2,
+                                 double rowqcoef);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSloaddelayedrows)(XPRSprob prob, int nrows, const int rowind[]);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSchgobjn)(XPRSprob prob, int objidx, int ncols, const int colind[],
+                            const double objcoef[]);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetobjintcontrol)(XPRSprob prob, int objidx, int control, int value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSsetobjdblcontrol)(XPRSprob prob, int objidx, int control, double value);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSaddcbcutround)(XPRSprob prob,
+                                  void(XPRS_CC* f_cutround)(XPRSprob cbprob, void* cbdata,
+                                                            int ifxpresscuts, int* p_action),
+                                  void* data, int priority);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSremovecbcutround)(XPRSprob prob,
+                                     void(XPRS_CC* f_cutround)(XPRSprob cbprob, void* cbdata,
+                                                               int ifxpresscuts, int* p_action),
+                                     void* data);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSgetcallbacksolution)(XPRSprob prob, int* p_available, double x[], int first,
+                                        int last);
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  int(XPRS_CC* XPRSaddmanagedcuts)(XPRSprob prob, int globalvalid, int ncuts, const char rowtype[],
+                                   const double rhs[], const int start[], const int colind[],
+                                   const double cutcoef[]);
   // NOLINTNEXTLINE(readability-identifier-naming)
   int(XPRS_CC* XPRSsaveas)(XPRSprob prob, const char* filename);
 
@@ -179,16 +220,17 @@ public:
                               const std::string& rowName = "") override;
   bool addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) override;
   void addTimes(int x, int y, int z, const std::string& rowName = "") override;
+  bool defineMultipleObjectives(const MultipleObjectives& mo) override;
 
   int getNCols() override { return static_cast<int>(_nCols); }
   int getNRows() override { return static_cast<int>(_nRows); }
   double getInfBound() override { return XPRS_PLUSINFINITY; }
 
-  MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt)
-      : _factoryOptions(factoryOpt), _options(opt) {
-    openXpress();
-  };
-  ~MIPxpressWrapper() override { closeXpress(); };
+  // Constructor and destructor are defined out-of-line in MIP_xpress_wrap.cpp because the
+  // unique_ptr callback-payload members need the complete struct types to be
+  // constructed/destroyed (they are only forward-declared here).
+  MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt);
+  ~MIPxpressWrapper() override;
 
   static std::string getDescription(FactoryOptions& factoryOpt,
                                     MiniZinc::SolverInstanceBase::Options* opt = nullptr);
@@ -228,12 +270,28 @@ private:
   std::vector<int> _indicatorVars;         // Binary variable indices
   std::vector<int> _indicatorComplements;  // Complement flags
 
-  // Bilinear term data (for constraints like z = x*y, implemented via XPRSaddqmatrix):
+  // Bilinear term data (for constraints like z = x*y, implemented via XPRSchgqrowcoeff):
   struct BilinearTerm {
     int row;      // Row index where constraint is added
     int x, y, z;  // Variables: z = x * y
   };
   std::vector<BilinearTerm> _bilinearTerms;
+
+  // Delayed (lazy) row indices - flushed via XPRSloaddelayedrows in loadProblem()
+  std::vector<int> _delayedRowIdx;
+
+  // Multiple-objective definitions - buffered here, flushed in loadProblem() after columns exist
+  struct MultiObjTerm {
+    double weight;  // Objective weight (sign encodes goal direction: -1 min, +1 max)
+    int col;        // Objective variable column index
+    int priority;   // Objective priority (higher solved first)
+  };
+  std::vector<MultiObjTerm> _multiObj;
+
+  // Callback payloads registered with Xpress in solve(); owned here so they remain valid
+  // for the whole solve and are freed when the wrapper is destroyed.
+  std::unique_ptr<UserSolutionCallbackData> _solCbData;
+  std::unique_ptr<UserCutCallbackData> _cutCbData;
 
   size_t _nCols{0};
   size_t _nRows{0};
@@ -246,6 +304,7 @@ private:
   void checkDLL();
 
   void setUserSolutionCallback();
+  void setUserCutCallback();
   void setOptions();
   void writeModelIfRequested();
   void loadProblem();

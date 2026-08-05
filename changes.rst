@@ -25,6 +25,9 @@ Changes:
    is placed in a kill-on-close job object, so it is reliably terminated
    together with MiniZinc. Several descriptor and handle leaks were fixed in the
    process.
+-  Extend the Xpress solver interface with support for lazy constraints,
+   lexicographic multiple objectives (via the ``goal_hierarchy`` annotation),
+   and user cuts, and enable quadratic and bilinear constraints.
 
 Bug fixes:
 ^^^^^^^^^^
