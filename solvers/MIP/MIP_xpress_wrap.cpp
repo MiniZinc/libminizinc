@@ -32,6 +32,14 @@ struct UserSolutionCallbackData {
   std::vector<double>* x;  // Pointer to wrapper's _x vector
 };
 
+// Data passed to the cut-round callback for generating user cuts
+struct UserCutCallbackData {
+  MIPWrapper::CBUserInfo* info;
+  XpressPlugin* plugin;
+  size_t nCols;
+  std::vector<double> x;  // Scratch buffer for the current relaxation solution
+};
+
 // Message callback for solver output
 static void XPRS_CC xpress_message_callback(XPRSprob prob, void* context, const char* msg, int len,
                                             int msgtype) {
@@ -85,6 +93,8 @@ void XpressPlugin::loadDll() {
   load_symbol_dynamic(_inner, XPRSgetlasterror);
   load_symbol_dynamic(_inner, XPRSaddcbintsol);
   load_symbol_dynamic(_inner, XPRSaddcbmessage);
+  load_symbol_dynamic(_inner, XPRSremovecbintsol);
+  load_symbol_dynamic(_inner, XPRSremovecbmessage);
   load_symbol_dynamic(_inner, XPRSgetcontrolinfo);
   load_symbol_dynamic(_inner, XPRSgetintcontrol);
   load_symbol_dynamic(_inner, XPRSgetintcontrol64);
@@ -93,22 +103,28 @@ void XpressPlugin::loadDll() {
   load_symbol_dynamic(_inner, XPRSgetstringcontrol);
   load_symbol_dynamic(_inner, XPRSsetstrcontrol);
 
-  // Optional functions (may not be available in all Xpress versions)
-  try {
-    load_symbol_dynamic(_inner, XPRSaddmipsol);
-  } catch (const MiniZinc::PluginError&) {
-    XPRSaddmipsol = nullptr;  // Function not available, set to nullptr
+  // Optional functions (may not be available in all Xpress versions). Each is set to
+  // nullptr if the running Xpress library does not export it; every call site checks for
+  // null before use. Multi-objective needs all three of chgobjn/setobj{int,dbl}control;
+  // user cuts need all three of addcbcutround/getcallbacksolution/addmanagedcuts.
+#define load_optional_symbol(name)         \
+  try {                                    \
+    load_symbol_dynamic(_inner, name);     \
+  } catch (const MiniZinc::PluginError&) { \
+    (name) = nullptr;                      \
   }
-  try {
-    load_symbol_dynamic(_inner, XPRSaddindicators);
-  } catch (const MiniZinc::PluginError&) {
-    XPRSaddindicators = nullptr;  // Function not available, set to nullptr
-  }
-  try {
-    load_symbol_dynamic(_inner, XPRSaddqmatrix);
-  } catch (const MiniZinc::PluginError&) {
-    XPRSaddqmatrix = nullptr;  // Function not available, set to nullptr
-  }
+  load_optional_symbol(XPRSaddmipsol);
+  load_optional_symbol(XPRSaddindicators);
+  load_optional_symbol(XPRSchgqrowcoeff);
+  load_optional_symbol(XPRSloaddelayedrows);
+  load_optional_symbol(XPRSchgobjn);
+  load_optional_symbol(XPRSsetobjintcontrol);
+  load_optional_symbol(XPRSsetobjdblcontrol);
+  load_optional_symbol(XPRSaddcbcutround);
+  load_optional_symbol(XPRSremovecbcutround);
+  load_optional_symbol(XPRSgetcallbacksolution);
+  load_optional_symbol(XPRSaddmanagedcuts);
+#undef load_optional_symbol
   load_symbol_dynamic(_inner, XPRSsaveas);
 }
 
@@ -149,6 +165,15 @@ void MIPxpressWrapper::closeXpress() {
   _plugin->XPRSfree();
   delete _plugin;
 }
+
+// Constructor and destructor are out-of-line here (not in the header) because the
+// unique_ptr<UserSolutionCallbackData/UserCutCallbackData> members require the complete
+// struct types (defined above in this file) to be constructed/destroyed.
+MIPxpressWrapper::MIPxpressWrapper(FactoryOptions& factoryOpt, Options* opt)
+    : _factoryOptions(factoryOpt), _options(opt) {
+  openXpress();
+}
+MIPxpressWrapper::~MIPxpressWrapper() { closeXpress(); }
 
 void MIPxpressWrapper::checkDLL() {
   if (!_factoryOptions.xpressDll.empty()) {
@@ -249,7 +274,7 @@ string MIPxpressWrapper::getId() { return "xpress"; }
 string MIPxpressWrapper::getName() { return "Xpress"; }
 
 vector<string> MIPxpressWrapper::getTags() {
-  // Quadratic constraints now supported via XPRSaddqmatrix
+  // Quadratic constraints now supported via XPRSchgqrowcoeff
   // Current C API migration supports: LP, MIP, indicator constraints, warm start, quadratic
   return {"mip", "float", "api", "float_times"};
 }
@@ -851,6 +876,89 @@ static void XPRS_CC user_sol_notify_callback(XPRSprob problem, void* userData) {
   }
 }
 
+// Cut-round callback: fired at each node before a round of cutting, to allow the user cut
+// generators to separate valid inequalities against the current LP relaxation. These are
+// "user cuts": they only tighten the relaxation and must never cut off an integer-feasible
+// point. Cuts are handed to Xpress via XPRSaddmanagedcuts (globally valid, optimizer-managed).
+static void XPRS_CC user_cut_round_callback(XPRSprob prob, void* cbdata, int ifxpresscuts,
+                                            int* p_action) {
+  (void)ifxpresscuts;  // unused: we always separate our own cuts when violated
+  auto* data = (UserCutCallbackData*)cbdata;
+  MIPWrapper::CBUserInfo* info = data->info;
+
+  // Default action: continue unchanged (-1). If we add cuts, Xpress reoptimizes and,
+  // because we return a non-negative action, fires the callback again.
+  *p_action = -1;
+
+  if (info->cutcbfn == nullptr || (info->cutMask & MIPWrapper::MaskConsType_Usercut) == 0) {
+    return;
+  }
+
+  // Apply only one round of cuts per node. The
+  // callback fires before a round, so on the first invocation CUTROUNDS is 0.
+  int cutRounds = 0;
+  data->plugin->XPRSgetintattrib(prob, XPRS_CUTROUNDS, &cutRounds);
+  if (cutRounds >= 1) {
+    return;
+  }
+
+  // Fetch the current LP relaxation solution. The solution vector is indexed in the original
+  // (input) column space, so it uses XPRS_INPUTCOLS, not XPRS_COLS.
+  int inputCols = 0;
+  data->plugin->XPRSgetintattrib(prob, XPRS_INPUTCOLS, &inputCols);
+  if (inputCols <= 0) {
+    return;
+  }
+  data->x.resize(inputCols);
+  int available = 0;
+  int rc =
+      data->plugin->XPRSgetcallbacksolution(prob, &available, data->x.data(), 0, inputCols - 1);
+  if (rc != 0 || available == 0) {
+    return;  // No relaxation solution available in this callback context
+  }
+
+  MIPWrapper::Output outpRlx;
+  outpRlx.x = data->x.data();
+  outpRlx.nCols = inputCols;
+
+  // Ask the registered cut generators for cuts against this fractional point.
+  // fMIPSol = false: this is an LP relaxation, not an integer-feasible solution.
+  MIPWrapper::CutInput cutInput;
+  info->cutcbfn(outpRlx, cutInput, info->psi, false);
+
+  for (auto& cd : cutInput) {
+    // Only user cuts are handled here. Lazy cuts require the pre-integer-solution callback
+    // (deferred), so skip any cut that is lazy-only.
+    if ((cd.mask & MIPWrapper::MaskConsType_Usercut) == 0) {
+      continue;
+    }
+    char rowtype;
+    switch (cd.sense) {
+      case MIPWrapper::LQ:
+        rowtype = 'L';
+        break;
+      case MIPWrapper::EQ:
+        rowtype = 'E';
+        break;
+      case MIPWrapper::GQ:
+        rowtype = 'G';
+        break;
+      default:
+        continue;
+    }
+    int cutStart[2] = {0, static_cast<int>(cd.rmatind.size())};
+    // globalvalid = 1: the cut is valid for the whole tree (a user cut cuts off no
+    // integer-feasible point). Coefficients are in original-variable space; Xpress presolves
+    // the cut automatically.
+    rc = data->plugin->XPRSaddmanagedcuts(prob, 1, 1, &rowtype, &cd.rhs, cutStart,
+                                          cd.rmatind.data(), cd.rmatval.data());
+    if (rc != 0) {
+      std::cerr << "  MIPxpressWrapper: failed to add user cut (error code: " << rc << ")"
+                << std::endl;
+    }
+  }
+}
+
 void MIPxpressWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
                                  string* names) {
   if (_problemLoaded) {
@@ -915,7 +1023,18 @@ void MIPxpressWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType
     _rowcoef.push_back(rmatval[i]);
   }
 
+  const int rowIndex = static_cast<int>(_nRows);  // index of this row (before increment)
   _nRows++;
+
+  // Xpress delayed rows implement "lazy constraints": Xpress keeps them out of the active
+  // matrix and only reinserts a row when an integer solution violates it. Xpress has no
+  // static "user cut" concept for rows added upfront (user cuts are only meaningful for
+  // dynamically generated cuts via callbacks, which are out of scope here), so only
+  // MaskConsType_Lazy is acted on. The row indices are flushed via XPRSloaddelayedrows in
+  // loadProblem(), after the rows exist in the matrix.
+  if ((mask & MaskConsType_Lazy) != 0) {
+    _delayedRowIdx.push_back(rowIndex);
+  }
 }
 
 void MIPxpressWrapper::writeModelIfRequested() {
@@ -991,22 +1110,66 @@ void MIPxpressWrapper::loadProblem() {
     }
   }
 
-  // Add bilinear terms using XPRSaddqmatrix
+  // Add bilinear terms using XPRSchgqrowcoeff
   if (!_bilinearTerms.empty()) {
-    if (_plugin->XPRSaddqmatrix == nullptr) {
-      throw XpressException("XPRSaddqmatrix not available for bilinear constraints");
+    if (_plugin->XPRSchgqrowcoeff == nullptr) {
+      throw XpressException("XPRSchgqrowcoeff not available for bilinear constraints");
     }
 
-    // Add each bilinear term as a quadratic matrix entry
-    // Note: Q matrix is symmetric, so x*y term needs coefficient 0.5
-    // (contribution is 0.5*Q[x,y]*x*y + 0.5*Q[y,x]*y*x = Q[x,y]*x*y when Q is symmetric)
+    // Xpress stores a symmetric Q matrix per row, so an off-diagonal product x*y (x != y) is
+    // entered once with coefficient 0.5: Xpress fills the symmetric counterpart, giving
+    // 0.5*x*y + 0.5*y*x = x*y. A diagonal square term x*x has no distinct counterpart, so it
+    // must be entered with coefficient 1.0 to yield x*x (using 0.5 would give only 0.5*x*x -
+    // the cause of a previously wrong convex-quadratic result).
+    //
+    // Each product z=x*y occupies its own generated defining row (MiniZinc introduces an
+    // auxiliary variable per product during flattening), so every row carries exactly one
+    // quadratic term. We therefore set that single coefficient directly with
+    // XPRSchgqrowcoeff rather than batching a row's matrix with XPRSaddqmatrix.
     for (const auto& term : _bilinearTerms) {
-      int mqcol1[] = {term.x};
-      int mqcol2[] = {term.y};
-      double dqe[] = {0.5};  // Coefficient 0.5 for symmetric Q matrix
+      rc = _plugin->XPRSchgqrowcoeff(_problem, term.row, term.x, term.y,
+                                     term.x == term.y ? 1.0 : 0.5);
+      check_xpress_return(rc, "Failed to set quadratic coefficient");
+    }
+  }
 
-      rc = _plugin->XPRSaddqmatrix(_problem, term.row, 1, mqcol1, mqcol2, dqe);
-      check_xpress_return(rc, "Failed to add quadratic matrix");
+  // Mark delayed (lazy) rows. Must be done after the rows exist in the matrix
+  // (XPRSaddrows above). Xpress will keep these rows out of the active problem and only
+  // reinsert one when an integer-feasible solution violates it.
+  if (!_delayedRowIdx.empty()) {
+    if (_plugin->XPRSloaddelayedrows == nullptr) {
+      throw XpressException(
+          "Lazy constraints requested but XPRSloaddelayedrows is not available in this version "
+          "of Xpress");
+    }
+    rc = _plugin->XPRSloaddelayedrows(_problem, static_cast<int>(_delayedRowIdx.size()),
+                                      _delayedRowIdx.data());
+    check_xpress_return(rc, "Failed to load delayed (lazy) rows");
+  }
+
+  // Define multiple objectives (buffered by defineMultipleObjectives) now that the columns
+  // exist in the problem. XPRSloadmip above already created objective 0 (an empty/zero
+  // objective), so we OVERWRITE objective 0 with the first goal and create objectives
+  // 1..n-1 for the rest via XPRSchgobjn - this yields exactly n objectives, not n+1.
+  // Priority and weight are set per objective through the XPRS_OBJECTIVE_* controls.
+  if (!_multiObj.empty()) {
+    if (_plugin->XPRSchgobjn == nullptr || _plugin->XPRSsetobjintcontrol == nullptr ||
+        _plugin->XPRSsetobjdblcontrol == nullptr) {
+      throw XpressException(
+          "Multiple objectives requested but the multi-objective functions are not available "
+          "in this version of Xpress");
+    }
+    for (int i = 0; i < static_cast<int>(_multiObj.size()); ++i) {
+      const auto& o = _multiObj[i];
+      int colind[] = {o.col};
+      double objcoef[] = {1.0};
+      // objidx i: i==0 overwrites the objective created by XPRSloadmip; i>0 creates a new one.
+      rc = _plugin->XPRSchgobjn(_problem, i, 1, colind, objcoef);
+      check_xpress_return(rc, "Failed to set objective coefficients");
+      rc = _plugin->XPRSsetobjintcontrol(_problem, i, XPRS_OBJECTIVE_PRIORITY, o.priority);
+      check_xpress_return(rc, "Failed to set objective priority");
+      rc = _plugin->XPRSsetobjdblcontrol(_problem, i, XPRS_OBJECTIVE_WEIGHT, o.weight);
+      check_xpress_return(rc, "Failed to set objective weight");
     }
   }
 
@@ -1017,6 +1180,9 @@ void MIPxpressWrapper::solve() {
   // Set output log level and message callback for solver output
   _plugin->XPRSsetintcontrol(_problem, XPRS_OUTPUTLOG, _options->msgLevel);
   if (_options->msgLevel > 0) {
+    // Clear any previously registered message callback first, so a second solve() on the
+    // same problem does not stack duplicate callbacks (passing nullptr removes all of them).
+    _plugin->XPRSremovecbmessage(_problem, nullptr, nullptr);
     _plugin->XPRSaddcbmessage(_problem, xpress_message_callback, nullptr, 0);
   }
 
@@ -1029,8 +1195,9 @@ void MIPxpressWrapper::solve() {
   // Write model if requested
   writeModelIfRequested();
 
-  // Set callback if needed
+  // Set callbacks if needed
   setUserSolutionCallback();
+  setUserCutCallback();
 
   // Set objective sense
   int obj_rc = _plugin->XPRSchgobjsense(_problem, _objsense);
@@ -1079,9 +1246,42 @@ void MIPxpressWrapper::setUserSolutionCallback() {
     return;
   }
 
-  auto* data = new UserSolutionCallbackData{&cbui, _problem, _plugin, _nCols, &_x};
+  // Owned by _solCbData so it stays alive for the whole solve and is freed with the wrapper.
+  _solCbData.reset(new UserSolutionCallbackData{&cbui, _problem, _plugin, _nCols, &_x});
 
-  _plugin->XPRSaddcbintsol(_problem, user_sol_notify_callback, data, 0);
+  // Clear any previously registered callback of this type first (nullptr removes all), so a
+  // repeated solve() on the same problem does not stack duplicate callbacks.
+  _plugin->XPRSremovecbintsol(_problem, nullptr, nullptr);
+  _plugin->XPRSaddcbintsol(_problem, user_sol_notify_callback, _solCbData.get(), 0);
+}
+
+void MIPxpressWrapper::setUserCutCallback() {
+  // Only register the cut-round callback if a cut generator that produces user cuts is
+  // active. Lazy-only cut generators need the pre-integer-solution callback, so they are
+  // not driven from here.
+  if (cbui.cutcbfn == nullptr || (cbui.cutMask & MaskConsType_Usercut) == 0) {
+    return;
+  }
+
+  if (_plugin->XPRSaddcbcutround == nullptr || _plugin->XPRSaddmanagedcuts == nullptr ||
+      _plugin->XPRSgetcallbacksolution == nullptr) {
+    // Warn and continue rather than throw: user cuts are redundant valid inequalities that
+    // only tighten the relaxation, so omitting them still yields the correct optimum (just
+    // potentially slower). This differs from lazy constraints (loadProblem), which throw
+    // when unavailable because a missing lazy row changes the feasible region and would
+    // silently produce a wrong answer.
+    std::cerr << "  MIPxpressWrapper: user cut callback requested but the required Xpress "
+                 "functions are not available in this version; continuing without user cuts."
+              << std::endl;
+    return;
+  }
+
+  // Owned by _cutCbData so it stays alive for the whole solve and is freed with the wrapper.
+  _cutCbData.reset(new UserCutCallbackData{&cbui, _plugin, _nCols, {}});
+  // Clear any previously registered callback of this type first (nullptr removes all), so a
+  // repeated solve() on the same problem does not stack duplicate callbacks.
+  _plugin->XPRSremovecbcutround(_problem, nullptr, nullptr);
+  _plugin->XPRSaddcbcutround(_problem, user_cut_round_callback, _cutCbData.get(), 0);
 }
 
 void MIPxpressWrapper::setObjSense(int s) {
@@ -1188,17 +1388,18 @@ bool MIPxpressWrapper::addWarmStart(const std::vector<VarId>& vars,
 
 void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
   // Bilinear equality constraint: z = x * y
-  // Implemented via XPRSaddqmatrix (adds x*y quadratic term to the row)
+  // Implemented via XPRSchgqrowcoeff (sets the x*y quadratic coefficient on the row)
 
-  if (_plugin->XPRSaddqmatrix == nullptr) {
-    throw XpressException("Bilinear constraints require XPRSaddqmatrix, which is not available.");
+  if (_plugin->XPRSchgqrowcoeff == nullptr) {
+    throw XpressException("Bilinear constraints require XPRSchgqrowcoeff, which is not available.");
   }
 
   if (_problemLoaded) {
     throw XpressException("Cannot add bilinear constraints after problem is loaded.");
   }
 
-  // Add the linear row: -z = 0 (we'll add x*y quadratic term later via XPRSaddqmatrix)
+  // Add the linear row: -z = 0 (we'll set the x*y quadratic coefficient later via
+  // XPRSchgqrowcoeff)
   int colind[] = {z};
   double colval[] = {-1.0};
   addRow(1, colind, colval, EQ, 0.0, MaskConsType_Normal, rowName);
@@ -1210,6 +1411,39 @@ void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
   term.y = y;
   term.z = z;
   _bilinearTerms.push_back(term);
+}
+
+bool MIPxpressWrapper::defineMultipleObjectives(const MultipleObjectives& mo) {
+  // Multiple objectives are set via XPRSchgobjn plus the per-objective priority/weight
+  // controls (see loadProblem). If those functions are not available in this version of
+  // Xpress, report no support so MiniZinc can warn.
+  if (_plugin->XPRSchgobjn == nullptr || _plugin->XPRSsetobjintcontrol == nullptr ||
+      _plugin->XPRSsetobjdblcontrol == nullptr) {
+    return false;
+  }
+
+  // Xpress has a single global objective sense; we fix it to maximize and encode each
+  // goal's direction in the sign of its weight below.
+  setObjSense(1);
+
+  // Buffer the objective definitions; they are flushed in loadProblem() once the columns
+  // exist in the Xpress problem (defineMultipleObjectives is called before loadProblem).
+  //
+  // Distinct priorities => Xpress solves the goals lexicographically (this is all MiniZinc's
+  // goal_hierarchy can express). obj.getWeight() is only ever +/-1.0: it is the goal's
+  // MIN/MAX DIRECTION, not a blend coefficient. Because the global sense is maximize, a
+  // min_goal (weight -1) becomes maximize(-x) = minimize(x). Xpress would blend goals that
+  // share a priority using their weights as a weighted sum, but goal_hierarchy provides
+  // neither equal ranks nor fractional weights, so blended mode is not reachable here.
+  _multiObj.clear();
+  const int nObj = static_cast<int>(mo.size());
+  for (int iobj = 0; iobj < nObj; ++iobj) {
+    const auto& obj = mo.getObjectives()[iobj];
+    // Xpress: higher priority is solved first. Earlier goals in the hierarchy get higher
+    // priority, so priority decreases with index.
+    _multiObj.push_back({obj.getWeight(), obj.getVariable(), nObj - iobj});
+  }
+  return true;
 }
 
 namespace MiniZinc {
