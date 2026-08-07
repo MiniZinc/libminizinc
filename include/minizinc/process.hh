@@ -17,7 +17,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #undef ERROR
-#else
+#elif !defined(__EMSCRIPTEN__)
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -41,7 +41,7 @@
 
 namespace MiniZinc {
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
 namespace ProcessInternal {
 
 #ifdef __APPLE__
@@ -626,7 +626,9 @@ public:
     assert(nullptr != _pS2Out);
   }
   int run() {
-#ifdef _WIN32
+#ifdef __EMSCRIPTEN__
+    throw Error("Executable solver processes are not supported in WebAssembly");
+#elif defined(_WIN32)
     // Interactive mode lets the solver own Ctrl-C; MiniZinc only swallows it so
     // it does not tear down the session.
     PHANDLER_ROUTINE ctrlHandler =
@@ -740,7 +742,6 @@ public:
       throw SignalRaised(CTRL_C_EVENT);
     }
     return timedOut ? 0 : exitCode;
-  }
 #else
     // Spawn the solver with hardened descriptor handling (own process group,
     // close-on-exec pipes, no leaked descriptors). See ProcessInternal.
@@ -981,8 +982,8 @@ public:
       throw SignalRaised(SIGTERM);
     }
     return exitStatus;
-  }
 #endif
+  }
 };
 
 template <class S2O>
