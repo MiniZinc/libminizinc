@@ -104,7 +104,7 @@ expected: !Result
 solvers: [gecode]
 options:
   all_solutions: true
-  -D: x = -2..2 diff {0}; y = -2..-1
+  -D: x = -2..-1 union 1..2; y = -2..-1
 expected: !Result
   solution: !SolutionSet
   - !Solution
@@ -143,7 +143,7 @@ expected: !Result
 solvers: [gecode]
 options:
   all_solutions: true
-  -D: x = -2..2 diff {0}; y = -1..2
+  -D: x = -2..-1 union 1..2; y = -1..2
 expected: !Result
   solution: !SolutionSet
   - !Solution

@@ -1,4 +1,6 @@
 set(lexer_lxx_md5_cached "29c69cfc368018c0bf8fe3d63f00c677")
-set(parser_yxx_md5_cached "2ad2bd9f19d3b84a8b990223ad900b3e")
+set(parser_yxx_md5_cached "0ee05da73816a5bdd215d547c023e5d1")
 set(regex_lexer_lxx_md5_cached "d4bdc40f824511fb088b32f57405136c")
 set(regex_parser_yxx_md5_cached "e44695248dcfad64a56982f126f8e4f5")
+set(ts_minizinc_grammar_js_md5_cached "4b3dbfa9ad19fcdd41012baee4064d04")
+set(ts_datazinc_grammar_js_md5_cached "8b9505dcdbfaccfe5545e035fad833fb")

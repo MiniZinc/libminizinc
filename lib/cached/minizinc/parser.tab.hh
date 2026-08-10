@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_NAMED_ARGS_BUILD_DEBUG_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_NAMED_ARGS_BUILD_DEBUG_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -47,6 +47,8 @@ extern int mzn_yydebug;
 /* "%code requires" blocks.  */
 
 #include <minizinc/ast.hh>
+#include <minizinc/warning.hh>
+#include <minizinc/prettyprinter.hh>
 
 
 /* Token kinds.  */
@@ -254,4 +256,4 @@ struct YYLTYPE
 int mzn_yyparse (void *parm);
 
 
-#endif /* !YY_MZN_YY_USERS_GUIDOT_PROGRAMMING_MINIZINC_LIBMZN_NAMED_ARGS_BUILD_DEBUG_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */

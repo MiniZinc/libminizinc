@@ -87,8 +87,9 @@ class ParserState {
 public:
   ParserState(const std::string& f, const std::string& b, std::ostream& err0,
               const std::vector<std::string>& includePaths0, std::vector<ParseWorkItem>& files0,
-              std::map<std::string, Model*>& seenModels0, MiniZinc::Model* model0, bool isDatafile0,
-              bool isFlatZinc0, bool isSTDLib0, bool parseDocComments0)
+              std::map<std::string, Model*>& seenModels0, MiniZinc::Model* model0,
+              std::vector<Call*>& dataFileCalls0, bool isDatafile0, bool isFlatZinc0,
+              bool isSTDLib0, bool parseDocComments0)
       : filename(f.c_str()),
         buf(b.c_str()),
         pos(0),
@@ -100,6 +101,7 @@ public:
         files(files0),
         seenModels(seenModels0),
         model(model0),
+        dataFileCalls(dataFileCalls0),
         isDatafile(isDatafile0),
         isFlatZinc(isFlatZinc0),
         isSTDLib(isSTDLib0),
@@ -137,6 +139,8 @@ public:
   std::vector<ParseWorkItem>& files;
   std::map<std::string, Model*>& seenModels;
   MiniZinc::Model* model;
+  /// Where calls found in a data file are recorded for the type checker
+  std::vector<Call*>& dataFileCalls;
 
   bool isDatafile;
   bool isFlatZinc;
@@ -174,6 +178,32 @@ public:
     }
     return ss.str();
   }
+  /// Same, but locating the line from a byte offset into `buf` rather than from
+  /// the lexer's running position (which the tree-sitter parser does not keep).
+  std::string getCurrentLine(unsigned int errByte, int firstCol, int lastCol) const {
+    unsigned int ls = std::min(errByte, length);
+    while (ls > 0 && buf[ls - 1] != '\n') {
+      ls--;
+    }
+    std::stringstream ss;
+    const char* eol_c = strchr(buf + ls, '\n');
+    if (eol_c == buf + ls) {
+      return "";
+    }
+    if (eol_c != nullptr) {
+      ss << std::string(buf + ls, eol_c - (buf + ls));
+    } else {
+      ss << buf + ls;
+    }
+    ss << std::endl;
+    for (int i = 0; i < firstCol - 1; i++) {
+      ss << " ";
+    }
+    for (int i = firstCol; i <= lastCol; i++) {
+      ss << "^";
+    }
+    return ss.str();
+  }
   void printCurrentLine(int firstCol, int lastCol) {
     err << getCurrentLine(firstCol, lastCol) << std::endl;
   }
@@ -190,6 +220,16 @@ public:
 
   std::string canonicalFilename(const std::string& f) const;
 };
+
+/// Parse `pp.buf` with the tree-sitter grammar, adding the items to `pp.model`.
+/// Syntax errors accumulate in `pp.syntaxErrors`; this does not throw for them.
+void parse_tree_sitter(ParserState& pp);
+
+/// Selects the tree-sitter parser over the bison one. Initialised from the
+/// MZN_TREE_SITTER_PARSER environment variable; settable so that the
+/// differential test harness can parse the same file both ways.
+/// Temporary: goes away with the bison parser.
+extern bool use_tree_sitter_parser;
 
 /// Returns the filenames of direct global constraints in globals.mzn.
 /// These files should not be directly overriden by the solver. They should

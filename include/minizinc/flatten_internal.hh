@@ -378,6 +378,10 @@ public:
   bool warnNonAuthoritativeNames;
   FlatteningOptions fopts;
   ASTStringMap<Item*> reverseEnum;
+  /// Calls a data file makes that are not data-reshaping builtins. Checked once
+  /// `reverseEnum` is complete, because a data file may use an enum constructor
+  /// before the assignment that introduces it. Kept alive by the model.
+  std::vector<Call*> dataFileCalls;
   std::vector<KeepAlive> checkVars;
   std::vector<KeepAlive> outputVars;
   OutputSectionStore outputSections;

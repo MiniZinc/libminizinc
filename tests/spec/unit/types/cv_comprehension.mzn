@@ -17,5 +17,5 @@ type: solve
 ***/
 
 var 1..3: x;
-var int: t(var int: x, var int: y) = x+y;
+function var int: t(var int: x, var int: y) = x+y;
 constraint forall (i in 1..ub(t(x,x))) (true);

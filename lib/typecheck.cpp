@@ -4602,6 +4602,25 @@ static void generate_missing_to_string_functions(
   }
 }
 
+/// Warns about calls a data file makes that neither reshape data nor construct a
+/// value of a declared type. The parser cannot tell these apart: an enum
+/// constructor is an ordinary identifier there, and may be used before, or in a
+/// different file from, the assignment that introduces it. By this point every
+/// constructor is in \a reverseEnum and every call has a type.
+static void check_data_file_calls(EnvI& env) {
+  for (Call* c : env.dataFileCalls) {
+    if (env.reverseEnum.count(c->id()) != 0 || Expression::type(c).bt() == Type::BT_ANN) {
+      continue;
+    }
+    std::ostringstream oss;
+    oss << "calling `" << c->id()
+        << "' in a data file is deprecated. Only array1d to array6d, anon_enum, anon_enum_set, "
+           "to_enum and enum constructors reshape data.";
+    env.addWarning(Expression::loc(c), oss.str(), false);
+  }
+  env.dataFileCalls.clear();
+}
+
 /// Type-check the variables required by a solution-checker model: resolve each against the
 /// checked model, annotate it, add enum-consistency checks, and verify its declared type is
 /// compatible. Appends any mismatches to \a typeErrors.
@@ -5553,6 +5572,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   check_solution_checker_vars(env, ts, typeErrors);
+  check_data_file_calls(env.envi());
 
   if (!isFlatZinc) {
     m->checkSiblingParameterNames(env.envi());

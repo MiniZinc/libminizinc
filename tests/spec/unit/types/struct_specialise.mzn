@@ -16,13 +16,13 @@ expected: !Result
 
 enum A = {B,C};
 
-$T: foo(tuple($T): x) = x.1;
+function $T: foo(tuple($T): x) = x.1;
 any: foo_int :: output = foo((1,));
 any: foo_str :: output = foo(("test",));
 any: foo_enum :: output = foo((B,));
 
 
-$T: bar(record($T: t): x) = x.t;
+function $T: bar(record($T: t): x) = x.t;
 any: bar_int :: output = bar((t: 2));
 any: bar_str :: output = bar((t: "pred"));
 any: bar_enum :: output = bar((t: C,));

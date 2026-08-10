@@ -11,6 +11,8 @@
 
 %code requires {
 #include <minizinc/ast.hh>
+#include <minizinc/warning.hh>
+#include <minizinc/prettyprinter.hh>
 }
 
 %define api.pure
@@ -23,6 +25,7 @@
 %{
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <map>
 #include <cerrno>
@@ -83,6 +86,11 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   auto currentLine = pp->getCurrentLine(location->firstColumn(), location->lastColumn());
   pp->hadError = true;
   pp->syntaxErrors.emplace_back(Location(*location), currentLine, includeStack, str);
+}
+
+void yywarn(YYLTYPE* location, void* parm, const string& str) {
+  ParserState* pp = static_cast<ParserState*>(parm);
+  Warning(Location(*location), str).print(pp->err, /*werror=*/false);
 }
 
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
@@ -340,7 +348,7 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 %type <item> item item_tail include_item vardecl_item assign_item constraint_item solve_item output_item predicate_item annotation_item function_item
 
 %type <vardeclexpr> ti_expr_and_id ti_expr_and_id_or_anon let_vardecl_item ann_param  record_field
-%type <vardeclexprs> params params_list params_list_head
+%type <vardeclexprs> params fn_params params_list params_list_head
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail array_index_entry
 %type <tiexprs> ti_expr_list ti_expr_list_head array_index_list array_index_list_head
 %type <vardeclexprs> ti_expr_and_id_list ti_expr_and_id_list_head
@@ -522,7 +530,7 @@ vardecl_item :
         }
       }
     | ti_expr_and_id MZN_EQ expr
-      { 
+      {
         if ($1) {
           $1->e($3);
           $$ = VarDeclI::a(@$,$1);
@@ -554,6 +562,9 @@ vardecl_item :
             e = Call::a(@$, ASTString("enumFromConstructors"), {al});
           }
           VarDecl* vd = new VarDecl(@$,ti,$2,e);
+          if ($2 && $3) {
+            Expression::addAnnotations(vd, *$3);
+          }
           $$ = VarDeclI::a(@$,vd);
         } else {
           $$ = nullptr;
@@ -697,7 +708,7 @@ output_annotation :
       { $$ = $2; }
 
 predicate_item :
-        MZN_PREDICATE MZN_IDENTIFIER params ann_param annotations operation_item_tail
+        MZN_PREDICATE MZN_IDENTIFIER fn_params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($3 && $4) $3->push_back($4);
@@ -712,7 +723,7 @@ predicate_item :
         delete $3;
         delete $5;
       }
-      | MZN_TEST MZN_IDENTIFIER params ann_param annotations operation_item_tail
+      | MZN_TEST MZN_IDENTIFIER fn_params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($3 && $4) $3->push_back($4);
@@ -727,7 +738,7 @@ predicate_item :
         delete $3;
         delete $5;
       }
-      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 params ann_param annotations operation_item_tail
+      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 fn_params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($4 && $5) $4->push_back($5);
@@ -741,7 +752,7 @@ predicate_item :
         delete $4;
         delete $6;
       }
-      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 params ann_param annotations operation_item_tail
+      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 fn_params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($4 && $5) $4->push_back($5);
@@ -758,7 +769,7 @@ predicate_item :
       }
 
 function_item :
-        MZN_FUNCTION ti_expr ':' id_or_quoted_op params ann_param annotations operation_item_tail
+        MZN_FUNCTION ti_expr ':' id_or_quoted_op fn_params ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($5 && $6) $5->push_back($6);
@@ -779,6 +790,20 @@ function_item :
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' ann_param annotations operation_item_tail
       {
         ParserState* pp = static_cast<ParserState*>(parm);
+        {
+          // Echo the declaration back with the keyword in place, so the fix is
+          // the message rather than a shape the user has to work out.
+          std::ostringstream oss;
+          oss << "declaring a function without the `function' keyword is deprecated; write `function ";
+          if ($1) {
+            Printer p(oss, 0, false);
+            p.print($1);
+          } else {
+            oss << "<type>";
+          }
+          oss << ": " << $3 << "(...)' instead";
+          yywarn(&@$, parm, oss.str());
+        }
         if ($1 && Expression::type($1).any() && $1->domain() == nullptr) {
           // This is an any type, not allowed without a right hand side
           yyerror(&@1, parm, "return type cannot have `any' type-inst without type-inst variable");
@@ -840,6 +865,17 @@ operation_item_tail :
       { $$=nullptr; }
     | MZN_EQ expr
       { $$=$2; }
+
+/* Like `params`, but for functions, where omitting the list is deprecated.
+   `annotation` keeps `params`: a marker annotation has no parameter list. */
+fn_params :
+      /* empty */
+      { yywarn(&@$, parm, "declaring an operation without a parameter list is deprecated; write `()' instead");
+        $$=new vector<VarDecl*>(); }
+    | '(' params_list ')'
+      { $$=$2; }
+    | '(' error ')'
+      { $$=new vector<VarDecl*>(); }
 
 params :
       /* empty */
@@ -1869,7 +1905,7 @@ record_literal :
         Expression::type($$, Type::record());
         delete($2);
       }
-  
+
 record_field_list_head :
       record_field
       { $$ = new vector<Expression*>(1); (*$$)[0] = $1; }

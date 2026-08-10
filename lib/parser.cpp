@@ -23,6 +23,7 @@
 #include <minizinc/parser.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include <cstring>
 #include <fstream>
 #include <regex>
 
@@ -32,7 +33,30 @@ int mzn_yylex_init(void** scanner);
 void mzn_yyset_extra(void* user_defined, void* yyscanner);
 int mzn_yylex_destroy(void* scanner);
 
+namespace MiniZinc {
+// Temporary: goes away with the bison parser.
+// `getenv` is not declared `noexcept`, so the check fires even though the lambda
+// is; suppressed as in `Location::nonalloc` and friends in ast.cpp.
+bool use_tree_sitter_parser = []() noexcept {  // NOLINT(bugprone-throwing-static-initialization)
+  const char* e = getenv("MZN_TREE_SITTER_PARSER");
+  return e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0 && std::strcmp(e, "false") != 0;
+}();
+}  // namespace MiniZinc
+
 namespace {
+void run_parser(MiniZinc::ParserState& pp) {
+  if (MiniZinc::use_tree_sitter_parser) {
+    MiniZinc::parse_tree_sitter(pp);
+    return;
+  }
+  mzn_yylex_init(&pp.yyscanner);
+  mzn_yyset_extra(&pp, pp.yyscanner);
+  mzn_yyparse(&pp);
+  if (pp.yyscanner != nullptr) {
+    mzn_yylex_destroy(pp.yyscanner);
+  }
+}
+
 // fastest way to read a file into a string (especially big files)
 // see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
 std::string get_file_contents(std::ifstream& in) {
@@ -271,14 +295,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       fullname = f;
       s = parentPath;
     }
-    ParserState pp(fullname, s, err, includePaths, files, seenModels, m, false, isFzn, isSTDLib,
-                   parseDocComments);
-    mzn_yylex_init(&pp.yyscanner);
-    mzn_yyset_extra(&pp, pp.yyscanner);
-    mzn_yyparse(&pp);
-    if (pp.yyscanner != nullptr) {
-      mzn_yylex_destroy(pp.yyscanner);
-    }
+    ParserState pp(fullname, s, err, includePaths, files, seenModels, m, env.envi().dataFileCalls,
+                   false, isFzn, isSTDLib, parseDocComments);
+    run_parser(pp);
     if (pp.hadError) {
       throw MultipleErrors<SyntaxError>(pp.syntaxErrors);
     }
@@ -307,14 +326,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         s = get_file_contents(file);
       }
 
-      ParserState pp(f, s, err, includePaths, files, seenModels, model, true, false, false,
-                     parseDocComments);
-      mzn_yylex_init(&pp.yyscanner);
-      mzn_yyset_extra(&pp, pp.yyscanner);
-      mzn_yyparse(&pp);
-      if (pp.yyscanner != nullptr) {
-        mzn_yylex_destroy(pp.yyscanner);
-      }
+      ParserState pp(f, s, err, includePaths, files, seenModels, model, env.envi().dataFileCalls,
+                     true, false, false, parseDocComments);
+      run_parser(pp);
       if (pp.hadError) {
         throw MultipleErrors<SyntaxError>(pp.syntaxErrors);
       }
@@ -340,6 +354,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
     parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
           std::move(globalInc), isFlatZinc, ignoreStdlib, parseDocComments, verbose, err);
   } catch (Exception& /*e*/) {
+    env.envi().dataFileCalls.clear();
     delete model;
     throw;
   }
@@ -369,6 +384,7 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
     parse(env, model, filenames, datafiles, text, filename, includePaths, {}, isFlatZinc,
           ignoreStdlib, parseDocComments, verbose, err);
   } catch (Exception& /*e*/) {
+    env.envi().dataFileCalls.clear();
     delete model;
     throw;
   }

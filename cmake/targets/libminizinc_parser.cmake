@@ -98,7 +98,24 @@ if(NOT GECODE_FOUND)
   set(BISON_RegExParser_OUTPUTS "")
 endif()
 
+# The tree-sitter grammar is generated ahead of time and vendored; the CLI is
+# not a build dependency. Guard against editing grammar.js without regenerating.
+foreach(ts_grammar minizinc datazinc)
+  MD5(${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_${ts_grammar}/grammar.js ts_grammar_js_md5)
+  if(NOT "${ts_grammar_js_md5}" STREQUAL "${ts_${ts_grammar}_grammar_js_md5_cached}")
+    message(FATAL_ERROR
+      "The vendored ${ts_grammar} grammar.js has been modified but the parser was not regenerated.\n"
+      "Run ${PROJECT_SOURCE_DIR}/lib/thirdparty/update-tree-sitter.sh, then copy the md5 "
+        "${ts_grammar_js_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake as "
+        "ts_${ts_grammar}_grammar_js_md5_cached"
+      )
+  endif()
+endforeach()
+
 add_library(minizinc_parser OBJECT
+  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter/lib.c
+  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_minizinc.c
+  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_datazinc.c
   ${BISON_MZNParser_OUTPUTS}
   ${FLEX_MZNLexer_OUTPUTS}
   ${BISON_RegExParser_OUTPUTS}
@@ -106,6 +123,18 @@ add_library(minizinc_parser OBJECT
 )
 set_target_properties(minizinc_parser PROPERTIES
   CXX_CLANG_TIDY ""
+  C_CLANG_TIDY ""
+  C_STANDARD 11
+  C_STANDARD_REQUIRED ON
+)
+target_include_directories(minizinc_parser PRIVATE
+  # `tree_sitter/api.h`, the runtime's public header
+  ${PROJECT_SOURCE_DIR}/include/minizinc/_thirdparty
+  # `tree_sitter/parser.h`, which the generated grammar includes
+  ${PROJECT_SOURCE_DIR}/lib/thirdparty
+  # the runtime's own internal includes, notably `unicode/*` -- without this
+  # they resolve against the system ICU headers instead of the vendored ones
+  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter
 )
 
 if(GECODE_FOUND)

@@ -11,13 +11,20 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Add an experimental parser using the tree-sitter grammar shared with
+   `shackle <https://github.com/shackle-rs/shackle>`__, enabled by setting the
+   ``MZN_TREE_SITTER_PARSER`` environment variable. Syntax that is not yet
+   supported, such as ``class`` declarations and lambdas, is rejected by name
+   rather than as a generic syntax error. Data files are read with a separate,
+   stricter grammar that accepts data, not all MiniZinc expressions. A warning
+   is issued for invalid data, but will not be accepted in the future.
 -  Harden how external FlatZinc solvers are launched. On POSIX, the solver
    is now started with ``posix_spawn`` in its own process group, using
-   close-on-exec pipes and full error checking. On Windows, the solver
-   inherits only the three standard I/O handles (instead of every
-   inheritable handle) and is placed in a kill-on-close job object, so it
-   is reliably terminated together with MiniZinc. Several descriptor and
-   handle leaks were fixed in the process.
+   close-on-exec pipes and full error checking. On Windows, the solver inherits
+   only the three standard I/O handles (instead of every inheritable handle) and
+   is placed in a kill-on-close job object, so it is reliably terminated
+   together with MiniZinc. Several descriptor and handle leaks were fixed in the
+   process.
 
 Bug fixes:
 ^^^^^^^^^^

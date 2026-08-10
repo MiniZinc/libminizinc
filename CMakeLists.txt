@@ -89,6 +89,7 @@ include(cmake/targets/libmzn.cmake)
 # Executables
 include(cmake/targets/minizinc.cmake)
 include(cmake/targets/mzn2doc.cmake)
+include(cmake/targets/parse_diff.cmake)
 
 # -------------------------------------------------------------------------------------------------------------------
 #  -- Platform Specific configuration

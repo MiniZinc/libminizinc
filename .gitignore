@@ -26,6 +26,7 @@ CMakeLists.txt.user
 .vscode/ipch
 tests/output
 tests/env
+tests/venv
 tests/.pytest_cache
 __pycache__/
 .mypy_cache/

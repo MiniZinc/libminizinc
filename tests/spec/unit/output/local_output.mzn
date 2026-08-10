@@ -9,7 +9,7 @@ expected: !Result
 ***/
 
 enum Foo = {A};
-array [Foo, Foo, Foo] of var int: foo() = [(i, j, k): let {var 1..3: a} in a | i, j, k in Foo]; 
+function array [Foo, Foo, Foo] of var int: foo() = [(i, j, k): let {var 1..3: a} in a | i, j, k in Foo]; 
 any: a :: output = let {
     any: x :: output = foo();
     constraint output_to_section("default", "predicate: \(x)");

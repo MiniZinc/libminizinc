@@ -49,6 +49,7 @@ add_library(mzn
   lib/param_config.cpp
   lib/parser.cpp
   lib/parser.yxx
+  lib/parser_ts.cpp
   lib/passes/compile_pass.cpp
   lib/pathfileprinter.cpp
   lib/prettyprinter.cpp
@@ -111,6 +112,7 @@ add_library(mzn
   include/minizinc/statistics.hh
   include/minizinc/support/regex.hh
   include/minizinc/_thirdparty/miniz.h
+  include/minizinc/_thirdparty/tree_sitter/api.h
   include/minizinc/timer.hh
   include/minizinc/type.hh
   include/minizinc/typecheck.hh
