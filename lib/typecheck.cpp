@@ -2250,6 +2250,8 @@ public:
   void vFieldAccess(FieldAccess* fa) {
     Expression* fa_v = fa->v();
     Type fa_v_t = Expression::type(fa_v);
+    // Original (array) type of the object, used to rebuild the array type of a projection below
+    const Type fa_arr_t = fa_v_t;
     std::vector<unsigned int> arrayEnumIds;
     if (fa_v_t.dim() > 0) {
       // This is a field access on an array (a projection operation).
@@ -2352,25 +2354,11 @@ public:
     }
 
     if (!arrayEnumIds.empty()) {
-      // make array type, since this is a projection
-      auto dim = arrayEnumIds.size() - 1;
-      bool haveEnums = false;
-      for (unsigned int i = 0; i < dim; i++) {
-        if (arrayEnumIds[i] != 0) {
-          haveEnums = true;
-          break;
-        }
-      }
-      auto tid = new_fa_t.typeId();
-      new_fa_t.typeId(0);
-      new_fa_t.dim(static_cast<int>(dim));
-      if (haveEnums) {
-        arrayEnumIds[dim] = tid;
-        int newEnumId = _env.registerArrayEnum(arrayEnumIds);
-        new_fa_t.typeId(newEnumId);
-      } else {
-        new_fa_t.typeId(tid);
-      }
+      // make array type, since this is a projection.
+      // Type::arrType registers an array enum whenever the field type has a type id of its own
+      // (e.g. when the field is itself a tuple or record), which is required even if none of the
+      // index sets are enums: the type id of an array type is always an array enum id.
+      new_fa_t = Type::arrType(_env, fa_arr_t, new_fa_t);
     }
     fa->type(new_fa_t);
   }

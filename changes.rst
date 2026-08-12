@@ -19,6 +19,14 @@ Changes:
    is reliably terminated together with MiniZinc. Several descriptor and
    handle leaks were fixed in the process.
 
+Bug fixes:
+^^^^^^^^^^
+-  Fix a crash when projecting a field that is itself a tuple or record out
+   of an array of tuples or records (as in ``x.1`` and ``x.1.1`` for
+   ``any: x = [((1, 2), 3)]``). The projection gave the resulting array type
+   the type id of the field instead of an array type id, which was then
+   misinterpreted when the element type was looked up again.
+
 .. _v2.10.0:
 
 `Version 2.10.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.10.0>`__
