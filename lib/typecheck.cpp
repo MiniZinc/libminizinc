@@ -2091,7 +2091,8 @@ public:
             << Expression::type(aa->v()).toString(_env) << "'";
         throw TypeError(_env, Expression::loc(aa->v()), oss.str());
       }
-    } else if (Expression::isa<ArrayAccess>(aa->v()) || Expression::isa<Call>(aa->v())) {
+    } else if (Expression::isa<ArrayAccess>(aa->v()) || Expression::isa<Call>(aa->v()) ||
+               Expression::isa<FieldAccess>(aa->v())) {
       aa->v(add_coercion(_env, _model, aa->v(), aa, Expression::type(aa->v()))());
     }
     if (Expression::type(aa->v()).dim() != aa->idx().size()) {

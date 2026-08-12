@@ -26,6 +26,11 @@ Bug fixes:
    ``any: x = [((1, 2), 3)]``). The projection gave the resulting array type
    the type id of the field instead of an array type id, which was then
    misinterpreted when the element type was looked up again.
+-  Fix a crash when indexing or slicing the result of a projection (as in
+   ``x.1[1]`` and ``x.2[1..2]`` for ``any: x = [((1, 2), 3)]``). Array access
+   was the only context that did not coerce its object, so the projection was
+   never rewritten into a comprehension and reached evaluation as a field
+   access on an array. This affected fields of any type, not just structs.
 
 .. _v2.10.0:
 
