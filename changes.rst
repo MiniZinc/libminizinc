@@ -31,6 +31,13 @@ Bug fixes:
    was the only context that did not coerce its object, so the projection was
    never rewritten into a comprehension and reached evaluation as a field
    access on an array. This affected fields of any type, not just structs.
+-  Fix projecting an array-valued field out of an array of tuples or records
+   (as in ``x.1`` for ``any: x = [([1, 2], 3)]``). The result is an array of
+   arrays, but the projection did not build the tuple wrapper that represents
+   one, dropping the field's own dimensions and producing an array of the
+   element type instead. The model was then accepted with a wrong type and
+   failed in evaluation with ``not an integer expression``, or, for a ``var``
+   field, handed malformed FlatZinc to the solver.
 
 .. _v2.10.0:
 

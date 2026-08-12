@@ -1506,8 +1506,26 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
       inner_fa_t.dim(0);
       inner_fa_t.typeId(arrayEnum[arrayEnum.size() - 1]);
     }
+    // If the field is array-valued, the projection is an array of arrays, so its element type is
+    // the marker tuple wrapping the field's array type (see vFieldAccess). The field access
+    // itself has the plain array type; the wrapper has to be built around it here, just as
+    // vComprehension does for an array-valued comprehension body.
+    Type elem_t = inner_fa_t;
+    bool wrapArrayElem = false;
+    if (inner_fa_t.istuple()) {
+      TupleType* innerTupleType = env.getTupleType(inner_fa_t);
+      if (innerTupleType->size() == 2 && (*innerTupleType)[1].isunknown()) {
+        wrapArrayElem = true;
+        inner_fa_t = (*innerTupleType)[0];
+      }
+    }
     inner_fa->type(inner_fa_t);
     Expression* elem = add_coercion(env, m, inner_fa, Expression::loc(inner_fa), inner_fa_t)();
+    if (wrapArrayElem) {
+      auto* wrapper = ArrayLit::constructTuple(Expression::loc(inner_fa).introduce(), {elem});
+      Expression::type(wrapper, elem_t);
+      elem = wrapper;
+    }
     auto* comprehension = new Comprehension(Location().introduce(), elem, gens, false);
     comprehension->type(Type::arrType(env, Type::partop(1), Expression::type(elem)));
 
@@ -2355,6 +2373,17 @@ public:
     }
 
     if (!arrayEnumIds.empty()) {
+      if (new_fa_t.dim() != 0) {
+        // Projecting an array-valued field gives an array of arrays, which is represented by
+        // wrapping the inner array in a marker tuple (a tuple whose second field is unknown).
+        // This is the same representation vComprehension builds for an array-valued
+        // comprehension body, which is what the projection is desugared into below.
+        Type wrapped = Type::tuple();
+        wrapped.ti(new_fa_t.ti());
+        wrapped.cv(new_fa_t.cv());
+        wrapped.typeId(_env.registerTupleType({new_fa_t, Type()}));
+        new_fa_t = wrapped;
+      }
       // make array type, since this is a projection.
       // Type::arrType registers an array enum whenever the field type has a type id of its own
       // (e.g. when the field is itself a tuple or record), which is required even if none of the
