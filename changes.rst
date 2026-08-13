@@ -39,6 +39,8 @@ Bug fixes:
    failed in evaluation with ``not an integer expression``, or, for a ``var``
    field, handed malformed FlatZinc to the solver.
 -  Fix possible process hanging after receiving IDE interrupts on Windows.
+-  Fix incorrect return type of ``select_from_index_X`` and ``concat_index_X``
+   functions.
 
 .. _v2.10.0:
 
