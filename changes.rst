@@ -41,6 +41,7 @@ Bug fixes:
 -  Fix possible process hanging after receiving IDE interrupts on Windows.
 -  Fix incorrect return type of ``select_from_index_X`` and ``concat_index_X``
    functions.
+-  Fix incorrect index restriction for ``concat_index_6`` function.
 
 .. _v2.10.0:
 

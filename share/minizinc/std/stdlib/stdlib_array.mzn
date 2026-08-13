@@ -257,7 +257,7 @@ function array [$$X1, $$X2, $$X3, $$X4, int, $$X6] of any $T: concat_index_5(
  */
 function array [$$X1, $$X2, $$X3, $$X4, $$X5, int] of any $T: concat_index_6(
   array [$$X1, $$X2, $$X3, $$X4, $$X5, $$X61] of any $T: x,
-  array [$$X1, $$X2, $$X3, $$X4, $$X5, $$X61] of any $T: y,
+  array [$$X1, $$X2, $$X3, $$X4, $$X5, $$X62] of any $T: y,
 );
 
 /** @group stdlib.builtins.array Return a (potentially non-contiguous) slice of array \a x,
