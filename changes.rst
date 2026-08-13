@@ -38,6 +38,7 @@ Bug fixes:
    element type instead. The model was then accepted with a wrong type and
    failed in evaluation with ``not an integer expression``, or, for a ``var``
    field, handed malformed FlatZinc to the solver.
+-  Fix possible process hanging after receiving IDE interrupts on Windows.
 
 .. _v2.10.0:
 

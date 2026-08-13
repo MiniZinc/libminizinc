@@ -63,21 +63,21 @@ private:
 
   void listen() {
     OVERLAPPED ol;
-
-    // Connect pipe
-    ZeroMemory(&ol, sizeof(OVERLAPPED));
-    ol.hEvent = hEvents[1];
-    ConnectNamedPipe(hNamedPipe, &ol);
-    DWORD ev = WaitForMultipleObjects(2, &hEvents[0], FALSE, INFINITE);
-    if (ev - WAIT_OBJECT_0 == 0) {
-      return;
-    }
-
-    // Listen for pings on pipe
     while (true) {
       ZeroMemory(&ol, sizeof(OVERLAPPED));
       ol.hEvent = hEvents[1];
-      ReadFile(hNamedPipe, NULL, 0, NULL, &ol);
+
+      // Each client connection is an interrupt ping; disconnect and rearm
+      // the single-instance pipe after delivering it.
+      BOOL connected = ConnectNamedPipe(hNamedPipe, &ol);
+      if (!connected) {
+        DWORD error = GetLastError();
+        if (error == ERROR_PIPE_CONNECTED) {
+          SetEvent(hEvents[1]);
+        } else if (error != ERROR_IO_PENDING) {
+          return;
+        }
+      }
 
       DWORD ev = WaitForMultipleObjects(2, &hEvents[0], FALSE, INFINITE);
       if (ev - WAIT_OBJECT_0 == 0) {
@@ -85,6 +85,7 @@ private:
       }
 
       GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+      DisconnectNamedPipe(hNamedPipe);
     }
   }
 
