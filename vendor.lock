@@ -10,4 +10,4 @@ chuffed=0.14.0
 highs=v1.15.1
 or-tools=v9.15
 # win64 only: runtime DLLs the IDE's Windows installer bundles.
-openssl=3.5.1
+openssl=3.5.7
