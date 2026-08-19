@@ -683,7 +683,10 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     /* Message callback */
     if (info->fVerb) {
       char* msg;
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MSG_STRING, static_cast<void*>(&msg));
+      // reinterpret_cast, not static_cast: GRBcbget writes a char* through this
+      // out-parameter, and clang-tidy's bugprone-multi-level-implicit-pointer-conversion
+      // requires an explicit cast for the char** -> void* conversion.
+      gw->dll_GRBcbget(cbdata, where, GRB_CB_MSG_STRING, reinterpret_cast<void*>(&msg));
       cerr << msg << flush;
     }
   } else if (GRB_CB_MIPSOL == where) {

@@ -1,0 +1,52 @@
+name: Handbook
+
+# Manual-dispatch only. Read the Docs builds the handbook on every push and pull
+# request; this exists to exercise what it does not: the LaTeX/PDF toolchain
+# (EN + ZH). Otherwise it mirrors .readthedocs.yaml -- same mzn2doc-only build,
+# same solver libraries fetched from upstream -- so the two cannot drift apart.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: handbook
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install Sphinx + LaTeX toolchain
+        run: |
+          pip install sphinx -r docs/requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            latexmk texlive-latex-recommended texlive-latex-extra \
+            texlive-fonts-recommended texlive-xetex texlive-lang-chinese \
+            texlive-binaries xindy \
+            fonts-noto-cjk fonts-noto-core fonts-lato fonts-inconsolata
+          # Sphinx's LaTeX index rule is named "makeindex" but execs xindy;
+          # without it latexmk fails as hundreds of unresolved references.
+          for t in makeindex xindy latexmk; do
+            command -v "$t" >/dev/null || { echo "missing required tool: $t"; exit 1; }
+          done
+
+      - name: Build mzn2doc
+        run: |
+          set -eux
+          cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build --target mzn2doc
+
+      - name: Build handbook (EN + ZH, HTML + PDF)
+        run: ROOT="$PWD" bash scripts/build_docs.sh
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: documentation
+          path: docs-deploy/

@@ -1,0 +1,16 @@
+# Pinned minizinc-vendor dependency versions consumed by this build.
+# One line per dependency: <dep>=<version>. Each is downloaded individually from
+# its per-dependency release in MiniZinc/minizinc-vendor. Bumped automatically by
+# minizinc-vendor's publish.yml (one bot/bump-<dep> PR per dependency).
+#
+# NOTE: cbc has no Windows ARM64 build; that triple gets no CBC backend.
+cbc=2.10.13
+gecode=6.4.0
+chuffed=0.14.0
+highs=v1.15.1
+or-tools=v9.15
+# Bundled alongside the compiler. Globalizer has its own version numbering, so it
+# cannot be resolved from the release tag the way findMUS and mzn-analyse are.
+globalizer=0.1.8
+# Runtime DLLs the IDE's Windows installer ships so Qt can do TLS.
+openssl=3.5.7

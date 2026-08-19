@@ -1,0 +1,166 @@
+name: Docker
+
+# Publish the container images from an already-published CLI bundle, so nothing
+# is compiled here.
+#
+# Runs weekly as well as on release: an image is a snapshot of its base, so the
+# only way to pick up base-image security fixes is to rebuild and re-push. That
+# republishes an existing tag with new content -- identical MiniZinc, fresher
+# base -- so anyone needing byte-exact reproducibility should pin by digest.
+#
+# The `-dist` images have no base at all and so cannot go stale; they exist to be
+# copied into an image you maintain yourself:
+#
+#   COPY --from=minizinc/minizinc:2.9.4-dist /opt/minizinc /opt/minizinc
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"   # Mondays 07:00 UTC, an hour after the vendor bot
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "libminizinc release to package (blank = edge)."
+        type: string
+        default: ""
+  workflow_call:
+    inputs:
+      release:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: ${{ matrix.libc }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { libc: gnu,  target: runtime-gnu,  suffix: "",      amd64: x86_64-linux-gnu,  arm64: aarch64-linux-gnu }
+          - { libc: musl, target: runtime-musl, suffix: "-musl", amd64: x86_64-linux-musl, arm64: aarch64-linux-musl }
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      # GHCR: no external credentials, and the images sit beside the source.
+      IMAGE: ghcr.io/minizinc/minizinc
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the release and its tags
+        id: rel
+        shell: bash
+        env:
+          REF: ${{ inputs.release }}
+        run: |
+          set -eu
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, subprocess
+
+          ref = os.environ.get("REF") or "edge"
+          print(f"ref={ref}")
+
+          def parse(v):
+              try:
+                  return tuple(int(x) for x in v.split("."))
+              except ValueError:
+                  return None
+
+          me = parse(ref)
+          if ref == "edge" or me is None:
+              print("tags=edge")                       # rolling; never moves latest
+              raise SystemExit
+
+          out = subprocess.run(
+              ["gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/releases", "--paginate"],
+              capture_output=True, text=True, check=True).stdout
+          published = {parse(r["tag_name"]) for r in json.loads(out)
+                       if not r["prerelease"] and not r["draft"]}
+          published = {v for v in published if v} | {me}
+
+          # A moving tag only moves if this really is the newest in its line --
+          # re-releasing an old patch must not take over `latest`.
+          tags = [ref]
+          if me == max(published):
+              tags.append("latest")
+          if me == max(v for v in published if v[:1] == me[:1]):
+              tags.append(str(me[0]))
+          if me == max(v for v in published if v[:2] == me[:2]):
+              tags.append(f"{me[0]}.{me[1]}")
+          print("tags=" + " ".join(tags))
+          PY
+
+      - name: Lay out the bundles per platform
+        shell: bash
+        run: |
+          set -eux
+          for pair in "linux/amd64:${{ matrix.amd64 }}" "linux/arm64:${{ matrix.arm64 }}"; do
+            plat="${pair%%:*}"; triple="${pair##*:}"
+            mkdir -p "ctx/$plat"
+            gh release download "${{ steps.rel.outputs.ref }}" --repo "$GITHUB_REPOSITORY" \
+              --pattern "MiniZinc-*-${triple}.tar.gz" --dir . --clobber
+            # The bundle has one top-level directory; strip it.
+            tar -xzf MiniZinc-*-"${triple}".tar.gz --strip-components=1 -C "ctx/$plat"
+            rm -f MiniZinc-*-"${triple}".tar.gz
+          done
+          cp resources/docker/Dockerfile ctx/
+          find ctx -maxdepth 3 -type d | sort
+
+      - uses: docker/setup-qemu-action@v4
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push
+        shell: bash
+        run: |
+          set -eux
+          runtime=""; dist=""
+          for t in ${{ steps.rel.outputs.tags }}; do
+            runtime="$runtime -t $IMAGE:${t}${{ matrix.suffix }}"
+            dist="$dist -t $IMAGE:${t}${{ matrix.suffix }}-dist"
+          done
+          for spec in "${{ matrix.target }}:$runtime" "dist:$dist"; do
+            docker buildx build ctx \
+              --file ctx/Dockerfile \
+              --platform linux/amd64,linux/arm64 \
+              --target "${spec%%:*}" ${spec#*:} \
+              --provenance=true --sbom=true --pull --push
+          done
+
+      # No `| head`: steps run with pipefail, so truncating the output makes the
+      # producer die of SIGPIPE and fails the step after a successful push.
+      - name: Show what was published
+        shell: bash
+        run: |
+          for t in ${{ steps.rel.outputs.tags }}; do
+            docker buildx imagetools inspect "$IMAGE:${t}${{ matrix.suffix }}"
+            docker buildx imagetools inspect "$IMAGE:${t}${{ matrix.suffix }}-dist"
+          done
+
+  # Removes only the untagged digests that rebuilds and moving tags orphan.
+  # Tagged versions are never deleted: people pin them, and public GHCR storage
+  # is free. `validate` resolves each multi-architecture manifest and keeps the
+  # platform images it references -- those are untagged too, so without it this
+  # would strip the arm64 half out of a working `latest`.
+  prune-images:
+    name: prune untagged images
+    needs: images
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          owner: MiniZinc
+          packages: minizinc
+          # keep-n-untagged already means "delete untagged except the newest N",
+          # and the action rejects it alongside an explicit delete-untagged.
+          keep-n-untagged: 5      # rollback-by-digest, and cover an in-flight publish
+          older-than: 30 days
+          validate: true

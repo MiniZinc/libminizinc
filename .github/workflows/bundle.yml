@@ -1,0 +1,176 @@
+name: CLI bundles
+
+# Assemble the user-facing CLI packages: compiler + solvers + globalizer, findMUS
+# and mzn-analyse, then attach them to the release they were built from.
+#
+# Separate from ci.yml because those tools build *after* libminizinc in the chain
+# (libminizinc -> mzn-analyse -> FindMUS): packaging during libminizinc's own run
+# would only ever catch the previous cycle's tools, so the last link dispatches
+# this. Nothing is compiled here; every input comes from a published release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release to package and attach to (blank = edge)."
+        type: string
+        default: ""
+  workflow_call:
+    inputs:
+      release:
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  package:
+    name: package (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux,       triple: x86_64-linux-gnu,     runner: ubuntu-24.04 }
+          - { platform: linux-arm64, triple: aarch64-linux-gnu,    runner: ubuntu-24.04-arm }
+          # musl packages on a glibc host: package_cli.sh only copies, strips and
+          # archives, so it never has to run the binaries it packages.
+          - { platform: musl,        triple: x86_64-linux-musl,    runner: ubuntu-24.04 }
+          - { platform: musl-arm64,  triple: aarch64-linux-musl,   runner: ubuntu-24.04-arm }
+          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-14 }
+          - { platform: osx-intel,   triple: x86_64-apple-darwin,  runner: macos-26-intel }
+          - { platform: win64,       triple: x86_64-windows,       runner: windows-2022 }
+          - { platform: win64-arm,   triple: aarch64-windows,      runner: windows-11-arm }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the release
+        id: rel
+        shell: bash
+        run: |
+          ref="${{ inputs.release }}"
+          [ -n "$ref" ] || ref=edge
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          # Version stamped into the package name: the tag, or this run.
+          if [ "$ref" = edge ]; then
+            echo "version=build${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=$ref" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch the compiler
+        shell: bash
+        run: |
+          set -eux
+          mkdir -p minizinc
+          gh release download "${{ steps.rel.outputs.ref }}" --repo "$GITHUB_REPOSITORY" \
+            --pattern "minizinc-compiler-only-${{ matrix.triple }}.tar.gz" --dir . --clobber
+          tar -xzf "minizinc-compiler-only-${{ matrix.triple }}.tar.gz" -C minizinc
+          # vendor.lock travels with the release, so the solvers match the compiler.
+          gh release download "${{ steps.rel.outputs.ref }}" --repo "$GITHUB_REPOSITORY" \
+            --pattern "vendor.lock" --dir . --clobber
+
+      - name: Fetch pinned solvers
+        shell: bash
+        run: |
+          set -eux
+          deps="gecode chuffed highs or-tools"
+          [ "${{ matrix.triple }}" = aarch64-windows ] || deps="$deps cbc"
+          bash scripts/fetch_vendor.sh ${{ matrix.triple }} $deps
+
+      - name: Fetch the bundled tools
+        shell: bash
+        run: |
+          set -eux
+          ref="${{ steps.rel.outputs.ref }}"
+          # findMUS and mzn-analyse version with MiniZinc; globalizer is pinned.
+          for tool in findMUS:FindMUS mzn-analyse:mzn-analyse; do
+            dir="${tool%%:*}"; repo="${tool##*:}"
+            mkdir -p "$dir"
+            gh release download "$ref" --repo "MiniZinc/$repo" \
+              --pattern "${dir}-${{ matrix.triple }}.tar.gz" --dir . --clobber
+            tar -xzf "${dir}-${{ matrix.triple }}.tar.gz" -C "$dir"
+          done
+          gver="$(grep -E '^globalizer=' vendor.lock | head -1 | cut -d= -f2-)"
+          [ -n "$gver" ] || { echo "no version pinned for 'globalizer' in vendor.lock" >&2; exit 1; }
+          # GHC cannot target Windows ARM64, so Globalizer has no build there. That
+          # is the only permitted absence: anywhere else a missing asset fails.
+          if [ "${{ matrix.triple }}" != aarch64-windows ]; then
+            mkdir -p globalizer
+            gh release download "$gver" --repo MiniZinc/Globalizer \
+              --pattern "globalizer-${{ matrix.triple }}.tar.gz" --dir . --clobber
+            tar -xzf "globalizer-${{ matrix.triple }}.tar.gz" -C globalizer
+          fi
+
+      - name: Build CLI package
+        shell: bash
+        run: ROOT="$PWD" bash scripts/package_cli.sh "${{ matrix.triple }}" "${{ steps.rel.outputs.version }}"
+
+      - name: Smoke test the package
+        shell: bash
+        run: |
+          set -eux
+          pkg=$(ls -d MiniZinc-*-${{ matrix.triple }})
+          # CBC is compiled into the compiler rather than shipped as a binary, so
+          # this is what proves it actually linked. No CBC on Windows ARM64.
+          expect="gecode chuffed cp-sat highs"
+          [ "${{ matrix.triple }}" = aarch64-windows ] || expect="$expect coin-bc"
+          check='set -eu
+            out=$("$1/bin/minizinc" --solvers)
+            echo "$out"
+            for s in $2; do
+              echo "$out" | grep -qi "$s" || { echo "missing solver: $s" >&2; exit 1; }
+            done'
+          case "${{ matrix.triple }}" in
+            *musl)
+              # musl binaries cannot run on the glibc host that packaged them.
+              # The bare image lacks the libstdc++/libgcc the compiler needs.
+              docker run --rm -v "$PWD:/w" -w /w alpine:3.20 \
+                sh -c "apk add --no-cache libstdc++ >/dev/null; $check" _ "$pkg" "$expect" ;;
+            *)
+              sh -c "$check" _ "$pkg" "$expect" ;;
+          esac
+
+      - name: Attach to the release
+        shell: bash
+        run: gh release upload "${{ steps.rel.outputs.ref }}" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+
+  # Bundle names embed the run id, so --clobber never removes the previous set.
+  # Runs after every platform has uploaded, so a failure cannot leave the release
+  # with neither the old bundles nor the new ones.
+  prune:
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Drop superseded bundles
+        shell: bash
+        run: |
+          set -eux
+          ref="${{ inputs.release }}"; [ -n "$ref" ] || ref=edge
+          # Tagged releases have stable names and keep what they have.
+          [ "$ref" = edge ] || exit 0
+          keep="MiniZinc-build${{ github.run_id }}-"
+          gh release view "$ref" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' \
+          | while read -r a; do
+              case "$a" in
+                MiniZinc-*)
+                  case "$a" in
+                    "$keep"*) ;;
+                    *) gh release delete-asset "$ref" "$a" -y --repo "$GITHUB_REPOSITORY" ;;
+                  esac ;;
+              esac
+            done
+
+  # The images are built from the bundles this workflow just published.
+  images:
+    needs: [package, prune]
+    uses: ./.github/workflows/docker.yml
+    with:
+      release: ${{ inputs.release }}
+    permissions:
+      contents: read
+      packages: write

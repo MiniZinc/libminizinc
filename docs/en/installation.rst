@@ -104,6 +104,66 @@ In order to use the MiniZinc tools from a terminal, you need to add the path to 
 
   $ export PATH=/Applications/MiniZincIDE.app/Contents/Resources:$PATH
 
+Docker
+------
+
+Container images are published to the GitHub Container Registry at
+``ghcr.io/minizinc/minizinc``. They contain the compiler tool chain and the
+bundled solvers, but not the IDE.
+
+To solve a model with the image directly:
+
+.. code-block:: bash
+
+  docker run --rm -v "$PWD:/work" -w /work ghcr.io/minizinc/minizinc model.mzn data.dzn
+
+Adding MiniZinc to your own image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``-dist`` images contain nothing but the MiniZinc installation: no operating
+system, no C library, no shell. They are not runnable on their own, and exist to
+be copied into an image you already maintain:
+
+.. parsed-literal::
+
+  FROM python:3.12-slim
+  COPY --from=ghcr.io/minizinc/minizinc:\ |release|\ -dist /opt/minizinc /opt/minizinc
+  ENV PATH=/opt/minizinc/bin:$PATH LD_LIBRARY_PATH=/opt/minizinc/lib
+
+This is the recommended way to use MiniZinc in a larger image. Because the layer
+carries no operating system of its own, it never needs security updates: the base
+image remains yours, and you update it on your own schedule.
+
+Use ``-musl-dist`` instead if your base uses musl rather than glibc, for example
+Alpine Linux, which also needs ``apk add libstdc++``.
+
+Available images
+~~~~~~~~~~~~~~~~
+
+Every image is available for ``linux/amd64`` and ``linux/arm64``.
+
+=========================  =================================================
+Tag suffix                 Contents
+=========================  =================================================
+*(none)*                   Runnable, glibc. Based on Google's ``distroless/cc``
+``-musl``                  Runnable, musl
+``-dist``                  MiniZinc only, for ``COPY --from``, glibc build
+``-musl-dist``             MiniZinc only, for ``COPY --from``, musl build
+=========================  =================================================
+
+Versions are tagged as ``2.10.1``, ``2.10``, ``2`` and ``latest``, each pointing
+at the newest release in its series, plus ``edge`` for the current development
+build. Combine the two, for example ``ghcr.io/minizinc/minizinc:2.10-musl-dist``.
+
+The runnable images are rebuilt weekly so that fixes to the underlying base image
+are picked up; the MiniZinc version they contain does not change, but the image
+digest does. If you need a byte-for-byte reproducible build, refer to an image by
+digest rather than by tag:
+
+.. code-block:: bash
+
+  docker pull ghcr.io/minizinc/minizinc@sha256:...
+
 Adding Third-party Solvers
 --------------------------
 
