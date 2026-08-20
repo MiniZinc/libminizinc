@@ -274,7 +274,7 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
     }
     // Add reverse mapper for tuple var decls
     // TODO: This only has to happen on first flatten_id call.
-    if ((vd->type().istuple() || vd->type().isrecord()) && vd->e() != nullptr) {
+    if (vd->toplevel() && (vd->type().istuple() || vd->type().isrecord()) && vd->e() != nullptr) {
       Expression* lit = follow_id(vd->e());
       assert(Expression::isa<ArrayLit>(lit));
       env.reverseMappers.insert(vd->id(), lit);

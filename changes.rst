@@ -49,6 +49,8 @@ Bug fixes:
 -  Fix incorrect return type of ``select_from_index_X`` and ``concat_index_X``
    functions.
 -  Fix incorrect index restriction for ``concat_index_6`` function.
+-  Fix output reverse mapping for tuples/record function parameters which shadow
+   top-level declarations of the same name.
 
 .. _v2.10.0:
 
