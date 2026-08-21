@@ -133,6 +133,12 @@ jobs:
               --provenance=true --sbom=true --pull --push
           done
 
+      - name: Verify that the image runs
+        shell: bash
+        run: |
+          docker run --pull always --rm \
+            "$IMAGE:${{ steps.rel.outputs.ref }}${{ matrix.suffix }}" --version
+
       # No `| head`: steps run with pipefail, so truncating the output makes the
       # producer die of SIGPIPE and fails the step after a successful push.
       - name: Show what was published
