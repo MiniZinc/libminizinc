@@ -834,7 +834,19 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         auto* ret = bo->type().istuple() ? ArrayLit::constructTuple(Expression::loc(e), v)
                                          : new ArrayLit(Expression::loc(e), v);
         ret->flat(al0->flat() && al1->flat());
-        ret->type(Expression::type(e));
+        Type t = Expression::type(e);
+        if (t.bt() == Type::BT_TOP && t.dim() != 0) {
+          // Operators are not type specialised, so inside the body of a polymorphic '++'
+          // overload the static type of this expression is still the uninstantiated
+          // `array[int] of var opt top`. Recover the element type from the operands, which
+          // have already been evaluated to concrete values.
+          Type et =
+              Type::commonType(env, al0->type().elemType(env), al1->type().elemType(env), false);
+          if (!et.isunknown()) {
+            t = Type::arrType(env, t, et);
+          }
+        }
+        ret->type(t);
         return ret;
       }
       throw EvalError(env, Expression::loc(e), "not an array expression", bo->opToString());

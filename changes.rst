@@ -56,6 +56,7 @@ Bug fixes:
 -  Fix incorrect index restriction for ``concat_index_6`` function.
 -  Fix output reverse mapping for tuples/record function parameters which shadow
    top-level declarations of the same name.
+-  Fix element type of concatenated multi-dimensional par arrays
 
 .. _v2.10.0:
 
