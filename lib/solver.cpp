@@ -27,6 +27,7 @@
 #include <minizinc/param_config.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
+#include <minizinc/solvers/fznso_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
 #include <minizinc/utils.hh>
@@ -80,6 +81,7 @@ void register_xpress_solver();
 #endif
 /// Always built.
 void register_fzn_solver();
+void register_fznso_solver();
 void register_mzn_solver();
 void register_nl_solver();
 }  // namespace MiniZinc
@@ -110,6 +112,7 @@ SolverInitialiser::SolverInitialiser() {
   register_cplex_solver();
 #endif
   register_fzn_solver();
+  register_fznso_solver();
 #ifdef HAS_GUROBI
   register_gurobi_solver();
 #endif
@@ -297,7 +300,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
       os << "  " << solver << endl;
     }
   } else {
-    const SolverConfig& sc = _solverConfigs.config(selectedSolver);
+    SolverConfig& sc = _solverConfigs.config(selectedSolver);
     string solverId;
     if (sc.executable().empty()) {
       solverId = sc.id();
@@ -313,6 +316,9 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
         case SolverConfig::O_NL:
           solverId = "org.minizinc.mzn-nl";
           break;
+        case SolverConfig::O_FZNSO:
+          solverId = "org.minizinc.mzn-fznso";
+          break;
       }
     }
     bool found = false;
@@ -321,21 +327,27 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
       if ((*it)->getId() == solverId) {
         os << endl;
         (*it)->printHelp(_os);
+        // An FZnSO solver declares its flags in its library rather than in the
+        // configuration file, so they only exist once the factory has looked.
+        (*it)->finaliseSolverConfigs(_solverConfigs);
         if (!sc.executable().empty() && !sc.extraFlags().empty()) {
-          os << "Extra solver flags (use with ";
           switch (sc.inputType()) {
             case SolverConfig::O_FZN:
             case SolverConfig::O_JSON:
-              os << "--fzn-flags";
+              os << "Extra solver flags (use with --fzn-flags)";
               break;
             case SolverConfig::O_MZN:
-              os << "--mzn-flags";
+              os << "Extra solver flags (use with --mzn-flags)";
               break;
             case SolverConfig::O_NL:
-              os << "--nl-flags";
+              os << "Extra solver flags (use with --nl-flags)";
+              break;
+            case SolverConfig::O_FZNSO:
+              // Passed straight to the solver, so they need no wrapper flag.
+              os << "Extra solver flags";
               break;
           }
-          os << ")" << endl;
+          os << endl;
           for (const SolverConfig::ExtraFlag& ef : sc.extraFlags()) {
             os << "  " << ef.flag << endl << "    " << ef.description << endl;
           }
@@ -701,6 +713,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         case SolverConfig::O_NL:
           solverId = "org.minizinc.mzn-nl";
           break;
+        case SolverConfig::O_FZNSO:
+          solverId = "org.minizinc.mzn-fznso";
+          break;
       }
     }
 
@@ -790,6 +805,27 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 throw BadOption(ss.str());
               }
             }
+          } else if (sc.inputType() == SolverConfig::O_FZNSO) {
+            // The solver library is loaded here rather than when the solver
+            // instance is created, because the flattener has to be set up from
+            // the capabilities it declares before anything is compiled.
+            std::vector<std::string> additionalArgs;
+            additionalArgs.emplace_back("--fznso-lib");
+            additionalArgs.push_back(sc.executableResolved().empty() ? sc.executable()
+                                                                     : sc.executableResolved());
+            for (const auto& pf : sc.passFlags()) {
+              additionalArgs.push_back(pf);
+            }
+            for (int j = 0; j < additionalArgs.size(); ++j) {
+              bool success = _sf->processOption(_siOpt, j, additionalArgs);
+              if (!success) {
+                std::stringstream ss;
+                ss << "Solver backend " << solverId << " does not recognise option "
+                   << additionalArgs[j] << "." << endl;
+                throw BadOption(ss.str());
+              }
+            }
+            FZNSOSolverFactory::configureFlattener(_siOpt, _flt);
           } else {
             // supports fzn, nl, or dimacs
             std::vector<std::string> additionalArgs;
@@ -805,6 +841,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 additionalArgs.emplace_back("--nl-cmd");
                 break;
               case SolverConfig::O_MZN:
+              case SolverConfig::O_FZNSO:
                 assert(false);  // unreachable
             }
             if (!sc.executableResolved().empty()) {
@@ -822,6 +859,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   add_flags("--nl-flag", sc.passFlags(), additionalArgs);
                   break;
                 case SolverConfig::O_MZN:
+                case SolverConfig::O_FZNSO:
                   assert(false);  // unreachable
               }
             }
@@ -835,6 +873,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   add_flags("--nl-flag", fzn_mzn_flags, additionalArgs);
                   break;
                 case SolverConfig::O_MZN:
+                case SolverConfig::O_FZNSO:
                   assert(false);  // unreachable
               }
             }

@@ -73,6 +73,28 @@ public:
     _flags.fznFormat = f ? FlattenerFlags::FF_JSON : FlattenerFlags::FF_FZN;
   }
   void setCmdLineStr(std::string&& cmdline) { _cmdlineStr = std::move(cmdline); }
+  /// The predicates the selected solver implements natively, whose standard
+  /// library decompositions are therefore dropped (see \a NativePredicates).
+  void setNativePredicates(std::shared_ptr<const NativePredicates> np) {
+    _fopts.nativePredicates = std::move(np);
+  }
+  /// Search \a dir for library files before the standard library, so that it
+  /// can replace a standard library declaration with one a solver can match.
+  /// A solver's own `mznlib` still comes first.
+  void addLibraryPath(std::string dir) { _extraIncludePaths.push_back(std::move(dir)); }
+  /// Make `<name>.mzn` includable, so that a model can ask for the constraints
+  /// \a name's solver implements beyond the ones MiniZinc knows. A library of
+  /// that name found earlier on the path is used as-is; otherwise an empty one
+  /// is synthesised, and either way the declarations are filled in after
+  /// parsing (see \a declare_solver_constraints).
+  void setSolverInclude(std::string name) { _solverInclude = std::move(name); }
+  /// Include \a file (resolved on the include path, so a bare
+  /// `"nosets.mzn"` finds the standard library's) as if the model had asked
+  /// for it. Used to select a library feature from a solver's declared
+  /// capabilities rather than from a solver-specific MiniZinc library.
+  void addLibraryInclude(std::string file) { _extraIncludes.push_back(std::move(file)); }
+  /// The MiniZinc standard library directory, i.e. the parent of `std`.
+  const std::string& stdLibDir() const { return _stdLibDir; }
   Env* getEnv() const {
     assert(_pEnv.get());
     return _pEnv.get();
@@ -90,6 +112,15 @@ private:
   std::vector<std::string> _filenames;
   std::vector<std::string> _datafiles;
   std::vector<std::string> _includePaths;
+  /// Files added with \a addLibraryInclude, prepended to the model text
+  std::vector<std::string> _extraIncludes;
+  /// Directories added with \a addLibraryPath, searched just before the
+  /// standard library
+  std::vector<std::string> _extraIncludePaths;
+  /// The solver name a model can include to reach the solver's own constraints
+  std::string _solverInclude;
+  /// Holds the synthesised `<_solverInclude>.mzn` for the duration of the run
+  std::unique_ptr<FileUtils::TmpDir> _solverIncludeDir;
   bool _isFlatzinc = false;
 
   struct FlattenerFlags {

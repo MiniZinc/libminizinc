@@ -524,7 +524,8 @@ void optimize(Env& env, bool chain_compression) {
           if (Call* c = Expression::dynamicCast<Call>(ci->e())) {
             if ((c->id() == envi.constants.ids.int_.eq || c->id() == envi.constants.ids.bool_.eq ||
                  c->id() == envi.constants.ids.float_.eq ||
-                 c->id() == envi.constants.ids.set_.eq) &&
+                 c->id() == envi.constants.ids.set_.eq ||
+                 c->id() == envi.constants.ids.fznso.set_eq) &&
                 Expression::isa<Id>(c->arg(0)) && Expression::isa<Id>(c->arg(1)) &&
                 (Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr ||
                  Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr)) {
@@ -556,7 +557,8 @@ void optimize(Env& env, bool chain_compression) {
             } else if ((c->id() == envi.constants.ids.int_.eq ||
                         c->id() == envi.constants.ids.bool_.eq ||
                         c->id() == envi.constants.ids.float_.eq ||
-                        c->id() == envi.constants.ids.set_.eq) &&
+                        c->id() == envi.constants.ids.set_.eq ||
+                        c->id() == envi.constants.ids.fznso.set_eq) &&
                        ((Expression::isa<Id>(c->arg(0)) &&
                          Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr &&
                          Expression::type(c->arg(1)).isPar()) ||
@@ -569,7 +571,8 @@ void optimize(Env& env, bool chain_compression) {
               int idx = envi.varOccurrences.find(id->decl());
               push_vardecl(envi, m[idx]->cast<VarDeclI>(), idx, vardeclQueue);
               push_dependent_constraints(envi, id, constraintQueue);
-            } else if (c->id() == envi.constants.ids.int_.lin_eq &&
+            } else if ((c->id() == envi.constants.ids.int_.lin_eq ||
+                        c->id() == envi.constants.ids.fznso.int_lin_eq) &&
                        Expression::equal(c->arg(2), IntLit::a(0))) {
               auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
               if (al_c->size() == 2 && IntLit::v(Expression::cast<IntLit>((*al_c)[0])) ==
@@ -1328,7 +1331,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
   }
   if (Call* c = Expression::dynamicCast<Call>(con_e)) {
     if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_.eq ||
-        c->id() == env.constants.ids.float_.eq || c->id() == env.constants.ids.set_.eq) {
+        c->id() == env.constants.ids.float_.eq || c->id() == env.constants.ids.set_.eq ||
+        c->id() == env.constants.ids.fznso.set_eq) {
       if (is_true && Expression::isa<Id>(c->arg(0)) && Expression::isa<Id>(c->arg(1)) &&
           (Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr ||
            Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr)) {
@@ -1550,7 +1554,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           }
         }
       }
-    } else if (c->id() == env.constants.ids.bool2int) {
+    } else if (c->id() == env.constants.ids.bool2int ||
+               c->id() == env.constants.ids.fznso.bool2int) {
       auto* vdi = ii->dynamicCast<VarDeclI>();
       VarDecl* vd;
       bool fixed = false;

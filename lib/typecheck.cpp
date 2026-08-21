@@ -16,8 +16,10 @@
 #include <minizinc/blackbox.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/flatten.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
+#include <minizinc/native_predicates.hh>
 #include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
@@ -5537,6 +5539,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         bottom_up(ra, fi->e());
       }
     } concreteTyper(ty, bottomUpTyper);
+    // Before both: a declaration the solver implements loses its body here, and
+    // `create_par_versions` skips a function that has none, so no parameter-type
+    // copy of a dropped decomposition is ever built.
+    if (env.envi().fopts.nativePredicates != nullptr) {
+      enable_native_predicates(env, *env.envi().fopts.nativePredicates);
+    }
     type_specialise(env, m, concreteTyper);
     create_par_versions(env, m, bottomUpTyper);
   }

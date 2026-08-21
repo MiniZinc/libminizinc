@@ -28,6 +28,14 @@ Changes:
 -  Extend the Xpress solver interface with support for lazy constraints,
    lexicographic multiple objectives (via the ``goal_hierarchy`` annotation),
    and user cuts, and enable quadratic and bilinear constraints.
+-  Add ``FZNSO`` as a solver input type, alongside ``FZN``, ``NL`` and ``MZN``.
+   A configuration with ``"inputType": "FZNSO"`` names a shared library, which
+   is loaded at run time and driven directly on the internal flat model, without
+   writing FlatZinc or starting a process. Such a solver declares its own
+   options, constraints and decision types across the interface, so its
+   configuration file needs nothing beyond the library, and it needs no MiniZinc
+   library to say which globals it supports. For more details please refer to
+   the documentation.
 
 Bug fixes:
 ^^^^^^^^^^

@@ -43,6 +43,7 @@ add_library(mzn
   lib/lexer.lxx
   lib/thirdparty/miniz.c
   lib/model.cpp
+  lib/native_predicates.cpp
   lib/optimize.cpp
   lib/optimize_constraints.cpp
   lib/output.cpp
@@ -94,6 +95,7 @@ add_library(mzn
   include/minizinc/iter.hh
   include/minizinc/json_parser.hh
   include/minizinc/model.hh
+  include/minizinc/native_predicates.hh
   include/minizinc/optimize.hh
   include/minizinc/optimize_constraints.hh
   include/minizinc/output.hh
@@ -136,6 +138,7 @@ target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 include(cmake/targets/libminizinc_atlantis.cmake)
 include(cmake/targets/libminizinc_chuffed.cmake)
 include(cmake/targets/libminizinc_cplex.cmake)
+include(cmake/targets/libminizinc_fznso.cmake)
 include(cmake/targets/libminizinc_geas.cmake)
 include(cmake/targets/libminizinc_gecode.cmake)
 include(cmake/targets/libminizinc_gurobi.cmake)

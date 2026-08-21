@@ -69,13 +69,13 @@ If you have any MIP solver installed (and MiniZinc was compiled with its support
 you can run a model using MIP like this on the command line:
 
 .. code-block:: bash
-  
+
   minizinc --solver mip -v -s -a model.mzn data.dzn
 
 Of course, you can also select a particular solver, e.g. Gurobi (in case it is available):
 
 .. code-block:: bash
-  
+
   minizinc --solver gurobi -v -s -a model.mzn data.dzn
 
 MIP-Aware Modeling (But Mostly Useful for All Backends)
@@ -124,7 +124,7 @@ A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is 
 
 .. code-block:: minizinc
 
-  int: cost_others_ub = 1+2*ub_array( [cost1, cost2] );    %% Multiply by 2 for a stronger LP relaxation      
+  int: cost_others_ub = 1+2*ub_array( [cost1, cost2] );    %% Multiply by 2 for a stronger LP relaxation
   var int: cost_road = 286*c + cost_others_ub*(1-c);
 
 
@@ -245,9 +245,9 @@ You can download binaries of these solvers from AMPL (https://ampl.com/products/
 
 1. Download the solver binary. For this example, we assume you chose the Couenne solver, which supports non-linear, non-convex, mixed discrete and continuous problems.
 2. Create a solver configuration file called ``couenne.msc`` in the ``share/minizinc/solvers`` directory of your MiniZinc installation, with the following contents:
-  
+
   .. code-block:: json
-  
+
     {
       "id" : "org.coin-or.couenne",
       "name" : "Couenne",
@@ -256,9 +256,9 @@ You can download binaries of these solvers from AMPL (https://ampl.com/products/
       "supportsFzn":false,
       "supportsNL":true
     }
-  
+
   You can adapt the ``version`` field if you downloaded a different version (it's only used for displaying).
-  
+
 3. Run ``minizinc --solvers``. The Couenne solver should appear in the list of solvers now.
 4. Run ``minizinc --solver couenne model.mzn`` on some MiniZinc model, or use Couenne from the MiniZinc IDE.
 
@@ -271,19 +271,133 @@ flag. However, this will either
 linearise all integer constraints, even the ones that solvers like Couenne may support natively, or use non-convex
 representation. We will ship dedicated solver libraries for some NL solvers with future versions of MiniZinc.
 
+.. _ch-solvers-fznso:
 
+Solvers Loaded as a Library (FZnSO)
+-----------------------------------
 
+A solver that implements the FZnSO interface is a shared library rather than an
+executable. MiniZinc loads it at run time and runs it directly on the flat
+model, so nothing is written to a FlatZinc file and no process is started.
 
+Such a solver *declares* what it can do — its options, the constraints it
+implements, the types of decision variable it supports and the statistics it
+reports — so its configuration file needs to name nothing but the library:
 
+.. code-block:: json
 
+  {
+    "id": "org.gecode.gecode-fznso",
+    "name": "Gecode (FZnSO)",
+    "version": "6.4.0",
+    "inputType": "FZNSO",
+    "executable": "/path/to/lib/fznso/libgecode.dylib"
+  }
 
+The ``executable`` field names the library: either a path, or a bare name such
+as ``gecode``, which is looked up on the FZnSO search path
+(``$FZNSO_SOLVER_PATH``, then the per-user and system ``fznso`` directories).
 
+What MiniZinc derives from the declaration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+**Command line flags.** Every option the solver declares becomes a flag. The
+options in the FZnSO registry map onto the standard MiniZinc flags —
+``all_solutions`` to ``-a``, ``intermediate`` to ``-i``, ``fixed_search`` to
+``-f``, ``threads`` to ``-p``, ``random_seed`` to ``-r``, ``time_limit`` to
+``-t`` and ``verbose`` to ``-v`` — and every other option becomes
+``--<option>``. They are listed by ``minizinc --help <solver id>`` and reported
+by ``--solvers-json``, so the IDE offers them too. Nothing needs an
+``extraFlags`` entry in the configuration file.
 
+**Globals.** A constraint the solver declares enables the matching
+``fzn_<constraint>``: the standard library's decomposition of it is dropped, and
+the call is passed to the solver instead. A solver that only wants to say "I
+implement ``all_different_int``" therefore needs no MiniZinc library at all. A
+solver that *does* ship an ``mznlib`` still wins wherever it provides a
+redefinition, because only declarations MiniZinc itself supplies are dropped.
 
+**Constraints only implemented for fixed arguments.** A propagator often exists
+only for the fixed case — unary scheduling needs fixed durations, an integer
+power needs a fixed exponent. A solver says so by declaring the constraint with
+those arguments fixed::
 
+  disjunctive_strict(list of var int, list of int)
 
+The decomposition is then *kept*, and the constraint gains a second declaration
+for the fixed case, with MiniZinc generating the dispatch between them::
 
+  predicate fzn_disjunctive_strict(array [int] of var int: s, array [int] of int: d);
+  predicate fzn_disjunctive_strict(array [int] of var int: s, array [int] of var int: d) =
+    if is_fixed(d) then fzn_disjunctive_strict(s, fix(d)) else <decomposition> endif;
 
+The guard is ``is_fixed``, not overload resolution, so it also catches an
+argument that is a variable with a singleton domain.
 
+A decomposition is dropped during type checking, before the compiler
+monomorphises. That ordering matters: a parameter-type copy is only made of a
+function that still has a body, so a declaration the solver implements never
+gains one. Without it a call whose arguments are all fixed would resolve to the
+copy — which returns ``par bool`` and so can never become a constraint — rather
+than to what the solver implements. ``complete()`` in
+``experimental/on_restart`` is the case that shows it: it reaches
+``fzn_on_restart_complete`` with a fixed argument, and the standard library's
+body for that is an ``abort``.
 
+**Set variables.** A solver that declares no ``var set of int`` gets
+``nosets.mzn``, which rewrites set variables into arrays of Booleans. A model
+that includes ``nosets.mzn`` itself keeps it: what that file redefines is never
+dropped, because a solver saying it accepts ``set_lt`` is not an answer to a
+model that has asked for no set variables at all.
+
+**The solver's own constraints.** A solver usually implements more than the
+standard library has names for. Those are reached by including a file named
+after the solver::
+
+  include "gecode.mzn";
+  constraint array_set_element_intersect(sel, ys, z);
+
+If the solver ships an ``mznlib`` containing ``gecode.mzn``, that file is used
+and anything it does not declare is added to it. If it ships nothing, the whole
+file is synthesised from the declared constraint list. Either way the model has
+to ask: without the include the identifier is undefined, so a model that
+depends on a particular solver says so.
+
+Only constraints come across this way — annotations and reverse-mapping
+functions are not part of what a solver declares, so a solver wanting to offer
+those still ships a library for them.
+
+**The overlay library.** ``share/minizinc/fznso`` is searched before the
+standard library (and after any configured ``mznlib``). It gives the
+declarations a global lowers to shapes a solver can actually match — a flat
+tuple array for ``fzn_table_int``, a flat transition matrix for ``fzn_regular``,
+``fzn_no_overlap`` in place of ``fzn_diffn``, which is the identifier the FZnSO
+constraint specification standardises for it.
+
+Where a constraint reads one array's values as indices into another —
+``fzn_inverse``, ``fzn_int_set_channel``, ``fzn_bin_packing_load``,
+``fzn_range``, ``fzn_roots``, ``fzn_cumulatives`` and the rest — the index the
+array is numbered from travels next to it as a plain ``int``, because the flat
+array cannot carry an index set. A solver meets such an offset by padding or
+shifting its own array, which it can only do from zero up, so the
+``array [int] of`` overload keeps the decomposition for a caller numbering from
+below zero.
+
+It deliberately stops short of the FlatZinc builtin layer. The standard library
+declares some builtins body-less, and does not mention the half-reified
+(``_imp``) forms at all, because a solver is expected to ship a library saying
+which of them it supports and decomposing the rest. That is still the way to do
+it: a ``redefinitions*.mzn`` in the solver's ``mznlib``. A solver that ships
+none gets neither half-reification nor those decompositions.
+
+Every predicate a solver may implement is declared with ``list of`` rather than
+``array [int] of``. A FlatZinc array is one-based, and ``list of`` is what says
+so: the type-checker holds the caller to an index set starting at ``1``, so the
+predicate body and the solver agree on the numbering. The overload the standard
+library's globals call keeps their signature and rebases with ``array1d``.
+
+``list of T`` and ``array [int] of T`` are one type to the overload resolver, so
+the two forms can only coexist when they differ in arity, in the dimension of
+some argument, or in the position and name of one. ``fzn_cumulatives`` therefore
+takes its machine offset in the middle and calls its bound array ``capacity``,
+and ``fzn_diffn`` is renamed rather than overloaded.

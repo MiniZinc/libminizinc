@@ -2687,6 +2687,30 @@ Constants::Constants() {
   ids.int_.eq = addString("int_eq");
   ids.int_.ne = addString("int_ne");
 
+  // The registry's spelling of the same builtins. `set_in` is the one that is
+  // renamed rather than prefixed: the registry names the constraint for the
+  // type it takes, and membership of a set is an integer constraint.
+  ids.fznso.int_lin_eq = addString("fzn_int_lin_eq");
+  ids.fznso.int_lin_le = addString("fzn_int_lin_le");
+  ids.fznso.int_lin_ne = addString("fzn_int_lin_ne");
+  ids.fznso.int_div = addString("fzn_int_div");
+  ids.fznso.int_times = addString("fzn_int_times");
+  ids.fznso.bool_clause = addString("fzn_bool_clause");
+  ids.fznso.bool_clause_reif = addString("fzn_bool_clause_reif");
+  ids.fznso.array_bool_and = addString("fzn_bool_array_and");
+  ids.fznso.array_bool_xor = addString("fzn_bool_array_xor");
+  ids.fznso.array_int_element = addString("fzn_int_array_element");
+  ids.fznso.float_lin_le = addString("fzn_float_lin_le");
+  ids.fznso.float_times = addString("fzn_float_times");
+  ids.fznso.bool2int = addString("fzn_bool_to_int");
+  ids.fznso.int2float = addString("fzn_int_to_float");
+  ids.fznso.set_eq = addString("fzn_set_of_int_eq");
+  ids.fznso.set_union = addString("fzn_set_of_int_union");
+  ids.fznso.set_intersect = addString("fzn_set_of_int_intersect");
+  ids.fznso.set_diff = addString("fzn_set_of_int_diff");
+  ids.fznso.set_symdiff = addString("fzn_set_of_int_symdiff");
+  ids.fznso.set_in = addString("fzn_int_in");
+
   ids.int_reif.lin_eq = addString("int_lin_eq_reif");
   ids.int_reif.lin_le = addString("int_lin_le_reif");
   ids.int_reif.lin_ne = addString("int_lin_ne_reif");

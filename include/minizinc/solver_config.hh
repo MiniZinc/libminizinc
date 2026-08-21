@@ -27,7 +27,7 @@ class SolverConfigs;
  */
 class SolverConfig {
 public:
-  enum InputType { O_FZN, O_MZN, O_NL, O_JSON };
+  enum InputType { O_FZN, O_MZN, O_NL, O_JSON, O_FZNSO };
   /// Extra command line flags supported by solver
   struct ExtraFlag {
     enum FlagType { T_BOOL, T_INT, T_FLOAT, T_STRING };
@@ -286,6 +286,9 @@ public:
   SolverConfig& config(const std::string& s);
   /// Return list of all solver ids
   std::vector<std::string> solvers() const;
+  /// Return every loaded configuration, so that a factory shared by more than
+  /// one of them (the FZnSO driver, say) can finalise each in turn.
+  std::vector<SolverConfig>& allConfigs() { return _solvers; }
   /// Return search path for solver configs
   std::vector<std::string> solverConfigsPath() const;
   /// Return JSON list of all solver configurations

@@ -375,7 +375,9 @@ bool LECompressor::trackItem(Item* i) {
     if (auto* call = Expression::dynamicCast<Call>(ci->e())) {
       // {int,float}_lin_le([c1,c2,...], [x, y,...], 0);
       if (call->id() == _env.constants.ids.int_.lin_le ||
-          call->id() == _env.constants.ids.float_.lin_le) {
+          call->id() == _env.constants.ids.float_.lin_le ||
+          call->id() == _env.constants.ids.fznso.int_lin_le ||
+          call->id() == _env.constants.ids.fznso.float_lin_le) {
         ArrayLit* as = eval_array_lit(_env, call->arg(0));
         ArrayLit* bs = eval_array_lit(_env, call->arg(1));
         assert(as->size() == bs->size());
@@ -400,13 +402,15 @@ bool LECompressor::trackItem(Item* i) {
           }
         }
       }
-      assert(call->id() != _env.constants.ids.int2float);
+      assert(call->id() != _env.constants.ids.int2float &&
+             call->id() != _env.constants.ids.fznso.int2float);
     }
   } else if (auto* vdi = i->dynamicCast<VarDeclI>()) {
     assert(vdi->e());
     if (Expression* vde = vdi->e()->e()) {
       if (auto* call = Expression::dynamicCast<Call>(vde)) {
-        if (call->id() == _env.constants.ids.int2float) {
+        if (call->id() == _env.constants.ids.int2float ||
+            call->id() == _env.constants.ids.fznso.int2float) {
           if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(call->arg(0)))) {
             auto* alias = Expression::dynamicCast<VarDecl>(follow_id_to_decl(vdi->e()));
             if (alias != nullptr) {
@@ -429,7 +433,8 @@ void LECompressor::compress() {
     // Check if compression is possible
     if (auto* ci = it->second->dynamicCast<ConstraintI>()) {
       auto* call = Expression::cast<Call>(ci->e());
-      if (call->id() == _env.constants.ids.int_.lin_le) {
+      if (call->id() == _env.constants.ids.int_.lin_le ||
+          call->id() == _env.constants.ids.fznso.int_lin_le) {
         ArrayLit* as = eval_array_lit(_env, call->arg(0));
         ArrayLit* bs = eval_array_lit(_env, call->arg(1));
         IntVal c = eval_int(_env, call->arg(2));
@@ -555,7 +560,9 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   auto* ci = i->cast<ConstraintI>();
   auto* call = Expression::cast<Call>(ci->e());
   assert(call->id() == _env.constants.ids.int_.lin_le ||
-         call->id() == _env.constants.ids.float_.lin_le);
+         call->id() == _env.constants.ids.float_.lin_le ||
+         call->id() == _env.constants.ids.fznso.int_lin_le ||
+         call->id() == _env.constants.ids.fznso.float_lin_le);
 
   // Remove old occurrences
   CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);

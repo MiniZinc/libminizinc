@@ -11,10 +11,13 @@
 
 #pragma once
 
+#include <minizinc/native_predicates.hh>
+
 #include <minizinc/astexception.hh>
 #include <minizinc/model.hh>
 
 #include <chrono>
+#include <memory>
 #include <random>
 
 namespace MiniZinc {
@@ -67,6 +70,8 @@ struct FlatteningOptions {
   std::unordered_set<std::string> notSections;
   /// Don't include stdlib
   bool ignoreStdlib;
+  /// Predicates the selected solver implements natively, or null if unknown
+  std::shared_ptr<const NativePredicates> nativePredicates;
   /// Default constructor
   FlatteningOptions()
       : keepOutputInFzn(false),

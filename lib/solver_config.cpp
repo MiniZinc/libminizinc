@@ -353,6 +353,8 @@ SolverConfig SolverConfig::load(const string& filename) {
               sc._inputType = O_NL;
             } else if (str == "JSON") {
               sc._inputType = O_JSON;
+            } else if (str == "FZNSO") {
+              sc._inputType = O_FZNSO;
             } else {
               std::ostringstream ss;
               ss << "unknown input type (" << str << ")";
@@ -532,6 +534,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
       break;
     case O_JSON:
       oss << "JSON";
+      break;
+    case O_FZNSO:
+      oss << "FZNSO";
       break;
   }
   oss << "\",\n";

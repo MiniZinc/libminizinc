@@ -2957,7 +2957,8 @@ public:
         valid = false;
         bounds.emplace_back(0, 0);
       }
-    } else if (c->id() == env.constants.ids.int_.times) {
+    } else if (c->id() == env.constants.ids.int_.times ||
+               c->id() == env.constants.ids.fznso.int_times) {
       Bounds b1 = bounds.back();
       bounds.pop_back();
       Bounds b0 = bounds.back();
@@ -2975,7 +2976,8 @@ public:
         IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c->id() == env.constants.ids.bool2int) {
+    } else if (c->id() == env.constants.ids.bool2int ||
+               c->id() == env.constants.ids.fznso.bool2int) {
       bounds.back().first = std::max(IntVal(0), bounds.back().first);
       bounds.back().second = std::min(IntVal(1), bounds.back().second);
     } else if (c->id() == env.constants.ids.abs) {
@@ -3405,7 +3407,8 @@ public:
         }
       }
       bounds.emplace_back(lb, ub);
-    } else if (c->id() == env.constants.ids.float_.times) {
+    } else if (c->id() == env.constants.ids.float_.times ||
+               c->id() == env.constants.ids.fznso.float_times) {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
       cbi.run(c->arg(0));
       cbi.run(c->arg(1));
@@ -3426,7 +3429,8 @@ public:
         FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
         bounds.emplace_back(m, n);
       }
-    } else if (c->id() == env.constants.ids.int2float) {
+    } else if (c->id() == env.constants.ids.int2float ||
+               c->id() == env.constants.ids.fznso.int2float) {
       ComputeIntBounds ib(env);
       BottomUpIterator<ComputeIntBounds> cbi(ib);
       cbi.run(c->arg(0));
@@ -3691,7 +3695,10 @@ public:
   void vCall(Call* c) {
     if (valid &&
         (c->id() == env.constants.ids.set_.intersect || c->id() == env.constants.ids.set_.union_ ||
-         c->id() == env.constants.ids.set_.symdiff)) {
+         c->id() == env.constants.ids.set_.symdiff ||
+         c->id() == env.constants.ids.fznso.set_intersect ||
+         c->id() == env.constants.ids.fznso.set_union ||
+         c->id() == env.constants.ids.fznso.set_symdiff)) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       IntSetVal* b1 = bounds.back();
@@ -3700,7 +3707,8 @@ public:
       IntSetRanges b1r(b1);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(b0r, b1r);
       bounds.push_back(IntSetVal::ai(u));
-    } else if (valid && c->id() == env.constants.ids.set_.diff) {
+    } else if (valid && (c->id() == env.constants.ids.set_.diff ||
+                         c->id() == env.constants.ids.fznso.set_diff)) {
       IntSetVal* b0 = bounds.back();
       bounds.pop_back();
       bounds.pop_back();  // don't need bounds of right hand side

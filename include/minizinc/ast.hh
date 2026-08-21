@@ -2231,6 +2231,41 @@ public:
       ASTString ne;
     } int_;  // NOLINT(readability-identifier-naming)
 
+    /// What the FZnSO constraint registry calls the builtins beside it.
+    ///
+    /// Behind that interface every FlatZinc builtin is rewritten onto its
+    /// registry name before it reaches the optimiser, so a check written against
+    /// the FlatZinc spelling alone quietly stops recognising the constraint it
+    /// was written for. Written out rather than derived by prefixing, because
+    /// the registry renames as well as prefixes — `set_in` is `int_in` — and a
+    /// check that guessed would find the wrong constraint or none.
+    ///
+    /// Only the ones some check actually compares against are here; the field is
+    /// named after the builtin, not after the registry, so the two read together
+    /// at the point of use.
+    struct {
+      ASTString int_lin_eq;   // NOLINT(readability-identifier-naming)
+      ASTString int_lin_le;   // NOLINT(readability-identifier-naming)
+      ASTString int_lin_ne;   // NOLINT(readability-identifier-naming)
+      ASTString int_div;      // NOLINT(readability-identifier-naming)
+      ASTString int_times;    // NOLINT(readability-identifier-naming)
+      ASTString bool_clause;  // NOLINT(readability-identifier-naming)
+      ASTString bool_clause_reif;   // NOLINT(readability-identifier-naming)
+      ASTString array_bool_and;     // NOLINT(readability-identifier-naming)
+      ASTString array_bool_xor;     // NOLINT(readability-identifier-naming)
+      ASTString array_int_element;  // NOLINT(readability-identifier-naming)
+      ASTString float_lin_le;       // NOLINT(readability-identifier-naming)
+      ASTString float_times;        // NOLINT(readability-identifier-naming)
+      ASTString bool2int;           // NOLINT(readability-identifier-naming)
+      ASTString int2float;          // NOLINT(readability-identifier-naming)
+      ASTString set_eq;             // NOLINT(readability-identifier-naming)
+      ASTString set_union;          // NOLINT(readability-identifier-naming)
+      ASTString set_intersect;      // NOLINT(readability-identifier-naming)
+      ASTString set_diff;           // NOLINT(readability-identifier-naming)
+      ASTString set_symdiff;        // NOLINT(readability-identifier-naming)
+      ASTString set_in;       // NOLINT(readability-identifier-naming)
+    } fznso;
+
     struct {
       ASTString lin_eq;  // NOLINT(readability-identifier-naming)
       ASTString lin_le;  // NOLINT(readability-identifier-naming)

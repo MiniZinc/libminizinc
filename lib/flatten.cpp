@@ -2765,7 +2765,8 @@ bool check_domain_constraints(EnvI& env, Call* c) {
             new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity(), ub)));
       }
     }
-  } else if (c->id() == env.constants.ids.int_.lin_le) {
+  } else if (c->id() == env.constants.ids.int_.lin_le ||
+             c->id() == env.constants.ids.fznso.int_lin_le) {
     auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
     if (al_c->size() == 1) {
       auto* al_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
@@ -2994,6 +2995,22 @@ KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
     return nullptr;
   }
   return nullptr;
+}
+
+/// The identifier to emit for `array_bool_and`.
+///
+/// The cleanup passes turn a `forall` into the FlatZinc builtin directly, after
+/// the library has had its say, so the rewrite that would give the constraint
+/// the FZnSO registry's name never runs. Behind that interface the solver
+/// declares the registry's name, so emitting MiniZinc's would reach it as a
+/// constraint it has never heard of. Whichever the model declares is the one to
+/// emit; outside that interface only MiniZinc's is.
+ASTString array_and_id(EnvI& env) {
+  std::vector<Type> argtypes{Type::varbool(1), Type::varbool(0)};
+  return env.model->matchFn(env, env.constants.ids.fznso.array_bool_and, argtypes, false) !=
+                 nullptr
+             ? env.constants.ids.fznso.array_bool_and
+             : env.constants.ids.bool_reif.array_and;
 }
 
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
@@ -3527,7 +3544,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           if (c->id() == env.constants.ids.exists) {
             nid = env.constants.ids.bool_reif.clause;
           } else if (c->id() == env.constants.ids.forall) {
-            nid = env.constants.ids.bool_reif.array_and;
+            nid = array_and_id(env);
           } else if (vd->type().isbool()) {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
@@ -4492,19 +4509,42 @@ void flatten(Env& e, FlatteningOptions opt) {
       argtypes[0] = Type::varbool(1);
       argtypes[1] = Type::varbool(0);
       GCLock lock;
+
+      /// The declaration to rewrite \a flatzinc's meaning into, or null if
+      /// there is none to use.
+      ///
+      /// The rewrites below post a call to whatever this returns, so what
+      /// matters is that MiniZinc has a body standing behind the name. Behind
+      /// the FZnSO interface the builtin is rewritten onto \a fznso, the name
+      /// the constraint registry gives it, so the builtin always has one — the
+      /// rename's. Asking whether *it* is defined would answer yes even when
+      /// the solver posts the constraint itself, and the rewrite would be made
+      /// on the strength of a body that only forwards. What decides is whether
+      /// the name it forwards to still has one.
+      auto alternative_decl = [&](const ASTString& flatzinc, const ASTString& fznso,
+                                  const std::vector<Type>& types) -> FunctionI* {
+        FunctionI* found = env.model->matchFn(env, flatzinc, types, false);
+        if (found == nullptr || found->e() == nullptr) {
+          return nullptr;
+        }
+        FunctionI* target = env.model->matchFn(env, fznso, types, false);
+        return (target != nullptr && target->e() == nullptr) ? nullptr : found;
+      };
+
+      array_bool_and = alternative_decl(env.constants.ids.bool_reif.array_and,
+                                     env.constants.ids.fznso.array_bool_and, argtypes);
+      // No registry name, so no rewrite and nothing to look through.
       FunctionI* fi =
-          env.model->matchFn(env, env.constants.ids.bool_reif.array_and, argtypes, false);
-      array_bool_and = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-      fi = env.model->matchFn(env, env.constants.ids.array_bool_and_imp, argtypes, false);
+          env.model->matchFn(env, env.constants.ids.array_bool_and_imp, argtypes, false);
       array_bool_and_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
       argtypes[1] = Type::varbool(1);
-      fi = env.model->matchFn(env, env.constants.ids.bool_.clause, argtypes, false);
-      array_bool_clause = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      array_bool_clause = alternative_decl(env.constants.ids.bool_.clause,
+                                        env.constants.ids.fznso.bool_clause, argtypes);
 
       argtypes.push_back(Type::varbool());
-      fi = env.model->matchFn(env, env.constants.ids.bool_reif.clause, argtypes, false);
-      array_bool_clause_reif = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      array_bool_clause_reif = alternative_decl(env.constants.ids.bool_reif.clause,
+                                             env.constants.ids.fznso.bool_clause_reif, argtypes);
 
       argtypes[0] = Type::varbool();
       argtypes[1] = Type::varbool();
@@ -5304,7 +5344,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.emptyBoolArray);
           } else if (vcc->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.bool_reif.array_and;
+            cid = array_and_id(env);
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.literalTrue);
           } else if (vcc->id() == env.constants.ids.clause) {
@@ -5372,7 +5412,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           if (c->id() == env.constants.ids.exists || c->id() == env.constants.ids.clause) {
             cid = env.constants.ids.bool_reif.clause;
           } else if (c->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.bool_reif.array_and;
+            cid = array_and_id(env);
           } else {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
@@ -5582,7 +5622,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.forall) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_reif.array_and);
+      vc->id(array_and_id(env));
       std::vector<Expression*> args(2);
       args[0] = vc->arg(0);
       args[1] = env.constants.literalTrue;
