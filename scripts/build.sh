@@ -2,17 +2,22 @@
 # Configure, build and install the compiler into $ROOT/minizinc, against the
 # vendor deps already in $ROOT/vendor.
 #
-# Env: ROOT, CMAKE_GENERATOR, BUILD_REF, EXPECT_DEPS, CMAKE_OSX_ARCHITECTURES
+# Env: ROOT, CMAKE_GENERATOR, BUILD_REF, EXPECT_DEPS, CMAKE_OSX_ARCHITECTURES,
+#      CMAKE_WRAPPER, CMAKE_FIND_ROOT_PATH
 set -eux
 set -o pipefail # or the tee below would mask a cmake failure
 
 : "${ROOT:?ROOT must be set}"
 
-cmake -S "$ROOT" -B "$ROOT/build" -G "${CMAKE_GENERATOR:-Ninja}" \
+# wasm sets CMAKE_WRAPPER=emcmake, whose toolchain confines find_package to the
+# emscripten sysroot -- hence CMAKE_FIND_ROOT_PATH=/ to reach vendor/. Empty is
+# CMake's own default, so both are inert elsewhere.
+${CMAKE_WRAPPER:-} cmake -S "$ROOT" -B "$ROOT/build" -G "${CMAKE_GENERATOR:-Ninja}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_REF="${BUILD_REF:-0}" \
   -DGecode_ROOT="$ROOT/vendor/gecode" \
   -DOsiCBC_ROOT="$ROOT/vendor/cbc" \
+  -DCMAKE_FIND_ROOT_PATH="${CMAKE_FIND_ROOT_PATH:-}" \
   -DCMAKE_INSTALL_PREFIX="$ROOT/minizinc" \
   -DCMAKE_OSX_ARCHITECTURES="${CMAKE_OSX_ARCHITECTURES:-arm64}" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET="12.0" 2>&1 | tee "$ROOT/configure.log"
@@ -28,6 +33,9 @@ for dep in ${EXPECT_DEPS:-}; do
 	case "$dep" in
 	gecode) label="Gecode" ;;
 	cbc) label="OSICBC" ;;
+	chuffed) label="CHUFFED" ;;
+	# Matches the linked-in line only; a plugin build prints "HiGHS: (PLUGIN)".
+	highs) label="HiGHS" ;;
 	# Fail closed, so a new fetched dep cannot skip the check by omission.
 	*)
 		echo "ERROR: no CMake summary label known for fetched dependency '$dep'" >&2

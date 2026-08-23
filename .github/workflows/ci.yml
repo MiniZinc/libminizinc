@@ -38,6 +38,8 @@ jobs:
           - { platform: osx-intel,   triple: x86_64-apple-darwin,  runner: macos-26-intel, container: "",                                    setup: "",                                                   generator: "Ninja" }
           - { platform: win64,       triple: x86_64-windows,     runner: windows-2022,     container: "",                                    setup: "",                                                   generator: "Ninja" }
           - { platform: win64-arm,   triple: aarch64-windows,    runner: windows-11-arm,   container: "",                                    setup: "",                                                   generator: "Ninja" }
+          # No container: the emsdk image comes from vendor.lock below.
+          - { platform: wasm,        triple: wasm32-emscripten,  runner: ubuntu-24.04,     container: "",                                    setup: "",                                                   generator: "Unix Makefiles" }
     runs-on: ${{ matrix.runner }}
     env:
       # Lets `gh release download` read minizinc-vendor's (public) releases.
@@ -53,6 +55,11 @@ jobs:
           # COIN-OR publishes no ARM64 Windows CBC, so that build has no MIP
           # backend from CBC; find_package simply does not find it.
           [ "${{ matrix.triple }}" = aarch64-windows ] || deps="$deps cbc"
+          if [ "${{ matrix.platform }}" = wasm ]; then
+            # No plugins under emscripten, so these are linked in and build deps.
+            deps="$deps chuffed highs"
+            echo "BUILD_CONTAINER=emscripten/emsdk:$(grep '^emsdk=' vendor.lock | cut -d= -f2)" >> "$GITHUB_ENV"
+          fi
           # build.sh asserts that each of these is actually linked in, so that the
           # fetched set and the compiled-in set cannot drift apart silently.
           echo "EXPECT_DEPS=$deps" >> "$GITHUB_ENV"
@@ -72,17 +79,24 @@ jobs:
           CXXFLAGS: ${{ matrix.platform == 'win64-arm' && '/Zc:__cplusplus' || '' }}
           # Ignored off macOS.
           CMAKE_OSX_ARCHITECTURES: ${{ matrix.platform == 'osx-intel' && 'x86_64' || 'arm64' }}
+          # See scripts/build.sh: both are no-ops when empty.
+          CMAKE_WRAPPER: ${{ matrix.platform == 'wasm' && 'emcmake' || '' }}
+          CMAKE_FIND_ROOT_PATH: ${{ matrix.platform == 'wasm' && '/' || '' }}
         run: |
           set -eux
           SETUP='${{ matrix.setup }}'
-          if [ -n "${{ matrix.container }}" ]; then
+          # wasm's image comes from vendor.lock, every other platform's from the matrix.
+          IMAGE="${BUILD_CONTAINER:-${{ matrix.container }}}"
+          if [ -n "$IMAGE" ]; then
             docker run --rm -v "$PWD:/work" -w /work \
               -e ROOT=/work \
               -e CMAKE_GENERATOR="${{ matrix.generator }}" \
               -e BUILD_REF="${{ github.run_id }}" \
               -e EXPECT_DEPS="$EXPECT_DEPS" \
               -e CMAKE_OSX_ARCHITECTURES="$CMAKE_OSX_ARCHITECTURES" \
-              "${{ matrix.container }}" \
+              -e CMAKE_WRAPPER="$CMAKE_WRAPPER" \
+              -e CMAKE_FIND_ROOT_PATH="$CMAKE_FIND_ROOT_PATH" \
+              "$IMAGE" \
               sh -c "${SETUP}${SETUP:+ && }bash scripts/build.sh"
           else
             ROOT="$PWD" \
@@ -98,6 +112,21 @@ jobs:
         if: startsWith(matrix.platform, 'osx')
         shell: bash
         run: vtool -show-build minizinc/bin/minizinc | grep -w "minos 12.0"
+
+      # The test job has no wasm runner, so this is the only check that the build
+      # runs. MODULARIZE=1 makes minizinc.js a factory, hence callMain; run from
+      # bin/ because minizinc.data is opened by bare name relative to the cwd.
+      - name: Smoke test (wasm)
+        if: matrix.platform == 'wasm'
+        shell: bash
+        working-directory: minizinc/bin
+        run: |
+          out=$(node -e "require('./minizinc.js')().then(m => m.callMain(['--solvers']))")
+          echo "$out"
+          for id in gecode_presolver chuffed mip.coin-bc mip.highs; do
+            grep -q "org.minizinc.$id" <<<"$out" \
+              || { echo "ERROR: $id missing from --solvers" >&2; exit 1; }
+          done
 
       # Archived, not uploaded as a tree: artifacts drop the executable bit. This
       # tarball is also exactly what the release ships, so it is packed once.
@@ -270,9 +299,10 @@ jobs:
 
   # The develop chain is sequential: libminizinc -> mzn-analyse -> FindMUS ->
   # MiniZincIDE, each link firing only once its own release assets are published,
-  # so the next repo never picks up a half-updated upstream.
+  # so the next repo never picks up a half-updated upstream. minizinc-js only
+  # consumes the wasm asset, so it is not in that chain.
   notify-downstream:
-    name: trigger mzn-analyse rebuild
+    name: trigger downstream rebuilds
     needs: publish
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
     runs-on: ubuntu-24.04
@@ -283,7 +313,9 @@ jobs:
           app-id: ${{ secrets.MINIZINC_BOT_APP_ID }}
           private-key: ${{ secrets.MINIZINC_BOT_APP_KEY }}
           owner: MiniZinc
-          repositories: mzn-analyse
+          repositories: |
+            mzn-analyse
+            minizinc-js
       - name: Dispatch
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -292,3 +324,5 @@ jobs:
           # default branch's workflow, so it could not rebuild develop.
           gh workflow run ci.yml --repo MiniZinc/mzn-analyse --ref "$GITHUB_REF_NAME" \
             -f minizinc_release=edge
+          # No release input: minizinc-js always builds against edge.
+          gh workflow run build.yml --repo MiniZinc/minizinc-js --ref develop

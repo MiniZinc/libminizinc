@@ -14,3 +14,6 @@ or-tools=v9.15
 globalizer=0.1.8
 # Runtime DLLs the IDE's Windows installer ships so Qt can do TLS.
 openssl=3.5.7
+# Not a dependency: the emscripten that built the wasm archives, and so must
+# link them.
+emsdk=6.0.8
