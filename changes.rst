@@ -28,6 +28,8 @@ Changes:
 -  Extend the Xpress solver interface with support for lazy constraints,
    lexicographic multiple objectives (via the ``goal_hierarchy`` annotation),
    and user cuts, and enable quadratic and bilinear constraints.
+-  Make built-in Gecode solver interface handle restart annotations and statistics
+   output.
 
 Bug fixes:
 ^^^^^^^^^^
