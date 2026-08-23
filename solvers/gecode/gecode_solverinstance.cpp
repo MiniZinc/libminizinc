@@ -41,7 +41,7 @@ GecodeSolverFactory::GecodeSolverFactory() {
   sc.mznlib("-Ggecode_presolver");
   sc.mznlibVersion(1);
   sc.description("Internal Gecode presolver plugin");
-  sc.stdFlags({"-a", "-n", "-p"});
+  sc.stdFlags({"-a", "-n", "-p", "-s"});
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
@@ -1297,6 +1297,68 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
   }
 }
 
+namespace {
+/// Whether \a e is one of the restart annotations recognised by create_cutoff
+bool isRestartAnnotation(Expression* e) {
+  if (Expression::isa<Id>(e)) {
+    return Expression::cast<Id>(e)->str() == "restart_none";
+  }
+  if (auto* call = Expression::dynamicCast<Call>(e)) {
+    return call->id() == "restart_constant" || call->id() == "restart_linear" ||
+           call->id() == "restart_luby" || call->id() == "restart_geometric";
+  }
+  return false;
+}
+
+/// Create a Gecode restart cutoff object from the restart annotations on the solve item.
+/// Mirrors Gecode::Driver::createCutoff, which the standalone Gecode FlatZinc solver drives
+/// from its -restart/-restart-scale/-restart-base command line flags. Returns nullptr if no
+/// restart strategy is requested, in which case a non-restarting engine is used.
+Gecode::Search::Cutoff* create_cutoff(EnvI& envi, const Annotation& ann, std::ostream& err) {
+  Gecode::Search::Cutoff* cutoff = nullptr;
+  bool seenRestartAnn = false;
+  for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+    Expression* e = *i;
+    Gecode::Search::Cutoff* c = nullptr;
+    if (Expression::isa<Id>(e)) {
+      // restart_none is the only restart annotation without arguments
+      if (Expression::cast<Id>(e)->str() != "restart_none") {
+        continue;
+      }
+    } else if (auto* call = Expression::dynamicCast<Call>(e)) {
+      if (call->id() == "restart_constant") {
+        c = Gecode::Search::Cutoff::constant(
+            static_cast<unsigned long long int>(eval_int(envi, call->arg(0)).toInt()));
+      } else if (call->id() == "restart_linear") {
+        c = Gecode::Search::Cutoff::linear(
+            static_cast<unsigned long long int>(eval_int(envi, call->arg(0)).toInt()));
+      } else if (call->id() == "restart_luby") {
+        c = Gecode::Search::Cutoff::luby(
+            static_cast<unsigned long long int>(eval_int(envi, call->arg(0)).toInt()));
+      } else if (call->id() == "restart_geometric") {
+        // NOTE: MiniZinc declares restart_geometric(base, scale), Gecode takes (scale, base)
+        double base = eval_float(envi, call->arg(0)).toDouble();
+        auto scale = static_cast<unsigned long long int>(eval_int(envi, call->arg(1)).toInt());
+        c = Gecode::Search::Cutoff::geometric(scale, base);
+      } else {
+        continue;
+      }
+    } else {
+      continue;
+    }
+    if (seenRestartAnn) {
+      err << "Warning, ignored restart annotation: " << *e
+          << " (a restart strategy has already been specified)" << std::endl;
+      delete c;
+      continue;
+    }
+    seenRestartAnn = true;
+    cutoff = c;
+  }
+  return cutoff;
+}
+}  // namespace
+
 void GecodeSolverInstance::prepareEngine() {
   GCLock lock;
   auto& _opt = static_cast<GecodeOptions&>(*_options);
@@ -1364,11 +1426,22 @@ void GecodeSolverInstance::prepareEngine() {
     engineOptions.stop = Driver::CombinedStop::create(nodeStop, failStop, timeStop, false);
 #endif
 
+    // A restart annotation on the solve item selects a restart-based meta engine
+    engineOptions.cutoff = create_cutoff(_env.envi(), _flat->solveItem()->ann(), std::cerr);
+
     // TODO: add presolving part
     if (currentSpace->solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-      engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->currentSpace, engineOptions);
+      if (engineOptions.cutoff != nullptr) {
+        engine = new MetaEngine<DFS, RBS>(this->currentSpace, engineOptions);
+      } else {
+        engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->currentSpace, engineOptions);
+      }
     } else {
-      engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->currentSpace, engineOptions);
+      if (engineOptions.cutoff != nullptr) {
+        engine = new MetaEngine<BAB, RBS>(this->currentSpace, engineOptions);
+      } else {
+        engine = new MetaEngine<BAB, Driver::EngineToMeta>(this->currentSpace, engineOptions);
+      }
     }
   }
 }
@@ -1463,6 +1536,7 @@ SolverInstanceBase::Status GecodeSolverInstance::solve() {
     }
   }
 
+  bool statsPrinted = false;
   FznSpace* next_sol = engine->next();
   while (next_sol != nullptr) {
     delete solution;
@@ -1473,6 +1547,7 @@ SolverInstanceBase::Status GecodeSolverInstance::solve() {
       processSolution();
       if (_printStats) {
         printStatistics();
+        statsPrinted = true;
       }
     }
     if (_nFoundSolutions == n_max_solutions) {
@@ -1486,8 +1561,14 @@ SolverInstanceBase::Status GecodeSolverInstance::solve() {
       processSolution(next_sol == nullptr);
       if (_printStats) {
         printStatistics();
+        statsPrinted = true;
       }
     }
+  }
+  if (_printStats && !statsPrinted) {
+    // No solution was printed (unsatisfiable, or stopped before finding one), so the search
+    // statistics have not been reported yet
+    printStatistics();
   }
   if (next_sol == nullptr) {
     if (solution != nullptr) {
@@ -1924,7 +2005,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         err << "Warning, ignored search annotation: float_search" << std::endl;
       }
 #endif
-    } else {
+    } else if (!isRestartAnnotation(i)) {
+      // Restart annotations are not branchers, they are handled in prepareEngine
       if (!ignoreUnknown) {
         err << "Warning, ignored search annotation: " << *i << std::endl;
       }
