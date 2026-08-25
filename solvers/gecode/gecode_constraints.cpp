@@ -1821,21 +1821,7 @@ void p_set_card(SolverInstanceBase& s, const Call* ce) {
 void p_set_in(SolverInstanceBase& s, const Call* ce) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!Expression::type(ce->arg(1)).isvar()) {
-    IntSet d = gi.arg2intset(s.env().envi(), ce->arg(1));
-    if (Expression::type(ce->arg(0)).isvar()) {
-      Gecode::IntSetRanges dr(d);
-      Iter::Ranges::Singleton sr(0, 1);
-      Iter::Ranges::Inter<Gecode::IntSetRanges, Iter::Ranges::Singleton> i(dr, sr);
-      IntSet d01(i);
-      if (d01.size() == 0) {
-        gi.currentSpace->fail();
-      } else {
-        rel(*gi.currentSpace, gi.arg2boolvar(ce->arg(0)), IRT_GQ, d01.min());
-        rel(*gi.currentSpace, gi.arg2boolvar(ce->arg(0)), IRT_LQ, d01.max());
-      }
-    } else {
-      dom(*gi.currentSpace, gi.arg2intvar(ce->arg(0)), d);
-    }
+    p_int_in(s, ce);
   } else {
     if (!Expression::type(ce->arg(0)).isvar()) {
       dom(*gi.currentSpace, gi.arg2setvar(ce->arg(1)), SRT_SUP,
