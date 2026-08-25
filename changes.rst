@@ -57,6 +57,11 @@ Bug fixes:
 -  Fix output reverse mapping for tuples/record function parameters which shadow
    top-level declarations of the same name.
 -  Fix element type of concatenated multi-dimensional par arrays
+-  Fix a crash in the Gecode presolver (``-O3`` and higher) when the flattened
+   model contains a ``set_in`` constraint on an integer variable. The argument
+   was tested for being a variable rather than for being a Boolean variable, so
+   the integer variable was looked up in the space's Boolean variable array
+   (:bugref:`1027`).
 
 .. _v2.10.0:
 
