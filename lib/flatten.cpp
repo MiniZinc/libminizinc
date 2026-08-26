@@ -1243,6 +1243,19 @@ void EnvI::copyPathMapsAndState(EnvI& env) {
   varPathStore.maxPathDepth = env.varPathStore.maxPathDepth;
 }
 
+void EnvI::releasePassState() {
+  // Each pass has its own CSE map; only the path state is carried over.
+  _cseMap.clear();
+  // Later passes read variable domains out of this model and nothing else, so
+  // drop the constraints and let the GC reclaim them while those passes run.
+  for (auto& i : *_flat) {
+    if (!i->isa<VarDeclI>()) {
+      i->remove();
+    }
+  }
+  _flat->compact();
+}
+
 void EnvI::flatRemoveExpr(Expression* e, Item* i) {
   std::vector<VarDecl*> toRemove;
   CollectDecls cd(*this, varOccurrences, toRemove, i);

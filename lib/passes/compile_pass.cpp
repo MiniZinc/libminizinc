@@ -144,6 +144,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
       return nullptr;
     }
     new_env->envi().copyPathMapsAndState(store->envi());
+    store->envi().releasePassState();
   } else {
     new_env = _env;
   }

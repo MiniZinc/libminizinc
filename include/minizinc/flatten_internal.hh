@@ -657,6 +657,8 @@ public:
   void collectVarDecls(bool b);
 
   void copyPathMapsAndState(EnvI& env);
+  /// Drop state no later pass reads, so the GC can reclaim it while they run.
+  void releasePassState();
   /// deprecated, use Solns2Out
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);
   Call* surroundingCall() const;
