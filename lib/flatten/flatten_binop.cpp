@@ -1239,8 +1239,10 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
 ///
 /// Note that this function will filter out any members of the struct that are
 /// `par` for `obj`, and will remove any rows in which these members do not
-/// match the members of `obj`.
-ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj) {
+/// match the members of `obj`. The number of remaining rows is returned in
+/// `rows` (which cannot be derived from the resulting array when all members
+/// of `obj` are `par`).
+ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned int& rows) {
   assert(Expression::type(table).dim() == 1 && Expression::type(table).isPar() &&
          Expression::type(table).structBT());
   assert(Expression::type(obj).structBT());
@@ -1249,10 +1251,12 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj) {
   bool all_bool = true;
   bool has_bool = false;
 
+  rows = 0;
   for (unsigned int i = 0; i < table->size(); ++i) {
     ArrayLit* row = eval_array_lit(env, (*table)[i]);
     std::vector<std::tuple<ArrayLit*, ArrayLit*, unsigned int>> stack{{row, obj, 0}};
     std::vector<Expression*> row_elems;
+    bool matches = true;
     while (!stack.empty()) {
       // Extract elements from top of the stack
       auto& b = stack.back();
@@ -1273,7 +1277,7 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj) {
         if (Expression::equal(r, o)) {
           continue;
         }
-        row_elems.clear();
+        matches = false;
         break;
       }
       // Var on `obj` -> add row element
@@ -1297,6 +1301,10 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj) {
           assert(false);
       }
     }
+    if (!matches) {
+      continue;
+    }
+    rows++;
     elems.reserve(elems.size() + row_elems.size());
     for (auto* e : row_elems) {
       elems.push_back(e);
@@ -1429,10 +1437,16 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
     } break;
     case BOT_IN: {
       GCLock lock;
-      ArrayLit* table = struct_as_table(env, tupRHS, tupLHS);
+      unsigned int rows;
+      ArrayLit* table = struct_as_table(env, tupRHS, tupLHS, rows);
       ArrayLit* elem = struct_as_array(env, tupLHS, true);
       unsigned int cols = elem->size();
-      unsigned int rows = table->size() / elem->size();
+      if (cols == 0) {
+        // All members of the struct are par, so the constraint is decided by
+        // whether any of the rows matched
+        rewrite = env.constants.boollit(rows > 0);
+        break;
+      }
 
       auto* indexedTable =
           new ArrayLit(Expression::loc(table).introduce(), table, {{1, rows}, {1, cols}});

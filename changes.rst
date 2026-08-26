@@ -62,6 +62,7 @@ Bug fixes:
    was tested for being a variable rather than for being a Boolean variable, so
    the integer variable was looked up in the space's Boolean variable array
    (:bugref:`1027`).
+-  Fix `in` on records/tuples whose members are all fixed (:bugref:`1027`).
 
 .. _v2.10.0:
 
