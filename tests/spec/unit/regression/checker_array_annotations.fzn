@@ -1,0 +1,4 @@
+var 0..1: X_INTRODUCED_18_;
+var 0..1: X_INTRODUCED_19_;
+array [1..2] of var int: x:: output_array([1..2]) = [X_INTRODUCED_18_,X_INTRODUCED_19_];
+solve satisfy;
