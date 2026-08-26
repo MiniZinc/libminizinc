@@ -74,6 +74,7 @@ Bug fixes:
 -  Fix `in` on records/tuples whose members are all fixed (:bugref:`1027`).
 -  Fix possible crashes while handling stack overflows on Windows which
    previously would have prevented the stack trace from being printed.
+-  Fix clearing of internal annotations from array declarations in FlatZinc.
 
 .. _v2.10.0:
 

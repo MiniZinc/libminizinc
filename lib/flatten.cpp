@@ -5595,6 +5595,10 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
         Expression::isa<SetLit>(vd->ti()->ranges()[0]->domain())) {
       IntSetVal* isv = Expression::cast<SetLit>(vd->ti()->ranges()[0]->domain())->isv();
       if ((isv != nullptr) && (isv->empty() || isv->min(0) == 1)) {
+        for (auto* ann : env.constants.internalAnn()) {
+          Expression::ann(vd).remove(ann);
+        }
+        Expression::ann(vd).removeCall(env.constants.ann.mzn_check_enum_var);
         return added_constraints;
       }
     }
