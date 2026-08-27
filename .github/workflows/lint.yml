@@ -8,9 +8,6 @@ name: Code Quality
 # may surface new findings that need fixing.
 
 on:
-  push:
-    # develop only; feature branches are covered by their PR.
-    branches: [develop]
   pull_request: {}
   workflow_dispatch: {}
 
@@ -47,6 +44,7 @@ jobs:
               - '**/*.hpp'
               - '.clang-format'
               - '.clang-tidy'
+              - '.github/workflows/lint.yml'
 
   format:
     name: clang-format
@@ -79,16 +77,31 @@ jobs:
         run: |
           pip install "clang-tidy==${CLANG_TIDY_VERSION}"
           sudo apt-get update && sudo apt-get install -y --no-install-recommends ninja-build
-      # No cbc: its vendor static libs are built non-PIC inside manylinux, and
-      # this job links natively where gcc defaults to PIE, so ld rejects them.
-      # Leaves MIP_osicbc_wrap.cpp unanalysed; -no-pie here would buy it back.
+      # -no-pie: the vendor archives are non-PIC, gcc here defaults to PIE.
+      # CMAKE_REQUIRE_FIND_PACKAGE_*: a fetched-but-unfound dep must fail loudly,
+      # or this job goes back to silently analysing no backends at all.
       - name: Fetch pinned vendor deps
         shell: bash
-        run: bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode
+        run: bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode cbc chuffed highs
       - name: clang-tidy
         run: |
           cmake -S . -B build -GNinja \
             -DCMAKE_CXX_CLANG_TIDY="clang-tidy" \
             -DCMAKE_BUILD_TYPE="Debug" \
-            -DGecode_ROOT="$PWD/vendor/gecode"
-              cmake --build build --config Debug -- -k 0
+            -DCMAKE_EXE_LINKER_FLAGS="-no-pie" \
+            -DGecode_ROOT="$PWD/vendor/gecode" \
+            -DOsiCBC_ROOT="$PWD/vendor/cbc" \
+            -DCMAKE_REQUIRE_FIND_PACKAGE_Gecode=ON \
+            -DCMAKE_REQUIRE_FIND_PACKAGE_OsiCBC=ON \
+            -DCMAKE_REQUIRE_FIND_PACKAGE_chuffed=ON
+          cmake --build build --config Debug -- -k 0
+      # MIP_highs_wrap.cpp guards its two loader paths on HIGHS_PLUGIN, so the
+      # build above only sees the plugin side. This covers the linked-in side that
+      # wasm ships. Object target only, so nothing is linked.
+      - name: clang-tidy (HiGHS linked in)
+        run: |
+          cmake -S . -B build-highs -GNinja \
+            -DCMAKE_CXX_CLANG_TIDY="clang-tidy" \
+            -DCMAKE_BUILD_TYPE="Debug" \
+            -DHIGHS_PLUGIN=OFF
+          cmake --build build-highs --target minizinc_highs -- -k 0
