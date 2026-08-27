@@ -299,6 +299,9 @@ public:
   /// Remove binding of \a e from map
   void remove(Expression* e) { _m.erase(e); }
   void clear() { _m.clear(); }
+  /// Take over \a other's contents. Only the map moves: both objects stay
+  /// registered with the collector where they are.
+  void swap(KeepAliveMap& other) { _m.swap(other._m); }
   template <class D>
   void dump() {
     for (auto i = _m.begin(); i != _m.end(); ++i) {

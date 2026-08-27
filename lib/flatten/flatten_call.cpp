@@ -1187,7 +1187,6 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
           } else {
             reif_b = r;
           }
-          // Annotate cr() with get_path()
           add_path_annotation(env, cr());
           reif_b->e(cr());
           if (r != nullptr && r != reif_b) {

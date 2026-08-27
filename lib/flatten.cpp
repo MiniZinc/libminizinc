@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <unordered_map>
@@ -516,16 +517,6 @@ bool update_bounds(EnvI& envi, VarDecl* ovd, VarDecl* vd) {
   return tighter;
 }
 
-std::string get_path(EnvI& env) {
-  std::string path;
-  std::stringstream ss;
-  if (env.dumpPath(ss)) {
-    path = ss.str();
-  }
-
-  return path;
-}
-
 inline Location get_loc(EnvI& env, Expression* e1, Expression* e2) {
   if (e1 != nullptr) {
     return Expression::loc(e1).introduce();
@@ -539,32 +530,27 @@ inline Id* get_id(EnvI& env, Id* origId) {
   return origId != nullptr ? origId : new Id(Location().introduce(), env.genId(), nullptr);
 }
 
-StringLit* get_longest_mzn_path_annotation(EnvI& env, const Expression* e) {
-  StringLit* sl = nullptr;
-
+/// Path recorded for \a e while flattening, or nullptr. Where an expression
+/// picked up several, the deepest wins.
+PathStore::Path get_recorded_path(EnvI& env, const Expression* e) {
   if (const auto* vd = Expression::dynamicCast<const VarDecl>(e)) {
     VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
     auto it = reversePathMap.find(vd->id()->decl());
-    if (it != reversePathMap.end()) {
-      sl = new StringLit(Location(), it->second);
-    }
-  } else {
-    for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
-      if (Call* ca = Expression::dynamicCast<Call>(*it)) {
-        if (ca->id() == env.constants.ann.mzn_path) {
-          auto* sl1 = Expression::cast<StringLit>(ca->arg(0));
-          if (sl != nullptr) {
-            if (sl1->v().size() > sl->v().size()) {
-              sl = sl1;
-            }
-          } else {
-            sl = sl1;
-          }
+    return it != reversePathMap.end() ? it->second : nullptr;
+  }
+  PathStore::Path best = nullptr;
+  for (ExpressionSetIter it = Expression::ann(e).begin(); it != Expression::ann(e).end(); ++it) {
+    if (Call* ca = Expression::dynamicCast<Call>(*it)) {
+      if (ca->id() == env.constants.ann.mzn_path && Expression::isa<IntLit>(ca->arg(0))) {
+        PathStore::Path p = env.varPathStore.getPaths().fromMarkerIndex(
+            IntLit::v(Expression::cast<IntLit>(ca->arg(0))));
+        if (p != nullptr && (best == nullptr || PathStore::depth(p) > PathStore::depth(best))) {
+          best = p;
         }
       }
     }
   }
-  return sl;
+  return best;
 }
 
 void add_path_annotation(EnvI& env, Expression* e) {
@@ -577,21 +563,24 @@ void add_path_annotation(EnvI& env, Expression* e) {
 
     VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
 
-    std::vector<Expression*> path_args(1);
-    std::string p;
     auto it = reversePathMap.find(e);
-    if (it == reversePathMap.end()) {
-      p = get_path(env);
-    } else {
-      p = it->second;
+    PathStore::Path p = it == reversePathMap.end() ? env.currentPath() : it->second;
+    if (p == nullptr) {
+      return;
+    }
+    // A variable's path is recovered from the reverse path map, never from an
+    // annotation, so only build one if it is going to be printed.
+    if (Expression::isa<VarDecl>(e) && !env.fopts.collectMznPaths) {
+      return;
     }
 
-    if (!p.empty()) {
-      path_args[0] = new StringLit(Location(), p);
-      Call* path_call = Call::a(Expression::loc(e), env.constants.ann.mzn_path, path_args);
-      Expression::type(path_call, Type::ann());
-      Expression::addAnnotation(e, path_call);
-    }
+    // A token, not the text: rewriting a constraint later must recover its path
+    // whether or not paths were asked for. The text is filled in before printing.
+    std::vector<Expression*> path_args(1);
+    path_args[0] = IntLit::a(env.varPathStore.getPaths().markerIndex(p));
+    Call* path_call = Call::a(Expression::loc(e), env.constants.ann.mzn_path, path_args);
+    Expression::type(path_call, Type::ann());
+    Expression::addAnnotation(e, path_call);
   }
 }
 
@@ -657,8 +646,8 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
   // Don't use paths for arrays, structs, or annotations
   if (ti->type().dim() == 0 && !ti->type().structBT() && !ti->type().isAnn()) {
-    std::string path = get_path(env);
-    if (!path.empty()) {
+    PathStore::Path path = env.currentPath();
+    if (path != nullptr) {
       VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();
       VarPathStore::PathMap& pathMap = env.varPathStore.getPathMap();
       auto it = pathMap.find(path);
@@ -686,7 +675,7 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
             // We may not have seen the pointed to decl just yet
             auto path2It = reversePathMap.find(ovd->id()->decl());
             if (path2It != reversePathMap.end()) {
-              std::string path2 = path2It->second;
+              PathStore::Path path2 = path2It->second;
               VarPathStore::PathVar vd_tup{vd, env.multiPassInfo.currentPassNumber};
 
               pathMap[path] = vd_tup;
@@ -758,7 +747,70 @@ VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDec
 
 MultiPassInfo::MultiPassInfo() : currentPassNumber(0), finalPassNumber(1) {}
 
-VarPathStore::VarPathStore() : maxPathDepth(0) {}
+VarPathStore::VarPathStore() : maxPathDepth(0), paths(std::make_shared<PathStore>()) {}
+
+PathStore::Path PathStore::extend(Path parent, const std::string& frame) {
+  return &*_nodes.insert({parent, &*_frames.insert(frame).first, nullptr}).first;
+}
+
+PathStore::Path PathStore::extendSpliced(Path parent, Path spliced) {
+  return &*_nodes.insert({parent, nullptr, spliced}).first;
+}
+
+unsigned int PathStore::depth(Path p) {
+  unsigned int d = 0;
+  for (; p != nullptr; p = p->parent) {
+    d += p->frame != nullptr ? 1 : depth(p->spliced);
+  }
+  return d;
+}
+
+void PathStore::print(std::ostream& os, Path p) {
+  if (p == nullptr) {
+    return;
+  }
+  // Cells point at their parent, so recurse to the root and write on the way back.
+  print(os, p->parent);
+  if (p->frame != nullptr) {
+    os << *p->frame;
+  } else {
+    print(os, p->spliced);
+  }
+  os << ";";
+}
+
+std::string PathStore::toString(Path p) {
+  std::ostringstream oss;
+  print(oss, p);
+  return oss.str();
+}
+
+unsigned int PathStore::markerIndex(Path p) {
+  auto it = _markers.find(p);
+  if (it == _markers.end()) {
+    _markerPaths.push_back(p);
+    it = _markers.emplace(p, static_cast<unsigned int>(_markerPaths.size() - 1)).first;
+  }
+  return it->second;
+}
+
+PathStore::Path PathStore::fromMarkerIndex(IntVal i) const {
+  if (!i.isFinite() || i < 0) {
+    return nullptr;
+  }
+  auto idx = static_cast<size_t>(i.toInt());
+  return idx < _markerPaths.size() ? _markerPaths[idx] : nullptr;
+}
+
+const std::string* PathStore::leadingFrame(Path p) {
+  if (p == nullptr) {
+    return nullptr;
+  }
+  while (p->parent != nullptr) {
+    p = p->parent;
+  }
+  return p->frame != nullptr ? p->frame : leadingFrame(p->spliced);
+}
 
 void OutputSectionStore::add(EnvI& env, ASTString section, Expression* e, bool json) {
   if (json) {
@@ -1178,8 +1230,14 @@ void EnvI::copyPathMapsAndState(EnvI& env) {
   multiPassInfo.finalPassNumber = env.multiPassInfo.finalPassNumber;
   multiPassInfo.currentPassNumber = env.multiPassInfo.currentPassNumber;
 
-  varPathStore.pathMap = env.varPathStore.getPathMap();
-  varPathStore.reversePathMap = env.varPathStore.getReversePathMap();
+  // Share, do not copy: paths compare by pointer, so this pass must intern into
+  // the same store as the last.
+  varPathStore.paths = env.varPathStore.paths;
+  // Take the maps rather than copy them: releasePassState leaves nothing behind
+  // that reads them, and on a large model they run to millions of entries, each
+  // holding a KeepAlive that is also an entry in the collector's root list.
+  varPathStore.pathMap = std::move(env.varPathStore.pathMap);
+  varPathStore.reversePathMap.swap(env.varPathStore.reversePathMap);
 
   varPathStore.filenameSet = env.varPathStore.filenameSet;
   varPathStore.maxPathDepth = env.varPathStore.maxPathDepth;
@@ -2027,117 +2085,140 @@ std::ostream& Env::evalOutput(std::ostream& os, std::ostream& log) {
 EnvI& Env::envi() { return *_e; }
 const EnvI& Env::envi() const { return *_e; }
 
-bool EnvI::dumpPath(std::ostream& os, bool force) {
+PathStore::Path EnvI::currentPath(bool force) {
   force = force ? force : fopts.collectMznPaths;
   if (callStack.size() > varPathStore.maxPathDepth) {
     if (!force && multiPassInfo.currentPassNumber >= multiPassInfo.finalPassNumber - 1) {
-      return false;
+      return nullptr;
     }
-    varPathStore.maxPathDepth = static_cast<int>(callStack.size());
+    varPathStore.maxPathDepth = static_cast<unsigned int>(callStack.size());
   }
 
-  auto lastError = static_cast<unsigned int>(callStack.size());
+  PathStore& paths = varPathStore.getPaths();
+  PathStore::Path path = nullptr;
+  std::ostringstream frame;
+  for (auto& entry : callStack) {
+    // Frames below the top were rendered earlier and cannot have changed: a
+    // frame's contents are fixed for as long as its entry is on the stack.
+    if (entry.path != nullptr) {
+      path = entry.path;
+      continue;
+    }
 
-  std::string major_sep = ";";
-  std::string minor_sep = "|";
-  for (unsigned int i = 0; i < lastError; i++) {
-    Expression* e = callStack[i].e;
-    bool isCompIter = callStack[i].tag;
+    Expression* e = entry.e;
+    bool isCompIter = entry.tag;
     Location loc = Expression::loc(e);
     auto findFilename = varPathStore.filenameSet.find(loc.filename());
     if (findFilename == varPathStore.filenameSet.end()) {
       if (!force && multiPassInfo.currentPassNumber >= multiPassInfo.finalPassNumber - 1) {
-        return false;
+        return nullptr;
       }
       varPathStore.filenameSet.insert(loc.filename());
     }
 
-    // If this call is not a dummy StringLit with empty Location (so that deferred compilation
-    // doesn't drop the paths)
-    if (Expression::eid(e) != Expression::E_STRINGLIT || (loc.firstLine() != 0U) ||
-        (loc.firstColumn() != 0U) || (loc.lastLine() != 0U) || (loc.lastColumn() != 0U)) {
-      os << loc.filename() << minor_sep << loc.firstLine() << minor_sep << loc.firstColumn()
-         << minor_sep << loc.lastLine() << minor_sep << loc.lastColumn() << minor_sep;
-      switch (Expression::eid(e)) {
-        case Expression::E_INTLIT:
-          os << "il" << minor_sep << *e;
-          break;
-        case Expression::E_FLOATLIT:
-          os << "fl" << minor_sep << *e;
-          break;
-        case Expression::E_SETLIT:
-          os << "sl" << minor_sep << *e;
-          break;
-        case Expression::E_BOOLLIT:
-          os << "bl" << minor_sep << *e;
-          break;
-        case Expression::E_STRINGLIT:
-          os << "stl" << minor_sep << *e;
-          break;
-        case Expression::E_ID:
-          if (isCompIter) {
-            // if (e->cast<Id>()->decl()->e()->type().isPar())
-            os << *e << "=" << *Expression::cast<Id>(e)->decl()->e();
-            // else
-            //  os << *e << "=?";
-          } else {
-            os << "id" << minor_sep << *e;
-          }
-          break;
-        case Expression::E_ANON:
-          os << "anon";
-          break;
-        case Expression::E_ARRAYLIT:
-          os << "al";
-          break;
-        case Expression::E_ARRAYACCESS:
-          os << "aa";
-          break;
-        case Expression::E_COMP: {
-          const Comprehension* cmp = Expression::cast<Comprehension>(e);
-          if (cmp->set()) {
-            os << "sc";
-          } else {
-            os << "ac";
-          }
-        } break;
-        case Expression::E_ITE:
-          os << "ite";
-          break;
-        case Expression::E_BINOP:
-          os << "bin" << minor_sep << Expression::cast<BinOp>(e)->opToString();
-          break;
-        case Expression::E_UNOP:
-          os << "un" << minor_sep << Expression::cast<UnOp>(e)->opToString();
-          break;
-        case Expression::E_CALL:
-          if (fopts.onlyToplevelPaths) {
-            return false;
-          }
-          os << "ca" << minor_sep << Expression::cast<Call>(e)->id();
-          break;
-        case Expression::E_VARDECL:
-          os << "vd";
-          break;
-        case Expression::E_LET:
-          os << "l";
-          break;
-        case Expression::E_TI:
-          os << "ti";
-          break;
-        case Expression::E_TIID:
-          os << "ty";
-          break;
-        default:
-          assert(false);
-          os << "unknown expression (internal error)";
-          break;
-      }
-      os << major_sep;
-    } else {
-      os << Expression::cast<StringLit>(e)->v() << major_sep;
+    // An entry standing in for an earlier path contributes that, not its own
+    // frame, so deferring an expression does not lose where it came from.
+    if (entry.pathSplice != nullptr) {
+      path = paths.extendSpliced(path, entry.pathSplice);
+      entry.path = path;
+      continue;
     }
+
+    // A StringLit with an empty Location is a frame pushed by hand; its text is
+    // the frame.
+    if (Expression::eid(e) == Expression::E_STRINGLIT && loc.firstLine() == 0U &&
+        loc.firstColumn() == 0U && loc.lastLine() == 0U && loc.lastColumn() == 0U) {
+      ASTString text = Expression::cast<StringLit>(e)->v();
+      path = paths.extend(path, std::string(text.c_str(), text.size()));
+      entry.path = path;
+      continue;
+    }
+
+    frame.str(std::string());
+    frame.clear();
+    frame << loc.filename() << "|" << loc.firstLine() << "|" << loc.firstColumn() << "|"
+          << loc.lastLine() << "|" << loc.lastColumn() << "|";
+    switch (Expression::eid(e)) {
+      case Expression::E_INTLIT:
+        frame << "il|" << *e;
+        break;
+      case Expression::E_FLOATLIT:
+        frame << "fl|" << *e;
+        break;
+      case Expression::E_SETLIT:
+        frame << "sl|" << *e;
+        break;
+      case Expression::E_BOOLLIT:
+        frame << "bl|" << *e;
+        break;
+      case Expression::E_STRINGLIT:
+        frame << "stl|" << *e;
+        break;
+      case Expression::E_ID:
+        if (isCompIter) {
+          // The value is what tells one iteration's variables from the next's,
+          // so capture it now: the comprehension will have moved on.
+          frame << *e << "=" << *Expression::cast<Id>(e)->decl()->e();
+        } else {
+          frame << "id|" << *e;
+        }
+        break;
+      case Expression::E_ANON:
+        frame << "anon";
+        break;
+      case Expression::E_ARRAYLIT:
+        frame << "al";
+        break;
+      case Expression::E_ARRAYACCESS:
+        frame << "aa";
+        break;
+      case Expression::E_COMP:
+        frame << (Expression::cast<Comprehension>(e)->set() ? "sc" : "ac");
+        break;
+      case Expression::E_ITE:
+        frame << "ite";
+        break;
+      case Expression::E_BINOP:
+        frame << "bin|" << Expression::cast<BinOp>(e)->opToString();
+        break;
+      case Expression::E_UNOP:
+        frame << "un|" << Expression::cast<UnOp>(e)->opToString();
+        break;
+      case Expression::E_CALL:
+        if (fopts.onlyToplevelPaths) {
+          return nullptr;
+        }
+        frame << "ca|" << Expression::cast<Call>(e)->id();
+        break;
+      case Expression::E_VARDECL:
+        frame << "vd";
+        break;
+      case Expression::E_LET:
+        frame << "l";
+        break;
+      case Expression::E_TI:
+        frame << "ti";
+        break;
+      case Expression::E_TIID:
+        frame << "ty";
+        break;
+      default:
+        assert(false);
+        frame << "unknown expression (internal error)";
+        break;
+    }
+    path = paths.extend(path, frame.str());
+    entry.path = path;
   }
+  return path;
+}
+
+bool EnvI::dumpPath(std::ostream& os, bool force) {
+  PathStore::Path path = currentPath(force);
+  if (path == nullptr) {
+    return false;
+  }
+  PathStore::print(os, path);
   return true;
 }
 
@@ -4604,12 +4685,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               revmap->decl(fi);
               Expression::type(revmap, Type::varbool());
               // Give distinct call stack
-              Annotation& ann = Expression::ann(vdi->e());
-              Expression* tmp = revmap;
-              if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
-                tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
-              }
-              CallStackItem csi(env, tmp);
+              CallStackItem csi(env, revmap);
+              env.setPathSplice(get_recorded_path(env, vdi->e()));
               env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
             } else {
               processLast.push_back(i);
@@ -4676,12 +4753,8 @@ void flatten(Env& e, FlatteningOptions opt) {
                   call->type(Type::varbool());
                   call->decl(env.model->matchFn(env, call, false));
                   // Give distinct call stack
-                  Annotation& ann = Expression::ann(vdi->e());
-                  Expression* tmp = call;
-                  if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
-                    tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
-                  }
-                  CallStackItem csi(env, tmp);
+                  CallStackItem csi(env, call);
+                  env.setPathSplice(get_recorded_path(env, vdi->e()));
                   env.flatAddItem(new ConstraintI(vdi->loc(), call));
                 }
               } else {
@@ -4736,12 +4809,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               call->type(Type::varbool());
               call->decl(env.model->matchFn(env, call, false));
               // Give distinct call stack
-              Annotation& ann = Expression::ann(vdi->e());
-              Expression* tmp = call;
-              if (Expression* mznpath_ann = ann.getCall(env.constants.ann.mzn_path)) {
-                tmp = Expression::cast<Call>(mznpath_ann)->arg(0);
-              }
-              CallStackItem csi(env, tmp);
+              CallStackItem csi(env, call);
+              env.setPathSplice(get_recorded_path(env, vdi->e()));
               env.flatAddItem(new ConstraintI(vdi->loc(), call));
             }
           }
@@ -5014,25 +5083,27 @@ void flatten(Env& e, FlatteningOptions opt) {
                     Expression::addAnnotation(nc, ee_ann.r());
                   }
                 }
-                StringLit* vsl = get_longest_mzn_path_annotation(env, vdi->e());
-                StringLit* csl = get_longest_mzn_path_annotation(env, c);
+                PathStore::Path vpath = get_recorded_path(env, vdi->e());
+                PathStore::Path cpath = get_recorded_path(env, c);
                 CallStackItem* vsi = nullptr;
                 CallStackItem* csi = nullptr;
-                if (vsl != nullptr) {
-                  vsi = new CallStackItem(env, vsl);
+                if (vpath != nullptr) {
+                  vsi = new CallStackItem(env, vdi->e());
+                  env.setPathSplice(vpath);
                 }
-                if (csl != nullptr) {
-                  csi = new CallStackItem(env, csl);
+                if (cpath != nullptr) {
+                  csi = new CallStackItem(env, c);
+                  env.setPathSplice(cpath);
                 }
                 Location orig_loc = Expression::loc(nc);
-                if (csl != nullptr) {
-                  ASTString loc = csl->v();
-                  size_t sep = loc.find('|');
-                  std::string filename = loc.substr(0, sep);
-                  std::string start_line_s = loc.substr(sep + 1, loc.find('|', sep + 1) - sep - 1);
-                  int start_line = std::stoi(start_line_s);
-                  Location new_loc(ASTString(filename), start_line, 0, start_line, 0);
-                  orig_loc = new_loc;
+                if (const std::string* frame = PathStore::leadingFrame(cpath)) {
+                  // The frame reads "<filename>|<line>|...", the rewritten
+                  // constraint's profiling location.
+                  size_t sep = frame->find('|');
+                  size_t sep2 = frame->find('|', sep + 1);
+                  int start_line = std::stoi(frame->substr(sep + 1, sep2 - sep - 1));
+                  orig_loc =
+                      Location(ASTString(frame->substr(0, sep)), start_line, 0, start_line, 0);
                 }
                 ItemTimer item_timer(orig_loc, timingMap);
                 (void)flat_exp(env, Ctx(), nc, env.constants.varTrue, env.constants.varTrue);
@@ -5140,10 +5211,10 @@ void flatten(Env& e, FlatteningOptions opt) {
                   Expression::addAnnotation(nc, ee_ann.r());
                 }
               }
-              StringLit* sl = get_longest_mzn_path_annotation(env, c);
               CallStackItem* csi = nullptr;
-              if (sl != nullptr) {
-                csi = new CallStackItem(env, sl);
+              if (PathStore::Path p = get_recorded_path(env, c)) {
+                csi = new CallStackItem(env, c);
+                env.setPathSplice(p);
               }
               ItemTimer item_timer(Expression::loc(nc), timingMap);
               (void)flat_exp(env, Ctx(), nc, env.constants.varTrue, env.constants.varTrue);

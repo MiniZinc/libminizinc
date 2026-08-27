@@ -23,7 +23,9 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <memory>
 #include <random>
+#include <unordered_set>
 #include <utility>
 
 // TODO: Should this be a command line option? It doesn't seem too expensive
@@ -51,6 +53,76 @@ struct MultiPassInfo {
   MultiPassInfo();
 };
 
+/// Interned store for the paths identifying variables across compilation passes.
+///
+/// A path is the flattening call stack, one frame per entry. Written out per
+/// variable that is kilobytes, since every frame repeats its file name; stored
+/// as a tree of shared cons cells it is one pointer. Text is built on demand.
+class PathStore {
+public:
+  struct Node;
+  /// A path, or nullptr for the empty one. Owned by, and only comparable within,
+  /// the store that handed it out, hence the deleted copy below.
+  using Path = const Node*;
+  struct Node {
+    Path parent;
+    /// Rendered frame text, interned. Null when the frame stands in for `spliced`.
+    const std::string* frame;
+    /// An earlier path spliced in here, for compilation resumed away from where
+    /// the expression came from.
+    Path spliced;
+  };
+
+  PathStore() = default;
+  PathStore(const PathStore&) = delete;
+  PathStore& operator=(const PathStore&) = delete;
+
+  /// Return \a parent extended by a frame rendering as \a frame.
+  Path extend(Path parent, const std::string& frame);
+  /// Return \a parent extended by a frame splicing in \a spliced.
+  Path extendSpliced(Path parent, Path spliced);
+  /// Write the text of \a p.
+  static void print(std::ostream& os, Path p);
+  /// Text of \a p.
+  static std::string toString(Path p);
+  /// Leftmost frame of \a p, which by construction reads "<filename>|<line>|...",
+  /// or nullptr if \a p is empty.
+  static const std::string* leadingFrame(Path p);
+  /// Number of frames in \a p, spliced ones included. Walks the path; only used
+  /// to pick between the few paths one expression accumulated.
+  static unsigned int depth(Path p);
+  /// Index identifying \a p, for an annotation to carry instead of its text.
+  unsigned int markerIndex(Path p);
+  /// The path index \a i identifies, or nullptr if it identifies none.
+  Path fromMarkerIndex(IntVal i) const;
+
+private:
+  struct NodeHash {
+    size_t operator()(const Node& n) const {
+      // Cells are aligned, so a pointer's low bits carry nothing: mix, do not shift.
+      size_t h = 0;
+      for (const void* p : {static_cast<const void*>(n.parent), static_cast<const void*>(n.frame),
+                            static_cast<const void*>(n.spliced)}) {
+        h ^= std::hash<const void*>()(p) + 0x9e3779b9 + (h << 6) + (h >> 2);
+      }
+      return h;
+    }
+  };
+  struct NodeEq {
+    bool operator()(const Node& a, const Node& b) const {
+      return a.parent == b.parent && a.frame == b.frame && a.spliced == b.spliced;
+    }
+  };
+  /// Frame texts, interned. Node-based, so the addresses stay put.
+  std::unordered_set<std::string> _frames;
+  /// Paths that have been handed a marker index, and the index of each.
+  std::vector<Path> _markerPaths;
+  std::unordered_map<Path, unsigned int> _markers;
+  /// Cons cells, interned so equal paths are the same pointer. The element is
+  /// the whole key, so equality cannot miss a field.
+  std::unordered_set<Node, NodeHash, NodeEq> _nodes;
+};
+
 struct VarPathStore {
   // Used for disabling path construction past the maxPathDepth of previous passes
   unsigned int maxPathDepth;
@@ -59,19 +131,23 @@ struct VarPathStore {
     KeepAlive decl;
     unsigned int passNumber;
   };
-  // Store mapping from path string to (VarDecl, pass_no) tuples
-  typedef std::unordered_map<std::string, PathVar> PathMap;
+  // Store mapping from path to (VarDecl, pass_no) tuples
+  using PathMap = std::unordered_map<PathStore::Path, PathVar>;
   // Mapping from arbitrary Expressions to paths
-  typedef KeepAliveMap<std::string> ReversePathMap;
+  using ReversePathMap = KeepAliveMap<PathStore::Path>;
 
   PathMap pathMap;
   ReversePathMap reversePathMap;
   ASTStringSet filenameSet;
+  /// Shared with the other passes' environments: paths compare by pointer, so
+  /// every pass must intern into the same store.
+  std::shared_ptr<PathStore> paths;
 
   VarPathStore();
   PathMap& getPathMap() { return pathMap; }
   ReversePathMap& getReversePathMap() { return reversePathMap; }
   ASTStringSet& getFilenameSet() { return filenameSet; }
+  PathStore& getPaths() { return *paths; }
 };
 
 class ErrStreamWrapper {
@@ -348,9 +424,16 @@ public:
     Ctx ctx;
     bool tag;
     bool replaced;
-    CallStackEntry() : e(nullptr), tag(false), replaced(false) {}
+    /// Path up to this entry, filled on first request rather than at push time:
+    /// a comprehension iterator is assigned its value after being pushed.
+    PathStore::Path path;
+    /// An earlier path this entry stands for, set where compilation resumes away
+    /// from where the expression came from. Contributed instead of `e`'s frame.
+    PathStore::Path pathSplice;
+    CallStackEntry()
+        : e(nullptr), tag(false), replaced(false), path(nullptr), pathSplice(nullptr) {}
     CallStackEntry(Expression* e0, bool tag0, const Ctx& ctx0)
-        : e(e0), ctx(ctx0), tag(tag0), replaced(false) {}
+        : e(e0), ctx(ctx0), tag(tag0), replaced(false), path(nullptr), pathSplice(nullptr) {}
   };
   std::vector<CallStackEntry> callStack;
   std::vector<int> idStack;
@@ -564,6 +647,11 @@ public:
   ASTString reifyId(const ASTString& id);
   static ASTString halfReifyId(const ASTString& id);
   bool dumpPath(std::ostream& os, bool force = false);
+  /// Path of the current call stack, or nullptr if untracked at this depth.
+  PathStore::Path currentPath(bool force = false);
+  /// Have the innermost call-stack entry contribute \a p to the path instead of
+  /// its own frame, so what is flattened under it continues from there.
+  void setPathSplice(PathStore::Path p) { callStack.back().pathSplice = p; }
   int addWarning(const std::string& msg);
   int addWarning(const Location& loc, const std::string& msg, bool dumpStack = true);
   void collectVarDecls(bool b);

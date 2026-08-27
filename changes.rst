@@ -30,6 +30,15 @@ Changes:
    and user cuts, and enable quadratic and bilinear constraints.
 -  Make built-in Gecode solver interface handle restart annotations and statistics
    output.
+-  Greatly reduce the memory used by two-pass compilation (``--two-pass``,
+   ``-O2`` and above). The paths that identify variables between passes were
+   stored as one string per variable, each spelling out the file name of every
+   frame on the flattening call stack, and held several times over. They are now
+   an interned tree of shared frames, and the text is only built when
+   ``--keep-paths`` or ``--output-paths`` asks for it. Where an expression has
+   picked up more than one path, the deepest one is now kept. Previously the
+   textually longest was kept, which could prefer a shallower path that happened
+   to run through longer file or function names (:bugref:`1029`).
 
 Bug fixes:
 ^^^^^^^^^^

@@ -975,6 +975,57 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           ss.add("flatTime", flatten_time.s());
         }
 
+        if (_fopts.collectMznPaths) {
+          // Path annotations carry a token while compiling; somebody is about to
+          // read them, so put the text in.
+          class ExpandPathAnnotations : public ItemVisitor {
+          public:
+            explicit ExpandPathAnnotations(const PathStore& paths) : _paths(paths) {}
+            /// Replace mzn_path(<index>) on \a e with mzn_path("<text>").
+            void expandPath(Expression* e) const {
+              Annotation& a = Expression::ann(e);
+              Expression* ann = a.getCall(Constants::constants().ann.mzn_path);
+              if (ann == nullptr) {
+                return;
+              }
+              Expression* arg = Expression::cast<Call>(ann)->arg(0);
+              if (!Expression::isa<IntLit>(arg)) {
+                return;  // already the string variant
+              }
+              auto* idx = Expression::cast<IntLit>(arg);
+              PathStore::Path p = _paths.fromMarkerIndex(IntLit::v(idx));
+              if (p == nullptr) {
+                return;
+              }
+              auto* text = new StringLit(Location(), ASTString(PathStore::toString(p)));
+              Call* expanded =
+                  Call::a(Expression::loc(ann), Constants::constants().ann.mzn_path, {text});
+              Expression::type(expanded, Type::ann());
+              a.removeCall(Constants::constants().ann.mzn_path);
+              Expression::addAnnotation(e, expanded);
+            }
+            void vVarDeclI(VarDeclI* vdi) const { expandPath(vdi->e()); }
+            void vConstraintI(ConstraintI* ci) const {
+              expandPath(ci->e());
+              if (auto* c = Expression::dynamicCast<Call>(ci->e())) {
+                for (int i = 0; i < c->argCount(); i++) {
+                  expandPath(c->arg(i));
+                }
+              }
+            }
+            void vSolveI(SolveI* si) const {
+              if (Expression* e = si->e()) {
+                expandPath(e);
+              }
+            }
+
+          private:
+            const PathStore& _paths;
+          } expandPaths(env->envi().varPathStore.getPaths());
+          GCLock lock;
+          iter_items<ExpandPathAnnotations>(expandPaths, env->flat());
+        }
+
         if (_flags.outputPathsStdout) {
           if (_flags.verbose) {
             _log << "Printing Paths to stdout ..." << std::endl;

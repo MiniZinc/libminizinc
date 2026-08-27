@@ -108,6 +108,10 @@ annotation doc_comment(string: s);
   compilations of a model that may have different names. This annotations is introduced into
   FlatZinc code by the compiler and is retained if --keep-paths argument is used. */
 annotation mzn_path(string: s);
+% Compiler-internal overload standing in for a mzn_path while flattening, where
+% the path text has not been built yet. Always rewritten to the string variant,
+% or removed, before any output is produced.
+annotation mzn_path(int: i);
 /** @group stdlib.annotations.general Used to attach a name \a s to an expression, this should also propagate to
   any sub-expressions or decomposition of the annotated expression. String annotations on expressions
   are re-written as expression_name annotations */
