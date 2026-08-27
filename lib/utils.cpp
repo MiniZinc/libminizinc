@@ -18,6 +18,7 @@
 #if _WIN32
 #include <Windows.h>
 #include <io.h>
+#include <malloc.h>
 #define mzn_write(fd, buf, s) _write((fd), (buf), static_cast<unsigned int>(s))
 #else
 #include <csignal>
@@ -131,7 +132,7 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
   mzn_write(2, msg, strlen(msg));
 
   int count = 15;
-  for (size_t i = stack.size(); (i--) >= 0U;) {
+  for (size_t i = stack.size(); (i--) > 0U;) {
     if (Expression::isa<Call>(stack[i].e)) {
       msg = "  frame #";
       mzn_write(2, msg, strlen(msg));
@@ -181,10 +182,17 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
 #ifdef _WIN32
 
 struct OverflowHandler::OverflowInfo {
-  EnvI* env;
+  EnvI* env = nullptr;
 };
 
-void OverflowHandler::install() { _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo()); }
+void OverflowHandler::install() {
+  // Reserve enough stack for the SEH filter and diagnostic handler to run reliably.
+  ULONG stackGuarantee = 64 * 1024;
+  if (SetThreadStackGuarantee(&stackGuarantee) == 0) {
+    std::cerr << "WARNING: Cannot reserve stack for the stack overflow handler." << std::endl;
+  }
+  _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo());
+}
 
 void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
 void OverflowHandler::removeEnv() { _ofi->env = nullptr; }
@@ -204,9 +212,12 @@ void OverflowHandler::handle(unsigned int code) {
   // To be used as SEH exception handler on Windows
   switch (code) {
     case EXCEPTION_STACK_OVERFLOW: {
-      std::cerr << "MiniZinc error: Memory violation detected (stack overflow).\n"
-                << "Check for deep (or infinite) recursion in the model.\n";
-      if (_ofi->env != nullptr) {
+      const bool stackReset = _resetstkoflw() != 0;
+      const char* msg =
+          "MiniZinc error: Memory violation detected (stack overflow).\n"
+          "Check for deep (or infinite) recursion in the model.\n";
+      mzn_write(2, msg, strlen(msg));
+      if (stackReset && _ofi->env != nullptr) {
         dump_stack(_ofi->env->callStack);
       }
       _exit(1);
