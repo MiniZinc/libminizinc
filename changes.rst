@@ -4,10 +4,27 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _upcoming:
+.. _v2.10.1:
 
-`Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
+`Version 2.10.1 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.10.1>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 31 August 2026)
+
+Packaging changes:
+^^^^^^^^^^^^^^^^^^
+-  The naming scheme for GitHub release assets has changed to use the build
+   target triple.
+-  Windows ARM64 packages are now available.
+-  Separate ARM and Intel macOS packages are provided instead of a single
+   universal binary.
+-  Packages containing the MiniZinc command line tools and solvers are 
+   `now available <https://github.com/MiniZinc/libminizinc/releases/tag/2.10.1>`__
+   without the IDE.
+-  Docker images are now released on the
+   `GitHub Container Registry <https://github.com/MiniZinc/libminizinc/pkgs/container/minizinc>`__,
+   including ``-dist`` variants which contain only the MiniZinc installation
+   and are designed to copied into other images.
 
 Changes:
 ^^^^^^^^
