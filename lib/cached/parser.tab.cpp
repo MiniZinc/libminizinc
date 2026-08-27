@@ -93,6 +93,8 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/warning.hh>
+#include <minizinc/prettyprinter.hh>
 
 using namespace std;
 using namespace MiniZinc;
