@@ -1299,7 +1299,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
 
 namespace {
 /// Whether \a e is one of the restart annotations recognised by create_cutoff
-bool isRestartAnnotation(Expression* e) {
+bool is_restart_annotation(Expression* e) {
   if (Expression::isa<Id>(e)) {
     return Expression::cast<Id>(e)->str() == "restart_none";
   }
@@ -2005,7 +2005,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         err << "Warning, ignored search annotation: float_search" << std::endl;
       }
 #endif
-    } else if (!isRestartAnnotation(i)) {
+    } else if (!is_restart_annotation(i)) {
       // Restart annotations are not branchers, they are handled in prepareEngine
       if (!ignoreUnknown) {
         err << "Warning, ignored search annotation: " << *i << std::endl;

@@ -290,8 +290,7 @@ void ChuffedSolverInstance::processFlatZinc() {
           lastValInt.emplace_back(args[0]->getIntVar(), args[1]->getIntVar());
           _space->enable_on_restart = true;
         } else if (c->id() == "chuffed_on_restart_sol_bool") {
-          _space->bool_sol.emplace_back(
-              std::tuple<int, bool, int>{args[0]->getBoolVar(), false, args[1]->getBoolVar()});
+          _space->bool_sol.emplace_back(args[0]->getBoolVar(), false, args[1]->getBoolVar());
           _space->enable_on_restart = true;
           _space->enable_store_solution = true;
         } else if (c->id() == "chuffed_on_restart_sol_int") {
@@ -395,7 +394,10 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   if (lastSolutionOnly && engine.solutions > 0) {
     // Print optimal solution
     GCLock lock;
-    SolverInstanceBase::printSolution();
+    // Deliberately not the override: the callback above already assigned the output
+    // for this solution, and re-running assignSolutionToOutput() here would read the
+    // engine's post-solve state instead.
+    SolverInstanceBase::printSolution();  // NOLINT(bugprone-parent-virtual-call)
   }
   switch (engine.status) {
     case RESULT::RES_UNK:
