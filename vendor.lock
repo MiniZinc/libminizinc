@@ -5,7 +5,7 @@
 #
 # NOTE: cbc has no Windows ARM64 build; that triple gets no CBC backend.
 cbc=2.10.13
-gecode=6.4.0
+gecode=6.4.0-rebuild1
 chuffed=0.14.0
 highs=v1.15.1
 or-tools=v9.15
