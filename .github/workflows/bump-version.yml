@@ -1,0 +1,130 @@
+name: Bump version
+
+# A push to master means a tagged release has been made. Prepare the next
+# development version on develop without changing develop directly.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Next development version (X.Y.Z; blank increments master's patch version)."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: prepare-next-release
+  cancel-in-progress: false
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    steps:
+      # Always derive the default from master, even for a manually dispatched run.
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Select the next version
+        id: version
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -eu
+          version="$REQUESTED_VERSION"
+          if [ -z "$version" ]; then
+            current=$(sed -nE 's/^[[:space:]]*VERSION[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' CMakeLists.txt)
+            [ -n "$current" ] || { echo "Could not determine the version in CMakeLists.txt" >&2; exit 1; }
+            IFS=. read -r major minor patch <<EOF
+          $current
+          EOF
+            version="$major.$minor.$((patch + 1))"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must have the form X.Y.Z: $version" >&2
+            exit 1
+          fi
+          IFS=. read -r major minor patch extra <<EOF
+          $version
+          EOF
+          [ -n "$major" ] && [ -n "$minor" ] && [ -n "$patch" ] && [ -z "${extra:-}" ] \
+            || { echo "Version must have the form X.Y.Z: $version" >&2; exit 1; }
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          echo "branch=bot/bump-development-version-$version" >> "$GITHUB_OUTPUT"
+
+      - name: Reuse an existing pull request
+        id: existing
+        shell: bash
+        env:
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          url=$(gh pr list --repo "$GITHUB_REPOSITORY" --base develop --head "$BRANCH" \
+            --state open --json url --jq '.[0].url')
+          if [ -n "$url" ] && [ "$url" != "null" ]; then
+            echo "url=$url" >> "$GITHUB_OUTPUT"
+            echo "An open preparation PR already exists: $url"
+          fi
+
+      - name: Create the preparation commit
+        if: steps.existing.outputs.url == ''
+        id: commit
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          set -eu
+          git fetch origin develop
+          git switch --create "$BRANCH" --track origin/develop
+          sed -i -E "s/^([[:space:]]*VERSION[[:space:]]+)[0-9]+\.[0-9]+\.[0-9]+/\1$VERSION/" CMakeLists.txt
+
+          # A manually retried run should never add a second upcoming section.
+          if ! grep -q '^\.\. _upcoming:$' changes.rst; then
+            awk '
+              { print }
+              /^https:\/\/github\.com\/MiniZinc\/libminizinc\/issues\.$/ {
+                print ""
+                print ".. _upcoming:"
+                print ""
+                print "`Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__"
+                print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                print ""
+                print "Changes:"
+                print "^^^^^^^^"
+                print "-  Changes will be documented here as they are merged into the ``develop`` branch."
+              }
+            ' changes.rst > changes.rst.new
+            mv changes.rst.new changes.rst
+          fi
+
+          if git diff --quiet; then
+            echo "No release-preparation changes are needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CMakeLists.txt changes.rst
+          git commit -m "Prepare version $VERSION"
+          git push --force origin "HEAD:refs/heads/$BRANCH"
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open pull request
+        if: steps.existing.outputs.url == '' && steps.commit.outputs.created == 'true'
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.value }}
+          BRANCH: ${{ steps.version.outputs.branch }}
+        run: |
+          gh pr create --repo "$GITHUB_REPOSITORY" --base develop --head "$BRANCH" \
+            --title "Prepare version $VERSION" \
+            --body "Prepares the next development version after the release on master."
