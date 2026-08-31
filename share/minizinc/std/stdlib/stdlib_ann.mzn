@@ -111,7 +111,7 @@ annotation mzn_path(string: s);
 % Compiler-internal overload standing in for a mzn_path while flattening, where
 % the path text has not been built yet. Always rewritten to the string variant,
 % or removed, before any output is produced.
-annotation mzn_path(int: i);
+function ann: mzn_path(int: i) :: mzn_internal_representation;
 /** @group stdlib.annotations.general Used to attach a name \a s to an expression, this should also propagate to
   any sub-expressions or decomposition of the annotated expression. String annotations on expressions
   are re-written as expression_name annotations */
@@ -206,12 +206,7 @@ function ann: int_search(array [$X] of var $$E: x, ann: select, ann: choice) =
   in row-major order (as with the array1d function).
 */
 function ann: int_search(array [$X] of var opt $$E: x, ann: select, ann: choice, ann: explore) =
-  int_search(
-    [enum2int(xi) default 0 | xi in x],
-    select,
-    choice,
-    explore,
-  );
+  int_search([enum2int(xi) default 0 | xi in x], select, choice, explore);
 
 /** @group stdlib.annotations.search Search annotation for optional integer variables.
   Specify search on variables \a x, with variable selection
@@ -303,14 +298,7 @@ function ann: float_search(
   ann: select,
   ann: choice,
   ann: explore,
-) =
-  float_search(
-    [xi default 0.0 | xi in x],
-    prec,
-    select,
-    choice,
-    explore,
-  );
+) = float_search([xi default 0.0 | xi in x], prec, select, choice, explore);
 
 /** @group stdlib.annotations.search Search annotation for optional float variables.
   Specify search on variables \a x, 
