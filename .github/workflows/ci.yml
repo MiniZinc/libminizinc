@@ -248,7 +248,7 @@ jobs:
             # Wording matches the existing releases.
             NOTES="This release"
             case "$TAG" in *.*.0) NOTES="$NOTES adds several new features and" ;; esac
-            NOTES="$NOTES fixes a number of bugs, see https://docs.minizinc.dev/en/$TAG/changelog.html"
+            NOTES="$NOTES fixes a number of bugs, see https://docs.minizinc.org/en/$TAG/changelog.html"
             NOTES="$NOTES for a full change log."
             NOTES="$NOTES"$'\n\n'"The packages attached here contain the MiniZinc command line tools and solvers."
             NOTES="$NOTES Full bundles that also include the MiniZinc IDE are available at"
@@ -273,7 +273,7 @@ jobs:
           These packages contain the MiniZinc command line tools and solvers. Full bundles that also include the MiniZinc IDE are available at https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge
 
           Please refer to the change log for details:
-          https://docs.minizinc.dev/en/latest/changelog.html#unreleased
+          https://docs.minizinc.org/en/latest/changelog.html#unreleased
           EOF
             # Update the rolling prerelease IN PLACE. Deleting and recreating it
             # would send a "new release" notification to every watcher on every

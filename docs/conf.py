@@ -153,7 +153,7 @@ html_theme_options = {"logo_only": True}
 # html_theme_path = []
 
 html_baseurl = os.environ.get(
-    "READTHEDOCS_CANONICAL_URL", "https://docs.minizinc.dev/en/stable/"
+    "READTHEDOCS_CANONICAL_URL", "https://docs.minizinc.org/en/stable/"
 )
 
 # The name for this set of Sphinx documents.

@@ -105,7 +105,7 @@ def generate_playground_links(app):
 
                 playground_project["files"] = files
                 object = json.dumps(playground_project)
-                url = f"https://play.minizinc.dev/#project={quote(object)}"
+                url = f"https://play.minizinc.org/#project={quote(object)}"
                 yield f"playground-{project.name}", {
                     "redirect_url": url
                 }, "redirect.html"

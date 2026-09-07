@@ -11,7 +11,8 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
--  Changes will be documented here as they are merged into the ``develop`` branch.
+-  Update URLs in documentation to use minizinc.org as the canonical domain for
+   all MiniZinc resources.
 
 .. _v2.10.1:
 
