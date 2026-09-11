@@ -48,13 +48,20 @@ namespace {
 void run_parser(MiniZinc::ParserState& pp) {
   if (MiniZinc::use_tree_sitter_parser) {
     MiniZinc::parse_tree_sitter(pp);
-    return;
+  } else {
+    mzn_yylex_init(&pp.yyscanner);
+    mzn_yyset_extra(&pp, pp.yyscanner);
+    mzn_yyparse(&pp);
+    if (pp.yyscanner != nullptr) {
+      mzn_yylex_destroy(pp.yyscanner);
+    }
   }
-  mzn_yylex_init(&pp.yyscanner);
-  mzn_yyset_extra(&pp, pp.yyscanner);
-  mzn_yyparse(&pp);
-  if (pp.yyscanner != nullptr) {
-    mzn_yylex_destroy(pp.yyscanner);
+  // A failed parse may have seen `op' in unsupported operation-type syntax.
+  if (pp.sawOpIdentifier && !pp.hadError) {
+    MiniZinc::GCLock lock;
+    pp.addWarning(MiniZinc::Location(pp.firstOpIdentifierLoc),
+                  "`op' will become a reserved word in a future version of MiniZinc; rename this "
+                  "identifier");
   }
 }
 }  // namespace

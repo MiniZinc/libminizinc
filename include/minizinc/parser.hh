@@ -111,6 +111,7 @@ public:
         isSTDLib(isSTDLib0),
         parseDocComments(parseDocComments0),
         hadError(false),
+        sawOpIdentifier(false),
         env(env0),
         err(err0) {
 #ifdef _WIN32
@@ -156,6 +157,8 @@ public:
   bool isSTDLib;
   bool parseDocComments;
   bool hadError;
+  bool sawOpIdentifier;
+  ParserLocation firstOpIdentifierLoc;
   std::vector<SyntaxError> syntaxErrors;
   EnvI& env;
   std::ostream& err;

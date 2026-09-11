@@ -718,8 +718,8 @@ static void yynoreturn yy_fatal_error ( const char* msg , yyscan_t yyscanner );
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
-#define YY_NUM_RULES 194
-#define YY_END_OF_BUFFER 195
+#define YY_NUM_RULES 195
+#define YY_END_OF_BUFFER 196
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -729,66 +729,66 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[555] =
     {   0,
-        0,    0,  180,  180,  180,  180,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,  195,  193,    3,    2,
-      193,  179,  193,   23,  193,  176,  111,  107,   34,  109,
-      193,  113,   30,   30,   30,   34,  121,  131,  125,  154,
-       19,  193,   21,  116,   45,  193,  154,  154,  154,  154,
-      154,  154,  154,  154,  154,  154,  154,  154,  154,  154,
-      154,  154,  154,  154,  154,   34,  193,  193,  193,    1,
-      180,  191,  190,  188,  190,    1,  189,  190,   16,   18,
+        0,    0,  181,  181,  181,  181,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    0,  196,  194,    3,    2,
+      194,  180,  194,   23,  194,  177,  111,  107,   34,  109,
+      194,  113,   30,   30,   30,   34,  121,  131,  125,  155,
+       19,  194,   21,  116,   45,  194,  155,  155,  155,  155,
+      155,  155,  155,  155,  155,  155,  155,  155,  155,  155,
+      155,  155,  155,  155,  155,   34,  194,  194,  194,    1,
+      181,  192,  191,  189,  191,    1,  190,  191,   16,   18,
        17,    1,    6,    8,    7,    1,   11,   13,   12,    1,
-      177,  178,    0,    0,  133,    0,  175,   23,    0,    0,
+      178,  179,    0,    0,  133,    0,  176,   23,    0,    0,
 
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,  118,  135,
         0,    0,   36,   35,   35,    0,   14,  143,    0,   30,
         0,    0,    0,   30,   44,  137,    0,  123,  120,  129,
-      127,  154,   20,  141,    0,  154,  154,    0,  154,  154,
-      154,  154,  154,  154,  154,  154,  154,  154,  154,  154,
-       64,   69,  154,  154,  154,  154,  154,  154,   80,  154,
-      154,  154,  154,  154,  154,  154,  154,  154,  154,  154,
-      154,  154,  154,  154,  154,  154,  154,  154,  154,   22,
-        0,  146,  145,  149,  150,  147,    0,  162,    0,    0,
+      127,  155,   20,  141,    0,  155,  155,    0,  155,  155,
+      155,  155,  155,  155,  155,  155,  155,  155,  155,  155,
+       64,   69,  155,  155,  155,  155,  155,  155,   80,  154,
+      155,  155,  155,  155,  155,  155,  155,  155,  155,  155,
+      155,  155,  155,  155,  155,  155,  155,  155,  155,   22,
+        0,  146,  145,  149,  150,  147,    0,  163,    0,    0,
 
-        0,    0,    0,  180,  185,  186,  184,  181,  182,    0,
-      187,   16,   15,    6,    5,   11,   10,  174,  175,  155,
+        0,    0,    0,  181,  186,  187,  185,  182,  183,    0,
+      188,   16,   15,    6,    5,   11,   10,  175,  176,  156,
         0,  112,  108,    0,  110,    0,    0,  114,    0,  122,
         0,    0,    0,  132,    0,  126,    0,    0,  117,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,   38,
        35,    4,   31,    0,   33,    0,   27,   28,   30,  139,
-       40,  115,  154,    0,  192,   46,   48,  154,  154,  154,
-      154,  154,  154,   54,  154,  154,  154,  154,  154,  154,
-      154,  154,   71,   72,  154,  154,  154,   76,   78,   82,
-      154,   83,  154,  154,  154,   87,  154,  154,  154,  154,
+       40,  115,  155,    0,  193,   46,   48,  155,  155,  155,
+      155,  155,  155,   54,  155,  155,  155,  155,  155,  155,
+      155,  155,   71,   72,  155,  155,  155,   76,   78,   82,
+      155,   83,  155,  155,  155,   87,  155,  155,  155,  155,
 
-      154,  154,  154,  154,  154,  154,  154,  102,  154,  105,
-      148,    0,    0,  163,  164,  165,  156,  157,  158,  161,
-      166,  167,  172,  171,  168,  169,  170,  159,  160,  184,
-      183,  174,  134,  119,  136,   37,    0,  144,  138,    0,
+      155,  155,  155,  155,  155,  155,  155,  102,  155,  105,
+      148,    0,    0,  164,  165,  166,  157,  158,  159,  162,
+      167,  168,  173,  172,  169,  170,  171,  160,  161,  185,
+      184,  175,  134,  119,  136,   37,    0,  144,  138,    0,
         0,  124,  130,  128,  142,    0,    0,   70,    0,    0,
         0,    0,    0,    0,    0,    0,  152,   35,    9,    0,
-        0,    0,    0,   30,   42,  154,  154,  154,   50,   51,
-      154,  154,   56,   58,  154,   61,  154,  154,  154,  154,
-      154,  154,   73,  154,  154,  154,  154,  154,  154,  154,
-      154,  154,  154,  154,   96,   97,   24,  154,   99,  154,
+        0,    0,    0,   30,   42,  155,  155,  155,   50,   51,
+      155,  155,   56,   58,  155,   61,  155,  155,  155,  155,
+      155,  155,   73,  155,  155,  155,  155,  155,  155,  155,
+      155,  155,  155,  155,   96,   97,   24,  155,   99,  155,
 
-      154,  154,  151,    0,  184,  183,   39,  140,   41,    0,
+      155,  155,  151,    0,  185,  184,   39,  140,   41,    0,
         0,   55,    0,   77,   79,    0,    0,    0,    0,  106,
-        0,   32,    0,    0,   26,   30,  154,  154,   49,  154,
-      154,  154,   60,   25,   62,  154,  154,  154,  154,  154,
-      154,  154,  154,  154,  154,   88,  154,  154,  154,  154,
-       98,  100,  154,  104,  173,   43,   57,    0,    0,    0,
-        0,    0,    0,   26,   30,  154,  154,  154,  154,   59,
-      154,  154,  154,  154,  154,  154,   81,  154,   85,  154,
-       89,   90,  154,  154,  154,    0,    0,    0,    0,  101,
-       30,  154,  154,  154,   53,  154,   65,  154,  154,  154,
+        0,   32,    0,    0,   26,   30,  155,  155,   49,  155,
+      155,  155,   60,   25,   62,  155,  155,  155,  155,  155,
+      155,  155,  155,  155,  155,   88,  155,  155,  155,  155,
+       98,  100,  155,  104,  174,   43,   57,    0,    0,    0,
+        0,    0,    0,   26,   30,  155,  155,  155,  155,   59,
+      155,  155,  155,  155,  155,  155,   81,  155,   85,  155,
+       89,   90,  155,  155,  155,    0,    0,    0,    0,  101,
+       30,  155,  155,  155,   53,  155,   65,  155,  155,  155,
 
-      154,  154,   86,  154,   94,  154,    0,   91,    0,    0,
-       30,  154,  154,  154,   63,   66,  154,   74,   75,  154,
-       92,  154,    0,    0,   95,   30,  154,  154,  154,   67,
-       84,  154,    0,   93,   30,  153,   47,   52,  154,   68,
-       30,  154,   30,  154,   30,  154,   30,  103,   30,   30,
+      155,  155,   86,  155,   94,  155,    0,   91,    0,    0,
+       30,  155,  155,  155,   63,   66,  155,   74,   75,  155,
+       92,  155,    0,    0,   95,   30,  155,  155,  155,   67,
+       84,  155,    0,   93,   30,  153,   47,   52,  155,   68,
+       30,  155,   30,  155,   30,  155,   30,  103,   30,   30,
        30,   30,   29,    0
     } ;
 
@@ -1425,6 +1425,16 @@ namespace MiniZinc {
       return false;
     }
     return true;
+  }
+
+  void noteOpIdentifier(void* parm, const ParserLocation& loc) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+    if (pp->isSTDLib || pp->isFlatZinc || pp->sawOpIdentifier) {
+      return;
+    }
+    pp->sawOpIdentifier = true;
+    pp->firstOpIdentifierLoc = loc;
   }
 
   void clearBuffer(void* parm) {
@@ -2508,7 +2518,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 129:
 YY_RULE_SETUP
-{ return MZN_EQ; }
+{ yylval->bValue = true; return MZN_EQ; }
 	YY_BREAK
 case 130:
 YY_RULE_SETUP
@@ -2516,7 +2526,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 131:
 YY_RULE_SETUP
-{ return MZN_EQ; }
+{ yylval->bValue = false; return MZN_EQ; }
 	YY_BREAK
 case 132:
 YY_RULE_SETUP
@@ -2611,10 +2621,15 @@ YY_RULE_SETUP
 	YY_BREAK
 case 154:
 YY_RULE_SETUP
-{
+{ ::MiniZinc::noteOpIdentifier(yyget_extra(yyscanner), *yylloc);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 	YY_BREAK
 case 155:
+YY_RULE_SETUP
+{
+                    yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+	YY_BREAK
+case 156:
 YY_RULE_SETUP
 {
                     MiniZinc::ParserState* parm =
@@ -2628,118 +2643,118 @@ YY_RULE_SETUP
                     }
                     }
 	YY_BREAK
-case 156:
+case 157:
 YY_RULE_SETUP
 { yylval->sValue = strdup("forall"); return MZN_IDENTIFIER; }
 	YY_BREAK
-case 157:
+case 158:
 YY_RULE_SETUP
 { yylval->sValue = strdup("exists"); return MZN_IDENTIFIER; }
 	YY_BREAK
-case 158:
+case 159:
 YY_RULE_SETUP
 { return MZN_IN; }
 	YY_BREAK
-case 159:
+case 160:
 YY_RULE_SETUP
 { return MZN_SUBSET; }
 	YY_BREAK
-case 160:
+case 161:
 YY_RULE_SETUP
 { return MZN_SUPERSET; }
 	YY_BREAK
-case 161:
+case 162:
 YY_RULE_SETUP
 { return MZN_INFINITY; }
 	YY_BREAK
-case 162:
+case 163:
 YY_RULE_SETUP
 { return MZN_NOT; }
 	YY_BREAK
-case 163:
+case 164:
 YY_RULE_SETUP
 { return MZN_RIMPL; }
 	YY_BREAK
-case 164:
+case 165:
 YY_RULE_SETUP
 { return MZN_IMPL; }
 	YY_BREAK
-case 165:
+case 166:
 YY_RULE_SETUP
 { return MZN_EQUIV; }
 	YY_BREAK
-case 166:
+case 167:
 YY_RULE_SETUP
 { return MZN_AND; }
 	YY_BREAK
-case 167:
+case 168:
 YY_RULE_SETUP
 { return MZN_OR; }
 	YY_BREAK
-case 168:
+case 169:
 YY_RULE_SETUP
 { return MZN_NQ; }
 	YY_BREAK
-case 169:
+case 170:
 YY_RULE_SETUP
 { return MZN_LQ; }
 	YY_BREAK
-case 170:
+case 171:
 YY_RULE_SETUP
 { return MZN_GQ; }
 	YY_BREAK
-case 171:
+case 172:
 YY_RULE_SETUP
 { return MZN_UNION; }
 	YY_BREAK
-case 172:
+case 173:
 YY_RULE_SETUP
 { return MZN_INTERSECT; }
 	YY_BREAK
-case 173:
-YY_RULE_SETUP
-{ return MZN_POW_MINUS1; }
-	YY_BREAK
 case 174:
 YY_RULE_SETUP
-{
-  yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
+{ return MZN_POW_MINUS1; }
 	YY_BREAK
 case 175:
 YY_RULE_SETUP
 {
-                    yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
+  yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
 	YY_BREAK
 case 176:
 YY_RULE_SETUP
-{ yy_push_state(bracket_exp,yyscanner); return *yytext; }
+{
+                    yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 	YY_BREAK
 case 177:
 YY_RULE_SETUP
-{ yy_pop_state(yyscanner); return *yytext; }
+{ yy_push_state(bracket_exp,yyscanner); return *yytext; }
 	YY_BREAK
 case 178:
+YY_RULE_SETUP
+{ yy_pop_state(yyscanner); return *yytext; }
+	YY_BREAK
+case 179:
 YY_RULE_SETUP
 { yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
                   ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
-case 179:
+case 180:
 YY_RULE_SETUP
 { yy_push_state(string,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
-case 180:
+case 181:
 YY_RULE_SETUP
 { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
-case 181:
+case 182:
 YY_RULE_SETUP
 { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\n'); }
 	YY_BREAK
-case 182:
+case 183:
 YY_RULE_SETUP
 { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\t'); }
 	YY_BREAK
-case 183:
+case 184:
 YY_RULE_SETUP
 {
   long long int hexVal;
@@ -2750,7 +2765,7 @@ YY_RULE_SETUP
   }
 }
 	YY_BREAK
-case 184:
+case 185:
 YY_RULE_SETUP
 {
   long long int octVal;
@@ -2761,36 +2776,36 @@ YY_RULE_SETUP
   }
 }
 	YY_BREAK
-case 185:
-YY_RULE_SETUP
-{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-	YY_BREAK
 case 186:
 YY_RULE_SETUP
-{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
-                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
+{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 	YY_BREAK
 case 187:
 YY_RULE_SETUP
 { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
-                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
 	YY_BREAK
 case 188:
 YY_RULE_SETUP
 { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
-                      yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
 	YY_BREAK
 case 189:
 YY_RULE_SETUP
 { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
-                            yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
+                      yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 	YY_BREAK
 case 190:
 YY_RULE_SETUP
-{ return (unsigned char)yytext[0]; }
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
+                            yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
 	YY_BREAK
 case 191:
-/* rule 191 can match eol */
+YY_RULE_SETUP
+{ return (unsigned char)yytext[0]; }
+	YY_BREAK
+case 192:
+/* rule 192 can match eol */
 YY_RULE_SETUP
 { return MZN_END_OF_LINE_IN_STRING; }
 	YY_BREAK
@@ -2798,18 +2813,18 @@ case YY_STATE_EOF(string):
 case YY_STATE_EOF(string_quote):
 { yy_pop_state(yyscanner); return MZN_UNTERMINATED_STRING; }
 	YY_BREAK
-case 192:
+case 193:
 YY_RULE_SETUP
 {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return MZN_QUOTED_IDENTIFIER; }
 	YY_BREAK
-case 193:
+case 194:
 YY_RULE_SETUP
 { return (unsigned char)yytext[0]; }
 	YY_BREAK
-case 194:
+case 195:
 YY_RULE_SETUP
 ECHO;
 	YY_BREAK

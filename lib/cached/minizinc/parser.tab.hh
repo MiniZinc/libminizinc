@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_CLAUDE_WORKTREES_COMPILER_LIBRARY_COMPRESSION_61C08D_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_CLAUDE_WORKTREES_COMPILER_LIBRARY_COMPRESSION_61C08D_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -135,10 +135,10 @@ extern int mzn_yydebug;
     MZN_GR = 332,                  /* ">"  */
     MZN_LQ = 333,                  /* "<="  */
     MZN_GQ = 334,                  /* ">="  */
-    MZN_EQ = 335,                  /* "="  */
-    MZN_NQ = 336,                  /* "!="  */
-    MZN_WEAK_EQ = 337,             /* "~="  */
-    MZN_WEAK_NQ = 338,             /* "~!="  */
+    MZN_NQ = 335,                  /* "!="  */
+    MZN_WEAK_EQ = 336,             /* "~="  */
+    MZN_WEAK_NQ = 337,             /* "~!="  */
+    MZN_EQ = 338,                  /* "="  */
     MZN_IN = 339,                  /* "in"  */
     MZN_SUBSET = 340,              /* "subset"  */
     MZN_SUPERSET = 341,            /* "superset"  */
@@ -254,4 +254,4 @@ struct YYLTYPE
 int mzn_yyparse (void *parm);
 
 
-#endif /* !YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_CLAUDE_WORKTREES_COMPILER_LIBRARY_COMPRESSION_61C08D_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_USERS_DEKKER1_CODE_GITHUB_COM_MINIZINC_LIBMINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */

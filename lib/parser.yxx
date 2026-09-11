@@ -92,6 +92,13 @@ void yywarn(YYLTYPE* location, void* parm, const string& str) {
   pp->addWarning(Location(*location), str);
 }
 
+void warnDoubleEqualsAssignment(YYLTYPE* location, void* parm, bool doubled) {
+  if (doubled) {
+    yywarn(location, parm,
+           "using `==' where `=' is required is deprecated; write `=' instead");
+  }
+}
+
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
   ParserState* pp = static_cast<ParserState*>(parm);
   if (pp->isDatafile) {
@@ -295,7 +302,9 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~=" MZN_WEAK_NQ "~!="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_NQ "!=" MZN_WEAK_EQ "~=" MZN_WEAK_NQ "~!="
+// True when spelled `==' rather than `='.
+%token <bValue> MZN_EQ "="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
@@ -533,7 +542,7 @@ vardecl_item :
         }
       }
     | ti_expr_and_id MZN_EQ expr
-      {
+      { warnDoubleEqualsAssignment(&@2, parm, $2);
         if ($1) {
           $1->e($3);
           $$ = VarDeclI::a(@$,$1);
@@ -553,7 +562,7 @@ vardecl_item :
         $$ = VarDeclI::a(@$,vd);
       }
     | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ enum_init
-      {
+      { warnDoubleEqualsAssignment(&@4, parm, $4);
         if ($5) {
           TypeInst* ti = new TypeInst(@$,Type::parsetint());
           ti->setIsEnum(true);
@@ -576,7 +585,7 @@ vardecl_item :
         delete $5;
       }
     | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ MZN_LEFT_BRACKET string_lit_list MZN_RIGHT_BRACKET
-      {
+      { warnDoubleEqualsAssignment(&@4, parm, $4);
         TypeInst* ti = new TypeInst(@$,Type::parsetint());
         ti->setIsEnum(true);
         vector<Expression*> args;
@@ -591,7 +600,7 @@ vardecl_item :
         $$ = VarDeclI::a(@$,vd);
       }
     | MZN_TYPE MZN_IDENTIFIER annotations MZN_EQ ti_expr
-      {
+      { warnDoubleEqualsAssignment(&@4, parm, $4);
         TypeInst* ti = $5;
         VarDecl* vd = new VarDecl(@$, nullptr, $2, ti);
         if ($3) {
@@ -656,7 +665,8 @@ enum_id_list :
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
-      { if ($3) {
+      { warnDoubleEqualsAssignment(&@2, parm, $2);
+        if ($3) {
           $$ = new AssignI(@$,$1,$3);
         } else {
           $$ = nullptr;
@@ -838,7 +848,7 @@ annotation_item :
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
-      {
+      { warnDoubleEqualsAssignment(&@4, parm, $4);
         ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst(@1,Type::ann());
         if ($3) {
@@ -867,7 +877,7 @@ operation_item_tail :
       /*empty*/
       { $$=nullptr; }
     | MZN_EQ expr
-      { $$=$2; }
+      { warnDoubleEqualsAssignment(&@1, parm, $1); $$=$2; }
 
 /* Like `params`, but for functions, where omitting the list is deprecated.
    `annotation` keeps `params`: a marker annotation has no parameter list. */
@@ -925,7 +935,7 @@ ti_expr_and_id_or_anon :
       ti_expr_and_id
       { $$=$1; }
     | ti_expr_and_id MZN_EQ expr
-      { $$ = $1;
+      { warnDoubleEqualsAssignment(&@2, parm, $2); $$ = $1;
         if ($$ != nullptr && $3 != nullptr) {
           $$->e($3);
         }
@@ -1973,9 +1983,11 @@ generator :
       { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=nullptr; delete $1; }
 generator_eq :
       MZN_IDENTIFIER MZN_EQ expr
-      { if ($3) $$=new Generator({$1},nullptr,$3); else $$=nullptr; free($1); }
+      { warnDoubleEqualsAssignment(&@2, parm, $2);
+        if ($3) $$=new Generator({$1},nullptr,$3); else $$=nullptr; free($1); }
     | MZN_UNDERSCORE MZN_EQ expr
-      { if ($3) $$=new Generator({std::string()},nullptr,$3); else $$=nullptr; }
+      { warnDoubleEqualsAssignment(&@2, parm, $2);
+        if ($3) $$=new Generator({std::string()},nullptr,$3); else $$=nullptr; }
 
 id_list : id_list_head comma_or_none
 
@@ -2704,7 +2716,8 @@ let_vardecl_item :
         if ($$) $$->toplevel(false);
       }
     | ti_expr_and_id MZN_EQ expr
-      { if ($1) {
+      { warnDoubleEqualsAssignment(&@2, parm, $2);
+        if ($1) {
           $1->e($3);
         }
         $$ = $1;

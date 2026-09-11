@@ -11,6 +11,8 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Warn when ``op`` is used as an identifier or ``==`` is used where assignment
+   syntax requires ``=``. These forms are not accepted by the new parser.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
 
