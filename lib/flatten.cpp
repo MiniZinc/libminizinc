@@ -2859,7 +2859,8 @@ bool check_domain_constraints(EnvI& env, Call* c) {
             new SetLit(Location().introduce(), IntSetVal::a(-IntVal::infinity(), ub)));
       }
     }
-  } else if (c->id() == env.constants.ids.int_.lin_le) {
+  } else if (c->id() == env.constants.ids.int_.lin_le ||
+             c->id() == env.constants.ids.fznso.int_lin_le) {
     auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
     if (al_c->size() == 1) {
       auto* al_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
@@ -3088,6 +3089,55 @@ KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
     return nullptr;
   }
   return nullptr;
+}
+
+/// The identifier to emit for `array_bool_and`.
+///
+/// The cleanup passes turn a `forall` into the FlatZinc builtin directly, after
+/// the library has had its say, so the rewrite that would give the constraint
+/// the FZnSO registry's name never runs. Behind that interface the solver
+/// declares the registry's name, so emitting MiniZinc's would reach it as a
+/// constraint it has never heard of. Whichever the model declares is the one to
+/// emit; outside that interface only MiniZinc's is.
+ASTString array_and_id(EnvI& env) {
+  std::vector<Type> argtypes{Type::varbool(1), Type::varbool(0)};
+  return env.model->matchFn(env, env.constants.ids.fznso.array_bool_and, argtypes, false) !=
+                 nullptr
+             ? env.constants.ids.fznso.array_bool_and
+             : env.constants.ids.bool_reif.array_and;
+}
+
+/// The identifier to emit for `bool_clause`, for the reason `array_and_id`
+/// gives: the cleanup passes build it directly, after the library has had its
+/// say, so the rewrite that would give it the registry's `fzn_bool_clause` name
+/// never runs.
+/// The identifier to emit for `bool_clause_reif`, for the same reason.
+ASTString bool_clause_reif_id(EnvI& env) {
+  std::vector<Type> argtypes{Type::varbool(1), Type::varbool(1), Type::varbool()};
+  return env.model->matchFn(env, env.constants.ids.fznso.bool_clause_reif, argtypes, false) !=
+                 nullptr
+             ? env.constants.ids.fznso.bool_clause_reif
+             : env.constants.ids.bool_reif.clause;
+}
+
+ASTString bool_clause_id(EnvI& env) {
+  std::vector<Type> argtypes{Type::varbool(1), Type::varbool(1)};
+  return env.model->matchFn(env, env.constants.ids.fznso.bool_clause, argtypes, false) != nullptr
+             ? env.constants.ids.fznso.bool_clause
+             : env.constants.ids.bool_.clause;
+}
+
+/// The identifier to emit for the linear equality a `lin_exp` becomes, for the
+/// same reason.
+ASTString lin_eq_id(EnvI& env, bool isInt) {
+  std::vector<Type> argtypes{isInt ? Type::parint(1) : Type::parfloat(1),
+                             isInt ? Type::varint(1) : Type::varfloat(1),
+                             isInt ? Type::parint() : Type::parfloat()};
+  const ASTString& fznso =
+      isInt ? env.constants.ids.fznso.int_lin_eq : env.constants.ids.fznso.float_lin_eq;
+  return env.model->matchFn(env, fznso, argtypes, false) != nullptr
+             ? fznso
+             : (isInt ? env.constants.ids.int_.lin_eq : env.constants.ids.float_.lin_eq);
 }
 
 KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
@@ -3619,9 +3669,9 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
           ASTString nid = c->id();
           FunctionI* nc_decl(nullptr);
           if (c->id() == env.constants.ids.exists) {
-            nid = env.constants.ids.bool_reif.clause;
+            nid = bool_clause_reif_id(env);
           } else if (c->id() == env.constants.ids.forall) {
-            nid = env.constants.ids.bool_reif.array_and;
+            nid = array_and_id(env);
           } else if (vd->type().isbool()) {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
@@ -4586,19 +4636,42 @@ void flatten(Env& e, FlatteningOptions opt) {
       argtypes[0] = Type::varbool(1);
       argtypes[1] = Type::varbool(0);
       GCLock lock;
+
+      /// The declaration to rewrite \a flatzinc's meaning into, or null if
+      /// there is none to use.
+      ///
+      /// The rewrites below post a call to whatever this returns, so what
+      /// matters is that MiniZinc has a body standing behind the name. Behind
+      /// the FZnSO interface the builtin is rewritten onto \a fznso, the name
+      /// the constraint registry gives it, so the builtin always has one — the
+      /// rename's. Asking whether *it* is defined would answer yes even when
+      /// the solver posts the constraint itself, and the rewrite would be made
+      /// on the strength of a body that only forwards. What decides is whether
+      /// the name it forwards to still has one.
+      auto alternative_decl = [&](const ASTString& flatzinc, const ASTString& fznso,
+                                  const std::vector<Type>& types) -> FunctionI* {
+        FunctionI* found = env.model->matchFn(env, flatzinc, types, false);
+        if (found == nullptr || found->e() == nullptr) {
+          return nullptr;
+        }
+        FunctionI* target = env.model->matchFn(env, fznso, types, false);
+        return (target != nullptr && target->e() == nullptr) ? nullptr : found;
+      };
+
+      array_bool_and = alternative_decl(env.constants.ids.bool_reif.array_and,
+                                     env.constants.ids.fznso.array_bool_and, argtypes);
+      // No registry name, so no rewrite and nothing to look through.
       FunctionI* fi =
-          env.model->matchFn(env, env.constants.ids.bool_reif.array_and, argtypes, false);
-      array_bool_and = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-      fi = env.model->matchFn(env, env.constants.ids.array_bool_and_imp, argtypes, false);
+          env.model->matchFn(env, env.constants.ids.array_bool_and_imp, argtypes, false);
       array_bool_and_imp = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
 
       argtypes[1] = Type::varbool(1);
-      fi = env.model->matchFn(env, env.constants.ids.bool_.clause, argtypes, false);
-      array_bool_clause = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      array_bool_clause = alternative_decl(env.constants.ids.bool_.clause,
+                                        env.constants.ids.fznso.bool_clause, argtypes);
 
       argtypes.push_back(Type::varbool());
-      fi = env.model->matchFn(env, env.constants.ids.bool_reif.clause, argtypes, false);
-      array_bool_clause_reif = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
+      array_bool_clause_reif = alternative_decl(env.constants.ids.bool_reif.clause,
+                                             env.constants.ids.fznso.bool_clause_reif, argtypes);
 
       argtypes[0] = Type::varbool();
       argtypes[1] = Type::varbool();
@@ -5384,15 +5457,15 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           ASTString cid;
           std::vector<Expression*> args;
           if (vcc->id() == env.constants.ids.exists) {
-            cid = env.constants.ids.bool_.clause;
+            cid = bool_clause_id(env);
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.emptyBoolArray);
           } else if (vcc->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.bool_reif.array_and;
+            cid = array_and_id(env);
             args.push_back(vcc->arg(0));
             args.push_back(env.constants.literalTrue);
           } else if (vcc->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_.clause;
+            cid = bool_clause_id(env);
             args.push_back(vcc->arg(0));
             args.push_back(vcc->arg(1));
           }
@@ -5454,9 +5527,9 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
           }
 
           if (c->id() == env.constants.ids.exists || c->id() == env.constants.ids.clause) {
-            cid = env.constants.ids.bool_reif.clause;
+            cid = bool_clause_reif_id(env);
           } else if (c->id() == env.constants.ids.forall) {
-            cid = env.constants.ids.bool_reif.array_and;
+            cid = array_and_id(env);
           } else {
             bool canHalfReify = env.fopts.enableHalfReification &&
                                 Expression::ann(vd).contains(env.constants.ctx.pos);
@@ -5521,7 +5594,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             nc[i] = (*le_c)[i];
           }
           if (le_c->type().bt() == Type::BT_INT) {
-            cid = env.constants.ids.int_.lin_eq;
+            cid = lin_eq_id(env, true);
             nc.push_back(IntLit::a(-1));
             args[0] = new ArrayLit(Location().introduce(), nc);
             Expression::type(args[0], Type::parint(1));
@@ -5537,7 +5610,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd,
             args[2] = IntLit::a(-d);
           } else {
             // float
-            cid = env.constants.ids.float_.lin_eq;
+            cid = lin_eq_id(env, false);
             nc.push_back(FloatLit::a(-1.0));
             args[0] = new ArrayLit(Location().introduce(), nc);
             Expression::type(args[0], Type::parfloat(1));
@@ -5662,7 +5735,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
     //   really occur clause([x]) => bool_clause([x]) bool_xor([x],[y]) => bool_xor([x],[y],true)
     if (vc->id() == env.constants.ids.exists) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_.clause);
+      vc->id(bool_clause_id(env));
       std::vector<Expression*> args(2);
       args[0] = vc->arg(0);
       args[1] = env.constants.emptyBoolArray;
@@ -5670,7 +5743,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.forall) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_reif.array_and);
+      vc->id(array_and_id(env));
       std::vector<Expression*> args(2);
       args[0] = vc->arg(0);
       args[1] = env.constants.literalTrue;
@@ -5678,7 +5751,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.clause) {
       GCLock lock;
-      vc->id(env.constants.ids.bool_.clause);
+      vc->id(bool_clause_id(env));
       vc->decl(env.model->matchFn(env, vc, false));
     } else if (vc->id() == env.constants.ids.bool_.ne && vc->argCount() == 2) {
       GCLock lock;
@@ -5731,7 +5804,7 @@ Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Ex
   return ce;
 }
 
-void oldflatzinc(Env& e) {
+void oldflatzinc(Env& e, bool optimizeAfterConversion) {
   Model* m = e.flat();
 
   // Check wheter we need to keep defines_var annotations
@@ -6017,6 +6090,43 @@ void oldflatzinc(Env& e) {
   assert(std::all_of(m->vardecls().begin(), m->vardecls().end(), [](const VarDeclI& vdi) {
     return vdi.e()->e() == nullptr || Expression::isa<ArrayLit>(vdi.e()->e());
   }));
+
+  // The rows above are the first thing the optimizer has never seen: an alias
+  // written as `x - y = k`, an equivalence written as the two clauses keeping
+  // `var bool` makes of it, a clause already down to one literal. Each is
+  // ordinary work for it — it simply ran before any of them existed. Here,
+  // rather than after this function, because the model still holds the
+  // invariants it expects: nothing has been compacted and no index is stale.
+  if (optimizeAfterConversion) {
+    // From scratch, because the rows created above were never counted: a
+    // variable one of them is the only user of would otherwise look dead, and
+    // removing its declaration leaves the row naming something undeclared.
+    GCLock lock;
+    VarOccurrences rebuilt;
+    CollectOccurrencesI coi(env, rebuilt);
+    for (unsigned int i = 0; i < m->size(); i++) {
+      if (auto* vdi = (*m)[i]->dynamicCast<VarDeclI>()) {
+        if (!vdi->removed()) {
+          rebuilt.addIndex(vdi, i);
+        }
+      }
+    }
+    for (auto* item : *m) {
+      if (item->removed()) {
+        continue;
+      }
+      if (auto* vdi = item->dynamicCast<VarDeclI>()) {
+        coi.vVarDeclI(vdi);
+      } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
+        coi.vConstraintI(ci);
+      } else if (auto* si = item->dynamicCast<SolveI>()) {
+        coi.vSolveI(si);
+      }
+    }
+    env.varOccurrences = std::move(rebuilt);
+    optimize(e, false);
+    remove_deleted_items(env, deletedVarDecls);
+  }
 
   // Remove marked items
   m->compact();

@@ -602,6 +602,24 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     _globalsDirs = present;
   }
   _includePaths.insert(_includePaths.begin(), _globalsDirs.begin(), _globalsDirs.end());
+  for (const auto& dir : _extraIncludePaths) {
+    _includePaths.push_back(FileUtils::file_path(dir + "/"));
+  }
+  if (!_solverInclude.empty()) {
+    // So that `include "<solver>.mzn";` resolves even when the solver ships no
+    // library of its own. After any `mznlib`, so one that does ship it wins;
+    // the declarations are filled in after parsing either way. Before the
+    // standard library, which has to stay last: that is how the parser tells a
+    // solver-specific override of a global apart from the standard one.
+    _solverIncludeDir.reset(new FileUtils::TmpDir());
+    std::string file = _solverIncludeDir->name() + "/" + _solverInclude + ".mzn";
+    std::ofstream os(FILE_PATH(file));
+    os << "% The constraints " << _solverInclude
+       << " implements beyond the ones MiniZinc knows, declared from what the\n"
+          "% solver reports across its interface.\n";
+    os.close();
+    _includePaths.push_back(FileUtils::file_path(_solverIncludeDir->name() + "/"));
+  }
   _includePaths.push_back(libraryIncludePath("std"));
 
   for (auto& includePath : _includePaths) {
@@ -775,6 +793,24 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
       modelText += input;
     }
+    if (!_extraIncludes.empty()) {
+      // A library feature selected from the solver's declared capabilities
+      // rather than from a solver-specific MiniZinc library. Prepended rather
+      // than appended so that it reads first; the parser resolves each name on
+      // the include path and skips one a model has already pulled in.
+      std::ostringstream includes;
+      for (const auto& file : _extraIncludes) {
+        includes << "include \"";
+        for (char c : file) {
+          if (c == '\\' || c == '"') {
+            includes << '\\';
+          }
+          includes << c;
+        }
+        includes << "\";\n";
+      }
+      modelText = includes.str() + modelText;
+    }
 
     if (_flags.verbose) {
       _log << "Parsing file(s) ";
@@ -797,6 +833,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     }
     _log << errstream.str();
     env->model(m);
+    if (!_solverInclude.empty() && _fopts.nativePredicates != nullptr) {
+      declare_solver_constraints(*env, *_fopts.nativePredicates, _solverInclude + ".mzn");
+    }
     if (_flags.typecheck) {
       if (_flags.verbose) {
         _log << " done parsing (" << _starttime.stoptime() << ")" << std::endl;

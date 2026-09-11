@@ -1,0 +1,62 @@
+% The constraint `int_cumulative_reif`, as the FZnSO registry defines it.
+%
+% This file is a solver's override point: declare `int_cumulative_reif` and the
+% body below is dropped in favour of the propagator, or ship a file of this name
+% with a decomposition of your own.
+
+predicate fzn_int_cumulative_reif(
+  list of var int: start,
+  list of var int: duration,
+  list of var int: resource,
+  var int: capacity,
+  var bool: b,
+) =
+  let {
+    set of int: Tasks = {
+      i | i in index_set(start) where ub(resource[i]) > 0 /\ ub(duration[i]) > 0
+    };
+  } in if 0 == card(Tasks) then
+    b <-> (0 == card(index_set(start)) \/ capacity >= 0)
+  else
+    let {
+      int: early = min([lb(start[i]) | i in Tasks]);
+      int: late = max([ub(start[i]) + ub(duration[i]) | i in Tasks]);
+    } in (
+      if late - early > 5000 then
+        fzn_cumulative_task_reif(start, duration, resource, capacity, b)
+      else
+        fzn_cumulative_time_reif(start, duration, resource, capacity, b)
+      endif
+    )
+  endif;
+
+predicate fzn_cumulative_time_reif(
+  array [int] of var int: s,
+  array [int] of var int: d,
+  array [int] of var int: r,
+  var int: b,
+  var bool: bb,
+) =
+  let {
+    set of int: Tasks = {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0};
+    int: early = min([lb(s[i]) | i in Tasks]);
+    int: late = max([ub(s[i]) + ub(d[i]) | i in Tasks]);
+  } in (
+    bb <-> forall (t in early..late) (b >= sum (i in Tasks) ((s[i] <= t /\ t < s[i] + d[i]) * r[i]))
+  );
+
+predicate fzn_cumulative_task_reif(
+  array [int] of var int: s,
+  array [int] of var int: d,
+  array [int] of var int: r,
+  var int: b,
+  var bool: bb,
+) =
+  let {
+    set of int: Tasks = {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0};
+  } in (
+    bb <->
+      forall (j in Tasks) (
+        b >= r[j] + sum (i in Tasks where i != j) ((s[i] <= s[j] /\ s[j] < s[i] + d[i]) * r[i])
+      )
+  );

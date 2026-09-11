@@ -360,13 +360,29 @@ private:
     EnvI& env = getEnv()->envi();
     GCLock lock;
 
-    int_lin_eq = env.model->matchFn(env, env.constants.ids.int_.lin_eq, int_lin_eq_t, false);
+    // The registry's spelling first. This pass builds its rows after the
+    // library has had its say, so the rewrite that renames a builtin onto
+    // `fzn_<ident>` never runs on them; behind the FZnSO interface that is the
+    // only name the solver knows. Outside it there is no such declaration and
+    // MiniZinc's own name is the one found. The emitted calls take their
+    // identifier from whichever of the two answered, so the two cannot drift.
+    auto linear_decl = [&](const ASTString& fznso, const ASTString& builtin,
+                           const std::vector<Type>& types) {
+      FunctionI* fi = env.model->matchFn(env, fznso, types, false);
+      return fi != nullptr ? fi : env.model->matchFn(env, builtin, types, false);
+    };
+
+    int_lin_eq = linear_decl(env.constants.ids.fznso.int_lin_eq, env.constants.ids.int_.lin_eq,
+                             int_lin_eq_t);
     DBGOUT_MIPD("  int_lin_eq = " << int_lin_eq);
     //       MZN_MIPD_assert_hard(fi);
     //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
-    int_lin_le = env.model->matchFn(env, env.constants.ids.int_.lin_le, int_lin_eq_t, false);
-    float_lin_eq = env.model->matchFn(env, env.constants.ids.float_.lin_eq, float_lin_eq_t, false);
-    float_lin_le = env.model->matchFn(env, env.constants.ids.float_.lin_le, float_lin_eq_t, false);
+    int_lin_le = linear_decl(env.constants.ids.fznso.int_lin_le, env.constants.ids.int_.lin_le,
+                             int_lin_eq_t);
+    float_lin_eq = linear_decl(env.constants.ids.fznso.float_lin_eq,
+                               env.constants.ids.float_.lin_eq, float_lin_eq_t);
+    float_lin_le = linear_decl(env.constants.ids.fznso.float_lin_le,
+                               env.constants.ids.float_.lin_le, float_lin_eq_t);
     int2float = env.model->matchFn(env, env.constants.ids.int2float, t_VIVF, false);
 
     lin_exp_int = env.model->matchFn(env, env.constants.ids.lin_exp, int_lin_eq_t, false);
@@ -1884,7 +1900,12 @@ private:
         DBGOUT_MIPD_FLUSH(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
-      auto* nc = Call::a(Location().introduce(), ASTString(sName), args);
+      // `fDecl` is what `registerLinearConstraintDecls` resolved, which behind
+      // the FZnSO interface is the `fzn_`-prefixed declaration; naming the call
+      // after it is what keeps the emitted identifier and the declaration the
+      // same. `sName` stays as the reading aid it always was.
+      (void)sName;
+      auto* nc = Call::a(Location().introduce(), fDecl->id(), args);
       nc->type(Type::varbool());
       nc->decl(fDecl);
       mipd.getEnv()->envi().flatAddItem(new ConstraintI(Location().introduce(), nc));

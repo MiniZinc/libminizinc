@@ -37,7 +37,8 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
     if (c->id() == id) {
       return Expression::cast<Call>(ce);
     }
-    if (c->id() == env.constants.ids.int2float) {
+    if (c->id() == env.constants.ids.int2float ||
+      c->id() == env.constants.ids.fznso.int2float) {
       Expression* i2f = follow_id(c->arg(0));
       Call* i2fc = Expression::dynamicCast<Call>(i2f);
       if ((i2fc != nullptr) && i2fc->id() == id && id == env.constants.ids.lin_exp) {
@@ -423,7 +424,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
   }
 
-  if (cid == env.constants.ids.bool2int && c->type().dim() == 0) {
+  if ((cid == env.constants.ids.bool2int || cid == env.constants.ids.fznso.bool2int) &&
+      c->type().dim() == 0) {
     if (ctx.neg) {
       ctx.neg = false;
       nctx.neg = true;
@@ -593,7 +595,8 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
 
     } else {
       bool mixContext = (cid != env.constants.ids.forall && cid != env.constants.ids.exists &&
-                         (cid != env.constants.ids.bool2int || c->type().dim() > 0) &&
+                         ((cid != env.constants.ids.bool2int && cid != env.constants.ids.fznso.bool2int) ||
+       c->type().dim() > 0) &&
                          cid != env.constants.ids.sum &&
                          cid != env.constants.ids.assert&& cid != env.constants.varRedef->id() &&
                          cid != env.constants.ids.mzn_reverse_map_var &&

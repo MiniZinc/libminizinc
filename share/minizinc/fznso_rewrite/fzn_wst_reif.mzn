@@ -1,0 +1,18 @@
+% Rewrites `std`'s spelling into the registry's. Nothing here is a solver's
+% concern — the constraint itself lives in `fznso_constraints/`.
+
+% The reified form of `fzn_wst.mzn`, under the registry's name.
+
+include "fzn_graph_spanning_tree_reif.mzn";
+
+predicate fzn_wst_reif(
+  int: N,
+  int: E,
+  array [int] of int: from,
+  array [int] of int: to,
+  array [int] of int: w,
+  array [int] of var bool: es,
+  var int: weight_bound,
+  var bool: b,
+) =
+  fzn_graph_spanning_tree_reif(array1d(from), array1d(to), 1, N, array1d(w), array1d(es), weight_bound, b);

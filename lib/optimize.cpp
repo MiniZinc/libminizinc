@@ -240,6 +240,61 @@ bool can_remove_fzn_vardecl(EnvI& env, VarDecl* vd) {
   return !is_output(vd) || fixed_output_value(vd) != nullptr;
 }
 
+/// Turn \a vd's defining call into a constraint of its own.
+///
+/// A variable defined by a call carries it as a right-hand side until the
+/// cleanup pass turns it into a constraint with a `defines_var` annotation.
+/// Two such variables cannot be unified while both still hold one: `unify`
+/// moves a right-hand side across and would overwrite — and so lose — whichever
+/// definition it landed on. Demoting one of them first says exactly the same
+/// thing, with that definition posted as an ordinary constraint, which is what
+/// the cleanup pass would have produced anyway. The variable is then free and
+/// the two can be unified.
+///
+/// Returns false and changes nothing if the definition is not a call this can
+/// be done for. `exists`, `forall` and `clause` are excluded: their relational
+/// forms are not their own name with the result appended, and the cleanup pass
+/// has dedicated cases for them.
+bool fznso_par_constraint(EnvI& env, Call* c, bool& holds);
+
+bool demote_definition(EnvI& env, VarDecl* vd) {
+  Call* c = Expression::dynamicCast<Call>(vd->e());
+  if (c == nullptr || !vd->type().isvarbool() || c->id() == env.constants.ids.exists ||
+      c->id() == env.constants.ids.forall || (c->id() == env.constants.ids.clause ||
+             c->id() == env.constants.ids.fznso.bool_clause ||
+             c->id() == env.constants.ids.bool_.clause)) {
+    return false;
+  }
+  GCLock lock;
+  std::vector<Expression*> args(c->argCount() + 1);
+  for (unsigned int i = 0; i < c->argCount(); i++) {
+    args[i] = c->arg(i);
+  }
+  args[c->argCount()] = vd->id();
+  bool canHalfReify =
+      env.fopts.enableHalfReification && Expression::ann(vd).contains(env.constants.ctx.pos);
+  FunctionI* decl = env.model->matchReifByNames(env, c, canHalfReify, false);
+  if (decl == nullptr) {
+    decl = env.model->matchReification(env, c->id(), args, canHalfReify, false);
+  }
+  if (decl == nullptr) {
+    return false;
+  }
+  Call* nc = Call::a(Expression::loc(c).introduce(), decl->id(), args);
+  nc->type(Type::varbool());
+  nc->decl(decl);
+  Expression::ann(nc).merge(Expression::ann(c));
+  vd->e(nullptr);
+  Expression::ann(vd).remove(env.constants.ann.is_defined_var);
+  env.flatAddItem(new ConstraintI(Expression::loc(c), nc));
+  return true;
+}
+
+bool fznso_lin_terms(EnvI& env, Call* c, std::vector<std::pair<VarDecl*, IntVal>>& terms,
+                     IntVal& rhs);
+bool fznso_fix_to(EnvI& env, VarDecl* vd, IntVal v, std::deque<unsigned int>& vardeclQueue,
+                  std::deque<Item*>& constraintQueue);
+
 void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) {
   if (id0->decl() != id1->decl()) {
     if (is_output(id0->decl())) {
@@ -467,6 +522,583 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
   }
 }
 
+/// Replace a Boolean's negation by `1 - b` wherever it is read.
+///
+/// FlatZinc has no negated literal, so a library that keeps `var bool` states a
+/// negation as a variable of its own plus a row `b + nb = 1`. That row is pure
+/// overhead: every place `nb` is read can read `b` instead — a linear row by
+/// negating its coefficient and shifting its bound, a clause by moving the
+/// literal to the other side, a big-M row through the conversion the indicator
+/// arrives as. `linear/` never pays this, having no Boolean to begin with.
+///
+/// Each rewrite is an identity, so this is exact rather than a relaxation. Only
+/// applied when *every* use of the negation is one of them, so nothing is left
+/// referring to a variable that no longer exists.
+void fznso_substitute_negations(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls) {
+  const auto& ids = env.constants.ids;
+  auto isConversion = [&](const Call* c) {
+    return c->id() == ids.bool2int || c->id() == ids.fznso.bool2int;
+  };
+  auto isIntLin = [&](const Call* c) {
+    return c->id() == ids.fznso.int_lin_le || c->id() == ids.fznso.int_lin_eq ||
+           c->id() == ids.fznso.int_lin_ne || c->id() == ids.int_.lin_le ||
+           c->id() == ids.int_.lin_eq || c->id() == ids.int_.lin_ne;
+  };
+  auto isBoolLin = [&](const Call* c) {
+    return c->id() == ids.fznso.bool_lin_le || c->id() == ids.fznso.bool_lin_eq;
+  };
+  auto isClause = [&](const Call* c) {
+    return c->id() == ids.clause || c->id() == ids.fznso.bool_clause ||
+           c->id() == ids.bool_.clause;
+  };
+
+  /// Rewrite one linear row, replacing \a from by \a to with the coefficient
+  /// negated and the bound shifted: `c * from` is `c - c * to`.
+  auto flipTerm = [&](ConstraintI* ci, VarDecl* from, VarDecl* to) {
+    auto* c = Expression::cast<Call>(ci->e());
+    auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+    auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+    if (alC == nullptr || alX == nullptr || alC->size() != alX->size()) {
+      return false;
+    }
+    std::vector<Expression*> coeffs(alC->size());
+    std::vector<Expression*> vars(alX->size());
+    IntVal rhs = eval_int(env, c->arg(2));
+    for (unsigned int j = 0; j < alX->size(); j++) {
+      coeffs[j] = (*alC)[j];
+      vars[j] = (*alX)[j];
+      if (Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[j])) != from) {
+        continue;
+      }
+      if (!Expression::isa<IntLit>((*alC)[j])) {
+        return false;
+      }
+      IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[j]));
+      coeffs[j] = IntLit::a(-a);
+      vars[j] = to->id();
+      rhs -= a;
+    }
+    auto* nc = new ArrayLit(Location().introduce(), coeffs);
+    nc->type(Type::parint(1));
+    auto* nv = new ArrayLit(Location().introduce(), vars);
+    Type vt = alX->type();
+    vt.dim(1);
+    nv->type(vt);
+    c->arg(0, nc);
+    c->arg(1, nv);
+    c->arg(2, IntLit::a(rhs));
+    return true;
+  };
+
+  /// Move \a from from one side of a clause to \a to on the other.
+  auto flipLiteral = [&](ConstraintI* ci, VarDecl* from, VarDecl* to) {
+    auto* c = Expression::cast<Call>(ci->e());
+    std::vector<Expression*> side[2];
+    for (int k = 0; k < 2; k++) {
+      auto* al = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(k)));
+      if (al == nullptr) {
+        return false;
+      }
+      for (unsigned int j = 0; j < al->size(); j++) {
+        side[k].push_back((*al)[j]);
+      }
+    }
+    for (int k = 0; k < 2; k++) {
+      for (auto it = side[k].begin(); it != side[k].end();) {
+        if (Expression::dynamicCast<VarDecl>(follow_id_to_decl(*it)) == from) {
+          it = side[k].erase(it);
+          side[1 - k].push_back(to->id());
+        } else {
+          ++it;
+        }
+      }
+    }
+    for (int k = 0; k < 2; k++) {
+      auto* al = new ArrayLit(Location().introduce(), side[k]);
+      al->type(Type::varbool(1));
+      c->arg(k, al);
+    }
+    return true;
+  };
+
+  std::unordered_map<VarDecl*, ConstraintI*> conversionOf;
+  std::vector<std::pair<ConstraintI*, std::pair<VarDecl*, VarDecl*>>> negations;
+  for (auto& item : m) {
+    auto* ci = item->dynamicCast<ConstraintI>();
+    if (ci == nullptr || ci->removed()) {
+      continue;
+    }
+    auto* c = Expression::dynamicCast<Call>(ci->e());
+    if (c == nullptr) {
+      continue;
+    }
+    if (isConversion(c)) {
+      auto* bd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(c->arg(0)));
+      if (bd != nullptr && bd->type().isvarbool()) {
+        conversionOf.emplace(bd, ci);
+      }
+      continue;
+    }
+    if (c->id() != ids.fznso.bool_lin_eq || !Expression::equal(c->arg(2), IntLit::a(1))) {
+      continue;
+    }
+    auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+    auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+    if (alC == nullptr || alX == nullptr || alC->size() != 2 || alX->size() != 2 ||
+        !Expression::isa<IntLit>((*alC)[0]) || !Expression::isa<IntLit>((*alC)[1]) ||
+        IntLit::v(Expression::cast<IntLit>((*alC)[0])) != 1 ||
+        IntLit::v(Expression::cast<IntLit>((*alC)[1])) != 1 ||
+        !Expression::isa<Id>((*alX)[0]) || !Expression::isa<Id>((*alX)[1])) {
+      continue;
+    }
+    negations.emplace_back(ci, std::make_pair(Expression::cast<Id>((*alX)[0])->decl(),
+                                              Expression::cast<Id>((*alX)[1])->decl()));
+  }
+
+  for (auto& n : negations) {
+    ConstraintI* row = n.first;
+    if (row->removed()) {
+      continue;
+    }
+    for (int side = 0; side < 2; side++) {
+      VarDecl* keep = side == 0 ? n.second.first : n.second.second;
+      VarDecl* drop = side == 0 ? n.second.second : n.second.first;
+      if (keep == drop || drop->e() != nullptr || is_output(drop) ||
+          env.varOccurrences.usages(drop).second) {
+        continue;
+      }
+      std::vector<ConstraintI*> flipRows;
+      std::vector<ConstraintI*> flipClauses;
+      std::vector<ConstraintI*> intRows;
+      ConstraintI* conversion = nullptr;
+      VarDecl* dropInt = nullptr;
+      VarDecl* keepInt = nullptr;
+      bool ok = true;
+      auto occ = env.varOccurrences.itemMap.find(drop->id());
+      if (!occ.first) {
+        continue;
+      }
+      for (auto* item : *occ.second) {
+        auto* ci = item->dynamicCast<ConstraintI>();
+        if (ci == nullptr) {
+          ok = false;
+          break;
+        }
+        if (ci->removed() || ci == row) {
+          continue;
+        }
+        auto* c = Expression::dynamicCast<Call>(ci->e());
+        if (c == nullptr) {
+          ok = false;
+          break;
+        }
+        if (isBoolLin(c) && Expression::type(c->arg(2)).isPar()) {
+          flipRows.push_back(ci);
+        } else if (isClause(c)) {
+          flipClauses.push_back(ci);
+        } else if (isConversion(c) && conversion == nullptr) {
+          conversion = ci;
+        } else {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) {
+        continue;
+      }
+      if (conversion != nullptr) {
+        auto ck = conversionOf.find(keep);
+        auto* cc = Expression::cast<Call>(conversion->e());
+        dropInt = Expression::dynamicCast<VarDecl>(follow_id_to_decl(cc->arg(1)));
+        if (ck == conversionOf.end() || ck->second->removed() || dropInt == nullptr ||
+            dropInt->e() != nullptr || is_output(dropInt) ||
+            env.varOccurrences.usages(dropInt).second) {
+          continue;
+        }
+        keepInt = Expression::dynamicCast<VarDecl>(
+            follow_id_to_decl(Expression::cast<Call>(ck->second->e())->arg(1)));
+        if (keepInt == nullptr || keepInt == dropInt) {
+          continue;
+        }
+        auto iocc = env.varOccurrences.itemMap.find(dropInt->id());
+        if (!iocc.first) {
+          continue;
+        }
+        for (auto* item : *iocc.second) {
+          auto* ci = item->dynamicCast<ConstraintI>();
+          if (ci == nullptr) {
+            ok = false;
+            break;
+          }
+          if (ci->removed() || ci == conversion) {
+            continue;
+          }
+          auto* c = Expression::dynamicCast<Call>(ci->e());
+          if (c == nullptr || !isIntLin(c) || !Expression::type(c->arg(2)).isPar()) {
+            ok = false;
+            break;
+          }
+          intRows.push_back(ci);
+        }
+        if (!ok) {
+          continue;
+        }
+      }
+
+      GCLock lock;
+      bool done = true;
+      for (ConstraintI* ci : flipRows) {
+        done = done && flipTerm(ci, drop, keep);
+      }
+      for (ConstraintI* ci : flipClauses) {
+        done = done && flipLiteral(ci, drop, keep);
+      }
+      for (ConstraintI* ci : intRows) {
+        done = done && flipTerm(ci, dropInt, keepInt);
+      }
+      if (!done) {
+        break;  // partially rewritten rows stay valid; just stop here
+      }
+      for (ConstraintI* ci : flipRows) {
+        env.varOccurrences.remove(drop, ci);
+        env.varOccurrences.add(keep, ci);
+      }
+      for (ConstraintI* ci : flipClauses) {
+        env.varOccurrences.remove(drop, ci);
+        env.varOccurrences.add(keep, ci);
+      }
+      for (ConstraintI* ci : intRows) {
+        env.varOccurrences.remove(dropInt, ci);
+        env.varOccurrences.add(keepInt, ci);
+      }
+      if (conversion != nullptr) {
+        CollectDecls cdConv(env, env.varOccurrences, deletedVarDecls, conversion);
+        top_down(cdConv, conversion->e());
+        conversion->remove();
+        deletedVarDecls.push_back(dropInt);
+      }
+      CollectDecls cdRow(env, env.varOccurrences, deletedVarDecls, row);
+      top_down(cdRow, row->e());
+      row->remove();
+      deletedVarDecls.push_back(drop);
+      break;
+    }
+  }
+}
+
+/// Point a big-M row's indicator at the Boolean that implies it.
+///
+/// `b -> c` reaches the flattener as `clause([r], [b])` with `c` half-reified
+/// onto a fresh `r`, so a library that states the half-reification as a row
+/// gets `r` in the row and a clause tying `r` to `b`. Where `r` is read only as
+/// that row's indicator, the row can read `b` instead and the clause goes.
+///
+/// Sound only because the substitution can only *lower* the indicator — `b`
+/// implies `r`, not the other way about — and a row is relaxed by lowering an
+/// indicator whose coefficient is non-negative. A `_imp_not` row carries a
+/// negative one and is excluded, as is any equality: those are tightened
+/// instead, which loses solutions.
+/// Substitute an offset alias into the rows that read it.
+///
+/// `x - y = k` says that `y` is `x - k`, and a row holding `a * y` says the same
+/// thing holding `a * x` with `a * k` moved to the other side. The registry
+/// types an argument as a variable, so a library naming `p[d] - k` in order to
+/// hand it to `int_abs` leaves one of these behind — and `-Glinear` never names
+/// it, because for it the shift folds into every row that reads it.
+void fznso_substitute_offsets(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls) {
+  const auto& ids = env.constants.ids;
+  auto isIntLin = [&](const Call* c) {
+    return c->id() == ids.fznso.int_lin_le || c->id() == ids.fznso.int_lin_eq ||
+           c->id() == ids.fznso.int_lin_ne || c->id() == ids.int_.lin_le ||
+           c->id() == ids.int_.lin_eq || c->id() == ids.int_.lin_ne;
+  };
+
+  /// Rewrite one row, replacing \a from by \a to where `from = to + shift`.
+  auto shiftTerm = [&](ConstraintI* ci, VarDecl* from, VarDecl* to, IntVal shift) {
+    auto* c = Expression::cast<Call>(ci->e());
+    auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+    auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+    if (alC == nullptr || alX == nullptr || alC->size() != alX->size()) {
+      return false;
+    }
+    std::vector<Expression*> coeffs(alC->size());
+    std::vector<Expression*> vars(alX->size());
+    IntVal rhs = eval_int(env, c->arg(2));
+    for (unsigned int j = 0; j < alX->size(); j++) {
+      coeffs[j] = (*alC)[j];
+      vars[j] = (*alX)[j];
+      if (Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[j])) != from) {
+        continue;
+      }
+      if (!Expression::isa<IntLit>((*alC)[j])) {
+        return false;
+      }
+      vars[j] = to->id();
+      rhs -= IntLit::v(Expression::cast<IntLit>((*alC)[j])) * shift;
+    }
+    auto* nc = new ArrayLit(Location().introduce(), coeffs);
+    nc->type(Type::parint(1));
+    auto* nv = new ArrayLit(Location().introduce(), vars);
+    Type vt = alX->type();
+    vt.dim(1);
+    nv->type(vt);
+    c->arg(0, nc);
+    c->arg(1, nv);
+    c->arg(2, IntLit::a(rhs));
+    return true;
+  };
+
+  struct Alias {
+    ConstraintI* row;
+    VarDecl* v[2];
+    IntVal shift[2];  // v[i] = v[1 - i] + shift[i]
+  };
+  std::vector<Alias> aliases;
+  for (auto& item : m) {
+    auto* ci = item->dynamicCast<ConstraintI>();
+    if (ci == nullptr || ci->removed()) {
+      continue;
+    }
+    auto* c = Expression::dynamicCast<Call>(ci->e());
+    if (c == nullptr || (c->id() != ids.fznso.int_lin_eq && c->id() != ids.int_.lin_eq) ||
+        !Expression::type(c->arg(2)).isPar()) {
+      continue;
+    }
+    auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+    auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+    if (alC == nullptr || alX == nullptr || alC->size() != 2 || alX->size() != 2 ||
+        !Expression::isa<IntLit>((*alC)[0]) || !Expression::isa<IntLit>((*alC)[1])) {
+      continue;
+    }
+    IntVal a0 = IntLit::v(Expression::cast<IntLit>((*alC)[0]));
+    IntVal a1 = IntLit::v(Expression::cast<IntLit>((*alC)[1]));
+    if (a0 + a1 != 0 || (a0 != 1 && a0 != -1)) {
+      continue;
+    }
+    auto* v0 = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[0]));
+    auto* v1 = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[1]));
+    if (v0 == nullptr || v1 == nullptr || v0 == v1 || !v0->type().isvarint() ||
+        !v1->type().isvarint()) {
+      continue;
+    }
+    // `a0 * v0 - a0 * v1 = k`, so `v0 = v1 + k / a0` and `v1 = v0 - k / a0`.
+    IntVal k = eval_int(env, c->arg(2)) / a0;
+    aliases.push_back({ci, {v0, v1}, {k, -k}});
+  }
+
+  for (auto& alias : aliases) {
+    if (alias.row->removed()) {
+      continue;
+    }
+    for (int side = 0; side < 2; side++) {
+      VarDecl* drop = alias.v[side];
+      VarDecl* keep = alias.v[1 - side];
+      IntVal shift = alias.shift[side];
+      if (drop->e() != nullptr || is_output(drop) || keep->ti()->domain() == nullptr ||
+          drop->ti()->domain() == nullptr || env.varOccurrences.usages(drop).second) {
+        continue;
+      }
+      // Dropping the row would lose whatever `drop`'s own domain said about
+      // `keep`, so say it on `keep` first: `keep` is `drop - shift`.
+      IntSetVal* keepDom = eval_intset(env, keep->ti()->domain());
+      IntSetVal* dropDom = eval_intset(env, drop->ti()->domain());
+      if (keepDom->empty() || dropDom->empty()) {
+        continue;
+      }
+      std::vector<IntSetVal::Range> moved;
+      for (unsigned int r = 0; r < dropDom->size(); r++) {
+        if (!dropDom->min(r).isFinite() || !dropDom->max(r).isFinite()) {
+          moved.clear();
+          break;
+        }
+        moved.emplace_back(dropDom->min(r) - shift, dropDom->max(r) - shift);
+      }
+      if (moved.empty()) {
+        continue;
+      }
+      IntSetVal* narrowed = LinearTraits<IntLit>::intersectDomain(keepDom, IntSetVal::a(moved));
+      if (narrowed->empty()) {
+        continue;  // let the ordinary propagation report this
+      }
+      std::vector<ConstraintI*> rows;
+      bool ok = true;
+      auto occ = env.varOccurrences.itemMap.find(drop->id());
+      if (!occ.first) {
+        continue;
+      }
+      for (auto* used : *occ.second) {
+        auto* ci = used->dynamicCast<ConstraintI>();
+        if (ci == nullptr) {
+          ok = false;
+          break;
+        }
+        if (ci->removed() || ci == alias.row) {
+          continue;
+        }
+        auto* c = Expression::dynamicCast<Call>(ci->e());
+        if (c == nullptr || !isIntLin(c) || !Expression::type(c->arg(2)).isPar()) {
+          ok = false;
+          break;
+        }
+        // A row already naming `keep` would end up naming it twice.
+        auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+        if (alX == nullptr) {
+          ok = false;
+          break;
+        }
+        for (unsigned int j = 0; j < alX->size() && ok; j++) {
+          ok = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[j])) != keep;
+        }
+        if (!ok) {
+          break;
+        }
+        rows.push_back(ci);
+      }
+      if (!ok) {
+        continue;
+      }
+      GCLock lock;
+      bool done = true;
+      for (ConstraintI* ci : rows) {
+        done = done && shiftTerm(ci, drop, keep, shift);
+      }
+      if (!done) {
+        break;  // partially rewritten rows stay valid; just stop here
+      }
+      for (ConstraintI* ci : rows) {
+        env.varOccurrences.remove(drop, ci);
+        env.varOccurrences.add(keep, ci);
+      }
+      if (!narrowed->equal(keepDom)) {
+        keep->ti()->domain(new SetLit(Location().introduce(), narrowed));
+        keep->ti()->setComputedDomain(false);
+      }
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, alias.row);
+      top_down(cd, alias.row->e());
+      alias.row->remove();
+      deletedVarDecls.push_back(drop);
+      break;
+    }
+  }
+}
+
+void fznso_retarget_indicators(EnvI& env, Model& m, std::vector<VarDecl*>& deletedVarDecls) {
+  const auto& ids = env.constants.ids;
+  auto isConversion = [&](const Call* c) {
+    return c->id() == ids.bool2int || c->id() == ids.fznso.bool2int;
+  };
+
+  /// Whether every row reading \a iv is relaxed by lowering it.
+  auto loweringIsSafe = [&](VarDecl* iv, ConstraintI* conversion) {
+    if (is_output(iv) || env.varOccurrences.usages(iv).second) {
+      return false;
+    }
+    auto occ = env.varOccurrences.itemMap.find(iv->id());
+    if (!occ.first) {
+      return false;
+    }
+    for (auto* item : *occ.second) {
+      auto* ci = item->dynamicCast<ConstraintI>();
+      if (ci == nullptr) {
+        return false;
+      }
+      if (ci->removed() || ci == conversion) {
+        continue;
+      }
+      auto* c = Expression::dynamicCast<Call>(ci->e());
+      if (c == nullptr ||
+          !(c->id() == ids.int_.lin_le || c->id() == ids.fznso.int_lin_le ||
+            c->id() == ids.float_.lin_le || c->id() == ids.fznso.float_lin_le)) {
+        return false;
+      }
+      auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+      auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+      if (alC == nullptr || alX == nullptr || alC->size() != alX->size()) {
+        return false;
+      }
+      for (unsigned int j = 0; j < alX->size(); j++) {
+        if (Expression::dynamicCast<VarDecl>(follow_id_to_decl((*alX)[j])) != iv) {
+          continue;
+        }
+        if (Expression::isa<IntLit>((*alC)[j])) {
+          if (IntLit::v(Expression::cast<IntLit>((*alC)[j])) < 0) {
+            return false;
+          }
+        } else if (Expression::isa<FloatLit>((*alC)[j])) {
+          if (FloatLit::v(Expression::cast<FloatLit>((*alC)[j])) < 0.0) {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
+    }
+    return true;
+  };
+
+  // `bool2int(b, i)`, keyed by the Boolean.
+  std::unordered_map<VarDecl*, ConstraintI*> conversionOf;
+  std::vector<ConstraintI*> implications;
+  for (auto& item : m) {
+    auto* ci = item->dynamicCast<ConstraintI>();
+    if (ci == nullptr || ci->removed()) {
+      continue;
+    }
+    auto* c = Expression::dynamicCast<Call>(ci->e());
+    if (c == nullptr) {
+      continue;
+    }
+    if (isConversion(c)) {
+      auto* bd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(c->arg(0)));
+      if (bd != nullptr && bd->type().isvarbool()) {
+        conversionOf.emplace(bd, ci);
+      }
+    } else if (c->id() == ids.clause || c->id() == ids.fznso.bool_clause) {
+      implications.push_back(ci);
+    }
+  }
+
+  for (ConstraintI* ci : implications) {
+    if (ci->removed()) {
+      continue;
+    }
+    auto* c = Expression::cast<Call>(ci->e());
+    auto* pos = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+    auto* neg = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+    if (pos == nullptr || neg == nullptr || pos->size() != 1 || neg->size() != 1 ||
+        !Expression::isa<Id>((*pos)[0]) || !Expression::isa<Id>((*neg)[0])) {
+      continue;
+    }
+    VarDecl* implied = Expression::cast<Id>((*pos)[0])->decl();
+    VarDecl* antecedent = Expression::cast<Id>((*neg)[0])->decl();
+    if (implied == antecedent || implied->e() != nullptr || is_output(implied) ||
+        env.varOccurrences.usages(implied).second) {
+      continue;
+    }
+    auto conv = conversionOf.find(implied);
+    if (conv == conversionOf.end() || conv->second->removed()) {
+      continue;
+    }
+    // The implied Boolean may be read only by this clause and its conversion.
+    if (env.varOccurrences.usages(implied).first != 2) {
+      continue;
+    }
+    auto* cc = Expression::cast<Call>(conv->second->e());
+    auto* iv = Expression::dynamicCast<VarDecl>(follow_id_to_decl(cc->arg(1)));
+    if (iv == nullptr || !loweringIsSafe(iv, conv->second)) {
+      continue;
+    }
+    GCLock lock;
+    env.varOccurrences.remove(implied, conv->second);
+    cc->arg(0, antecedent->id());
+    env.varOccurrences.add(antecedent, conv->second);
+    CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ci);
+    top_down(cd, ci->e());
+    ci->remove();
+    deletedVarDecls.push_back(implied);
+  }
+}
+
 void optimize(Env& env, bool chain_compression) {
   env.envi().checkCancel();
 
@@ -479,6 +1111,15 @@ void optimize(Env& env, bool chain_compression) {
     std::vector<unsigned int> toAssignBoolVars;
     std::vector<unsigned int> toRemoveConstraints;
     std::vector<VarDecl*> deletedVarDecls;
+    // The negation of each variable seen so far, from a row saying `x + y = 1`.
+    // A second such row about the same `x` names the same negation again, and
+    // the two names are unified rather than both kept.
+    std::unordered_map<VarDecl*, VarDecl*> negationOf;
+    // The Boolean each integer conversion was first seen for. Two conversions
+    // onto one integer say their Booleans are equal, which is how a second name
+    // for one Boolean survives: the integers were unified but the Booleans were
+    // not, so every negation and every row stated about either is kept twice.
+    std::unordered_map<VarDecl*, VarDecl*> boolOfInt;
 
     // Queue of constraint and variable items that still need to be optimised
     std::deque<Item*> constraintQueue;
@@ -504,6 +1145,11 @@ void optimize(Env& env, bool chain_compression) {
 
     envi.checkCancel();
 
+    // `a \/ not b` by the pair of variables it names, so that meeting the
+    // converse identifies the two.
+    std::map<std::pair<VarDecl*, VarDecl*>, ConstraintI*> binaryClauses;
+
+
     // Phase 1: initialise queues
     //  - remove equality constraints between identifiers
     //  - remove toplevel forall constraints
@@ -522,12 +1168,28 @@ void optimize(Env& env, bool chain_compression) {
         ci->flag(false);
         if (!ci->removed()) {
           if (Call* c = Expression::dynamicCast<Call>(ci->e())) {
-            if ((c->id() == envi.constants.ids.int_.eq || c->id() == envi.constants.ids.bool_.eq ||
+            bool parHolds = false;
+            const bool decidedPar = fznso_par_constraint(envi, c, parHolds);
+            if (decidedPar) {
+              // Born with every argument already a literal, so nothing will
+              // ever queue it: decide it here or it reaches the solver as a row
+              // over nothing but constants.
+              if (!parHolds) {
+                env.envi().fail();
+              }
+              toRemoveConstraints.push_back(i);
+            } else if ((c->id() == envi.constants.ids.int_.eq ||
+                        c->id() == envi.constants.ids.bool_.eq ||
                  c->id() == envi.constants.ids.float_.eq ||
-                 c->id() == envi.constants.ids.set_.eq) &&
+                 c->id() == envi.constants.ids.set_.eq ||
+                 c->id() == envi.constants.ids.fznso.set_eq) &&
                 Expression::isa<Id>(c->arg(0)) && Expression::isa<Id>(c->arg(1)) &&
                 (Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr ||
-                 Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr)) {
+                 Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr ||
+                 // Both defined: one definition becomes a constraint so that
+                 // the variables can still be unified. Evaluated last, so it
+                 // only runs when neither side is already free.
+                 demote_definition(envi, Expression::cast<Id>(c->arg(0))->decl()))) {
               // Equality constraint between two identifiers: unify
 
               if (Call* defVar = Expression::ann(c).getCall(envi.constants.ann.defines_var)) {
@@ -556,7 +1218,8 @@ void optimize(Env& env, bool chain_compression) {
             } else if ((c->id() == envi.constants.ids.int_.eq ||
                         c->id() == envi.constants.ids.bool_.eq ||
                         c->id() == envi.constants.ids.float_.eq ||
-                        c->id() == envi.constants.ids.set_.eq) &&
+                        c->id() == envi.constants.ids.set_.eq ||
+                        c->id() == envi.constants.ids.fznso.set_eq) &&
                        ((Expression::isa<Id>(c->arg(0)) &&
                          Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr &&
                          Expression::type(c->arg(1)).isPar()) ||
@@ -569,7 +1232,13 @@ void optimize(Env& env, bool chain_compression) {
               int idx = envi.varOccurrences.find(id->decl());
               push_vardecl(envi, m[idx]->cast<VarDeclI>(), idx, vardeclQueue);
               push_dependent_constraints(envi, id, constraintQueue);
-            } else if (c->id() == envi.constants.ids.int_.lin_eq &&
+            } else if ((c->id() == envi.constants.ids.int_.lin_eq ||
+                        c->id() == envi.constants.ids.fznso.int_lin_eq ||
+                        // A library that says `a = b` over two Booleans in the
+                        // registry's vocabulary says it with this, and two
+                        // names for one variable should be unified rather than
+                        // held equal by a row.
+                        c->id() == envi.constants.ids.fznso.bool_lin_eq) &&
                        Expression::equal(c->arg(2), IntLit::a(0))) {
               auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
               if (al_c->size() == 2 && IntLit::v(Expression::cast<IntLit>((*al_c)[0])) ==
@@ -606,6 +1275,93 @@ void optimize(Env& env, bool chain_compression) {
                   ci->remove();
                 }
               }
+            } else if ((c->id() == envi.constants.ids.bool2int ||
+                        c->id() == envi.constants.ids.fznso.bool2int) &&
+                       (Expression::type(c->arg(0)).isPar() ||
+                        Expression::type(c->arg(1)).isPar())) {
+              // `bool2int(true, x)` says `x` is 1 and `bool2int(b, 1)` says `b`
+              // holds, but nothing else here queues either: neither has an
+              // argument that anything is about to decide. Left alone the row
+              // reaches the solver, and so does every other row that mentions
+              // the variable — with a term for a constant.
+              ci->flag(true);
+              constraintQueue.push_back(ci);
+            } else if (c->id() == envi.constants.ids.bool2int ||
+                       c->id() == envi.constants.ids.fznso.bool2int) {
+              auto* bd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(c->arg(0)));
+              auto* id = Expression::dynamicCast<VarDecl>(follow_id_to_decl(c->arg(1)));
+              if (bd != nullptr && id != nullptr && bd->type().isvarbool()) {
+                auto seen = boolOfInt.find(id);
+                if (seen == boolOfInt.end()) {
+                  boolOfInt.emplace(id, bd);
+                } else if (seen->second != bd && seen->second->e() == nullptr &&
+                           bd->e() == nullptr) {
+                  unify(envi, deletedVarDecls, bd->id(), seen->second->id());
+                  push_dependent_constraints(envi, seen->second->id(), constraintQueue);
+                  CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
+                  top_down(cd, c);
+                  ci->e(envi.constants.literalTrue);
+                  ci->remove();
+                }
+              }
+            } else if ((c->id() == envi.constants.ids.int_.lin_eq ||
+                        c->id() == envi.constants.ids.fznso.int_lin_eq ||
+                        c->id() == envi.constants.ids.fznso.bool_lin_eq) &&
+                       Expression::equal(c->arg(2), IntLit::a(1))) {
+              // `x + y = 1` over two 0/1 variables says `y` is the negation of
+              // `x`. FlatZinc has no negated literal, so a library that needs
+              // one states this row — and a model that needs the same negation
+              // in six places states it six times, over six variables that are
+              // all the same. Keep the first and unify the rest onto it.
+              auto* al_c = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+              auto* al_x = al_c != nullptr && al_c->size() == 2
+                               ? Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)))
+                               : nullptr;
+              if (al_x != nullptr && al_x->size() == 2 &&
+                  Expression::isa<IntLit>((*al_c)[0]) && Expression::isa<IntLit>((*al_c)[1]) &&
+                  IntLit::v(Expression::cast<IntLit>((*al_c)[0])) == 1 &&
+                  IntLit::v(Expression::cast<IntLit>((*al_c)[1])) == 1 &&
+                  Expression::isa<Id>((*al_x)[0]) && Expression::isa<Id>((*al_x)[1])) {
+                auto* xd = Expression::cast<Id>((*al_x)[0])->decl();
+                auto* yd = Expression::cast<Id>((*al_x)[1])->decl();
+                // Both sides have to be free 0/1 variables of the same type:
+                // one may be substituted for the other.
+                auto zeroOne = [&](VarDecl* vd) {
+                  if (vd->e() != nullptr) {
+                    return false;
+                  }
+                  if (vd->type().isvarbool()) {
+                    return vd->ti()->domain() == nullptr;
+                  }
+                  if (!vd->type().isvarint() || vd->ti()->domain() == nullptr) {
+                    return false;
+                  }
+                  IntSetVal* d = eval_intset(envi, vd->ti()->domain());
+                  return !d->empty() && d->min() == 0 && d->max() == 1;
+                };
+                if (xd != yd && xd->type() == yd->type() && zeroOne(xd) && zeroOne(yd)) {
+                  auto seen = negationOf.find(xd);
+                  auto other = seen != negationOf.end() ? seen->second : nullptr;
+                  if (other == nullptr) {
+                    seen = negationOf.find(yd);
+                    if (seen != negationOf.end()) {
+                      other = seen->second;
+                      std::swap(xd, yd);
+                    }
+                  }
+                  if (other != nullptr && other != yd) {
+                    unify(envi, deletedVarDecls, yd->id(), other->id());
+                    push_dependent_constraints(envi, other->id(), constraintQueue);
+                    CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, ci);
+                    top_down(cd, c);
+                    ci->e(envi.constants.literalTrue);
+                    ci->remove();
+                  } else if (other == nullptr) {
+                    negationOf.emplace(xd, yd);
+                    negationOf.emplace(yd, xd);
+                  }
+                }
+              }
             } else if (c->id() == envi.constants.ids.forall) {
               // Remove forall constraints, assign variables inside the forall to true
 
@@ -623,10 +1379,34 @@ void optimize(Env& env, bool chain_compression) {
               }
               toRemoveConstraints.push_back(i);
             } else if (c->id() == envi.constants.ids.exists ||
-                       c->id() == envi.constants.ids.clause) {
+                       (c->id() == envi.constants.ids.clause ||
+             c->id() == envi.constants.ids.fznso.bool_clause ||
+             c->id() == envi.constants.ids.bool_.clause)) {
               // Add disjunctive constraints to the boolConstraints list
 
               boolConstraints.push_back(i);
+            }
+            // A constraint is queued when a variable it mentions is touched, so
+            // a row that decides its own variables outright is never looked at.
+            // A library states `x = k` as one of these, and left unread it
+            // reaches the solver as a row rather than narrowing the variable
+            // and folding everything that mentions it. Queue it once; whatever
+            // it decides re-queues the rest by the usual route.
+            //
+            // Outside the chain above, because a branch of it matches the same
+            // idents on a shape it then rejects, and would otherwise consume
+            // them.
+            if (!decidedPar && !ci->flag() &&
+                (c->id() == envi.constants.ids.fznso.bool_lin_le ||
+                 c->id() == envi.constants.ids.fznso.bool_lin_eq ||
+                 c->id() == envi.constants.ids.fznso.int_lin_le ||
+                 c->id() == envi.constants.ids.fznso.int_lin_eq ||
+                 c->id() == envi.constants.ids.int_.lin_le ||
+                 c->id() == envi.constants.ids.int_.lin_eq ||
+                 c->id() == envi.constants.ids.bool_.lin_le ||
+                 c->id() == envi.constants.ids.bool_.lin_eq)) {
+              ci->flag(true);
+              constraintQueue.push_back(ci);
             }
           } else if (Id* id = Expression::dynamicCast<Id>(ci->e())) {
             if (id->decl()->ti()->domain() == envi.constants.literalFalse) {
@@ -668,9 +1448,21 @@ void optimize(Env& env, bool chain_compression) {
         }
         if (Call* c = Expression::dynamicCast<Call>(vdi->e()->e())) {
           if (c->id() == envi.constants.ids.forall || c->id() == envi.constants.ids.exists ||
-              c->id() == envi.constants.ids.clause) {
+              (c->id() == envi.constants.ids.clause ||
+             c->id() == envi.constants.ids.fznso.bool_clause ||
+             c->id() == envi.constants.ids.bool_.clause)) {
             // push reified foralls, exists, clauses
             boolConstraints.push_back(i);
+          } else if ((c->id() == envi.constants.ids.bool2int ||
+                      c->id() == envi.constants.ids.fznso.bool2int) &&
+                     Expression::type(c->arg(0)).isPar()) {
+            // `bool2int(true)` defines a 0/1 variable that is simply 1, and
+            // nothing else here queues it: its domain is not a singleton and
+            // its right-hand side is a call rather than a literal. Left alone
+            // it reaches the solver as a column, and every row that mentions
+            // it keeps a term for a constant.
+            vdi->flag(true);
+            constraintQueue.push_back(vdi);
           }
         }
         if (vdi->e()->type().isint()) {
@@ -900,7 +1692,9 @@ void optimize(Env& env, bool chain_compression) {
                   }
                 }
               } else if (!isTrue && (c->id() == envi.constants.ids.exists ||
-                                     c->id() == envi.constants.ids.clause)) {
+                                     (c->id() == envi.constants.ids.clause ||
+             c->id() == envi.constants.ids.fznso.bool_clause ||
+             c->id() == envi.constants.ids.bool_.clause))) {
                 // Reified disjunction is now fixed to false, so make all elements of the
                 // disjunction false
                 remove = true;
@@ -1040,6 +1834,208 @@ void optimize(Env& env, bool chain_compression) {
       }
     }
 
+    // `t <= k` and `-t <= -k` together are `t = k`, which the backend takes in
+    // one row and which the unification in phase 1 can read. A library states
+    // an equality under an indicator as two big-M rows, and each collapses to
+    // one of these only once the indicator is decided — separately, by which
+    // time nothing is left to put them back together. So this runs after the
+    // queue has drained, and feeds what it merges back into it.
+    // `a -> b` and `b -> a` together say the two are one variable, but as a pair
+    // of clauses neither half says anything on its own and nothing above matches
+    // the pair. A library that writes an equivalence in clauses — which is what
+    // keeping `var bool` means — leaves one of these behind every time. Here
+    // rather than in phase 1 because the two halves often name *different*
+    // variables until something above unifies them: the pair is only a pair once
+    // the queue has drained.
+    {
+      std::map<std::pair<VarDecl*, VarDecl*>, ConstraintI*> binaryClauses;
+      for (unsigned int i = 0; i < m.size(); i++) {
+        auto* ci = m[i]->dynamicCast<ConstraintI>();
+        if (ci == nullptr || ci->removed()) {
+          continue;
+        }
+        auto* c = Expression::dynamicCast<Call>(ci->e());
+        if (c == nullptr) {
+          continue;
+        }
+        // The consequent and the antecedent of `b -> a`, however it is written.
+        // A library that keeps `var bool` states one direction as a clause and
+        // the other as a row over the same two Booleans just as readily, and a
+        // pair split across the two forms is still a pair.
+        Expression* consequent = nullptr;
+        Expression* antecedent = nullptr;
+        if (c->id() == envi.constants.ids.clause ||
+            c->id() == envi.constants.ids.fznso.bool_clause ||
+            c->id() == envi.constants.ids.bool_.clause) {
+          auto* pos = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+          auto* neg = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+          if (pos == nullptr || neg == nullptr || pos->size() != 1 || neg->size() != 1) {
+            continue;
+          }
+          consequent = (*pos)[0];
+          antecedent = (*neg)[0];
+        } else if (c->id() == envi.constants.ids.fznso.bool_lin_le ||
+                   c->id() == envi.constants.ids.bool_.lin_le) {
+          // `x - y <= 0` is `x -> y`.
+          auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+          auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+          if (alC == nullptr || alX == nullptr || alC->size() != 2 || alX->size() != 2 ||
+              !Expression::type(c->arg(2)).isPar() || eval_int(envi, c->arg(2)) != 0 ||
+              !Expression::isa<IntLit>((*alC)[0]) || !Expression::isa<IntLit>((*alC)[1])) {
+            continue;
+          }
+          IntVal a0 = IntLit::v(Expression::cast<IntLit>((*alC)[0]));
+          IntVal a1 = IntLit::v(Expression::cast<IntLit>((*alC)[1]));
+          if (a0 == 1 && a1 == -1) {
+            consequent = (*alX)[1];
+            antecedent = (*alX)[0];
+          } else if (a0 == -1 && a1 == 1) {
+            consequent = (*alX)[0];
+            antecedent = (*alX)[1];
+          } else {
+            continue;
+          }
+        } else {
+          continue;
+        }
+        if (!Expression::isa<Id>(consequent) || !Expression::isa<Id>(antecedent)) {
+          continue;
+        }
+        // Resolved, not as written: unifying two names that already resolve to
+        // one declaration would point it at itself, and every
+        // `follow_id_to_decl` after that never returns.
+        auto* a = Expression::dynamicCast<VarDecl>(follow_id_to_decl(consequent));
+        auto* b = Expression::dynamicCast<VarDecl>(follow_id_to_decl(antecedent));
+        if (a == nullptr || b == nullptr || a == b) {
+          continue;
+        }
+        auto converse = binaryClauses.find({b, a});
+        if (converse == binaryClauses.end() || converse->second->removed() ||
+            (a->e() != nullptr && b->e() != nullptr)) {
+          binaryClauses.emplace(std::make_pair(a, b), ci);
+          continue;
+        }
+        if (a->e() != nullptr) {
+          std::swap(a, b);
+        }
+        GCLock lock;
+        unify(envi, deletedVarDecls, a->id(), b->id());
+        push_dependent_constraints(envi, a->id(), constraintQueue);
+        for (ConstraintI* dead : {ci, converse->second}) {
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, dead);
+          top_down(cd, dead->e());
+          dead->e(envi.constants.literalTrue);
+          dead->remove();
+        }
+        binaryClauses.erase(converse);
+      }
+    }
+
+    // Two equalities over the same two variables determine both of them, and
+    // nothing above solves a pair of rows together: each is under-determined on
+    // its own, so both reach the solver holding variables that were never in
+    // doubt.
+    {
+      std::map<std::pair<VarDecl*, VarDecl*>, ConstraintI*> pairRows;
+      for (unsigned int i = 0; i < m.size(); i++) {
+        auto* ci = m[i]->dynamicCast<ConstraintI>();
+        if (ci == nullptr || ci->removed()) {
+          continue;
+        }
+        auto* c = Expression::dynamicCast<Call>(ci->e());
+        if (c == nullptr || (c->id() != envi.constants.ids.fznso.int_lin_eq &&
+                             c->id() != envi.constants.ids.int_.lin_eq &&
+                             c->id() != envi.constants.ids.fznso.bool_lin_eq &&
+                             c->id() != envi.constants.ids.bool_.lin_eq)) {
+          continue;
+        }
+        std::vector<std::pair<VarDecl*, IntVal>> terms;
+        IntVal rhs = 0;
+        if (!fznso_lin_terms(envi, c, terms, rhs) || terms.size() != 2) {
+          continue;
+        }
+        auto seen = pairRows.find({terms[0].first, terms[1].first});
+        if (seen == pairRows.end() || seen->second->removed()) {
+          pairRows[{terms[0].first, terms[1].first}] = ci;
+          continue;
+        }
+        std::vector<std::pair<VarDecl*, IntVal>> other;
+        IntVal otherRhs = 0;
+        auto* oc = Expression::cast<Call>(seen->second->e());
+        if (!fznso_lin_terms(envi, oc, other, otherRhs) || other.size() != 2 ||
+            other[0].first != terms[0].first || other[1].first != terms[1].first) {
+          continue;
+        }
+        IntVal det = terms[0].second * other[1].second - other[0].second * terms[1].second;
+        if (det == 0) {
+          continue;  // the same fact twice, or a contradiction; leave both
+        }
+        IntVal xNum = rhs * other[1].second - otherRhs * terms[1].second;
+        IntVal yNum = terms[0].second * otherRhs - other[0].second * rhs;
+        if (xNum % det != 0 || yNum % det != 0) {
+          env.envi().fail();  // no integer point satisfies both
+          break;
+        }
+        IntVal value[2] = {xNum / det, yNum / det};
+        bool ok = true;
+        for (int k = 0; k < 2 && ok; k++) {
+          ok = fznso_fix_to(envi, terms[k].first, value[k], vardeclQueue, constraintQueue);
+        }
+        if (!ok) {
+          env.envi().fail();
+          break;
+        }
+        for (ConstraintI* dead : {ci, seen->second}) {
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, dead);
+          top_down(cd, dead->e());
+          dead->e(envi.constants.literalTrue);
+          dead->remove();
+        }
+        pairRows.erase(seen);
+      }
+    }
+
+    {
+      std::map<std::pair<std::vector<std::pair<VarDecl*, IntVal>>, IntVal>, ConstraintI*> linRows;
+      for (unsigned int i = 0; i < m.size(); i++) {
+        auto* ci = m[i]->dynamicCast<ConstraintI>();
+        if (ci == nullptr || ci->removed()) {
+          continue;
+        }
+        auto* c = Expression::dynamicCast<Call>(ci->e());
+        if (c == nullptr || (c->id() != envi.constants.ids.fznso.int_lin_le &&
+                             c->id() != envi.constants.ids.int_.lin_le)) {
+          continue;
+        }
+        std::vector<std::pair<VarDecl*, IntVal>> terms;
+        IntVal rhs = 0;
+        if (!fznso_lin_terms(envi, c, terms, rhs) || terms.empty()) {
+          continue;
+        }
+        auto flip = terms;
+        for (auto& t : flip) {
+          t.second = -t.second;
+        }
+        auto converse = linRows.find({flip, -rhs});
+        if (converse == linRows.end() || converse->second->removed()) {
+          linRows[{terms, rhs}] = ci;
+          continue;
+        }
+        GCLock lock;
+        c->id(c->id() == envi.constants.ids.int_.lin_le ? envi.constants.ids.int_.lin_eq
+                                                        : envi.constants.ids.fznso.int_lin_eq);
+        c->decl(envi.model->matchFn(envi, c, false));
+        ConstraintI* dead = converse->second;
+        CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, dead);
+        top_down(cd, dead->e());
+        dead->e(envi.constants.literalTrue);
+        dead->remove();
+        linRows.erase(converse);
+        ci->flag(true);
+        constraintQueue.push_back(ci);
+      }
+    }
+
     // Clean up constraints that have been removed in the previous phase
     for (auto i = static_cast<unsigned int>(toRemoveConstraints.size()); (i--) != 0U;) {
       auto* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
@@ -1068,7 +2064,9 @@ void optimize(Env& env, bool chain_compression) {
       }
       if (c == nullptr ||
           !(c->id() == envi.constants.ids.forall || c->id() == envi.constants.ids.exists ||
-            c->id() == envi.constants.ids.clause)) {
+            (c->id() == envi.constants.ids.clause ||
+             c->id() == envi.constants.ids.fznso.bool_clause ||
+             c->id() == envi.constants.ids.bool_.clause))) {
         continue;
       }
       bool isConjunction = (c->id() == envi.constants.ids.forall);
@@ -1131,6 +2129,37 @@ void optimize(Env& env, bool chain_compression) {
           ti->setComputedDomain(true);
           bi->cast<VarDeclI>()->e()->e(envi.constants.boollit(result));
         }
+      } else if (!empty && bi->isa<ConstraintI>() && !isConjunction &&
+                 c->arg(0) != nullptr && c->argCount() == 2 &&
+                 Expression::cast<ArrayLit>(follow_id(c->arg(0)))->size() +
+                         Expression::cast<ArrayLit>(follow_id(c->arg(1)))->size() ==
+                     1) {
+        // Shortening left one literal, and a root disjunction of one literal
+        // says what that literal is. Phase 2 fixes these where the clause was
+        // born unit; only here can it have *become* unit, which is what happens
+        // whenever propagation decides all but one of a clause's variables.
+        auto* pos = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
+        bool value = pos->size() == 1;
+        Id* last = Expression::cast<Id>((*Expression::cast<ArrayLit>(
+            follow_id(c->arg(value ? 0 : 1))))[0]);
+        if (last->decl()->ti()->domain() == nullptr) {
+          last->decl()->ti()->domain(envi.constants.boollit(value));
+          if (last->decl()->e() == nullptr) {
+            last->decl()->e(envi.constants.boollit(value));
+          }
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
+          top_down(cd, bi->cast<ConstraintI>()->e());
+          bi->remove();
+          push_vardecl(envi, *envi.varOccurrences.idx.find(last->decl()->id()).second,
+                       vardeclQueue);
+          push_dependent_constraints(envi, last, constraintQueue);
+        } else if (eval_bool(envi, last->decl()->ti()->domain()) != value) {
+          env.envi().fail();
+        } else {
+          CollectDecls cd(envi, envi.varOccurrences, deletedVarDecls, bi);
+          top_down(cd, bi->cast<ConstraintI>()->e());
+          bi->remove();
+        }
       } else if (empty) {
         bool result = isConjunction;
         if (bi->isa<ConstraintI>()) {
@@ -1182,7 +2211,13 @@ void optimize(Env& env, bool chain_compression) {
       le.compress();
     }
 
-    // Phase 6: remove deleted variables if possible
+    // Phase 6: a negation that is only ever read as a number
+    env.envi().checkCancel();
+    fznso_substitute_negations(envi, m, deletedVarDecls);
+    fznso_substitute_offsets(envi, m, deletedVarDecls);
+    fznso_retarget_indicators(envi, m, deletedVarDecls);
+
+    // Phase 7: remove deleted variables if possible
     remove_deleted_items(envi, deletedVarDecls);
   } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */
   }
@@ -1307,6 +2342,712 @@ void substitute_fixed_vars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVa
   sv.remove(env, ii, deletedVarDecls);
 }
 
+/// Whether every assignment the domains still allow satisfies
+/// `sum(coeffs .* xs) <= bound`.
+///
+/// A linear library states a half-reified constraint as a big-M row, and fixing
+/// the indicator leaves the row trivially satisfied rather than removing it.
+/// `int_le` gets that for free from its domain tightening; a linear form needs
+/// the bound computed. Conservative: any term whose variable has no domain, or
+/// whose value is not an integer literal, gives up.
+/// Whether a linear equality only *defines* a variable that nothing else reads.
+///
+/// A row like `n + b = 1`, where `n` is a fresh 0/1 column nobody looks at, says
+/// what `n` is and nothing about anything else. The flattener writes them for
+/// negations it turns out not to need, and they reach the solver as columns and
+/// rows because nothing annotated them as definitions. Sound only where the
+/// coefficient is one — otherwise the row also says the rest is divisible by it
+/// — and where the variable's domain holds every value the rest can force on
+/// it, which is what makes the row say nothing about the rest.
+bool fznso_lin_defines_unread(EnvI& env, Call* c) {
+  const auto& ids = env.constants.ids;
+  if (c->id() != ids.fznso.int_lin_eq && c->id() != ids.int_.lin_eq &&
+      c->id() != ids.fznso.bool_lin_eq && c->id() != ids.bool_.lin_eq) {
+    return false;
+  }
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size()) {
+    return false;
+  }
+  const bool isBool = Expression::type(c->arg(1)).bt() == Type::BT_BOOL;
+  // `bool_lin_eq` names its total as a *variable*, which is the shape a weighted
+  // count of Booleans arrives in — and the commonest thing nothing goes on to
+  // read. Treated as one more term, with the row's own right-hand side zero.
+  Expression* total = c->arg(2);
+  const bool varTotal = !Expression::type(total).isPar();
+  if (varTotal && !Expression::isa<Id>(total)) {
+    return false;
+  }
+  IntVal rhs = varTotal ? IntVal(0) : eval_int(env, total);
+  IntVal low = 0;   // least the other terms can sum to
+  IntVal high = 0;  // most they can
+  VarDecl* only = nullptr;
+  IntVal onlyCoeff = 0;
+  for (unsigned int i = 0; i < alX->size() + static_cast<unsigned int>(varTotal); i++) {
+    const bool isTotal = i == alX->size();
+    if (!isTotal && !Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = isTotal ? IntVal(-1) : IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = isTotal ? total : (*alX)[i];
+    IntVal lo;
+    IntVal hi;
+    if (Expression::type(x).isPar()) {
+      lo = hi = Expression::type(x).isbool() ? IntVal(eval_bool(env, x) ? 1 : 0) : eval_int(env, x);
+    } else if (auto* id = Expression::dynamicCast<Id>(x)) {
+      VarDecl* vd = id->decl();
+      if (isBool && !isTotal) {
+        if (vd->ti()->domain() == nullptr) {
+          lo = 0;
+          hi = 1;
+        } else {
+          lo = hi = vd->ti()->domain() == env.constants.literalTrue ? 1 : 0;
+        }
+      } else {
+        if (vd->ti()->domain() == nullptr) {
+          return false;
+        }
+        IntSetVal* dom = eval_intset(env, vd->ti()->domain());
+        // A hole would let the row rule a value of the rest out, so only a
+        // single range is safe to drop the row over.
+        if (dom->empty() || dom->size() != 1 || !dom->min().isFinite() || !dom->max().isFinite()) {
+          return false;
+        }
+        lo = dom->min();
+        hi = dom->max();
+      }
+      if (only == nullptr && (a == 1 || a == -1) && lo != hi && vd->e() == nullptr &&
+          !is_output(vd) && env.varOccurrences.occurrences(vd) == 1) {
+        only = vd;
+        onlyCoeff = a;
+        continue;
+      }
+    } else {
+      return false;
+    }
+    low += a > 0 ? a * lo : a * hi;
+    high += a > 0 ? a * hi : a * lo;
+  }
+  if (only == nullptr) {
+    return false;
+  }
+  // `onlyCoeff * only = rhs - rest`, so `only` ranges over this as the rest does.
+  IntVal needLow = onlyCoeff * (rhs - high);
+  IntVal needHigh = onlyCoeff * (rhs - low);
+  if (needLow > needHigh) {
+    std::swap(needLow, needHigh);
+  }
+  // What the dropped variable can hold, which is what makes the row say nothing
+  // about the rest. Keyed on its own type: in a Boolean row the total is still
+  // an integer.
+  if (only->type().isvarbool()) {
+    return needLow >= 0 && needHigh <= 1;
+  }
+  IntSetVal* dom = eval_intset(env, only->ti()->domain());
+  return dom->min() <= needLow && dom->max() >= needHigh;
+}
+
+/// The terms of an integer linear row, as the declarations they resolve to with
+/// their coefficients, sorted so that two rows over the same terms give the
+/// same vector. Par terms are folded into \a rhs. False if the row is not of
+/// that shape, or if a variable appears twice.
+/// Fix \a vd to \a v, whichever of the two 0/1 spellings it is, and wake up
+/// everything that reads it. False if its domain rules the value out.
+bool fznso_fix_to(EnvI& env, VarDecl* vd, IntVal v, std::deque<unsigned int>& vardeclQueue,
+                  std::deque<Item*>& constraintQueue) {
+  GCLock lock;
+  if (vd->type().isvarbool()) {
+    if (v < 0 || v > 1) {
+      return false;
+    }
+    Expression* want = env.constants.boollit(v == 1);
+    if (vd->ti()->domain() != nullptr) {
+      return vd->ti()->domain() == want;
+    }
+    vd->ti()->domain(want);
+  } else {
+    if (vd->ti()->domain() != nullptr) {
+      IntSetVal* dom = eval_intset(env, vd->ti()->domain());
+      if (!dom->contains(v)) {
+        return false;
+      }
+      if (dom->min() == dom->max()) {
+        return true;
+      }
+    }
+    vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
+    vd->ti()->setComputedDomain(false);
+  }
+  vardeclQueue.push_back(env.varOccurrences.idx.get(vd->id()));
+  push_dependent_constraints(env, vd->id(), constraintQueue);
+  return true;
+}
+
+bool fznso_lin_terms(EnvI& env, Call* c, std::vector<std::pair<VarDecl*, IntVal>>& terms,
+                     IntVal& rhs) {
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  rhs = eval_int(env, c->arg(2));
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = (*alX)[i];
+    if (Expression::type(x).isPar()) {
+      rhs -= a * (Expression::type(x).isbool() ? IntVal(eval_bool(env, x) ? 1 : 0)
+                                               : eval_int(env, x));
+      continue;
+    }
+    auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(x));
+    if (vd == nullptr || a == 0) {
+      return false;
+    }
+    terms.emplace_back(vd, a);
+  }
+  std::sort(terms.begin(), terms.end(),
+            [](const std::pair<VarDecl*, IntVal>& l, const std::pair<VarDecl*, IntVal>& r) {
+              return l.first < r.first;
+            });
+  for (size_t i = 1; i < terms.size(); i++) {
+    if (terms[i].first == terms[i - 1].first) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool fznso_lin_le_entailed(EnvI& env, Call* c) {
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  IntVal most = 0;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = (*alX)[i];
+    if (Expression::type(x).isPar()) {
+      most += a * eval_int(env, x);
+      continue;
+    }
+    auto* id = Expression::dynamicCast<Id>(x);
+    if (id == nullptr || id->decl()->ti()->domain() == nullptr) {
+      return false;
+    }
+    IntSetVal* dom = eval_intset(env, id->decl()->ti()->domain());
+    if (dom->empty()) {
+      return false;
+    }
+    most += a > 0 ? a * dom->max() : a * dom->min();
+  }
+  return most <= eval_int(env, c->arg(2));
+}
+
+/// Recover the single-variable form of a linear constraint: the one variable
+/// term's coefficient, and what the fixed terms leave on the right.
+///
+/// A library that lowers comparisons onto the FZnSO registry states `int_le(x,
+/// k)` as `fzn_int_lin_le([1], [x], k)`, so the domain tightening below would
+/// otherwise never match one. That tightening is what seeds the simplification
+/// fixpoint — each one fixes a variable, which re-queues everything mentioning
+/// it — so losing it costs far more than the single constraint.
+///
+/// Fixed terms are folded into \a rhs here, because the flattener leaves them in
+/// the coefficient array. The coefficient is returned rather than required to
+/// be a unit: a big-M row whose operands have all become constants is exactly
+/// this shape with the big-M as the coefficient, and it decides its indicator.
+bool fznso_single_var_lin(EnvI& env, Call* c, Id*& ident, IntVal& coeff, IntVal& rhs) {
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  rhs = eval_int(env, c->arg(2));
+  ident = nullptr;
+  coeff = 0;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = (*alX)[i];
+    if (Expression::type(x).isPar()) {
+      rhs -= a * eval_int(env, x);
+    } else if (Expression::isa<Id>(x)) {
+      if (ident != nullptr || a == 0) {
+        return false;
+      }
+      ident = Expression::cast<Id>(x);
+      coeff = a;
+    } else {
+      return false;
+    }
+  }
+  return ident != nullptr;
+}
+
+/// `floor(a / b)` and `ceil(a / b)`, which C++ integer division is neither of
+/// when the signs differ.
+IntVal floor_div(IntVal a, IntVal b) {
+  IntVal q = a / b;
+  if (a % b != 0 && ((a < 0) != (b < 0))) {
+    q -= 1;
+  }
+  return q;
+}
+
+IntVal ceil_div(IntVal a, IntVal b) {
+  IntVal q = a / b;
+  if (a % b != 0 && ((a < 0) == (b < 0))) {
+    q += 1;
+  }
+  return q;
+}
+
+/// Replace \a ident's domain and retire the constraint it came from. Shared by
+/// the `int_le` case and the FZnSO spellings of it.
+void apply_tightened_domain(EnvI& env, Item* ii, Call* c, Id* ident, IntSetVal* newDomain,
+                            bool isTrue, std::vector<VarDecl*>& deletedVarDecls,
+                            std::deque<Item*>& constraintQueue) {
+  if (newDomain->empty()) {
+    env.fail();
+    return;
+  }
+  ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
+  ident->decl()->ti()->setComputedDomain(false);
+
+  if (newDomain->min() == newDomain->max()) {
+    push_dependent_constraints(env, ident, constraintQueue);
+  }
+  CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
+  top_down(cd, c);
+
+  if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+    vdi->e()->e(env.constants.boollit(isTrue));
+    push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+    if (env.varOccurrences.occurrences(vdi->e()) == 0) {
+      if (is_output(vdi->e())) {
+        VarDecl* vdOut =
+            (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]->cast<VarDeclI>()->e();
+        vdOut->e(env.constants.boollit(isTrue));
+      }
+      vdi->remove();
+    }
+  } else {
+    ii->remove();
+  }
+}
+
+/// Decide an FZnSO constraint all of whose arguments have become fixed.
+///
+/// Substitution replaces a fixed variable with its literal but does not
+/// re-evaluate what it appears in, and the registry's linear forms are calls
+/// rather than builtins, so nothing else here would look at them again. A model
+/// that fixes its variables late -- a set decomposed to bits, say -- otherwise
+/// reaches the solver as hundreds of rows over nothing but literals.
+///
+/// Returns false, leaving \a holds untouched, when the constraint is not one of
+/// these or still mentions a variable.
+/// Bound propagation over `fzn_bool_lin_le` / `fzn_bool_lin_eq`.
+///
+/// Every term is worth 0 or its coefficient, so the reachable range of the sum
+/// is exact, and a term whose only remaining value would take the sum outside
+/// the bound is decided. This is what `int_lin_le` over a `var 0..1` column
+/// gets from the machinery below; the registry states the same row over
+/// Booleans, where nothing else here would look at it.
+///
+/// A chain — `lex` is the clearest case — collapses entirely through this: one
+/// row fixes an indicator, which fixes its neighbour, and so on. Without it the
+/// whole chain reaches the solver even when both operands are constants.
+///
+/// Returns false, touching nothing, if this is not one of those or a term is
+/// not a literal. Otherwise \a fixings holds the decided Booleans, and
+/// \a infeasible says the row cannot hold at all, and \a entailed that it
+/// always does.
+bool fznso_bool_lin_fix(EnvI& env, Call* c, std::vector<std::pair<VarDecl*, bool>>& fixings,
+                        bool& infeasible, bool& entailed) {
+  // The registry spellings, plus the `bool_lin_*` builtins the rewrite layer
+  // leaves behind. `fzn_int_lin_*` is included because a row over `bool2int`
+  // terms is the same row over 0/1 columns, and an encoding's channel is
+  // written that way. The *builtin* `int_lin_*` are deliberately absent: they
+  // are MiniZinc's own and reach libraries this pass knows nothing about.
+  const auto& ids = env.constants.ids;
+  const bool isEq = c->id() == ids.fznso.bool_lin_eq || c->id() == ids.bool_.lin_eq ||
+                    c->id() == ids.fznso.int_lin_eq;
+  if (!isEq && c->id() != ids.fznso.bool_lin_le && c->id() != ids.bool_.lin_le &&
+      c->id() != ids.fznso.int_lin_le) {
+    return false;
+  }
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  IntVal rhs = eval_int(env, c->arg(2));
+  IntVal low = 0;   // least the sum can be
+  IntVal high = 0;  // most the sum can be
+  std::vector<std::pair<IntVal, VarDecl*>> free;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = (*alX)[i];
+    if (Expression::type(x).isPar()) {
+      IntVal v = Expression::type(x).isbool() ? IntVal(eval_bool(env, x) ? 1 : 0)
+                                              : eval_int(env, x);
+      if (v < 0 || v > 1) {
+        return false;
+      }
+      low += a * v;
+      high += a * v;
+      continue;
+    }
+    auto* id = Expression::dynamicCast<Id>(x);
+    if (id == nullptr) {
+      return false;
+    }
+    // The declaration the name *resolves* to: unifying two variables redirects
+    // one at its declaration rather than rewriting the rows, so reading the one
+    // the row names gives a stale domain, and fixing it leaves the survivor
+    // untouched.
+    auto* decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl(x));
+    if (decl == nullptr) {
+      return false;
+    }
+    // A `var 0..1` is a Boolean as far as this reasoning goes, which is how the
+    // same row survives being written over `bool2int` terms rather than over
+    // the Booleans themselves.
+    if (decl->type().isvarint()) {
+      if (decl->ti()->domain() == nullptr) {
+        return false;
+      }
+      IntSetVal* dom = eval_intset(env, decl->ti()->domain());
+      if (dom->empty()) {
+        return false;
+      }
+      if (dom->min() == dom->max()) {
+        low += a * dom->min();
+        high += a * dom->min();
+        continue;
+      }
+      if (dom->min() < 0 || dom->max() > 1) {
+        // A wider column cannot be fixed to a truth value, but what it can
+        // reach is what makes the indicator beside it decidable — and a big-M
+        // row is exactly one of each. Without this the row survives holding an
+        // indicator its own bound has already decided.
+        if (!dom->min().isFinite() || !dom->max().isFinite()) {
+          return false;
+        }
+        low += a > 0 ? a * dom->min() : a * dom->max();
+        high += a > 0 ? a * dom->max() : a * dom->min();
+        continue;
+      }
+    } else if (decl->ti()->domain() != nullptr) {
+      bool v = decl->ti()->domain() == env.constants.literalTrue;
+      if (v) {
+        low += a;
+        high += a;
+      }
+      continue;
+    }
+    low += std::min(IntVal(0), a);
+    high += std::max(IntVal(0), a);
+    free.emplace_back(a, decl);
+  }
+
+  infeasible = low > rhs || (isEq && high < rhs);
+  if (infeasible) {
+    return true;
+  }
+  // Every remaining assignment satisfies it, so it constrains nothing. Common
+  // once the fixed terms are folded out: a big-M row left holding one Boolean.
+  entailed = isEq ? (low == rhs && high == rhs) : high <= rhs;
+  if (entailed) {
+    return true;
+  }
+  for (const auto& t : free) {
+    IntVal a = t.first;
+    // What the rest of the sum can be once this term is set aside.
+    IntVal restLow = low - std::min(IntVal(0), a);
+    IntVal restHigh = high - std::max(IntVal(0), a);
+    // `<= rhs` rules out whichever value pushes the least achievable sum past
+    // it; `= rhs` additionally rules out one that keeps the most achievable sum
+    // short of it.
+    bool trueOut = restLow + a > rhs || (isEq && restHigh + a < rhs);
+    bool falseOut = restLow > rhs || (isEq && restHigh < rhs);
+    if (trueOut && falseOut) {
+      infeasible = true;
+      return true;
+    }
+    if (trueOut) {
+      fixings.emplace_back(t.second, false);
+    } else if (falseOut) {
+      fixings.emplace_back(t.second, true);
+    }
+  }
+  return true;
+}
+
+/// Drop the terms of an FZnSO linear row whose variables have become fixed,
+/// folding them into the right-hand side.
+///
+/// Substitution turns a fixed variable into a literal but leaves it in the
+/// array, so a row keeps its width however much of it is decided. That hides
+/// the row from everything that matches on shape — the single-variable
+/// tightening, the two-name unification — and hands the solver a column of
+/// zeroes. MiniZinc folds its own `int_lin_*` this way; the registry spellings
+/// are calls, so nothing else here does it for them.
+///
+/// Returns false when there is nothing to fold or the row is not one of these.
+bool fznso_fold_lin(EnvI& env, Call* c) {
+  const auto& ids = env.constants.ids.fznso;
+  const bool isBool = c->id() == ids.bool_lin_eq || c->id() == ids.bool_lin_le ||
+                      c->id() == env.constants.ids.bool_.lin_eq ||
+                      c->id() == env.constants.ids.bool_.lin_le;
+  const bool isInt = c->id() == ids.int_lin_eq || c->id() == ids.int_lin_le ||
+                     c->id() == ids.int_lin_ne || c->id() == env.constants.ids.int_.lin_eq ||
+                     c->id() == env.constants.ids.int_.lin_le ||
+                     c->id() == env.constants.ids.int_.lin_ne;
+  if (!isBool && !isInt) {
+    return false;
+  }
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  IntVal rhs = eval_int(env, c->arg(2));
+  std::vector<Expression*> coeffs;
+  std::vector<Expression*> vars;
+  std::vector<VarDecl*> decls;  // what each name in `vars` resolves to
+  bool folded = false;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    IntVal a = IntLit::v(Expression::cast<IntLit>((*alC)[i]));
+    Expression* x = (*alX)[i];
+    IntVal fixed = 0;
+    bool isFixed = false;
+    if (Expression::type(x).isPar()) {
+      fixed = isBool ? IntVal(eval_bool(env, x) ? 1 : 0) : eval_int(env, x);
+      isFixed = true;
+    } else if (auto* id = Expression::dynamicCast<Id>(x)) {
+      if (isBool) {
+        if (id->decl()->ti()->domain() != nullptr) {
+          fixed = id->decl()->ti()->domain() == env.constants.literalTrue ? 1 : 0;
+          isFixed = true;
+        }
+      } else if (id->decl()->ti()->domain() != nullptr) {
+        IntSetVal* dom = eval_intset(env, id->decl()->ti()->domain());
+        if (!dom->empty() && dom->min() == dom->max()) {
+          fixed = dom->min();
+          isFixed = true;
+        }
+      }
+    } else {
+      return false;
+    }
+    if (isFixed || a == 0) {
+      rhs -= a * fixed;
+      folded = true;
+      continue;
+    }
+    // Unifying two variables leaves the row holding one of them twice, and the
+    // two terms may well cancel: `x - y <= -1` becomes `0 <= -1`, which decides
+    // the indicator beside it. Left unmerged the row says nothing and survives.
+    //
+    // Compared by the declaration each name *resolves* to: unifying redirects a
+    // variable at its declaration rather than rewriting the rows that mention
+    // it, so the two names are still two names right up until the FlatZinc is
+    // written.
+    auto* xd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(x));
+    auto seen = xd == nullptr ? decls.end() : std::find(decls.begin(), decls.end(), xd);
+    if (seen != decls.end()) {
+      auto at = static_cast<size_t>(seen - decls.begin());
+      IntVal merged = IntLit::v(Expression::cast<IntLit>(coeffs[at])) + a;
+      folded = true;
+      if (merged == 0) {
+        coeffs.erase(coeffs.begin() + static_cast<long>(at));
+        vars.erase(vars.begin() + static_cast<long>(at));
+        decls.erase(decls.begin() + static_cast<long>(at));
+      } else {
+        GCLock lock;
+        coeffs[at] = IntLit::a(merged);
+      }
+      continue;
+    }
+    coeffs.push_back((*alC)[i]);
+    vars.push_back(x);
+    decls.push_back(xd);
+  }
+  if (!folded) {
+    return false;
+  }
+  GCLock lock;
+  auto* nc = new ArrayLit(Location().introduce(), coeffs);
+  nc->type(Type::parint(1));
+  auto* nv = new ArrayLit(Location().introduce(), vars);
+  Type vt = alX->type();
+  vt.dim(1);
+  nv->type(vt);
+  c->arg(0, nc);
+  c->arg(1, nv);
+  c->arg(2, IntLit::a(rhs));
+  return true;
+}
+
+/// A linear row whose terms are all fixed but whose right-hand side is a
+/// variable: `sum(coeffs .* xs) = y` says what `y` is.
+///
+/// The registry's `bool_lin_eq` takes a `var int` total, which is how `card` of
+/// a set arrives, so a set that has become fixed leaves its cardinality stated
+/// as a row over constants rather than as the number it is.
+///
+/// Returns false unless every term is fixed and the total is a free variable;
+/// otherwise \a ident is that variable and \a value what it must take.
+bool fznso_lin_defines_total(EnvI& env, Call* c, Id*& ident, IntVal& value) {
+  const auto& ids = env.constants.ids;
+  const bool isBool = c->id() == ids.fznso.bool_lin_eq || c->id() == ids.bool_.lin_eq;
+  if (!isBool && c->id() != ids.fznso.int_lin_eq && c->id() != ids.int_.lin_eq) {
+    return false;
+  }
+  ident = Expression::dynamicCast<Id>(c->arg(2));
+  if (ident == nullptr || ident->decl()->e() != nullptr) {
+    return false;
+  }
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size()) {
+    return false;
+  }
+  value = 0;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::isa<IntLit>((*alC)[i])) {
+      return false;
+    }
+    Expression* x = (*alX)[i];
+    IntVal v;
+    if (Expression::type(x).isPar()) {
+      v = isBool ? IntVal(eval_bool(env, x) ? 1 : 0) : eval_int(env, x);
+    } else if (auto* id = Expression::dynamicCast<Id>(x)) {
+      if (id->decl()->ti()->domain() == nullptr) {
+        return false;
+      }
+      if (isBool) {
+        v = id->decl()->ti()->domain() == env.constants.literalTrue ? 1 : 0;
+      } else {
+        IntSetVal* dom = eval_intset(env, id->decl()->ti()->domain());
+        if (dom->empty() || dom->min() != dom->max()) {
+          return false;
+        }
+        v = dom->min();
+      }
+    } else {
+      return false;
+    }
+    value += IntLit::v(Expression::cast<IntLit>((*alC)[i])) * v;
+  }
+  return true;
+}
+
+bool fznso_par_constraint(EnvI& env, Call* c, bool& holds) {
+  const auto& ids = env.constants.ids.fznso;
+  if (c->id() == ids.bool_clause || c->id() == env.constants.ids.bool_.clause) {
+    for (unsigned int side = 0; side < 2; side++) {
+      auto* al = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(side)));
+      if (al == nullptr) {
+        return false;
+      }
+      for (unsigned int i = 0; i < al->size(); i++) {
+        if (!Expression::type((*al)[i]).isPar()) {
+          return false;
+        }
+      }
+    }
+    holds = false;
+    for (unsigned int side = 0; side < 2 && !holds; side++) {
+      auto* al = Expression::cast<ArrayLit>(follow_id(c->arg(side)));
+      for (unsigned int i = 0; i < al->size(); i++) {
+        if (eval_bool(env, (*al)[i]) == (side == 0)) {
+          holds = true;
+          break;
+        }
+      }
+    }
+    return true;
+  }
+
+  const bool isInt = c->id() == ids.int_lin_eq || c->id() == ids.int_lin_le ||
+                     c->id() == ids.int_lin_ne || c->id() == ids.bool_lin_eq ||
+                     c->id() == ids.bool_lin_le ||
+                     c->id() == env.constants.ids.bool_.lin_eq ||
+                     c->id() == env.constants.ids.bool_.lin_le;
+  const bool isFloat = c->id() == ids.float_lin_eq || c->id() == ids.float_lin_le ||
+                       c->id() == ids.float_lin_lt;
+  if (!isInt && !isFloat) {
+    return false;
+  }
+  auto* alC = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(0)));
+  auto* alX = Expression::dynamicCast<ArrayLit>(follow_id(c->arg(1)));
+  if (alC == nullptr || alX == nullptr || alC->size() != alX->size() ||
+      !Expression::type(c->arg(2)).isPar()) {
+    return false;
+  }
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    if (!Expression::type((*alC)[i]).isPar() || !Expression::type((*alX)[i]).isPar()) {
+      return false;
+    }
+  }
+  const bool isBool = c->id() == ids.bool_lin_eq || c->id() == ids.bool_lin_le ||
+                      c->id() == env.constants.ids.bool_.lin_eq ||
+                      c->id() == env.constants.ids.bool_.lin_le;
+  if (isInt) {
+    IntVal sum = 0;
+    for (unsigned int i = 0; i < alX->size(); i++) {
+      IntVal x = isBool ? IntVal(eval_bool(env, (*alX)[i]) ? 1 : 0) : eval_int(env, (*alX)[i]);
+      sum += eval_int(env, (*alC)[i]) * x;
+    }
+    IntVal rhs = eval_int(env, c->arg(2));
+    if (c->id() == ids.int_lin_ne) {
+      holds = sum != rhs;
+    } else if (c->id() == ids.int_lin_le || c->id() == ids.bool_lin_le ||
+               c->id() == env.constants.ids.bool_.lin_le) {
+      holds = sum <= rhs;
+    } else {
+      holds = sum == rhs;
+    }
+    return true;
+  }
+  FloatVal sum = 0.0;
+  for (unsigned int i = 0; i < alX->size(); i++) {
+    sum += eval_float(env, (*alC)[i]) * eval_float(env, (*alX)[i]);
+  }
+  FloatVal rhs = eval_float(env, c->arg(2));
+  if (c->id() == ids.float_lin_eq) {
+    holds = sum == rhs;
+  } else if (c->id() == ids.float_lin_lt) {
+    holds = sum < rhs;
+  } else {
+    holds = sum <= rhs;
+  }
+  return true;
+}
+
 bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls,
                          std::deque<Item*>& constraintQueue,
                          std::deque<unsigned int>& vardeclQueue) {
@@ -1327,8 +3068,104 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
            vdi->e()->ti()->domain() == nullptr);
   }
   if (Call* c = Expression::dynamicCast<Call>(con_e)) {
+    bool parHolds = false;
+    if (is_true) {
+      Id* total = nullptr;
+      IntVal value = 0;
+      if (fznso_lin_defines_total(env, c, total, value)) {
+        IntSetVal* domain = total->decl()->ti()->domain() != nullptr
+                                ? eval_intset(env, total->decl()->ti()->domain())
+                                : IntSetVal::a(IntVal::minint(), IntVal::maxint());
+        IntSetVal* d = LinearTraits<IntLit>::limitDomain(BOT_LQ, domain, value);
+        if (!d->empty()) {
+          d = LinearTraits<IntLit>::limitDomain(BOT_GQ, d, value);
+        }
+        apply_tightened_domain(env, ii, c, total, d, is_true, deletedVarDecls, constraintQueue);
+        return true;
+      }
+    }
+    if (is_true && fznso_fold_lin(env, c)) {
+      constraintQueue.push_back(ii);
+      return true;
+    }
+    if (is_true) {
+      std::vector<std::pair<VarDecl*, bool>> fixings;
+      bool infeasible = false;
+      bool entailed = false;
+      if (fznso_bool_lin_fix(env, c, fixings, infeasible, entailed)) {
+        if (infeasible) {
+          env.fail();
+          return true;
+        }
+        if (entailed) {
+          CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
+          top_down(cd, c);
+          if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+            vdi->e()->e(env.constants.literalTrue);
+            push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+          } else {
+            ii->remove();
+          }
+          return true;
+        }
+        bool changed = false;
+        for (const auto& f : fixings) {
+          if (f.first->type().isvarint()) {
+            GCLock lock;
+            IntSetVal* was = f.first->ti()->domain() != nullptr
+                                 ? eval_intset(env, f.first->ti()->domain())
+                                 : nullptr;
+            IntVal v = f.second ? 1 : 0;
+            if (was != nullptr && (was->min() > v || was->max() < v)) {
+              env.fail();
+              return true;
+            }
+            if (was == nullptr || was->min() != was->max()) {
+              f.first->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
+              f.first->ti()->setComputedDomain(false);
+              vardeclQueue.push_back(env.varOccurrences.idx.get(f.first->id()));
+              push_dependent_constraints(env, f.first->id(), constraintQueue);
+              changed = true;
+            }
+            continue;
+          }
+          Expression* want = env.constants.boollit(f.second);
+          if (f.first->ti()->domain() == nullptr) {
+            f.first->ti()->domain(want);
+            vardeclQueue.push_back(env.varOccurrences.idx.get(f.first->id()));
+            push_dependent_constraints(env, f.first->id(), constraintQueue);
+            changed = true;
+          } else if (f.first->ti()->domain() != want) {
+            env.fail();
+            return true;
+          }
+        }
+        if (changed) {
+          return true;
+        }
+      }
+    }
+    if (fznso_par_constraint(env, c, parHolds)) {
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
+      top_down(cd, c);
+      if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+        if (vdi->e()->ti()->domain() != nullptr &&
+            vdi->e()->ti()->domain() != env.constants.boollit(parHolds)) {
+          env.fail();
+        }
+        vdi->e()->e(env.constants.boollit(parHolds));
+        push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+      } else {
+        if (!parHolds) {
+          env.fail();
+        }
+        ii->remove();
+      }
+      return true;
+    }
     if (c->id() == env.constants.ids.int_.eq || c->id() == env.constants.ids.bool_.eq ||
-        c->id() == env.constants.ids.float_.eq || c->id() == env.constants.ids.set_.eq) {
+        c->id() == env.constants.ids.float_.eq || c->id() == env.constants.ids.set_.eq ||
+        c->id() == env.constants.ids.fznso.set_eq) {
       if (is_true && Expression::isa<Id>(c->arg(0)) && Expression::isa<Id>(c->arg(1)) &&
           (Expression::cast<Id>(c->arg(0))->decl()->e() == nullptr ||
            Expression::cast<Id>(c->arg(1))->decl()->e() == nullptr)) {
@@ -1508,6 +3345,117 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           }
         }
       }
+    } else if (is_true && fznso_lin_defines_unread(env, c)) {
+      // It says what an unread variable is, and nothing else.
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
+      top_down(cd, c);
+      if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+        vdi->e()->e(env.constants.literalTrue);
+        push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+      } else {
+        ii->remove();
+      }
+    } else if (is_true &&
+               (c->id() == env.constants.ids.fznso.int_lin_le ||
+                c->id() == env.constants.ids.int_.lin_le) &&
+               fznso_lin_le_entailed(env, c)) {
+      // Every remaining assignment satisfies it, so it constrains nothing.
+      CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
+      top_down(cd, c);
+      if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
+        vdi->e()->e(env.constants.literalTrue);
+        push_dependent_constraints(env, vdi->e()->id(), constraintQueue);
+      } else {
+        ii->remove();
+      }
+    } else if ((is_true || is_false) && c->id() == env.constants.ids.fznso.int_lin_ne) {
+      Id* ident = nullptr;
+      IntVal coeff = 0;
+      IntVal rhs = 0;
+      if (fznso_single_var_lin(env, c, ident, coeff, rhs) &&
+          ident->decl()->ti()->domain() != nullptr) {
+        // `x != k` is not an interval, but a domain is not an interval either:
+        // it is the set the variable may still take, and one value can simply
+        // come out of it. Without this the row survives to the solver even
+        // where it decides the variable — and every reification against that
+        // variable was lowered while the value was still in its domain.
+        IntSetVal* domain = eval_intset(env, ident->decl()->ti()->domain());
+        IntSetVal* narrowed = domain;
+        if (rhs % coeff == 0) {
+          IntVal v = rhs / coeff;
+          if (is_true) {
+            std::vector<IntSetVal::Range> ranges;
+            for (unsigned int i = 0; i < domain->size(); i++) {
+              if (domain->min(i) < v) {
+                ranges.emplace_back(domain->min(i), std::min(domain->max(i), v - 1));
+              }
+              if (domain->max(i) > v) {
+                ranges.emplace_back(std::max(domain->min(i), v + 1), domain->max(i));
+              }
+            }
+            narrowed = IntSetVal::a(ranges);
+          } else {
+            narrowed = domain->contains(v) ? IntSetVal::a(v, v) : IntSetVal::a();
+          }
+        } else if (!is_true) {
+          // `coeff * x = rhs` has no integer solution, so `x != rhs/coeff`
+          // cannot be false.
+          narrowed = IntSetVal::a();
+        }
+        apply_tightened_domain(env, ii, c, ident, narrowed, is_true, deletedVarDecls,
+                               constraintQueue);
+      }
+    } else if ((is_true || is_false) &&
+               (c->id() == env.constants.ids.fznso.int_lin_le ||
+                c->id() == env.constants.ids.fznso.int_lin_eq ||
+                c->id() == env.constants.ids.int_.lin_le ||
+                c->id() == env.constants.ids.int_.lin_eq)) {
+      Id* ident = nullptr;
+      IntVal coeff = 0;
+      IntVal rhs = 0;
+      if (fznso_single_var_lin(env, c, ident, coeff, rhs)) {
+        // An unbounded variable still has a domain to narrow — it is just the
+        // whole of it. Without this, `x = 1` on a `var int` reaches the solver
+        // as a row, because there was no interval to intersect.
+        IntSetVal* domain = ident->decl()->ti()->domain() != nullptr
+                                ? eval_intset(env, ident->decl()->ti()->domain())
+                                : IntSetVal::a(IntVal::minint(), IntVal::maxint());
+        if (c->id() == env.constants.ids.fznso.int_lin_eq ||
+            c->id() == env.constants.ids.int_.lin_eq) {
+          // `x != k` is not an interval, so only the positive case narrows.
+          if (is_true) {
+            IntSetVal* d;
+            if (rhs % coeff != 0) {
+              d = IntSetVal::a();  // no integer solves `coeff * x = rhs`
+            } else {
+              IntVal v = rhs / coeff;
+              d = LinearTraits<IntLit>::limitDomain(BOT_LQ, domain, v);
+              if (!d->empty()) {
+                d = LinearTraits<IntLit>::limitDomain(BOT_GQ, d, v);
+              }
+            }
+            apply_tightened_domain(env, ii, c, ident, d, is_true, deletedVarDecls,
+                                   constraintQueue);
+          }
+        } else {
+          // `coeff * x <= rhs` when the constraint holds, `coeff * x >= rhs + 1`
+          // when it does not. Dividing through rounds towards whichever side
+          // keeps every integer the inequality allows.
+          IntVal side = is_true ? rhs : rhs + 1;
+          BinOpType bot;
+          IntVal bound;
+          if ((coeff > 0) == is_true) {
+            bot = BOT_LQ;
+            bound = floor_div(side, coeff);
+          } else {
+            bot = BOT_GQ;
+            bound = ceil_div(side, coeff);
+          }
+          apply_tightened_domain(env, ii, c, ident,
+                                 LinearTraits<IntLit>::limitDomain(bot, domain, bound), is_true,
+                                 deletedVarDecls, constraintQueue);
+        }
+      }
     } else if ((is_true || is_false) && c->id() == env.constants.ids.int_.le &&
                ((Expression::isa<Id>(c->arg(0)) && Expression::type(c->arg(1)).isPar()) ||
                 (Expression::isa<Id>(c->arg(1)) && Expression::type(c->arg(0)).isPar()))) {
@@ -1550,7 +3498,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           }
         }
       }
-    } else if (c->id() == env.constants.ids.bool2int) {
+    } else if (c->id() == env.constants.ids.bool2int ||
+               c->id() == env.constants.ids.fznso.bool2int) {
       auto* vdi = ii->dynamicCast<VarDeclI>();
       VarDecl* vd;
       bool fixed = false;
@@ -1645,6 +3594,14 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             vd->e(IntLit::a(v));
             vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
             vd->ti()->setComputedDomain(true);
+            // The conversion has said all it had to say, and `top_down` above
+            // has already stopped counting what it named. Leaving the item
+            // behind leaves a row naming a variable whose declaration is then
+            // removed for having no uses left.
+            if (auto* rowI = ii->dynamicCast<ConstraintI>()) {
+              rowI->e(env.constants.literalTrue);
+              rowI->remove();
+            }
             push_vardecl(env, env.varOccurrences.find(vd), vardeclQueue);
             push_dependent_constraints(env, vd->id(), constraintQueue);
           }
@@ -1961,7 +3918,9 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
       remove = false;
     }
   } else if (c->id() == env.constants.ids.forall || c->id() == env.constants.ids.exists ||
-             c->id() == env.constants.ids.clause) {
+             (c->id() == env.constants.ids.clause ||
+             c->id() == env.constants.ids.fznso.bool_clause ||
+             c->id() == env.constants.ids.bool_.clause)) {
     if (isTrue && c->id() == env.constants.ids.exists) {
       if (ci != nullptr) {
         toRemove.push_back(ci);
@@ -2100,7 +4059,9 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           remove = false;
         }
 
-      } else if (c->id() == env.constants.ids.clause) {
+      } else if ((c->id() == env.constants.ids.clause ||
+             c->id() == env.constants.ids.fznso.bool_clause ||
+             c->id() == env.constants.ids.bool_.clause)) {
         int posOrNeg = isTrue ? 0 : 1;
         auto* al = Expression::cast<ArrayLit>(follow_id(c->arg(posOrNeg)));
         auto* al_other = Expression::cast<ArrayLit>(follow_id(c->arg(1 - posOrNeg)));

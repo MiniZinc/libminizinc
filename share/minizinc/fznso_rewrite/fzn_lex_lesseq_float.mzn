@@ -1,0 +1,14 @@
+% Rewrites `std`'s spelling into the registry's. Nothing here is a solver's
+% concern — the constraint itself lives in `fznso_constraints/`.
+
+% `std` spells this `fzn_lex_lesseq_float`; the registry names it for the type it
+% takes and puts that first. The predicate a solver implements is the registry's;
+% the overload `std` calls forwards to it.
+
+include "fzn_float_lex_lesseq.mzn";
+
+predicate fzn_lex_lesseq_float(
+  array [int] of var float: xs :: promise_ctx_antitone,
+  array [int] of var float: ys :: promise_ctx_monotone,
+) =
+  fzn_float_lex_lesseq(array1d(xs), array1d(ys));

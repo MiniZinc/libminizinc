@@ -1486,6 +1486,41 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       }
     }
   }
+  if (best == nullptr && matched.empty()) {
+    // A relational predicate called as a function: `int_times(x, y)` standing
+    // for the `z` of `int_times(x, y, z)`, which `bind` completes by appending
+    // the result argument once the enclosing expression has somewhere to put
+    // it. The loop above takes a candidate with more parameters than the call
+    // has arguments only when the spare ones carry defaults, and a result
+    // parameter carries none; a call like this otherwise resolves through the
+    // shortcut on `c->decl()`, which a call the *flattener* introduced does not
+    // have. That leaves the case where the identifier has several overloads and
+    // the call is introduced — a solver declaring `int_times` natively is
+    // enough to reach it, and it used to raise "undeclared function or
+    // predicate".
+    //
+    // The call's own type is what the result parameter has to accept. This runs
+    // only where the lookup has already failed, so nothing that resolves today
+    // resolves differently.
+    for (const auto& i : v) {
+      if (i.t.size() != static_cast<std::size_t>(c->argCount()) + 1 ||
+          i.fi->paramCount() != i.t.size() || i.fi->param(c->argCount())->e() != nullptr ||
+          !env.isSubtype(c->type(), i.t[c->argCount()], strictEnums)) {
+        continue;
+      }
+      bool match = true;
+      for (unsigned int j = 0; j < c->argCount(); j++) {
+        if (!env.isSubtype(Expression::type(c->arg(j)), i.t[j], strictEnums)) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        best = &i;
+        break;
+      }
+    }
+  }
   if (best != nullptr) {
     const auto& i = *best;
     // Tie-break by parameter name among identically-typed candidates: if

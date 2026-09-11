@@ -80,6 +80,14 @@ Changes:
    picked up more than one path, the deepest one is now kept. Previously the
    textually longest was kept, which could prefer a shallower path that happened
    to run through longer file or function names (:bugref:`1029`).
+-  Add ``FZNSO`` as a solver input type, alongside ``FZN``, ``NL`` and ``MZN``.
+   A configuration with ``"inputType": "FZNSO"`` names a shared library, which
+   is loaded at run time and driven directly on the internal flat model, without
+   writing FlatZinc or starting a process. Such a solver declares its own
+   options, constraints and decision types across the interface, so its
+   configuration file needs nothing beyond the library, and it needs no MiniZinc
+   library to say which globals it supports. For more details please refer to
+   the documentation.
 
 Bug fixes:
 ^^^^^^^^^^

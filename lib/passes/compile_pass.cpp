@@ -156,6 +156,12 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   }
   new_env->envi().ignoreUnknownIds = _ignoreUnknownIds;
 
+  // `typecheck` drops the decompositions the solver replaces, which has to
+  // happen before it monomorphises: a body still present when the parameter-type
+  // copies are made would be copied into one.
+  new_env->envi().fopts.nativePredicates = _fopts.nativePredicates;
+  new_env->envi().fopts.verbose = _compflags.verbose;
+
   vector<TypeError> typeErrors;
   MiniZinc::typecheck(*new_env, new_env->model(), typeErrors,
                       _compflags.modelCheckOnly || _compflags.modelInterfaceOnly,
@@ -213,7 +219,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
       log << "Converting to old FlatZinc ...";
     }
     substitute_fixed_vars(*new_env);
-    oldflatzinc(*new_env);
+    oldflatzinc(*new_env, _compflags.optimize);
     if (_compflags.verbose) {
       log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
