@@ -10,7 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/optimize_constraints.hh>
 
 namespace MiniZinc {

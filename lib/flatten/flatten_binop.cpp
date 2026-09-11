@@ -13,7 +13,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/flat_exp.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/gc.hh>
 #include <minizinc/type.hh>
 #include <minizinc/values.hh>
@@ -217,142 +217,6 @@ bool is_reverse_map(EnvI& env, BinOp* e) {
   return Expression::ann(e).contains(env.constants.ann.is_reverse_map);
 }
 
-template <class Lit>
-void collect_linexps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression* exp,
-                     std::vector<typename LinearTraits<Lit>::Val>& coeffs,
-                     std::vector<KeepAlive>& vars, typename LinearTraits<Lit>::Val& constval) {
-  typedef typename LinearTraits<Lit>::Val Val;
-  struct StackItem {
-    Expression* e;
-    Val c;
-    StackItem(Expression* e0, Val c0) : e(e0), c(c0) {}
-  };
-  std::vector<StackItem> stack;
-  stack.push_back(StackItem(exp, in_c));
-  while (!stack.empty()) {
-    Expression* e = stack.back().e;
-    Val c = stack.back().c;
-    stack.pop_back();
-    if (e == nullptr) {
-      continue;
-    }
-    if (Expression::type(e).isPar()) {
-      constval += c * LinearTraits<Lit>::eval(env, e);
-    } else if (Lit* l = Expression::dynamicCast<Lit>(e)) {
-      constval += c * LinearTraits<Lit>::v(l);
-    } else if (auto* bo = Expression::dynamicCast<BinOp>(e)) {
-      if (bo->decl() != nullptr && bo->decl()->e() != nullptr) {
-        // This is an overloaded operator (e.g. on option types), so do not aggregate
-        coeffs.push_back(c);
-        vars.emplace_back(e);
-      } else {
-        switch (bo->op()) {
-          case BOT_PLUS:
-            stack.push_back(StackItem(bo->lhs(), c));
-            stack.push_back(StackItem(bo->rhs(), c));
-            break;
-          case BOT_MINUS:
-            stack.push_back(StackItem(bo->lhs(), c));
-            stack.push_back(StackItem(bo->rhs(), -c));
-            break;
-          case BOT_MULT:
-            if (Expression::type(bo->lhs()).isPar()) {
-              stack.push_back(StackItem(bo->rhs(), c * LinearTraits<Lit>::eval(env, bo->lhs())));
-            } else if (Expression::type(bo->rhs()).isPar()) {
-              stack.push_back(StackItem(bo->lhs(), c * LinearTraits<Lit>::eval(env, bo->rhs())));
-            } else {
-              coeffs.push_back(c);
-              vars.emplace_back(e);
-            }
-            break;
-          case BOT_DIV:
-            if (Expression::isa<FloatLit>(bo->rhs()) &&
-                FloatLit::v(Expression::cast<FloatLit>(bo->rhs())) == 1.0) {
-              stack.push_back(StackItem(bo->lhs(), c));
-            } else {
-              coeffs.push_back(c);
-              vars.emplace_back(e);
-            }
-            break;
-          case BOT_IDIV:
-            if (Expression::isa<IntLit>(bo->rhs()) &&
-                IntLit::v(Expression::cast<IntLit>(bo->rhs())) == 1) {
-              stack.push_back(StackItem(bo->lhs(), c));
-            } else {
-              coeffs.push_back(c);
-              vars.emplace_back(e);
-            }
-            break;
-          default:
-            coeffs.push_back(c);
-            vars.emplace_back(e);
-            break;
-        }
-      }
-      //      } else if (Call* call = e->dynamicCast<Call>()) {
-      //        /// TODO! Handle sum, lin_exp (maybe not that important?)
-    } else {
-      coeffs.push_back(c);
-      vars.emplace_back(e);
-    }
-  }
-}
-
-template <class Lit>
-KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
-                   typename LinearTraits<Lit>::Val c1, Expression* e0, Expression* e1) {
-  typedef typename LinearTraits<Lit>::Val Val;
-  GCLock lock;
-
-  std::vector<Val> coeffs;
-  std::vector<KeepAlive> vars;
-  Val constval = 0;
-  collect_linexps<Lit>(env, c0, e0, coeffs, vars, constval);
-  collect_linexps<Lit>(env, c1, e1, coeffs, vars, constval);
-  simplify_lin<Lit>(coeffs, vars, constval);
-  KeepAlive ka;
-  if (coeffs.empty()) {
-    ka = LinearTraits<Lit>::newLit(constval);
-  } else if (coeffs.size() == 1 && coeffs[0] == 1 && constval == 0) {
-    ka = vars[0];
-  } else {
-    std::vector<Expression*> coeffs_e(coeffs.size());
-    for (auto i = static_cast<unsigned int>(coeffs.size()); i--;) {
-      if (!LinearTraits<Lit>::finite(coeffs[i])) {
-        throw FlatteningError(
-            env, Expression::loc(e0),
-            "unbounded coefficient in linear expression."
-            " Make sure variables involved in non-linear/logical expressions have finite bounds"
-            " in their definition or via constraints");
-      }
-      coeffs_e[i] = LinearTraits<Lit>::newLit(coeffs[i]);
-    }
-    std::vector<Expression*> vars_e(vars.size());
-    for (auto i = static_cast<unsigned int>(vars.size()); i--;) {
-      vars_e[i] = vars[i]();
-    }
-
-    std::vector<Expression*> args(3);
-    args[0] = new ArrayLit(Expression::loc(e0), coeffs_e);
-    Type t = Type::arrType(env, Type::partop(1), Expression::type(coeffs_e[0]));
-    Expression::type(args[0], t);
-    args[1] = new ArrayLit(Expression::loc(e0), vars_e);
-    Type tt = Type::arrType(env, Type::partop(1), Expression::type(vars_e[0]));
-    Expression::type(args[1], tt);
-    args[2] = LinearTraits<Lit>::newLit(constval);
-    Call* c = Call::a(Expression::loc(e0).introduce(), env.constants.ids.lin_exp, args);
-    add_path_annotation(env, c);
-    c->decl(env.model->matchFn(env, c, false));
-    if (c->decl() == nullptr) {
-      throw FlatteningError(env, Expression::loc(c), "cannot find matching declaration");
-    }
-    c->type(c->decl()->rtype(env, args, nullptr, false));
-    ka = c;
-  }
-  assert(ka());
-  return ka;
-}
-
 Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
   assert(bot == BOT_AND || bot == BOT_OR);
   BinOpType negbot = (bot == BOT_AND ? BOT_OR : BOT_AND);
@@ -435,438 +299,6 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
   t.cv(bo->type().cv());
   c->type(t);
   return c;
-}
-
-/// Return a lin_exp or id if \a e is a lin_exp or id
-template <class Lit>
-Expression* get_linexp(EnvI& env, Expression* e) {
-  Expression* prev_e = nullptr;
-  for (;;) {
-    if (e && Expression::eid(e) == Expression::E_ID && e != env.constants.absent) {
-      if (Expression::cast<Id>(e)->decl()->e()) {
-        prev_e = e;
-        e = Expression::cast<Id>(e)->decl()->e();
-      } else {
-        break;
-      }
-    } else {
-      break;
-    }
-  }
-  if (e && (Expression::isa<Id>(e) || Expression::isa<Lit>(e) ||
-            (Expression::isa<Call>(e) &&
-             Expression::cast<Call>(e)->id() == env.constants.ids.lin_exp))) {
-    return e;
-  }
-  if (prev_e != nullptr) {
-    return prev_e;
-  }
-  return nullptr;
-}
-
-template <class Lit>
-void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE& ret,
-                          Expression* le0, Expression* le1, BinOpType& bot, bool doubleNeg,
-                          std::vector<EE>& ees, std::vector<KeepAlive>& args, ASTString& callid) {
-  typedef typename LinearTraits<Lit>::Val Val;
-  std::vector<Val> coeffv;
-  std::vector<KeepAlive> alv;
-  Val d = 0;
-  Expression* le[2] = {le0, le1};
-
-  // Assign linear expression directly if one side is an Id.
-  Id* assignTo = nullptr;
-  if (bot == BOT_EQ && ctx.b == C_ROOT) {
-    if (Expression::isa<Id>(le0)) {
-      assignTo = Expression::cast<Id>(le0);
-    } else if (Expression::isa<Id>(le1)) {
-      assignTo = Expression::cast<Id>(le1);
-    }
-  } else {
-    if (Expression::type(le0).isPar()) {
-      Val v0 = LinearTraits<Lit>::eval(env, le0);
-      if (!v0.isFinite()) {
-        bool result;
-        switch (bot) {
-          case BOT_NQ:
-            result = true;
-            break;
-          case BOT_LE:
-          case BOT_LQ:
-            result = v0.isMinusInfinity();
-            break;
-          case BOT_GR:
-          case BOT_GQ:
-            result = v0.isPlusInfinity();
-            break;
-          case BOT_EQ:
-            result = false;
-            break;
-          default:
-            assert(false);
-        }
-        if (doubleNeg) {
-          result = !result;
-        }
-        ees[2].b = env.constants.boollit(result);
-        ret.r = conj(env, r, ctx, ees);
-        return;
-      }
-    } else if (Expression::type(le1).isPar()) {
-      Val v1 = LinearTraits<Lit>::eval(env, le1);
-      if (!v1.isFinite()) {
-        bool result;
-        switch (bot) {
-          case BOT_NQ:
-            result = true;
-            break;
-          case BOT_LE:
-          case BOT_LQ:
-            result = v1.isPlusInfinity();
-            break;
-          case BOT_GR:
-          case BOT_GQ:
-            result = v1.isMinusInfinity();
-            break;
-          case BOT_EQ:
-            result = false;
-            break;
-          default:
-            assert(false);
-        }
-        if (doubleNeg) {
-          result = !result;
-        }
-        ees[2].b = env.constants.boollit(result);
-        ret.r = conj(env, r, ctx, ees);
-        return;
-      }
-    }
-  }
-
-  for (unsigned int i = 0; i < 2; i++) {
-    Val sign = (i == 0 ? 1 : -1);
-    if (Lit* l = Expression::dynamicCast<Lit>(le[i])) {
-      try {
-        d += sign * LinearTraits<Lit>::v(l);
-      } catch (ArithmeticError& e) {
-        throw EvalError(env, Expression::loc(l), e.msg());
-      }
-    } else if (Expression::isa<Id>(le[i])) {
-      coeffv.push_back(sign);
-      alv.emplace_back(le[i]);
-    } else if (Call* sc = Expression::dynamicCast<Call>(le[i])) {
-      GCLock lock;
-      ArrayLit* sc_coeff = eval_array_lit(env, sc->arg(0));
-      ArrayLit* sc_al = eval_array_lit(env, sc->arg(1));
-      try {
-        d += sign * LinearTraits<Lit>::eval(env, sc->arg(2));
-        for (unsigned int j = 0; j < sc_coeff->size(); j++) {
-          coeffv.push_back(sign * LinearTraits<Lit>::eval(env, (*sc_coeff)[j]));
-          alv.emplace_back((*sc_al)[j]);
-        }
-      } catch (ArithmeticError& e) {
-        throw EvalError(env, Expression::loc(sc), e.msg());
-      }
-
-    } else {
-      throw EvalError(env, Expression::loc(le[i]),
-                      "Internal error, unexpected expression inside linear expression");
-    }
-  }
-  simplify_lin<Lit>(coeffv, alv, d);
-  if (coeffv.empty()) {
-    bool result;
-    switch (bot) {
-      case BOT_LE:
-        result = (0 < -d);
-        break;
-      case BOT_LQ:
-        result = (0 <= -d);
-        break;
-      case BOT_GR:
-        result = (0 > -d);
-        break;
-      case BOT_GQ:
-        result = (0 >= -d);
-        break;
-      case BOT_EQ:
-        result = (0 == -d);
-        break;
-      case BOT_NQ:
-        result = (0 != -d);
-        break;
-      default:
-        assert(false);
-        break;
-    }
-    if (doubleNeg) {
-      result = !result;
-    }
-    ees[2].b = env.constants.boollit(result);
-    ret.r = conj(env, r, ctx, ees);
-    return;
-  }
-  if (coeffv.size() == 1 && abs(coeffv[0]) == 1) {
-    if (coeffv[0] == -1) {
-      switch (bot) {
-        case BOT_LE:
-          bot = BOT_GR;
-          break;
-        case BOT_LQ:
-          bot = BOT_GQ;
-          break;
-        case BOT_GR:
-          bot = BOT_LE;
-          break;
-        case BOT_GQ:
-          bot = BOT_LQ;
-          break;
-        default:
-          break;
-      }
-    } else {
-      d = -d;
-    }
-    typename LinearTraits<Lit>::Bounds ib = LinearTraits<Lit>::computeBounds(env, alv[0]());
-    if (ib.valid) {
-      bool failed = false;
-      bool subsumed = false;
-      switch (bot) {
-        case BOT_LE:
-          subsumed = ib.u < d;
-          failed = ib.l >= d;
-          break;
-        case BOT_LQ:
-          subsumed = ib.u <= d;
-          failed = ib.l > d;
-          break;
-        case BOT_GR:
-          subsumed = ib.l > d;
-          failed = ib.u <= d;
-          break;
-        case BOT_GQ:
-          subsumed = ib.l >= d;
-          failed = ib.u < d;
-          break;
-        case BOT_EQ:
-          subsumed = ib.l == d && ib.u == d;
-          failed = ib.u < d || ib.l > d;
-          break;
-        case BOT_NQ:
-          subsumed = ib.u < d || ib.l > d;
-          failed = ib.l == d && ib.u == d;
-          break;
-        default:
-          break;
-      }
-      if (doubleNeg) {
-        std::swap(subsumed, failed);
-      }
-      if (subsumed) {
-        ees[2].b = env.constants.literalTrue;
-        ret.r = conj(env, r, ctx, ees);
-        return;
-      }
-      if (failed) {
-        ees[2].b = env.constants.literalFalse;
-        ret.r = conj(env, r, ctx, ees);
-        return;
-      }
-    }
-
-    if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]()) && bot == BOT_EQ) {
-      GCLock lock;
-      VarDecl* vd = Expression::cast<Id>(alv[0]())->decl();
-      if (vd->ti()->domain()) {
-        typename LinearTraits<Lit>::Domain domain =
-            LinearTraits<Lit>::evalDomain(env, vd->ti()->domain());
-        if (LinearTraits<Lit>::domainContains(domain, d)) {
-          if (!LinearTraits<Lit>::domainEquals(domain, d)) {
-            set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(d), false);
-          }
-          ret.r = bind(env, ctx, r, env.constants.literalTrue);
-        } else {
-          ret.r = bind(env, ctx, r, env.constants.literalFalse);
-        }
-      } else {
-        set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(d), false);
-        ret.r = bind(env, ctx, r, env.constants.literalTrue);
-      }
-    } else {
-      GCLock lock;
-      Expression* e0;
-      Expression* e1;
-      BinOpType old_bot = bot;
-      Val old_d = d;
-      switch (bot) {
-        case BOT_LE:
-          e0 = alv[0]();
-          if (Expression::type(e0).isint()) {
-            d--;
-            bot = BOT_LQ;
-          }
-          e1 = LinearTraits<Lit>::newLit(d);
-          break;
-        case BOT_GR:
-          e1 = alv[0]();
-          if (Expression::type(e1).isint()) {
-            d++;
-            bot = BOT_LQ;
-          } else {
-            bot = BOT_LE;
-          }
-          e0 = LinearTraits<Lit>::newLit(d);
-          break;
-        case BOT_GQ:
-          e0 = LinearTraits<Lit>::newLit(d);
-          e1 = alv[0]();
-          bot = BOT_LQ;
-          break;
-        default:
-          e0 = alv[0]();
-          e1 = LinearTraits<Lit>::newLit(d);
-      }
-      if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]()) &&
-          !env.hasReverseMapper(Expression::cast<Id>(alv[0]())) &&
-          Expression::cast<Id>(alv[0]())->decl()->ti()->domain()) {
-        VarDecl* vd = Expression::cast<Id>(alv[0]())->decl();
-        typename LinearTraits<Lit>::Domain domain =
-            LinearTraits<Lit>::evalDomain(env, vd->ti()->domain());
-        typename LinearTraits<Lit>::Domain ndomain =
-            LinearTraits<Lit>::limitDomain(old_bot, domain, old_d);
-        if (domain && ndomain) {
-          if (LinearTraits<Lit>::domainEmpty(ndomain)) {
-            ret.r = bind(env, ctx, r, env.constants.literalFalse);
-            return;
-          }
-          if (!LinearTraits<Lit>::domainEquals(domain, ndomain)) {
-            ret.r = bind(env, ctx, r, env.constants.literalTrue);
-            set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(ndomain), false);
-
-            if (r == env.constants.varTrue) {
-              auto* bo = new BinOp(Location().introduce(), e0, bot, e1);
-              bo->type(Type::varbool());
-              std::vector<Expression*> boargs(2);
-              boargs[0] = e0;
-              boargs[1] = e1;
-              Call* c = Call::a(Location(), op_to_builtin(env, e0, e1, bot), boargs);
-              c->type(Type::varbool());
-              c->decl(env.model->matchFn(env, c, false));
-              auto it = env.cseMapFind(c);
-              if (it != env.cseMapEnd()) {
-                if (Id* ident = Expression::dynamicCast<Id>(it->second.r)) {
-                  bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
-                  it->second.r = env.constants.literalTrue;
-                }
-                if (Id* ident = Expression::dynamicCast<Id>(it->second.b)) {
-                  bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
-                  it->second.b = env.constants.literalTrue;
-                }
-              }
-            }
-          }
-          return;
-        }
-      }
-      args.emplace_back(e0);
-      args.emplace_back(e1);
-    }
-  } else if (bot == BOT_EQ && coeffv.size() == 2 && coeffv[0] == -coeffv[1] && d == 0) {
-    Id* id0 = Expression::cast<Id>(alv[0]());
-    Id* id1 = Expression::cast<Id>(alv[1]());
-    if (ctx.b == C_ROOT && r == env.constants.varTrue &&
-        (id0->decl()->e() == nullptr || id1->decl()->e() == nullptr)) {
-      if (id0->decl()->e()) {
-        (void)bind(env, ctx, id1->decl(), id0);
-      } else {
-        (void)bind(env, ctx, id0->decl(), id1);
-      }
-    } else {
-      callid = LinearTraits<Lit>::id_eq();
-      args.emplace_back(alv[0]());
-      args.emplace_back(alv[1]());
-    }
-  } else {
-    GCLock lock;
-    if (assignTo != nullptr) {
-      Val resultCoeff = 0;
-      typename LinearTraits<Lit>::Bounds bounds(d, d, true);
-      for (auto i = static_cast<unsigned int>(coeffv.size()); i--;) {
-        if (alv[i]() == assignTo) {
-          resultCoeff = coeffv[i];
-          continue;
-        }
-        typename LinearTraits<Lit>::Bounds bound = LinearTraits<Lit>::computeBounds(env, alv[i]());
-
-        if (bound.valid && LinearTraits<Lit>::finite(bound)) {
-          if (coeffv[i] > 0) {
-            bounds.l += coeffv[i] * bound.l;
-            bounds.u += coeffv[i] * bound.u;
-          } else {
-            bounds.l += coeffv[i] * bound.u;
-            bounds.u += coeffv[i] * bound.l;
-          }
-        } else {
-          bounds.valid = false;
-          break;
-        }
-      }
-      if (bounds.valid && resultCoeff != 0) {
-        if (resultCoeff < 0) {
-          bounds.l = LinearTraits<Lit>::floorDiv(bounds.l, -resultCoeff);
-          bounds.u = LinearTraits<Lit>::ceilDiv(bounds.u, -resultCoeff);
-        } else {
-          Val bl = bounds.l;
-          bounds.l = LinearTraits<Lit>::ceilDiv(bounds.u, -resultCoeff);
-          bounds.u = LinearTraits<Lit>::floorDiv(bl, -resultCoeff);
-        }
-        VarDecl* vd = assignTo->decl();
-        if (vd->ti()->domain()) {
-          typename LinearTraits<Lit>::Domain domain =
-              LinearTraits<Lit>::evalDomain(env, vd->ti()->domain());
-          if (LinearTraits<Lit>::domainIntersects(domain, bounds.l, bounds.u)) {
-            typename LinearTraits<Lit>::Domain new_domain =
-                LinearTraits<Lit>::intersectDomain(domain, bounds.l, bounds.u);
-            if (!LinearTraits<Lit>::domainEquals(domain, new_domain)) {
-              set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(new_domain), false);
-            }
-          } else {
-            ret.r = bind(env, ctx, r, env.constants.literalFalse);
-          }
-        } else {
-          // Can only set as computed if there was no other RHS
-          bool is_computed = vd->e() == nullptr;
-          set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(bounds.l, bounds.u),
-                              is_computed);
-        }
-      }
-    }
-
-    int coeff_sign;
-    LinearTraits<Lit>::constructLinBuiltin(env, bot, callid, coeff_sign, d);
-    std::vector<Expression*> coeff_ev(coeffv.size());
-    for (auto i = static_cast<unsigned int>(coeff_ev.size()); i--;) {
-      coeff_ev[i] = LinearTraits<Lit>::newLit(coeff_sign * coeffv[i]);
-    }
-    auto* ncoeff = new ArrayLit(Location().introduce(), coeff_ev);
-    Type t = Type::arrType(env, Type::partop(1), Expression::type(coeff_ev[0]));
-    ncoeff->type(t);
-    args.emplace_back(ncoeff);
-    std::vector<Expression*> alv_e(alv.size());
-    Type tt = Type::arrType(env, Type::partop(1), Expression::type(alv[0]()));
-    for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
-      if (Expression::type(alv[i]()).isvar()) {
-        tt.mkVar(env);
-      }
-      alv_e[i] = alv[i]();
-    }
-    auto* nal = new ArrayLit(Location().introduce(), alv_e);
-    nal->type(tt);
-    args.emplace_back(nal);
-    Lit* il = LinearTraits<Lit>::newLit(-d);
-    args.push_back(il);
-  }
 }
 
 EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarDecl* b);
@@ -1551,6 +983,10 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   Expression* le0 = nullptr;
   Expression* le1 = nullptr;
 
+  // A root equality supplies its variable's name.
+  const bool isDefinition = bot == BOT_EQ && ctx.b == C_ROOT &&
+                            (Expression::isa<Id>(e0.r()) || Expression::isa<Id>(e1.r()));
+
   if (bot == BOT_IN) {
     if (Expression::type(e0.r()).isint() && !Expression::type(e0.r()).isOpt() &&
         Expression::type(e1.r()).isPar() && Expression::type(e1.r()).isSet()) {
@@ -1575,20 +1011,50 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     }
     // Otherwise translate to set_in as normal
   } else if (Expression::type(e0.r()).isint() && !Expression::type(e0.r()).isOpt()) {
-    le0 = get_linexp<IntLit>(env, e0.r());
+    le0 = get_linexp<IntLit>(env, e0.r(), isDefinition);
   } else if (Expression::type(e0.r()).isfloat() && !Expression::type(e0.r()).isOpt()) {
-    le0 = get_linexp<FloatLit>(env, e0.r());
+    le0 = get_linexp<FloatLit>(env, e0.r(), isDefinition);
   }
   if (le0 != nullptr) {
     if (Expression::type(e0.r()).isint() && Expression::type(e1.r()).isint() &&
         !Expression::type(e1.r()).isOpt()) {
-      le1 = get_linexp<IntLit>(env, e1.r());
+      le1 = get_linexp<IntLit>(env, e1.r(), isDefinition);
     } else if (Expression::type(e0.r()).isfloat() && Expression::type(e1.r()).isfloat() &&
                !Expression::type(e1.r()).isOpt()) {
-      le1 = get_linexp<FloatLit>(env, e1.r());
+      le1 = get_linexp<FloatLit>(env, e1.r(), isDefinition);
     }
   }
-  if (le1 != nullptr) {
+  // Defer aggregation so repeated expressions retain the same CSE shape.
+  auto deferrable = [&](Expression* le) {
+    if (Id* ident = Expression::dynamicCast<Id>(le)) {
+      return linear_barrier(env, ident->decl());
+    }
+    return is_linear_sum(env, le);
+  };
+  if (le1 != nullptr && env.deferLinearRelations && !isDefinition &&
+      (deferrable(le0) || deferrable(le1))) {
+    GCLock lock;
+    Expression* lhs = is_linear_sum(env, le0) ? bind(env, Ctx(), nullptr, le0)() : le0;
+    Expression* rhs = is_linear_sum(env, le1) ? bind(env, Ctx(), nullptr, le1)() : le1;
+    // The builtins only have < and <=, so > and >= swap their operands.
+    if (bot == BOT_GR || bot == BOT_GQ) {
+      std::swap(lhs, rhs);
+      bot = bot == BOT_GR ? BOT_LE : BOT_LQ;
+    }
+    // Integers only use <=: against a constant, a strict comparison moves the
+    // constant by one. Between two variables, the rebuild makes it an int_lin_le.
+    if (bot == BOT_LE && Expression::type(lhs).isint()) {
+      if (Expression::type(rhs).isPar()) {
+        rhs = IntLit::a(eval_int(env, rhs) - 1);
+        bot = BOT_LQ;
+      } else if (Expression::type(lhs).isPar()) {
+        lhs = IntLit::a(eval_int(env, lhs) + 1);
+        bot = BOT_LQ;
+      }
+    }
+    args.emplace_back(lhs);
+    args.emplace_back(rhs);
+  } else if (le1 != nullptr) {
     if (Expression::type(e0.r()).isint()) {
       flatten_linexp_binop<IntLit>(env, ctx, r, b, ret, le0, le1, bot, doubleNeg, ees, args,
                                    callid);

@@ -32,6 +32,7 @@ add_library(mzn
   lib/flatten/flatten_id.cpp
   lib/flatten/flatten_ite.cpp
   lib/flatten/flatten_let.cpp
+  lib/flatten/flatten_linear.cpp
   lib/flatten/flatten_par.cpp
   lib/flatten/flatten_setlit.cpp
   lib/flatten/flatten_unop.cpp
@@ -89,6 +90,7 @@ add_library(mzn
   include/minizinc/flat_exp.hh
   include/minizinc/flatten.hh
   include/minizinc/flatten_internal.hh
+  include/minizinc/flatten_linear.hh
   include/minizinc/flattener.hh
   include/minizinc/gc.hh
   include/minizinc/hash.hh
