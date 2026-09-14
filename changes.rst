@@ -13,6 +13,11 @@ Changes:
 ^^^^^^^^
 -  Warn when ``op`` is used as an identifier or ``==`` is used where assignment
    syntax requires ``=``. These forms are not accepted by the new parser.
+-  Parse files selected by ``MZN_TREE_SITTER_PARSER`` directly with
+   `tree-feller <https://github.com/Dekker1/tree-feller>`__, using the
+   tree-sitter runtime only to report syntax errors in models.
+-  Download the tree-sitter runtime when configuring instead of vendoring it,
+   which raises the CMake required to build MiniZinc to 3.20.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
 

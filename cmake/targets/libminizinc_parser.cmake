@@ -98,8 +98,36 @@ if(NOT GECODE_FOUND)
   set(BISON_RegExParser_OUTPUTS "")
 endif()
 
-# The tree-sitter grammar is generated ahead of time and vendored; the CLI is
-# not a build dependency. Guard against editing grammar.js without regenerating.
+# -------------------------------------------------------------------------------------------------------------------
+## Tree-sitter runtime and tree-feller
+
+# These versions share tree-sitter grammar ABI 15.
+include(FetchContent)
+
+# Link the tree-sitter objects statically.
+set(mzn_build_shared_libs "${BUILD_SHARED_LIBS}")
+set(BUILD_SHARED_LIBS OFF)
+
+# Give extracted files the extraction time, so a changed URL rebuilds them.
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
+FetchContent_Declare(tree-sitter
+  URL https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v0.26.12.tar.gz
+  URL_HASH SHA256=428e2b182fe38eddc100d8bd851e47c96921a69281b66abafc25ba4b0aaeeeab)
+FetchContent_Declare(tree_feller
+  URL https://github.com/Dekker1/tree-feller/archive/refs/tags/v0.1.1.tar.gz
+  URL_HASH SHA256=4a6b463da95ec6a9a1014732df6e77dabdb5e20c95cd9005107d1d4596e92cf9)
+FetchContent_MakeAvailable(tree-sitter tree_feller)
+
+set(BUILD_SHARED_LIBS "${mzn_build_shared_libs}")
+
+# libmzn.cmake embeds these objects; exclude their install rules.
+set_property(DIRECTORY "${tree-sitter_SOURCE_DIR}" PROPERTY EXCLUDE_FROM_ALL TRUE)
+set_property(DIRECTORY "${tree_feller_SOURCE_DIR}" PROPERTY EXCLUDE_FROM_ALL TRUE)
+
+# Fail if a vendored grammar was edited without regenerating its parser.
 foreach(ts_grammar minizinc datazinc)
   MD5(${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_${ts_grammar}/grammar.js ts_grammar_js_md5)
   if(NOT "${ts_grammar_js_md5}" STREQUAL "${ts_${ts_grammar}_grammar_js_md5_cached}")
@@ -113,7 +141,6 @@ foreach(ts_grammar minizinc datazinc)
 endforeach()
 
 add_library(minizinc_parser OBJECT
-  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter/lib.c
   ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_minizinc.c
   ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter_datazinc.c
   ${BISON_MZNParser_OUTPUTS}
@@ -127,15 +154,8 @@ set_target_properties(minizinc_parser PROPERTIES
   C_STANDARD 11
   C_STANDARD_REQUIRED ON
 )
-target_include_directories(minizinc_parser PRIVATE
-  # `tree_sitter/api.h`, the runtime's public header
-  ${PROJECT_SOURCE_DIR}/include/minizinc/_thirdparty
-  # `tree_sitter/parser.h`, which the generated grammar includes
-  ${PROJECT_SOURCE_DIR}/lib/thirdparty
-  # the runtime's own internal includes, notably `unicode/*` -- without this
-  # they resolve against the system ICU headers instead of the vendored ones
-  ${PROJECT_SOURCE_DIR}/lib/thirdparty/tree_sitter
-)
+# Supply tree_sitter/parser.h to the generated grammars.
+target_link_libraries(minizinc_parser PRIVATE tree_feller::parser_header)
 
 if(GECODE_FOUND)
   target_include_directories(minizinc_parser PRIVATE "${GECODE_INCLUDE_DIRS}")

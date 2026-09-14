@@ -238,13 +238,11 @@ public:
   std::string canonicalFilename(const std::string& f) const;
 };
 
-/// Parse `pp.buf` with the tree-sitter grammar, adding the items to `pp.model`.
-/// Syntax errors accumulate in `pp.syntaxErrors`; this does not throw for them.
+/// Parse `pp.buf` with tree-feller using tree-sitter grammar tables.
+/// Syntax errors accumulate in `pp.syntaxErrors`.
 void parse_tree_sitter(ParserState& pp);
 
-/// Selects the tree-sitter parser over the bison one. Initialised from the
-/// MZN_TREE_SITTER_PARSER environment variable; settable so that the
-/// differential test harness can parse the same file both ways.
+/// Selects the tree-sitter grammars instead of bison.
 /// Temporary: goes away with the bison parser.
 extern bool use_tree_sitter_parser;
 

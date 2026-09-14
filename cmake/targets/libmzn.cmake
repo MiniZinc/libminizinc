@@ -50,7 +50,8 @@ add_library(mzn
   lib/param_config.cpp
   lib/parser.cpp
   lib/parser.yxx
-  lib/parser_ts.cpp
+  lib/parser_ts_dzn.cpp
+  lib/parser_ts_mzn.cpp
   lib/passes/compile_pass.cpp
   lib/pathfileprinter.cpp
   lib/prettyprinter.cpp
@@ -114,7 +115,6 @@ add_library(mzn
   include/minizinc/statistics.hh
   include/minizinc/support/regex.hh
   include/minizinc/_thirdparty/miniz.h
-  include/minizinc/_thirdparty/tree_sitter/api.h
   include/minizinc/timer.hh
   include/minizinc/type.hh
   include/minizinc/typecheck.hh
@@ -123,6 +123,8 @@ add_library(mzn
   include/minizinc/warning.hh
 
   $<TARGET_OBJECTS:minizinc_parser>
+  $<TARGET_OBJECTS:tree-sitter>
+  $<TARGET_OBJECTS:tree_feller>
   $<TARGET_OBJECTS:minizinc_fzn>
   $<TARGET_OBJECTS:minizinc_mip>
   $<TARGET_OBJECTS:minizinc_nl>
@@ -131,6 +133,12 @@ add_library(mzn
 if(WIN32)
   target_compile_definitions(mzn PUBLIC NOMINMAX _WIN32_WINNT=0x0600)
 endif()
+
+# The dependency objects are already included above; only their headers are needed here.
+target_include_directories(mzn PRIVATE
+  $<TARGET_PROPERTY:tree-sitter,INTERFACE_INCLUDE_DIRECTORIES>
+  $<TARGET_PROPERTY:tree_feller,INTERFACE_INCLUDE_DIRECTORIES>
+)
 
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 

@@ -13,6 +13,9 @@ IncludeCategories:
   - Regex:           '^(<minizinc/)'
     Priority:        0
     SortPriority:    0
+  - Regex:           '^(<(tree_sitter/|tree_feller\.h))'
+    Priority:        3
+    SortPriority:    3
   - Regex:           '^(<(atlantis|coin|fznparser|geas|gecode|ilcplex|scip)/)'
     Priority:        3
     SortPriority:    3

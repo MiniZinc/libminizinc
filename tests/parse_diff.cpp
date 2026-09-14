@@ -8,8 +8,7 @@
  *
  * Reads file paths on stdin, one line per case, parses each with both parsers
  * and compares the result. Exits non-zero if any case differs. A line may name
- * several files; `.dzn` ones are parsed as data, which under tree-sitter means
- * the DataZinc grammar rather than the MiniZinc one.
+ * several files; `.dzn` files are read as data.
  *
  *   build/parse_diff [include path...] < filelist
  *
