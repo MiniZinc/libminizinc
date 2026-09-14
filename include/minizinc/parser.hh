@@ -111,7 +111,7 @@ public:
         isSTDLib(isSTDLib0),
         parseDocComments(parseDocComments0),
         hadError(false),
-        sawOpIdentifier(false),
+        futureKeyword(nullptr),
         env(env0),
         err(err0) {
 #ifdef _WIN32
@@ -157,8 +157,9 @@ public:
   bool isSTDLib;
   bool parseDocComments;
   bool hadError;
-  bool sawOpIdentifier;
-  ParserLocation firstOpIdentifierLoc;
+  /// The first identifier that will become a reserved word, if any
+  const char* futureKeyword;
+  ParserLocation futureKeywordLoc;
   std::vector<SyntaxError> syntaxErrors;
   EnvI& env;
   std::ostream& err;

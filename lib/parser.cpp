@@ -56,12 +56,13 @@ void run_parser(MiniZinc::ParserState& pp) {
       mzn_yylex_destroy(pp.yyscanner);
     }
   }
-  // A failed parse may have seen `op' in unsupported operation-type syntax.
-  if (pp.sawOpIdentifier && !pp.hadError) {
+  // A failed parse may have seen the keyword in syntax that is not supported yet.
+  if (pp.futureKeyword != nullptr && !pp.hadError) {
     MiniZinc::GCLock lock;
-    pp.addWarning(MiniZinc::Location(pp.firstOpIdentifierLoc),
-                  "`op' will become a reserved word in a future version of MiniZinc; rename this "
-                  "identifier");
+    pp.addWarning(MiniZinc::Location(pp.futureKeywordLoc),
+                  std::string("`") + pp.futureKeyword +
+                      "' will become a reserved word in a future version of MiniZinc; rename "
+                      "this identifier");
   }
 }
 }  // namespace

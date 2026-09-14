@@ -11,8 +11,9 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
--  Warn when ``op`` is used as an identifier or ``==`` is used where assignment
-   syntax requires ``=``. These forms are not accepted by the new parser.
+-  Warn when ``op`` or ``lambda`` is used as an identifier or ``==`` is used
+   where assignment syntax requires ``=``. These forms are not accepted by the
+   new parser.
 -  Parse files selected by ``MZN_TREE_SITTER_PARSER`` directly with
    `tree-feller <https://github.com/Dekker1/tree-feller>`__, using the
    tree-sitter runtime only to report syntax errors in models.
