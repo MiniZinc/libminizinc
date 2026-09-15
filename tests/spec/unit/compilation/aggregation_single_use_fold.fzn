@@ -1,0 +1,9 @@
+array [1..5] of int: X_INTRODUCED_9_ = [1,1,1,1,1];
+var 0..10: X_INTRODUCED_0_;
+var 0..10: X_INTRODUCED_1_;
+var 0..10: X_INTRODUCED_2_;
+var 0..10: X_INTRODUCED_3_;
+var 0..10: w:: output_var;
+array [1..4] of var int: a:: output_array([1..4]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_];
+constraint int_lin_le(X_INTRODUCED_9_,[X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_,w],5);
+solve  satisfy;

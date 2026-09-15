@@ -1,0 +1,6 @@
+array [1..3] of int: X_INTRODUCED_2_ = [1,1,-1];
+var 0..10: x:: output_var;
+var 0..10: y:: output_var;
+var 0..20: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+constraint int_lin_eq(X_INTRODUCED_2_,[x,y,X_INTRODUCED_1_],0):: defines_var(X_INTRODUCED_1_);
+solve :: foo(X_INTRODUCED_1_) satisfy;
