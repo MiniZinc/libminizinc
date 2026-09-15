@@ -143,7 +143,13 @@ bool linear_keeps_name(EnvI& env, VarDecl* vd, Call* def) {
     return true;
   }
   // Share expressions used by multiple items; inline single-use expressions.
-  return env.varOccurrences.occurrences(vd) > 1;
+  // EXPERIMENT: linears of at most MZN_LIN_SMALL terms need MZN_LIN_READERS readers.
+  const int readers = env.varOccurrences.occurrences(vd);
+  static const int small = getenv("MZN_LIN_SMALL") != nullptr ? atoi(getenv("MZN_LIN_SMALL")) : 0;
+  static const int minReaders =
+      getenv("MZN_LIN_READERS") != nullptr ? atoi(getenv("MZN_LIN_READERS")) : 2;
+  const auto terms = static_cast<int>(Expression::cast<ArrayLit>(follow_id(def->arg(1)))->size());
+  return readers > 1 && (terms > small || readers >= minReaders);
 }
 
 bool linear_barrier(EnvI& env, VarDecl* vd) {
