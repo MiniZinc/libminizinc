@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <libproc.h>
+#include <vector>
 #include <unistd.h>
 #elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
 #include <windows.h>
@@ -125,6 +126,70 @@ bool directory_exists(const std::string& dirname) {
 #endif
 }
 
+/**
+ * Canonicalizes a path by resolving '..', '.', and '//' without following
+ * symbolic links.
+ *
+ * This function provides functionality similar to the standard POSIX
+ * realpath(), but it treats symbolic links as regular files/directories instead
+ * of resolving them.
+ */
+std::string realpath_nofollow(const std::string& path) {
+  // Splits a string by a given delimiter.
+  auto split = [](const std::string& s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+      tokens.push_back(token);
+    }
+    return tokens;
+  };
+
+  std::vector<std::string> result_components;
+
+  if (path.empty()) {
+    return working_directory();
+  }
+
+  // 1. Establish the base components (from CWD if path is relative).
+  if (path[0] != '/') {
+    result_components = split(working_directory(), '/');
+  }
+
+  // 2. Process the components of the input path, handling '.', '..', and empty
+  // parts.
+  for (const auto& part : split(path, '/')) {
+    if (part.empty() || part == ".") {
+      // Ignore empty parts (from "//" or trailing '/') and "."
+      continue;
+    }
+    if (part == "..") {
+      // Go up one level, if not already at the root
+      if (!result_components.empty()) {
+        result_components.pop_back();
+      }
+    } else {
+      // Add a regular path component
+      result_components.push_back(part);
+    }
+  }
+
+  // If after all processing we have no components, the path is the root
+  // directory.
+  if (result_components.empty()) {
+    return "/";
+  }
+
+  // 3. Rebuild the path string.
+  std::string current_path;
+  for (size_t i = 0; i < result_components.size(); ++i) {
+    current_path += "/" + result_components[i];
+  }
+
+  return current_path;
+}
+
 std::string file_path(const std::string& filename, const std::string& basePath) {
   // Add base path to relative paths if there is one
   auto f = !basePath.empty() && !is_absolute(filename) ? basePath + "/" + filename : filename;
@@ -149,13 +214,7 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
   LocalFree(lpBuffer);
   return ret;
 #else
-  char* rp = realpath(f.c_str(), nullptr);
-  if (rp == nullptr) {
-    return f;
-  }
-  std::string rp_s(rp);
-  free(rp);
-  return rp_s;
+  return realpath_nofollow(f);
 #endif
 }
 
