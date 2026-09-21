@@ -1,0 +1,13 @@
+predicate int_lin_le_imp(array [int] of int: as,array [int] of var int: bs,int: c,var bool: r);
+array [1..2] of int: X_INTRODUCED_13_ = [-1,-1];
+array [1..3] of int: X_INTRODUCED_14_ = [1,1,1];
+var 0..10: X_INTRODUCED_0_;
+var 0..10: X_INTRODUCED_1_;
+var 0..10: X_INTRODUCED_2_;
+var bool: p:: output_var;
+var bool: X_INTRODUCED_7_ ::var_is_introduced :: is_defined_var;
+array [1..3] of var int: a:: output_array([1..3]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_];
+constraint bool_clause([p,X_INTRODUCED_7_],[]);
+constraint int_lin_le(X_INTRODUCED_14_,[X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_],6);
+constraint int_lin_le_imp(X_INTRODUCED_13_,[X_INTRODUCED_0_,X_INTRODUCED_1_],-1,X_INTRODUCED_7_):: defines_var(X_INTRODUCED_7_);
+solve  satisfy;

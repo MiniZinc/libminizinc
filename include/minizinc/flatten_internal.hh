@@ -439,6 +439,14 @@ public:
   unsigned int maxCallStack;
   std::vector<std::unique_ptr<Warning>> warnings;
   std::vector<int> modifiedVarDecls;
+  /// Whether the flattener currently defers linear relations. flatten() sets it
+  /// to the negation of FlatteningOptions::eagerLinearAggregation, and it becomes
+  /// false once the main agenda is done, or while a linear definition is rebuilt.
+  bool deferLinearRelations = false;
+  /// The comparisons that linear_relation decodes, by call name: the operator,
+  /// the number of relation arguments, and whether the name is half reified.
+  /// Filled on first use.
+  std::unordered_map<ASTString, std::tuple<BinOpType, unsigned int, bool>> linearRelationIds;
   std::unordered_set<std::string> deprecationWarnings;
   int inRedundantConstraint;
   int inSymmetryBreakingConstraint;
@@ -764,6 +772,7 @@ inline bool is_list_index_set(IntSetVal* isv) {
 }
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
+
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 /// \a elementAccess: \a e is the array of an element access, which does not use all elements
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
@@ -772,25 +781,6 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
 Ref<ArrayLit> field_slice(EnvI& env, StructType* st, ArrayLit* al,
                           const std::vector<std::pair<int, int>>& dims, unsigned int field);
 std::vector<Ref<Expression>> field_slices(EnvI& env, Expression* arrExpr);
-
-class CmpExpIdx {
-public:
-  std::vector<Ref<Expression>>& x;
-  CmpExpIdx(std::vector<Ref<Expression>>& x0) : x(x0) {}
-  bool operator()(int i, int j) const {
-    const long long int i_idn = Expression::isa<Id>(x[i]) ? Expression::cast<Id>(x[i])->idn() : -1;
-    const long long int j_idn = Expression::isa<Id>(x[j]) ? Expression::cast<Id>(x[j])->idn() : -1;
-    const bool i_is_valid_id = i_idn != -1;
-    const bool j_is_valid_id = j_idn != -1;
-    if (i_is_valid_id != j_is_valid_id) {
-      return i_is_valid_id;
-    }
-    if (i_is_valid_id && j_is_valid_id) {
-      return i_idn < j_idn;
-    }
-    return Expression::compare(x[i], x[j]) < 0;
-  }
-};
 
 struct RecordFieldSort {
   bool operator()(const VarDecl* a, const VarDecl* b) const {
@@ -802,357 +792,11 @@ struct RecordFieldSort {
   bool operator()(const ASTString& a, const ASTString& b) const { return a < b; }
 };
 
-template <class Lit>
-class LinearTraits {};
-template <>
-class LinearTraits<IntLit> {
-public:
-  typedef IntVal Val;
-  static Val eval(EnvI& env, Expression* e) { return eval_int(env, e); }
-  static void constructLinBuiltin(EnvI& env, BinOpType bot, ASTString& callid, int& coeff_sign,
-                                  Val& d) {
-    switch (bot) {
-      case BOT_LE:
-        callid = env.constants.ids.int_.lin_le;
-        coeff_sign = 1;
-        d += 1;
-        break;
-      case BOT_LQ:
-        callid = env.constants.ids.int_.lin_le;
-        coeff_sign = 1;
-        break;
-      case BOT_GR:
-        callid = env.constants.ids.int_.lin_le;
-        coeff_sign = -1;
-        d = -d + 1;
-        break;
-      case BOT_GQ:
-        callid = env.constants.ids.int_.lin_le;
-        coeff_sign = -1;
-        d = -d;
-        break;
-      case BOT_EQ:
-        callid = env.constants.ids.int_.lin_eq;
-        coeff_sign = 1;
-        break;
-      case BOT_NQ:
-        callid = env.constants.ids.int_.lin_ne;
-        coeff_sign = 1;
-        break;
-      default:
-        assert(false);
-        break;
-    }
-  }
-  // NOLINTNEXTLINE(readability-identifier-naming)
-  static ASTString id_eq() { return Constants::constants().ids.int_.eq; }
-  typedef IntBounds Bounds;
-  static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
-  static bool finite(const IntVal& v) { return v.isFinite(); }
-  static Bounds computeBounds(EnvI& env, Expression* e) { return compute_int_bounds(env, e); }
-  typedef Ref<IntSetVal> Domain;
-  static Domain evalDomain(EnvI& env, Expression* e) { return eval_intset(env, e); }
-  static Ref<Expression> newDomain(Val v) {
-    return make<SetLit>(Location().introduce(), IntSetVal::a(v, v));
-  }
-  static Ref<Expression> newDomain(Val v0, Val v1) {
-    return make<SetLit>(Location().introduce(), IntSetVal::a(v0, v1));
-  }
-  static Ref<Expression> newDomain(Domain d) { return make<SetLit>(Location().introduce(), d); }
-  static bool domainContains(const Domain& dom, Val v) { return dom->contains(v); }
-  static bool domainEquals(const Domain& dom, Val v) {
-    return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
-  }
-  static bool domainEquals(const Domain& dom1, const Domain& dom2) {
-    IntSetRanges d1(dom1);
-    IntSetRanges d2(dom2);
-    return Ranges::equal(d1, d2);
-  }
-  static bool domainSubset(const Domain& dom1, const Domain& dom2) {
-    IntSetRanges d1(dom1);
-    IntSetRanges d2(dom2);
-    return Ranges::subset(d1, d2);
-  }
-  static bool domainDisjoint(const Domain& dom1, const Domain& dom2) {
-    IntSetRanges d1(dom1);
-    IntSetRanges d2(dom2);
-    return Ranges::disjoint(d1, d2);
-  }
-  static bool domainTighter(const Domain& dom, Bounds b) {
-    return !b.valid || dom->min() > b.l || dom->max() < b.u;
-  }
-  static bool domainIntersects(const Domain& dom, Val v0, Val v1) {
-    return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
-  }
-  static bool domainEmpty(const Domain& dom) { return dom->empty(); }
-  static Domain limitDomain(BinOpType bot, const Domain& dom, Val v) {
-    IntSetRanges dr(dom);
-    Domain ndomain;
-    switch (bot) {
-      case BOT_LE:
-        v -= 1;
-        // fall through
-      case BOT_LQ: {
-        Ranges::Bounded<IntVal, IntSetRanges> b =
-            Ranges::Bounded<IntVal, IntSetRanges>::maxiter(dr, v);
-        ndomain = IntSetVal::ai(b);
-      } break;
-      case BOT_GR:
-        v += 1;
-        // fall through
-      case BOT_GQ: {
-        Ranges::Bounded<IntVal, IntSetRanges> b =
-            Ranges::Bounded<IntVal, IntSetRanges>::miniter(dr, v);
-        ndomain = IntSetVal::ai(b);
-      } break;
-      case BOT_NQ: {
-        Ranges::Const<IntVal> c(v, v);
-        Ranges::Diff<IntVal, IntSetRanges, Ranges::Const<IntVal>> d(dr, c);
-        ndomain = IntSetVal::ai(d);
-      } break;
-      default:
-        assert(false);
-        return nullptr;
-    }
-    return ndomain;
-  }
-  static Domain intersectDomain(const Domain& dom, Val v0, Val v1) {
-    IntSetRanges dr(dom);
-    Ranges::Const<IntVal> c(v0, v1);
-    Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> inter(dr, c);
-    return IntSetVal::ai(inter);
-  }
-  static Domain intersectDomain(const Domain& dom0, const Domain& dom1) {
-    IntSetRanges dr0(dom0);
-    IntSetRanges dr1(dom1);
-    Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(dr0, dr1);
-    return IntSetVal::ai(inter);
-  }
-  /// Greatest common divisor of the coefficients, or 1 when there is none
-  static IntVal commonDivisor(const std::vector<IntVal>& c) {
-    IntVal g = 0;
-    for (auto v : c) {
-      IntVal a = g < 0 ? -g : g;
-      IntVal b = v < 0 ? -v : v;
-      while (b != 0) {
-        IntVal t = a % b;
-        a = b;
-        b = t;
-      }
-      g = a;
-    }
-    return g > 1 ? g : IntVal(1);
-  }
-  static Val floorDiv(Val v0, Val v1) {
-    return static_cast<long long int>(
-        std::floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
-  }
-  static Val ceilDiv(Val v0, Val v1) {
-    return static_cast<long long int>(
-        std::ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
-  }
-  static Ref<IntLit> newLit(Val v) { return IntLit::a(v); }
-  static IntVal v(const IntLit* il) { return IntLit::v(il); }
-};
-template <>
-class LinearTraits<FloatLit> {
-public:
-  typedef FloatVal Val;
-  static Val eval(EnvI& env, Expression* e) { return eval_float(env, e); }
-  static void constructLinBuiltin(EnvI& env, BinOpType bot, ASTString& callid, int& coeff_sign,
-                                  Val& d) {
-    switch (bot) {
-      case BOT_LE:
-        callid = env.constants.ids.float_.lin_lt;
-        coeff_sign = 1;
-        break;
-      case BOT_LQ:
-        callid = env.constants.ids.float_.lin_le;
-        coeff_sign = 1;
-        break;
-      case BOT_GR:
-        callid = env.constants.ids.float_.lin_lt;
-        coeff_sign = -1;
-        d = -d;
-        break;
-      case BOT_GQ:
-        callid = env.constants.ids.float_.lin_le;
-        coeff_sign = -1;
-        d = -d;
-        break;
-      case BOT_EQ:
-        callid = env.constants.ids.float_.lin_eq;
-        coeff_sign = 1;
-        break;
-      case BOT_NQ:
-        callid = env.constants.ids.float_.lin_ne;
-        coeff_sign = 1;
-        break;
-      default:
-        assert(false);
-        break;
-    }
-  }
-  // NOLINTNEXTLINE(readability-identifier-naming)
-  static ASTString id_eq() { return Constants::constants().ids.float_.eq; }
-  typedef FloatBounds Bounds;
-  static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
-  static bool finite(const FloatVal& v) { return v.isFinite(); }
-  static Bounds computeBounds(EnvI& env, Expression* e) { return compute_float_bounds(env, e); }
-  typedef Ref<FloatSetVal> Domain;
-  static Domain evalDomain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
-
-  static Ref<Expression> newDomain(Val v) {
-    return make<SetLit>(Location().introduce(), FloatSetVal::a(v, v));
-  }
-  static Ref<Expression> newDomain(Val v0, Val v1) {
-    return make<SetLit>(Location().introduce(), FloatSetVal::a(v0, v1));
-  }
-  static Ref<Expression> newDomain(Domain d) { return make<SetLit>(Location().introduce(), d); }
-  static bool domainContains(const Domain& dom, Val v) { return dom->contains(v); }
-  static bool domainEquals(const Domain& dom, Val v) {
-    return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
-  }
-
-  static bool domainTighter(const Domain& dom, Bounds b) {
-    return !b.valid || dom->min() > b.l || dom->max() < b.u;
-  }
-  static bool domainIntersects(const Domain& dom, Val v0, Val v1) {
-    return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
-  }
-  static bool domainEmpty(const Domain& dom) { return dom->empty(); }
-
-  static bool domainEquals(const Domain& dom1, const Domain& dom2) {
-    FloatSetRanges d1(dom1);
-    FloatSetRanges d2(dom2);
-    return Ranges::equal(d1, d2);
-  }
-  static bool domainSubset(const Domain& dom1, const Domain& dom2) {
-    FloatSetRanges d1(dom1);
-    FloatSetRanges d2(dom2);
-    return Ranges::subset(d1, d2);
-  }
-  static bool domainDisjoint(const Domain& dom1, const Domain& dom2) {
-    FloatSetRanges d1(dom1);
-    FloatSetRanges d2(dom2);
-    return Ranges::disjoint(d1, d2);
-  }
-  static Domain intersectDomain(const Domain& dom, Val v0, Val v1) {
-    if (dom != nullptr) {
-      FloatSetRanges dr(dom);
-      Ranges::Const<FloatVal> c(v0, v1);
-      Ranges::Inter<FloatVal, FloatSetRanges, Ranges::Const<FloatVal>> inter(dr, c);
-      return FloatSetVal::ai(inter);
-    }
-    Domain d = FloatSetVal::a(v0, v1);
-    return d;
-  }
-  static Domain intersectDomain(Domain dom0, Domain dom1) {
-    if (dom0 == nullptr) {
-      return dom1;
-    }
-    if (dom1 == nullptr) {
-      return dom0;
-    }
-    FloatSetRanges dr0(dom0);
-    FloatSetRanges dr1(dom1);
-    Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(dr0, dr1);
-    return FloatSetVal::ai(inter);
-  }
-
-  static Domain limitDomain(BinOpType bot, const Domain& dom, Val v) {
-    FloatSetRanges dr(dom);
-    Domain ndomain;
-    switch (bot) {
-      case BOT_LE:
-        return nullptr;
-      case BOT_LQ: {
-        Ranges::Bounded<FloatVal, FloatSetRanges> b =
-            Ranges::Bounded<FloatVal, FloatSetRanges>::maxiter(dr, v);
-        ndomain = FloatSetVal::ai(b);
-      } break;
-      case BOT_GR:
-        return nullptr;
-      case BOT_GQ: {
-        Ranges::Bounded<FloatVal, FloatSetRanges> b =
-            Ranges::Bounded<FloatVal, FloatSetRanges>::miniter(dr, v);
-        ndomain = FloatSetVal::ai(b);
-      } break;
-      case BOT_NQ: {
-        Ranges::Const<FloatVal> c(v, v);
-        Ranges::Diff<FloatVal, FloatSetRanges, Ranges::Const<FloatVal>> d(dr, c);
-        ndomain = FloatSetVal::ai(d);
-      } break;
-      default:
-        assert(false);
-        return nullptr;
-    }
-    return ndomain;
-  }
-  /// Float coefficients have no common divisor to remove
-  static FloatVal commonDivisor(const std::vector<FloatVal>& /*c*/) { return FloatVal(1.0); }
-  static Val floorDiv(Val v0, Val v1) { return v0 / v1; }
-  static Val ceilDiv(Val v0, Val v1) { return v0 / v1; }
-  static Ref<FloatLit> newLit(Val v) { return FloatLit::a(v); }
-  static FloatVal v(const FloatLit* fl) { return FloatLit::v(fl); }
-};
-
-template <class Lit>
-void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<Ref<Expression>>& x,
-                  typename LinearTraits<Lit>::Val& d) {
-  std::vector<int> idx(c.size());
-  for (auto i = static_cast<int>(idx.size()); i--;) {
-    idx[i] = i;
-    Expression* e = follow_id_to_decl(x[i]);
-    if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
-      if (vd->e() && Expression::isa<Lit>(vd->e())) {
-        x[i] = vd->e();
-      } else {
-        x[i] = Expression::cast<VarDecl>(e)->id();
-      }
-    } else {
-      x[i] = e;
-    }
-  }
-  std::sort(idx.begin(), idx.end(), CmpExpIdx(x));
-  unsigned int ci = 0;
-  for (; ci < x.size(); ci++) {
-    if (Lit* il = Expression::dynamicCast<Lit>(x[idx[ci]])) {
-      d += c[idx[ci]] * LinearTraits<Lit>::v(il);
-      c[idx[ci]] = 0;
-    } else {
-      break;
-    }
-  }
-  for (unsigned int i = ci + 1; i < x.size(); i++) {
-    if (Expression::equal(x[idx[i]], x[idx[ci]])) {
-      c[idx[ci]] += c[idx[i]];
-      c[idx[i]] = 0;
-    } else if (Lit* il = Expression::dynamicCast<Lit>(x[idx[i]])) {
-      d += c[idx[i]] * LinearTraits<Lit>::v(il);
-      c[idx[i]] = 0;
-    } else {
-      ci = i;
-    }
-  }
-  // Emit the terms in the order the merge used, so that equal expressions get
-  // the same form and the common subexpression map can match them.
-  std::vector<typename LinearTraits<Lit>::Val> nc;
-  std::vector<Ref<Expression>> nx;
-  nc.reserve(c.size());
-  nx.reserve(x.size());
-  for (int i : idx) {
-    if (c[i] != 0) {
-      nc.push_back(c[i]);
-      nx.push_back(x[i]);
-    }
-  }
-  c.swap(nc);
-  x.swap(nx);
-}
-
 /// Helper function used to recursively change the context for (to be reified) functionally defined
 /// vardecls
 void cse_result_change_ctx(EnvI& env, Expression* cseRes, BCtx newCtx);
+
+/// Return the FlatZinc builtin for operator \a bot on \a op_lhs and \a op_rhs.
+ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot);
 
 }  // namespace MiniZinc

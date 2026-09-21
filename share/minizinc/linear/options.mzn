@@ -205,3 +205,7 @@ opt bool: fMIPTraceDBG;
 bool: mzn__my_trace__DBG_on = if absent(fMIPTraceDBG) then false else deopt(fMIPTraceDBG) endif;
 test my_trace__DBG(string: msg) :: promise_total =
   if mzn__my_trace__DBG_on then trace(msg) else true endif;
+
+%%% Aggregate linear expressions while they are built: a MIP solver gains
+%%% nothing from the deferred aggregation, and it costs flattening time.
+mzn_opt_eager_linear_aggregation = true;

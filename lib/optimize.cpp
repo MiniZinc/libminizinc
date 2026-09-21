@@ -14,7 +14,7 @@
 #include <minizinc/chain_compressor.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/optimize.hh>

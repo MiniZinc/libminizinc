@@ -28,6 +28,12 @@ Changes:
    tree-sitter runtime only to report syntax errors in models.
 -  Download the tree-sitter runtime when configuring instead of vendoring it,
    which raises the CMake required to build MiniZinc to 3.20.
+-  Decide at the end of flattening which linear expressions get a variable of
+   their own. An expression that more than one item reads is defined once, and
+   an expression with a single reader is written out in that reader. Linear
+   expressions that differ only by a constant offset or a common factor share
+   one definition. The option ``mzn_opt_eager_linear_aggregation`` restores the
+   old behaviour, and the linear library sets it.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
 -  Report a type error when a ``var`` type-inst variable (for example in a

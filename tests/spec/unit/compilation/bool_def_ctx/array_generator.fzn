@@ -1,18 +1,18 @@
 
 predicate foo_imp(var int: x,int: i,var bool: r);
 predicate int_lin_le_imp(array [int] of int: as,array [int] of var int: bs,int: c,var bool: r);
-array [1..2] of int: X_INTRODUCED_6_ = [-1,-1];
+array [1..2] of int: X_INTRODUCED_7_ = [-1,-1];
 var 0..10: x:: output_var;
 var bool: q:: output_var;
 var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
 var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
 var 0..1: X_INTRODUCED_3_ ::var_is_introduced :: is_defined_var;
 var 0..1: X_INTRODUCED_4_ ::var_is_introduced :: is_defined_var;
-var bool: X_INTRODUCED_7_ ::var_is_introduced :: is_defined_var;
-constraint bool_clause([q,X_INTRODUCED_7_],[]);
+var bool: X_INTRODUCED_6_ ::var_is_introduced :: is_defined_var;
+constraint bool_clause([q,X_INTRODUCED_6_],[]);
 constraint foo_imp(x,1,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
 constraint foo_imp(x,2,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
 constraint bool2int(X_INTRODUCED_0_,X_INTRODUCED_3_):: defines_var(X_INTRODUCED_3_);
 constraint bool2int(X_INTRODUCED_1_,X_INTRODUCED_4_):: defines_var(X_INTRODUCED_4_);
-constraint int_lin_le_imp(X_INTRODUCED_6_,[X_INTRODUCED_3_,X_INTRODUCED_4_],-1,X_INTRODUCED_7_):: defines_var(X_INTRODUCED_7_);
+constraint int_lin_le_imp(X_INTRODUCED_7_,[X_INTRODUCED_3_,X_INTRODUCED_4_],-1,X_INTRODUCED_6_):: defines_var(X_INTRODUCED_6_);
 solve  satisfy;

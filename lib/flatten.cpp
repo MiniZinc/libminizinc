@@ -17,7 +17,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/memory.hh>
@@ -1300,20 +1300,29 @@ EnvI::~EnvI() {
   delete originalModel;
 }
 long long int EnvI::genId() { return _ids++; }
+namespace {
+/// The common subexpression map keys a commutative call by its normalised
+/// form. Returns that form, or nullptr if \a e is not such a call.
+Ref<Call> cse_commutative_key(EnvI& env, Expression* e) {
+  Call* c = Expression::dynamicCast<Call>(e);
+  if ((c != nullptr) && c->decl() != nullptr &&
+      c->decl()->ann().contains(env.constants.ann.promise_commutative)) {
+    return Call::commutativeNormalized(env, c);
+  }
+  return nullptr;
+}
+}  // namespace
 void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   if (Expression::type(e).isPar() && !Expression::isa<ArrayLit>(e)) {
     return;
   }
   Call* c = Expression::dynamicCast<Call>(e);
-  Ref<Call> normalized;
-  if ((c != nullptr) && c->decl() != nullptr) {
-    if (c->decl()->ann().contains(constants.ann.no_cse)) {
-      return;
-    }
-    if (c->decl()->ann().contains(constants.ann.promise_commutative)) {
-      normalized = Call::commutativeNormalized(*this, c);
-      e = normalized;
-    }
+  if ((c != nullptr) && c->decl() != nullptr && c->decl()->ann().contains(constants.ann.no_cse)) {
+    return;
+  }
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  if (normalized != nullptr) {
+    e = normalized;
   }
 
   _cseMap.insert(e, WW(ee.r, ee.b));
@@ -1349,16 +1358,14 @@ EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
     return it;
   };
 
-  Call* c = Expression::dynamicCast<Call>(e);
-  if ((c != nullptr) && c->decl() != nullptr &&
-      c->decl()->ann().contains(constants.ann.promise_commutative)) {
-    // The normalised Call lives in a local Ref for the whole lookup
-    auto normalized = Call::commutativeNormalized(*this, c);
-    return lookup(normalized);
-  }
-  return lookup(e);
+  // The normalised Call lives in a local Ref for the whole lookup
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  return lookup(normalized != nullptr ? normalized : e);
 }
-void EnvI::cseMapRemove(Expression* e) { _cseMap.remove(e); }
+void EnvI::cseMapRemove(Expression* e) {
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  _cseMap.remove(normalized != nullptr ? normalized : e);
+}
 EnvI::CSEMap::iterator EnvI::cseMapEnd() { return _cseMap.end(); }
 void EnvI::dump() {
   struct EED {
@@ -3115,66 +3122,61 @@ Ref<Expression> mk_domain_constraint(EnvI& env, Expression* expr, Expression* do
   return c;
 }
 
-/// Turn \a c into domain constraints if possible.
-/// Return whether \a c is still required in the model.
 bool check_domain_constraints(EnvI& env, Call* c) {
   if (env.fopts.recordDomainChanges) {
     return true;
   }
-  if (c->id() == env.constants.ids.int_.le) {
-    Expression* e0 = c->arg(0);
-    Expression* e1 = c->arg(1);
-    if (Expression::type(e0).isPar() && Expression::isa<Id>(e1)) {
-      // greater than
-      Id* id = Expression::cast<Id>(e1);
-      IntVal lb = eval_int(env, e0);
-      if (id->decl()->ti()->domain() != nullptr) {
-        Ref<IntSetVal> domain = eval_intset(env, id->decl()->ti()->domain());
-        assert(!domain->empty());
-        if (domain->min() >= lb) {
-          return false;
-        }
-        if (domain->max() < lb) {
-          env.fail();
-          return false;
-        }
-        IntSetRanges dr(domain);
-        Ranges::Const<IntVal> cr(lb, IntVal::infinity());
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
-        Ref<IntSetVal> newibv = IntSetVal::ai(i);
-        id->decl()->ti()->domain(make<SetLit>(Location().introduce(), newibv));
-        id->decl()->ti()->setComputedDomain(false);
-      } else {
-        id->decl()->ti()->domain(
-            make<SetLit>(Location().introduce(), IntSetVal::a(lb, IntVal::infinity())));
+  const auto& ids = env.constants.ids;
+  std::optional<BinOpType> bot;
+  if (c->id() == ids.int_.le) {
+    bot = BOT_LQ;
+  } else if (c->id() == ids.int_.lt) {
+    bot = BOT_LE;
+  } else if (c->id() == ids.int_.eq) {
+    bot = BOT_EQ;
+  } else if (c->id() == ids.int_.ne) {
+    bot = BOT_NQ;
+  }
+  if (bot) {
+    // Fold scalar comparisons with constants into the variable's domain.
+    Id* id = nullptr;
+    IntVal v;
+    if (Expression::type(c->arg(0)).isPar() && Expression::isa<Id>(c->arg(1))) {
+      // `v op x` is `x op' v` with the operator mirrored.
+      id = Expression::cast<Id>(c->arg(1));
+      v = eval_int(env, c->arg(0));
+      if (*bot == BOT_LQ) {
+        bot = BOT_GQ;
+      } else if (*bot == BOT_LE) {
+        bot = BOT_GR;
       }
+    } else if (Expression::type(c->arg(1)).isPar() && Expression::isa<Id>(c->arg(0))) {
+      id = Expression::cast<Id>(c->arg(0));
+      v = eval_int(env, c->arg(1));
+    } else {
+      return true;
+    }
+    VarDecl* vd = id->decl();
+    if (vd->ti()->domain() == nullptr && *bot == BOT_NQ) {
+      // A finite domain is needed to represent the excluded value as a hole.
+      return true;
+    }
+    Ref<IntSetVal> domain = vd->ti()->domain() != nullptr
+                                ? eval_intset(env, vd->ti()->domain())
+                                : IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+    Ref<IntSetVal> ndomain = *bot == BOT_EQ ? LinearTraits<IntLit>::intersectDomain(domain, v, v)
+                                            : LinearTraits<IntLit>::limitDomain(*bot, domain, v);
+    if (ndomain->empty()) {
+      env.fail();
       return false;
     }
-    if (Expression::type(e1).isPar() && Expression::isa<Id>(e0)) {
-      // less than
-      Id* id = Expression::cast<Id>(e0);
-      IntVal ub = eval_int(env, e1);
-      if (id->decl()->ti()->domain() != nullptr) {
-        Ref<IntSetVal> domain = eval_intset(env, id->decl()->ti()->domain());
-        if (domain->max() <= ub) {
-          return false;
-        }
-        if (domain->min() > ub) {
-          env.fail();
-          return false;
-        }
-        IntSetRanges dr(domain);
-        Ranges::Const<IntVal> cr(-IntVal::infinity(), ub);
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
-        Ref<IntSetVal> newibv = IntSetVal::ai(i);
-        id->decl()->ti()->domain(make<SetLit>(Location().introduce(), newibv));
-        id->decl()->ti()->setComputedDomain(false);
-      } else {
-        id->decl()->ti()->domain(
-            make<SetLit>(Location().introduce(), IntSetVal::a(-IntVal::infinity(), ub)));
-      }
+    if (!ndomain->equal(domain)) {
+      vd->ti()->domain(LinearTraits<IntLit>::newDomain(ndomain));
+      vd->ti()->setComputedDomain(false);
     }
-  } else if (c->id() == env.constants.ids.int_.lin_le) {
+    return false;
+  }
+  if (c->id() == env.constants.ids.int_.lin_le) {
     auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
     if (al_c->size() == 1) {
       auto* al_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
@@ -4797,6 +4799,12 @@ void flatten(Env& e, FlatteningOptions opt) {
       halfReifyClause = eval_bool(e.envi(), check_hr_clause);
     }
 
+    Ref<Call> check_agg = Call::a(Location(), "mzn_check_eager_linear_aggregation", {});
+    check_agg->type(Type::parbool());
+    check_agg->decl(env.model->matchFn(e.envi(), check_agg, false));
+    env.fopts.eagerLinearAggregation = eval_bool(e.envi(), check_agg);
+    env.deferLinearRelations = !env.fopts.eagerLinearAggregation;
+
     // Flatten main model
     env.deferBoolDefs = true;
     bool hadSolveItem = false;
@@ -4824,25 +4832,15 @@ void flatten(Env& e, FlatteningOptions opt) {
     int startItem = 0;
     int endItem = static_cast<int>(m.size()) - 1;
 
-    FunctionI* int_lin_eq;
-    {
-      std::vector<Type> int_lin_eq_t(3);
-      int_lin_eq_t[0] = Type::parint(1);
-      int_lin_eq_t[1] = Type::varint(1);
-      int_lin_eq_t[2] = Type::parint(0);
-      FunctionI* fi = env.model->matchFn(env, env.constants.ids.int_.lin_eq, int_lin_eq_t, false);
-      int_lin_eq = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-    }
-    FunctionI* float_lin_eq;
-    {
-      std::vector<Type> float_lin_eq_t(3);
-      float_lin_eq_t[0] = Type::parfloat(1);
-      float_lin_eq_t[1] = Type::varfloat(1);
-      float_lin_eq_t[2] = Type::parfloat(0);
-      FunctionI* fi =
-          env.model->matchFn(env, env.constants.ids.float_.lin_eq, float_lin_eq_t, false);
-      float_lin_eq = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-    }
+    // Eager aggregation only rewrites a definition into lin_eq if lin_eq is redefined.
+    auto lin_eq_redefinition = [&](const ASTString& id, Type coeffs, Type vars, Type constant) {
+      FunctionI* fi = env.model->matchFn(env, id, {coeffs, vars, constant}, false);
+      return (fi != nullptr) && (fi->e() != nullptr) ? fi : nullptr;
+    };
+    FunctionI* int_lin_eq = lin_eq_redefinition(env.constants.ids.int_.lin_eq, Type::parint(1),
+                                                Type::varint(1), Type::parint(0));
+    FunctionI* float_lin_eq = lin_eq_redefinition(
+        env.constants.ids.float_.lin_eq, Type::parfloat(1), Type::varfloat(1), Type::parfloat(0));
     FunctionI* array_bool_and;
     FunctionI* array_bool_and_imp;
     FunctionI* array_bool_clause;
@@ -4951,6 +4949,8 @@ void flatten(Env& e, FlatteningOptions opt) {
                   env.flatAddItem(ci);
                 } else if (vdi->e()->type().isPar() || vdi->e()->ti()->computedDomain()) {
                   env.flatRemoveItem(vdi);
+                  continue;
+                } else if (release_linear_definition(env, vdi)) {
                   continue;
                 }
               } else {
@@ -5110,56 +5110,34 @@ void flatten(Env& e, FlatteningOptions opt) {
                              Expression::equal(vd->ti()->domain(), env.constants.literalTrue);
             if (Ref<Call> c = Expression::dynamicCast<Call>(vd->e())) {
               Ref<Call> nc;
+              LinearRelation relation = linear_relation(env, c, true);
+              if (relation.comparison != nullptr) {
+                rebuild_linear(env, vdi, c, relation.comparison, relation.reifiedInto,
+                               relation.halfReified);
+                continue;
+              }
               if (c->id() == env.constants.ids.lin_exp) {
-                if (c->type().isfloat() && (float_lin_eq != nullptr)) {
-                  std::vector<Ref<Expression>> args(c->argCount());
-                  auto* le_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
-                  std::vector<Ref<Expression>> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
-                    nc_c[ii] = (*le_c)[ii];
+                if (env.fopts.eagerLinearAggregation) {
+                  // Eager aggregation keeps a definition until output, as later
+                  // passes such as MIPdomains read it, unless lin_eq is redefined.
+                  FunctionI* lin_eq = c->type().isint() ? int_lin_eq : float_lin_eq;
+                  if (lin_eq != nullptr) {
+                    nc = linear_definition_call(vd, c);
+                    nc->decl(lin_eq);
                   }
-                  nc_c.emplace_back(FloatLit::a(-1));
-                  args[0] = make<ArrayLit>(Location().introduce(), nc_c);
-                  Expression::type(args[0], Type::parfloat(1));
-                  auto* le_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
-                  std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
-                    nx[ii] = (*le_x)[ii];
+                } else if (!doLastProcessing) {
+                  // Reader counts are final only after the main agenda is empty.
+                  processLast.push_back(i);
+                } else {
+                  if (!linear_keeps_name(env, vd, c)) {
+                    // Unsupported readers leave the definition for the fallback below.
+                    inline_linear_definition(env, vdi);
+                    if (env.varOccurrences.occurrences(vd) == 0) {
+                      continue;
+                    }
                   }
-                  nx.push_back(vd->id());
-                  args[1] = make<ArrayLit>(Location().introduce(), nx);
-                  Expression::type(args[1], Type::varfloat(1));
-                  FloatVal d = FloatLit::v(Expression::cast<FloatLit>(c->arg(2)));
-                  args[2] = FloatLit::a(-d);
-                  Expression::type(args[2], Type::parfloat(0));
-                  nc = Call::a(Expression::loc(c).introduce(), ASTString("float_lin_eq"), args);
-                  nc->type(Type::varbool());
-                  nc->decl(float_lin_eq);
-                } else if (int_lin_eq != nullptr) {
-                  assert(c->type().isint());
-                  std::vector<Ref<Expression>> args(c->argCount());
-                  auto* le_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
-                  std::vector<Ref<Expression>> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
-                    nc_c[ii] = (*le_c)[ii];
-                  }
-                  nc_c.emplace_back(IntLit::a(-1));
-                  args[0] = make<ArrayLit>(Location().introduce(), nc_c);
-                  Expression::type(args[0], Type::parint(1));
-                  auto* le_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
-                  std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
-                    nx[ii] = (*le_x)[ii];
-                  }
-                  nx.push_back(vd->id());
-                  args[1] = make<ArrayLit>(Location().introduce(), nx);
-                  Expression::type(args[1], Type::varint(1));
-                  IntVal d = IntLit::v(Expression::cast<IntLit>(c->arg(2)));
-                  args[2] = IntLit::a(-d);
-                  Expression::type(args[2], Type::parint(0));
-                  nc = Call::a(Expression::loc(c).introduce(), ASTString("int_lin_eq"), args);
-                  nc->type(Type::varbool());
-                  nc->decl(int_lin_eq);
+                  nc = linear_definition_call(vd, c);
+                  nc->decl(env.model->matchFn(env, nc, false));
                 }
               } else if (c->id() == env.constants.ids.exists) {
                 if (isTrueVar && array_bool_clause != nullptr) {
@@ -5317,6 +5295,12 @@ void flatten(Env& e, FlatteningOptions opt) {
                           env.model->matchReification(env, c->id(), raw(args), canHalfReify, false);
                     }
 
+                    if (decl == nullptr && (c->decl() != nullptr) && (c->decl()->e() != nullptr)) {
+                      // A deferred relation without a reified builtin, such as a
+                      // comparison of optional values: use its redefinition.
+                      rebuild_linear(env, vdi, c, c, nullptr, false);
+                      continue;
+                    }
                     if (decl == nullptr) {
                       std::ostringstream ss;
                       ss << "'" << demonomorphise_identifier(c->id())
@@ -5416,6 +5400,12 @@ void flatten(Env& e, FlatteningOptions opt) {
         } else if (auto* ci = m[i]->dynamicCast<ConstraintI>()) {
           if (Call* c = Expression::dynamicCast<Call>(ci->e())) {
             Ref<Call> nc;
+            LinearRelation relation = linear_relation(env, c, true);
+            if (relation.comparison != nullptr) {
+              rebuild_linear(env, ci, c, relation.comparison, relation.reifiedInto,
+                             relation.halfReified);
+              continue;
+            }
             if (c->id() == env.constants.ids.exists) {
               if (array_bool_clause != nullptr) {
                 std::vector<Expression*> args(2);
@@ -5479,6 +5469,11 @@ void flatten(Env& e, FlatteningOptions opt) {
             } else {
               FunctionI* decl = env.model->matchFn(env, c, false);
               if ((decl != nullptr) && (decl->e() != nullptr)) {
+                if (env.linearRelationIds.count(c->id()) != 0) {
+                  // A delayed relation is in the CSE map, which would stop its body
+                  // from being flattened.
+                  env.cseMapRemove(c);
+                }
                 nc = c;
                 nc->decl(decl);
               }
@@ -5509,7 +5504,9 @@ void flatten(Env& e, FlatteningOptions opt) {
       startItem = endItem + 1;
       endItem = static_cast<int>(m.size()) - 1;
     }
+    // Later output and reverse-map expressions are built directly.
     env.deferBoolDefs = false;
+    env.deferLinearRelations = false;
 
     // Add redefinitions for output variables that may have been redefined since create_output
     for (unsigned int i = 0; i < env.output->size(); i++) {
@@ -5816,43 +5813,11 @@ std::vector<Ref<Expression>> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* 
         std::vector<Ref<Expression>> args(cc->argCount());
         ASTString cid;
         if (cc->id() == env.constants.ids.lin_exp) {
-          // a = lin_exp([1],[b],5) => int_lin_eq([1,-1],[b,a],-5):: defines_var(a)
-          auto* le_c = Expression::cast<ArrayLit>(follow_id(cc->arg(0)));
-          std::vector<Ref<Expression>> nc(le_c->size());
-          for (auto i = static_cast<unsigned int>(nc.size()); (i--) != 0U;) {
-            nc[i] = (*le_c)[i];
-          }
-          if (le_c->type().bt() == Type::BT_INT) {
-            cid = env.constants.ids.int_.lin_eq;
-            nc.emplace_back(IntLit::a(-1));
-            args[0] = make<ArrayLit>(Location().introduce(), nc);
-            Expression::type(args[0], Type::parint(1));
-            auto* le_x = Expression::cast<ArrayLit>(follow_id(cc->arg(1)));
-            std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
-              nx[i] = (*le_x)[i];
-            }
-            nx.push_back(vd->id());
-            args[1] = make<ArrayLit>(Location().introduce(), nx);
-            Expression::type(args[1], le_x->type());
-            IntVal d = IntLit::v(Expression::cast<IntLit>(cc->arg(2)));
-            args[2] = IntLit::a(-d);
-          } else {
-            // float
-            cid = env.constants.ids.float_.lin_eq;
-            nc.emplace_back(FloatLit::a(-1.0));
-            args[0] = make<ArrayLit>(Location().introduce(), nc);
-            Expression::type(args[0], Type::parfloat(1));
-            auto* le_x = Expression::cast<ArrayLit>(follow_id(cc->arg(1)));
-            std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
-              nx[i] = (*le_x)[i];
-            }
-            nx.push_back(vd->id());
-            args[1] = make<ArrayLit>(Location().introduce(), nx);
-            Expression::type(args[1], le_x->type());
-            FloatVal d = FloatLit::v(Expression::cast<FloatLit>(cc->arg(2)));
-            args[2] = FloatLit::a(-d);
+          Ref<Call> def = linear_definition_call(vd, cc);
+          cid = def->id();
+          args.resize(def->argCount());
+          for (unsigned int i = 0; i < def->argCount(); i++) {
+            args[i] = def->arg(i);
           }
         } else {
           if (cc->id() == env.constants.ids.card) {

@@ -1,0 +1,7 @@
+array [1..2] of int: X_INTRODUCED_6_ = [1,2];
+array [1..2] of int: X_INTRODUCED_8_ = [-1,-2];
+var -9007199254740995..9007199254740995: x:: output_var;
+var 0..1: y:: output_var;
+constraint int_lin_le(X_INTRODUCED_6_,[x,y],4503599627370497);
+constraint int_lin_le(X_INTRODUCED_8_,[x,y],4503599627370496);
+solve  satisfy;

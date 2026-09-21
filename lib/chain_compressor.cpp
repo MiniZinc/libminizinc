@@ -12,7 +12,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/chain_compressor.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 
 namespace MiniZinc {
 
@@ -569,7 +569,7 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   Val rhs = LinearTraits<Lit>::eval(_env, call->arg(2));
   Val d = 0;
 
-  simplify_lin<Lit>(coeffs, x, d);
+  simplify_lin<Lit>(coeffs, x, d, _env.deferLinearRelations);
   if (coeffs.empty()) {
     if (d > rhs) {
       _env.fail();

@@ -10,7 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/eval_par.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/optimize_constraints.hh>
 
 namespace MiniZinc {
@@ -49,7 +49,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c,
     x[i] = (*al_x)[i];
   }
   IntVal d = 0;
-  simplify_lin<IntLit>(coeffs, x, d);
+  simplify_lin<IntLit>(coeffs, x, d, env.deferLinearRelations);
   if (coeffs.empty()) {
     bool failed;
     if (c->id() == env.constants.ids.int_.lin_le) {
@@ -69,7 +69,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c,
     VarDecl* vd = Expression::cast<Id>(x[0])->decl();
     Ref<IntSetVal> domain =
         vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
-    assert(!domain->empty());
+    assert(domain == nullptr || !domain->empty());
     if (c->id() == env.constants.ids.int_.lin_eq) {
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {
@@ -187,7 +187,7 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c,
       x[j] = (*al_x)[j];
     }
     IntVal d = eval_int(env, c->arg(2));
-    simplify_lin<IntLit>(coeffs, x, d);
+    simplify_lin<IntLit>(coeffs, x, d, env.deferLinearRelations);
     if (coeffs.empty()) {
       rewrite = IntLit::a(d);
       return OptimizeRegistry::CS_REWRITE;

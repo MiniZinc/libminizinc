@@ -12,57 +12,13 @@
 #include <minizinc/ast.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
 
 bool is_total(EnvI& env, FunctionI* fi) {
   return fi->ann().contains(env.constants.ann.promise_total);
-}
-
-Ref<Call> same_call(EnvI& env, Expression* e, const ASTString& id) {
-  Expression* ce = follow_id(e);
-  Call* c = Expression::dynamicCast<Call>(ce);
-  if (c != nullptr) {
-    if (c->id() == id) {
-      return Expression::cast<Call>(ce);
-    }
-    if (c->id() == env.constants.ids.int2float) {
-      Expression* i2f = follow_id(c->arg(0));
-      Call* i2fc = Expression::dynamicCast<Call>(i2f);
-      if ((i2fc != nullptr) && i2fc->id() == id && id == env.constants.ids.lin_exp) {
-        Ref<ArrayLit> coeffs = eval_array_lit(env, i2fc->arg(0));
-        std::vector<Ref<Expression>> ncoeff_v(coeffs->size());
-        for (unsigned int i = 0; i < coeffs->size(); i++) {
-          ncoeff_v[i] = FloatLit::a(eval_int(env, (*coeffs)[i]));
-        }
-        auto ncoeff = make<ArrayLit>(Expression::loc(coeffs).introduce(), ncoeff_v);
-        ncoeff->type(Type::parfloat(1));
-        Ref<ArrayLit> vars = eval_array_lit(env, i2fc->arg(1));
-        std::vector<Ref<Expression>> n_vars_v(vars->size());
-        for (unsigned int i = 0; i < vars->size(); i++) {
-          Ref<Call> f2i = Call::a(Expression::loc((*vars)[i]).introduce(),
-                                  env.constants.ids.int2float, {(*vars)[i]});
-          f2i->decl(env.model->matchFn(env, f2i, false));
-          assert(f2i->decl());
-          f2i->type(Type::varfloat());
-          EE ee = flat_exp(env, Ctx(), f2i, nullptr, env.constants.varTrue);
-          n_vars_v[i] = ee.r;
-        }
-        auto nvars = make<ArrayLit>(Expression::loc(vars).introduce(), n_vars_v);
-        nvars->type(Type::varfloat(1));
-        auto c = FloatLit::a(eval_int(env, i2fc->arg(2)));
-        Ref<Call> nlinexp = Call::a(Expression::loc(i2fc).introduce(), env.constants.ids.lin_exp,
-                                    {ncoeff, nvars, c});
-        nlinexp->decl(env.model->matchFn(env, nlinexp, false));
-        assert(nlinexp->decl());
-        nlinexp->type(Type::varfloat());
-        return nlinexp;
-      }
-    }
-  }
-  return nullptr;
 }
 
 class CmpExp {
@@ -118,116 +74,6 @@ bool contains_dups(std::vector<Ref<Expression>>& x, std::vector<Ref<Expression>>
       return false;
     }
   }
-}
-
-template <class Lit>
-void flatten_linexp_call(EnvI& env, const Ctx& ctx, const Ctx& nctx, ASTString& cid, Call* c,
-                         EE& ret, VarDecl* b, VarDecl* r, std::vector<EE>& args_ee,
-                         std::vector<Ref<Expression>>& args) {
-  typedef typename LinearTraits<Lit>::Val Val;
-  Expression* al_arg = (cid == env.constants.ids.sum ? args_ee[0].r : args_ee[1].r);
-  EE flat_al = flat_exp(env, nctx, al_arg, nullptr, nctx.partialityVar(env));
-  Ref<ArrayLit> al = Expression::cast<ArrayLit>(follow_id(flat_al.r));
-  if (al->dims() > 1) {
-    Type alt = Type::arrType(env, Type::partop(1), al->type());
-    al = make<ArrayLit>(Expression::loc(al), al);
-    al->type(alt);
-  }
-  Val d = (cid == env.constants.ids.sum ? Val(0) : LinearTraits<Lit>::eval(env, args_ee[2].r));
-
-  std::vector<Val> c_coeff(al->size());
-  if (cid == env.constants.ids.sum) {
-    for (unsigned int i = al->size(); i--;) {
-      c_coeff[i] = 1;
-    }
-  } else {
-    EE flat_coeff = flat_exp(env, nctx, args_ee[0].r, nullptr, nctx.partialityVar(env));
-    auto* coeff = Expression::cast<ArrayLit>(follow_id(flat_coeff.r));
-    for (unsigned int i = coeff->size(); i--;) {
-      c_coeff[i] = LinearTraits<Lit>::eval(env, (*coeff)[i]);
-    }
-  }
-  cid = env.constants.ids.lin_exp;
-  std::vector<Val> coeffv;
-  std::vector<Ref<Expression>> alv;
-  for (unsigned int i = 0; i < al->size(); i++) {
-    if (Ref<Call> sc = same_call(env, (*al)[i], cid)) {
-      if (auto* alvi_decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al)[i]))) {
-        if (alvi_decl->ti()->domain()) {
-          // Test if the variable has tighter declared bounds than what can be inferred
-          // from its RHS. If yes, keep the variable (don't aggregate), because the tighter
-          // bounds are actually a constraint
-          typename LinearTraits<Lit>::Domain sc_dom =
-              LinearTraits<Lit>::evalDomain(env, alvi_decl->ti()->domain());
-          typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::computeBounds(env, sc);
-          if (LinearTraits<Lit>::domainTighter(sc_dom, sc_bounds)) {
-            coeffv.push_back(c_coeff[i]);
-            alv.emplace_back((*al)[i]);
-            continue;
-          }
-        }
-      }
-
-      Val cd = c_coeff[i];
-      Ref<ArrayLit> sc_coeff = eval_array_lit(env, sc->arg(0));
-      Ref<ArrayLit> sc_al = eval_array_lit(env, sc->arg(1));
-      Val sc_d = LinearTraits<Lit>::eval(env, sc->arg(2));
-      assert(sc_coeff->size() == sc_al->size());
-      for (unsigned int j = 0; j < sc_coeff->size(); j++) {
-        coeffv.push_back(cd * LinearTraits<Lit>::eval(env, (*sc_coeff)[j]));
-        alv.emplace_back((*sc_al)[j]);
-      }
-      d += cd * sc_d;
-    } else {
-      coeffv.push_back(c_coeff[i]);
-      alv.emplace_back((*al)[i]);
-    }
-  }
-  simplify_lin<Lit>(coeffv, alv, d);
-  if (coeffv.empty()) {
-    ret.b = conj(env, b, Ctx(), args_ee);
-    auto lit = LinearTraits<Lit>::newLit(d);
-    ret.r = bind(env, ctx, r, lit);
-    return;
-  }
-  if (coeffv.size() == 1 && coeffv[0] == 1 && d == 0) {
-    ret.b = conj(env, b, Ctx(), args_ee);
-    ret.r = bind(env, ctx, r, alv[0]);
-    return;
-  }
-  std::vector<Ref<Expression>> coeff_ev(coeffv.size());
-  for (auto i = static_cast<unsigned int>(coeff_ev.size()); i--;) {
-    coeff_ev[i] = LinearTraits<Lit>::newLit(coeffv[i]);
-  }
-  auto ncoeff = make<ArrayLit>(Location().introduce(), coeff_ev);
-  Type t = Expression::type(coeff_ev[0]);
-  t.dim(1);
-  ncoeff->type(t);
-  args.emplace_back(ncoeff);
-  bool al_same_as_before = alv.size() == al->size();
-  for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
-    al_same_as_before = al_same_as_before && Expression::equal(alv[i], (*al)[i]);
-  }
-  if (al_same_as_before) {
-    Ref<Expression> rd = follow_id_to_decl(flat_al.r);
-    if (Expression::isa<VarDecl>(rd)) {
-      rd = Expression::cast<VarDecl>(rd)->id();
-    }
-    if (Expression::type(rd).dim() > 1) {
-      Ref<ArrayLit> al = eval_array_lit(env, rd);
-      std::vector<std::pair<int, int>> dims(1);
-      dims[0].first = 1;
-      dims[0].second = static_cast<int>(al->size());
-      rd = make<ArrayLit>(Expression::loc(al), al, dims);
-      Expression::type(rd, Type::arrType(env, Type::top(1), al->type()));
-    }
-    args.emplace_back(rd);
-  } else {
-    auto nal = make<ArrayLit>(Expression::loc(al), alv);
-    nal->type(al->type());
-    args.emplace_back(nal);
-  }
-  args.emplace_back(LinearTraits<Lit>::newLit(d));
 }
 
 /// Special form of disjunction for SCIP
@@ -1161,7 +1007,14 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
         }
       }
     call_nonreif:
-      if (decl->e() == nullptr ||
+      // Preserve deferred comparisons until reader counts decide which linear
+      // operands remain named.
+      bool deferredRelation = false;
+      if (env.deferLinearRelations && decl->e() != nullptr) {
+        deferredRelation =
+            linear_relation(env, Expression::cast<Call>(cr), true).comparison != nullptr;
+      }
+      if (decl->e() == nullptr || deferredRelation ||
           (Expression::type(cr).isPar() && Expression::type(cr).bt() != Type::BT_ANN &&
            !Expression::type(decl->e()).cv())) {
         Call* cr_c = Expression::cast<Call>(cr);

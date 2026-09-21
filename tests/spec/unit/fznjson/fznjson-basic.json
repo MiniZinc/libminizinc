@@ -6,7 +6,7 @@
     "X_INTRODUCED_2_": { "type": "bool", "introduced": true, "defined": true }
   },
   "arrays": {
-    "X_INTRODUCED_0_": { "a": [1, 1] },
+    "X_INTRODUCED_7_": { "a": [1, 1] },
     "X_INTRODUCED_6_": { "a": [1, -1] },
     "X_INTRODUCED_3_": { "a": ["b"] },
     "X_INTRODUCED_4_": { "a": ["x", "y"] }
@@ -20,7 +20,7 @@
     },
     {
       "id": "int_lin_le_reif",
-      "args": ["X_INTRODUCED_0_", ["x", "y"], 3, "X_INTRODUCED_2_"],
+      "args": ["X_INTRODUCED_7_", ["x", "y"], 3, "X_INTRODUCED_2_"],
       "defines": "X_INTRODUCED_2_"
     }
   ],
