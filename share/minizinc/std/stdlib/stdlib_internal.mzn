@@ -3085,3 +3085,9 @@ predicate mzn_internal_array_elem_in(var $$E: x, var set of $$E: dom) :: mzn_int
 predicate mzn_internal_array_elem_in(var float: x, set of float: dom) :: mzn_internal_representation = x in dom;
 predicate mzn_internal_array_elem_in(var set of $$E: x, set of $$E: dom) :: mzn_internal_representation = x subset dom;
 predicate mzn_internal_array_elem_in(var set of $$E: x, var set of $$E: dom) :: mzn_internal_representation = x subset dom;
+
+% Internal functions for returning dummy values inside the domain of a variable
+function int: mzn_safe_default(var int: x) =
+  if lb(x) != -infinity then lb(x) elseif ub(x) != infinity then ub(x) else 0 endif;
+function float: mzn_safe_default(var float: x) =
+  if lb(x) != -infinity then lb(x) elseif ub(x) != infinity then ub(x) else 0.0 endif;
