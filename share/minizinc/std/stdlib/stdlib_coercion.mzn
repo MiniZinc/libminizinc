@@ -236,6 +236,8 @@ function opt set of int: enum2int(opt set of $$E: x) :: mzn_internal_representat
 function set of int: enum2int(set of $$E: x) :: mzn_internal_representation;
 /** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
 function var set of int: enum2int(var set of $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function var opt set of int: enum2int(var opt set of $$E: x) :: mzn_internal_representation;
 
 /** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
 function array [$X] of int: enum2int(array [$X] of $$E: x) :: mzn_internal_representation;
@@ -256,6 +258,9 @@ function array [$X] of set of int: enum2int(array [$X] of set of $$E: x)
   :: mzn_internal_representation;
 /** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
 function array [$X] of var set of int: enum2int(array [$X] of var set of $$E: x)
+  :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return the underlying integer representation of \a x */
+function array [$X] of var opt set of int: enum2int(array [$X] of var opt set of $$E: x)
   :: mzn_internal_representation;
 
 /** @group stdlib.builtins.coercion Return x with its index set coerced to integers */

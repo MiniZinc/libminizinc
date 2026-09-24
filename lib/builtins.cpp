@@ -4951,11 +4951,15 @@ void register_builtins(Env& e) {
     rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
     t[0] = Type::varsetint();
     rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
+    t[0].ot(Type::OT_OPTIONAL);
+    rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
     t[0] = Type::varint(-1);
     rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
     t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
     t[0] = Type::varsetint(-1);
+    rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
+    t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, env.constants.ids.enum2int, t, b_enum2int);
 
     for (int i = 1; i <= 6; i++) {

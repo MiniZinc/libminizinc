@@ -14,6 +14,8 @@ function set of $$E: enum_of(var opt $$E: x) :: mzn_internal_representation;
 /** @group stdlib.builtins.enum Return enum set of \a x */
 function set of $$E: enum_of(var set of $$E: x) :: mzn_internal_representation;
 /** @group stdlib.builtins.enum Return enum set of \a x */
+function set of $$E: enum_of(var opt set of $$E: x) :: mzn_internal_representation;
+/** @group stdlib.builtins.enum Return enum set of \a x */
 function set of $$E: enum_of(array [$T] of var opt $$E: x) :: mzn_internal_representation;
 /** @group stdlib.builtins.enum Return enum set of \a x */
 function set of $$E: enum_of(array [$T] of var set of $$E: x) :: mzn_internal_representation;
@@ -24,6 +26,9 @@ function opt $$E: to_enum_internal(set of $$E: X, opt int: x) :: mzn_internal_re
 function var $$E: to_enum_internal(set of $$E: X, var int: x) :: mzn_internal_representation;
 function var opt $$E: to_enum_internal(set of $$E: X, var opt int: x)
    :: mzn_internal_representation;
+function set of $$E: to_enum_internal(set of $$E: X, set of int: x) :: mzn_internal_representation;
+function var set of $$E: to_enum_internal(set of $$E: X, var set of int: x)
+  :: mzn_internal_representation;
 function array [int] of $$E: to_enum_internal(set of $$E: X, array [int] of int: x)
   :: mzn_internal_representation;
 function array [int] of opt $$E: to_enum_internal(set of $$E: X, array [int] of opt int: x)
