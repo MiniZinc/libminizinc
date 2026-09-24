@@ -315,6 +315,16 @@ function tuple(var bool, var set of int): opt_internal_set(var opt set of int: x
     constraint b \/ s = {};
   } in (b, s);
 
+/* Construct a var opt set that occurs iff \a b, with value \a s if it occurs. The value of \a s
+  must be a subset of \a u. */
+function var opt set of $$E: mzn_opt_set(var bool: b, var set of $$E: s, set of $$E: u)
+  :: promise_total =
+  let {
+    var opt set of u: r;
+    constraint occurs(r) = b;
+    constraint b -> deopt(r) = s;
+  } in r;
+
 predicate mzn_reverse_map_var(
   var opt set of int: x,
 ) =

@@ -1990,6 +1990,16 @@ Expression* b_default(EnvI& env, Call* call) {
         return arg0_r;
       }
 
+      if (def_t.isPar() && def_t.isIntSet() && !def_t.isOpt() && Expression::type(arg0_r).isSet() &&
+          eval_intset(env, call->arg(1))->empty()) {
+        // Default value is {}: an absent var opt set always has the empty set as its deopt
+        // value (see opt_internal_set), so deopt can be used directly
+        auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
+        deopt->decl(env.model->matchFn(env, deopt, false));
+        deopt->type(call->type());
+        return deopt;
+      }
+
       if (def_t.isPar() && def_t.isint() && eval_int(env, call->arg(1)) == 0) {
         // Default value is 0, may be able to use deopt directly
         auto* hzc = Call::a(Location().introduce(), "had_zero", {arg0.r()});
@@ -2025,6 +2035,19 @@ Expression* b_default(EnvI& env, Call* call) {
     return arg0.r();
   }
   if (Expression::type(call->arg(0)).isOpt() && Expression::type(call->arg(0)).dim() == 0) {
+    if (Expression::type(arg0.r()).isvar() && Expression::type(arg0.r()).isSet() && def_t.isPar() &&
+        def_t.isIntSet() && !def_t.isOpt() && eval_intset(env, call->arg(1))->empty()) {
+      // Default value is {}: the deopt value of an absent var opt set is already {}
+      // if defined(x) then deopt(x) else y endif
+      auto* deopt = Call::a(Location().introduce(), "deopt", {arg0.r()});
+      deopt->decl(env.model->matchFn(env, deopt, false));
+      Type deopt_t = Expression::type(arg0.r());
+      deopt_t.ot(Type::OT_PRESENT);
+      deopt->type(deopt_t);
+      auto* deoptIte = new ITE(Location().introduce(), {arg0.b(), deopt}, call->arg(1));
+      deoptIte->type(call->type());
+      return deoptIte;
+    }
     if (Expression::type(arg0.r()).isvar() && def_t.isPar() && def_t.isint() &&
         eval_int(env, call->arg(1)) == 0) {
       // Default value is 0, may be able to use deopt directly
