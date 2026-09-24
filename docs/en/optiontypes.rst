@@ -27,8 +27,9 @@ Declaring and Using Option Types
 
     var opt <type> : <var-name>
 
-  where :mzndef:`<type>` is one of :mzn:`int`, :mzn:`float` or :mzn:`bool` or
-  a fixed range expression.
+  where :mzndef:`<type>` is one of :mzn:`int`, :mzn:`float` or :mzn:`bool`,
+  a fixed range expression, or a set of integers such as :mzn:`set of int` or
+  :mzn:`set of 1..n` (see :ref:`sec-optsets`).
   Option type variables can be parameters.
 
   An option type variable can take the additional value
@@ -60,7 +61,8 @@ Option type variables can be used like their non-optional versions with most ope
 
 Comparison operators return :mzn:`true` if any of their arguments is absent. For instance, :mzn:`3 <= <>` is :mzn:`true`, as is :mzn:`<> <= 3`.
 However, note that equality between option type expressions is only :mzn:`true` if both expressions have the same optionality: :mzn:`<> = <>` is :mzn:`true`,
-but :mzn:`3 = <>` is :mzn:`false`. If you need the "weaker" version of equality, MiniZinc provides the :mzn:`~=` operator: :mzn:`3 ~= <>` is :mzn:`true`. The :mzn:`~!=` operator is the weak version of disequality, it is true if either side is absent or they are not equal. Note that :mzn:`a ~!= b` is different from :mzn:`not (a ~= b)`, because :mzn:`<> ~!= <>` is true, while :mzn:`not (<> ~= <>)` is false.
+but :mzn:`3 = <>` is :mzn:`false`. Set membership is a relation as well: :mzn:`<> in S` is :mzn:`true`, since
+an absent value is ignored (just as :mzn:`{<>}` is the empty set, and the empty set is a subset of :mzn:`S`). If you need the "weaker" version of equality, MiniZinc provides the :mzn:`~=` operator: :mzn:`3 ~= <>` is :mzn:`true`. The :mzn:`~!=` operator is the weak version of disequality, it is true if either side is absent or they are not equal. Note that :mzn:`a ~!= b` is different from :mzn:`not (a ~= b)`, because :mzn:`<> ~!= <>` is true, while :mzn:`not (<> ~= <>)` is false.
 
 Similarly, it can sometimes be useful to have "weak" versions of the arithmetic operators that return :mzn:`<>` if any of their arguments is absent. MiniZinc provides the :mzn:`~+`, :mzn:`~-`, :mzn:`~*`, :mzn:`~/` and :mzn:`~div` operators for this purpose (e.g., :mzn:`3 + <> =3`, but :mzn:`3 ~+ <> = <>`).
 
@@ -78,6 +80,56 @@ Similarly, it can sometimes be useful to have "weak" versions of the arithmetic 
   :mzn:`deopt(v)` returns the normal value of :mzn:`v` or returns undefined if it takes the
   value :mzn:`<>`. This function should not be used in normal models, but is required
   to implement predicates over option type variables.
+
+.. _sec-optsets:
+
+Optional Sets
+-------------
+
+.. index::
+  single: option types; sets
+
+A variable of type :mzn:`var opt set of 1..n` is either a set of integers
+from :mzn:`1..n`, or absent. Note that an absent set :mzn:`<>` is different from
+the empty set :mzn:`{}`: an absent set does not exist, while the empty set
+exists but has no elements. As for :mzn:`var set` variables, the elements must
+be integers (or values of an enumerated type), and a variable needs a finite
+upper bound unless it is defined by an expression.
+
+The set operations treat an absent set in the same way as the other operations
+on option types: it is ignored. A relation with an absent operand is
+:mzn:`true`, and an operation with an absent operand returns the other operand.
+If all operands are absent, the result is the identity of the operation if it has
+one, and absent otherwise:
+
+.. code-block:: minizinc
+
+  % Expression:               Result:
+  e in <>                 =   true
+  x subset <>             =   true
+  x union <>              =   x
+  <> union <>             =   {}
+  x intersect <>          =   x
+  <> intersect <>         =   <>
+  x diff <>               =   x
+  <> diff x               =   <>
+  card(<>)                =   <>
+  min(<>)                 =   <>
+
+As for other option types, equality is strong: :mzn:`<> = <>` is :mzn:`true`,
+but :mzn:`{} = <>` is :mzn:`false`.
+
+Optional sets typically arise from expressions such as an if-then-else with a
+variable condition, or an array comprehension over a set variable:
+
+.. code-block:: minizinc
+
+  var bool: b;
+  var opt set of 1..3: x = if b then {1, 3} else <> endif;
+
+  array [1..3] of var set of 1..3: s;
+  % one (optional) set for each element of s[1]
+  array [int] of var opt set of 1..3: t = [s[i] | i in s[1]];
 
 Option Types in Scheduling Problems
 -----------------------------------

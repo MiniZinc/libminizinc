@@ -11,6 +11,12 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Add support for optional set variables (``var opt set of int``, including sets
+   of enums). A ``var opt set`` is either a set or absent (``<>``), and absent is
+   different from the empty set. The set operations (``in``, ``subset``,
+   ``union``, ``intersect``, ``card`` etc.) ignore absent operands, like the
+   other operations on option types. Par optional sets support the same
+   operations.
 -  Warn when ``op`` or ``lambda`` is used as an identifier or ``==`` is used
    where assignment syntax requires ``=``. These forms are not accepted by the
    new parser.
@@ -42,6 +48,8 @@ Bug fixes:
 -  Fix "unexpected absent literal" internal errors for par array comprehensions
    that produce optional sets, and for functions returning arrays of optional
    sets that contain ``<>``.
+-  Fix set variables that are only used in the output (for example as a field of
+   a tuple) remaining in the FlatZinc for solvers without set support.
 
 .. _v2.10.1:
 

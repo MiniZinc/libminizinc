@@ -5274,6 +5274,40 @@ void flatten(Env& e, FlatteningOptions opt) {
         }
       }
     }
+    // A variable that was only kept alive for a reverse mapper is now unused. The output model
+    // computes its value from the reverse mapper, so remove it (e.g. the set variable of a
+    // var opt set, which a solver without set support would otherwise reject). Occurrences in
+    // optional, annotation and struct typed declarations do not count, since those are never
+    // part of the FlatZinc (see oldflatzinc).
+    auto onlyNonFznOccurrences = [&](VarDecl* vd) {
+      auto it = env.varOccurrences.itemMap.find(vd->id());
+      if (!it.first) {
+        return true;
+      }
+      for (Item* occ : *it.second) {
+        if (occ->removed()) {
+          continue;
+        }
+        auto* occ_vdi = occ->dynamicCast<VarDeclI>();
+        if (occ_vdi == nullptr) {
+          return false;
+        }
+        Type occ_t = occ_vdi->e()->type();
+        if (occ_t.ot() != Type::OT_OPTIONAL && occ_t.bt() != Type::BT_ANN && !occ_t.structBT()) {
+          return false;
+        }
+      }
+      return true;
+    };
+    for (auto& i : m) {
+      if (auto* vdi = i->dynamicCast<VarDeclI>()) {
+        VarDecl* vd = vdi->e();
+        if (!vdi->removed() && vd->e() == nullptr && !is_output(vd) &&
+            env.hasReverseMapper(vd->id()) && onlyNonFznOccurrences(vd)) {
+          env.flatRemoveItem(vdi);
+        }
+      }
+    }
 
     cleanup_output(env);
   } catch (ModelInconsistent&) { /* NOLINT(bugprone-empty-catch) */

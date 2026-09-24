@@ -697,7 +697,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           for (auto& i : *smm) {
             if (auto* vdi = i->dynamicCast<VarDeclI>()) {
-              if (vdi->e()->type().isPar() && vdi->e()->e() == nullptr) {
+              // An undefined optional parameter has been initialised to <> by the type checker
+              if (vdi->e()->type().isPar() &&
+                  (vdi->e()->e() == nullptr || Expression::ann(vdi->e()).contains(
+                                                   Constants::constants().ann.mzn_was_undefined))) {
                 env->envi().checkVars.emplace_back(vdi->e());
               } else if (Expression::ann(vdi->e()).contains(
                              Constants::constants().ann.rhs_from_assignment)) {

@@ -1159,15 +1159,24 @@ Haskell implicitly adding a new value :mzn:`<>` to the type.
 
 |TyInsts|
 The argument of an option type must be one of the base types
-:mzn:`bool`, :mzn:`int` or :mzn:`float`, or a par
+:mzn:`bool`, :mzn:`int` or :mzn:`float`, a set type, or a par
 :ref:`tuple <spec-tuple-types>` or :ref:`record <spec-record-types>` type.
+As for :ref:`set types <spec-sets>`, a :mzn:`var opt` set must be a set of
+integers (or of an enumerated type).
 A :mzn:`var opt` tuple or record is not supported; since a tuple or record
 containing any :mzn:`var` field is itself :mzn:`var`, an optional tuple or
 record may not have :mzn:`var` fields either.
 
 |TySyntax|
 The option type is written :mzndef:`opt <T>` where :mzndef:`<T>` if one of
-the three base types, or one of their constrained instances.
+the three base types, or one of their constrained instances, or a set type.
+
+An optional set (for example :mzn:`var opt set of 1..3`) is either a set or
+:mzn:`<>`. The absent value :mzn:`<>` is different from the empty set :mzn:`{}`.
+A cardinality restriction as in :mzn:`var opt set(2) of 1..3` applies only if the
+set occurs.
+Note that a set literal cannot contain :mzn:`<>` as an element: absent values in a
+set literal are ignored, so :mzn:`{<>, 1}` is the (non-optional) set :mzn:`{1}`.
 
 For a tuple or record, :mzn:`opt` makes it optional as a *whole*: a value
 of type :mzn:`opt T` is either a complete value of type :mzn:`T`, or :mzn:`<>`.
@@ -4189,6 +4198,37 @@ function :mzn:`deopt`
   % Note that this is not really a function only a pseudo function placeholder
   % used in the translation of option types to non-option types.
   % \pjs{Explain better}
+
+The operations on optional values ignore absent operands. A relation
+with an absent operand (such as :mzn:`<=`, :mzn:`in`, :mzn:`subset` or
+:mzn:`superset`) is :mzn:`true`. An operation with an absent operand returns the
+other operand; if all operands are absent, it returns the identity of the operation
+if it has one (for example :mzn:`0` for :mzn:`+`, or :mzn:`{}` for :mzn:`union`),
+and :mzn:`<>` otherwise. Equality :mzn:`=` and disequality :mzn:`!=` are the
+exception: :mzn:`<>` is only equal to :mzn:`<>` (the weak versions are :mzn:`~=` and
+:mzn:`~!=`).
+
+For optional sets, this means that :mzn:`e in s` holds if and only if
+:mzn:`{e} subset s` holds, and in particular :mzn:`<> in s` and :mzn:`e in <>`
+are both :mzn:`true`. The operations are:
+
+.. code-block:: minizinc
+
+  var bool:           'in'(var opt $$E: x, var opt set of $$E: s)  % true if x or s is absent
+  var bool:           'subset'(var opt set of $$E: x, var opt set of $$E: y)
+  var bool:           'superset'(var opt set of $$E: x, var opt set of $$E: y)
+  var set of $$E:     'union'(var opt set of $$E: x, var opt set of $$E: y)
+  var set of $$E:     'symdiff'(var opt set of $$E: x, var opt set of $$E: y)
+  var opt set of $$E: 'intersect'(var opt set of $$E: x, var opt set of $$E: y)
+  var opt set of $$E: 'diff'(var opt set of $$E: x, var opt set of $$E: y)
+  var opt int:        card(var opt set of $$E: x)
+  var opt $$E:        min(var opt set of $$E: x)
+  var opt $$E:        max(var opt set of $$E: x)
+
+together with the set orderings :mzn:`<`, :mzn:`<=`, :mzn:`>` and :mzn:`>=`,
+:mzn:`array_union` and :mzn:`array_intersect`, and par versions of all of these.
+The result of :mzn:`intersect` is not optional if either operand is not optional,
+and the result of :mzn:`diff` is not optional if its left operand is not optional.
 
 .. _spec-other-operations:
 
