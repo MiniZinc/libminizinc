@@ -36,6 +36,8 @@ include "fzn_if_then_else_var_float.mzn";
 include "fzn_if_then_else_var_opt_float.mzn";
 include "fzn_if_then_else_set.mzn";
 include "fzn_if_then_else_var_set.mzn";
+include "fzn_if_then_else_opt_set.mzn";
+include "fzn_if_then_else_var_opt_set.mzn";
 include "fzn_if_then_else_partiality.mzn";
 include "lex_less.mzn";
 include "lex_lesseq.mzn";

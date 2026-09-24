@@ -145,9 +145,7 @@ PossibleBaseTypes pbt_from_type(const Type& t) {
     return PBT_ANY;
   }
   if (t.isvar()) {
-    if (t.isOpt()) {
-      return PBT_BIF;
-    }
+    // Must agree with Type::isVarifiableBase: var [opt] $T is bool, int, float or set of int
     if (t.isSet()) {
       return PBT_I;
     }
@@ -251,11 +249,15 @@ void increment_type(Type& t, PossibleBaseTypes pbt) {
       }
     } else {
       if (t.ot() == Type::OT_OPTIONAL) {
-        if (t.bt() != Type::BT_FLOAT) {
+        if (t.st() == Type::ST_SET) {
+          t.bt(Type::BT_BOOL);
+          t.st(Type::ST_PLAIN);
+          t.ot(Type::OT_PRESENT);
+        } else if (t.bt() != Type::BT_FLOAT) {
           t.bt(static_cast<Type::BaseType>(t.bt() + 1));
         } else {
-          t.bt(Type::BT_BOOL);
-          t.ot(Type::OT_PRESENT);
+          t.bt(Type::BT_INT);
+          t.st(Type::ST_SET);
         }
       } else {
         assert(t.st() != Type::ST_SET);
@@ -532,7 +534,7 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
      $T           : any type (including set types)
      opt $T       : any type (including set types)
      var $T       : bool, int, float, set of int
-     var opt $T   : bool, int, float
+     var opt $T   : bool, int, float, set of int
      set of $T    : bool, int, float
      var set of $T: int
      any $T       : any type, both par and var

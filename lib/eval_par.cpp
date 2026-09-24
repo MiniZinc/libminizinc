@@ -3552,11 +3552,22 @@ public:
     if (Expression::type(e).dim() > 0) {
       return false;
     }
+    if (e == env.constants.absent) {
+      // An absent opt set contributes no elements
+      bounds.push_back(IntSetVal::a());
+      return false;
+    }
     if (!Expression::type(e).isIntSet()) {
       return false;
     }
     if (Expression::type(e).isPar()) {
-      bounds.push_back(eval_intset(env, e));
+      if (Expression::type(e).isOpt()) {
+        GCLock lock;
+        Expression* v = eval_par(env, e);
+        bounds.push_back(v == env.constants.absent ? IntSetVal::a() : eval_intset(env, v));
+      } else {
+        bounds.push_back(eval_intset(env, e));
+      }
       return false;
     }
     return true;
@@ -3720,7 +3731,7 @@ public:
     } else if ((c->decl() != nullptr) && (c->decl()->ti()->domain() != nullptr) &&
                !Expression::isa<TIId>(c->decl()->ti()->domain())) {
       for (unsigned int i = 0; i < c->argCount(); i++) {
-        if (Expression::type(c->arg(i)).isIntSet()) {
+        if (Expression::type(c->arg(i)).isIntSet() || c->arg(i) == env.constants.absent) {
           assert(!bounds.empty());
           bounds.pop_back();
         }

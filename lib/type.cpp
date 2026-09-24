@@ -168,10 +168,7 @@ void Type::mkPresentDeep(EnvI& env) {
 }
 
 bool Type::isVarifiable(const EnvI& env) const {
-  return !contains(env, [](Type t) {
-    return t.dim() != 0 || t.bt() == BT_STRING || t.bt() == BT_ANN ||
-           (t.st() == ST_SET && (t.isOpt() || (t.bt() != BT_INT && t.bt() != BT_BOT)));
-  });
+  return !contains(env, [](Type t) { return t.dim() != 0 || !t.isVarifiableBase(); });
 }
 
 bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
@@ -343,7 +340,7 @@ Type Type::commonType(EnvI& env, Type t1, Type t2, bool strictEnums) {
     common.ot(Type::OT_OPTIONAL);
   }
   common.cv(t1.cv() || t2.cv());
-  if (common.isvar() && common.isOpt() && common.st() == Type::ST_SET) {
+  if (common.isvar() && !common.structBT() && !common.isVarifiableBase()) {
     return Type();
   }
   return common;

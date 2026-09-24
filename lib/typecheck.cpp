@@ -2242,11 +2242,7 @@ public:
                           "array slicing with variable range or index not supported");
         }
         tt.mkVar(_env);
-        if (tt.contains(_env, [](Type t) {
-              return t.bt() == Type::BT_ANN || t.bt() == Type::BT_STRING ||
-                     (t.st() == Type::ST_SET &&
-                      ((t.bt() != Type::BT_INT && t.bt() != Type::BT_TOP) || t.isOpt()));
-            })) {
+        if (tt.contains(_env, [](Type t) { return !t.isVarifiableBase(); })) {
           std::ostringstream oss;
           oss << "array access using a variable is not supported for array of "
               << Expression::type(aa->v()).elemType(_env).toString(_env) << ".";
@@ -2632,8 +2628,7 @@ public:
       }
     }
     if (tt.isvar()) {
-      if (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING ||
-          (tt.st() == Type::ST_SET && (tt.bt() != Type::BT_INT || tt.isOpt()))) {
+      if (!tt.isVarifiableBase()) {
         throw TypeError(_env, Expression::loc(c),
                         "invalid type for comprehension: `" + tt.toString(_env) + "'");
       }
@@ -3705,13 +3700,12 @@ public:
       tt.typeId(arrayTypeId);
     }
 
-    if (tt.st() == Type::ST_SET && tt.ti() == Type::TI_VAR &&
-        ((tt.bt() != Type::BT_INT && tt.bt() != Type::BT_TOP) || tt.isOpt())) {
-      throw TypeError(_env, Expression::loc(ti),
-                      "var set element types other than `int' not allowed");
-    }
-    if (tt.isvar() && (tt.bt() == Type::BT_ANN || tt.bt() == Type::BT_STRING ||
-                       (tt.isOpt() && tt.st() == Type::ST_SET))) {
+    if (tt.isvar() && !tt.isVarifiableBase()) {
+      if (tt.st() == Type::ST_SET) {
+        throw TypeError(
+            _env, Expression::loc(ti),
+            "var set element types other than `int' not allowed (in `" + tt.toString(_env) + "')");
+      }
       throw TypeError(_env, Expression::loc(ti),
                       "invalid type of variable declaration: `" + tt.toString(_env) + "'");
     }

@@ -311,7 +311,14 @@ public:
   /// This is a normalisation for comparing types modulo optionality, not a type constructor.
   void mkPresentDeep(EnvI& env);
 
-  /// Return true if this type is varifiable
+  /// Return true if `var` is valid for this base type, ignoring dimensions and struct fields.
+  /// This is the single definition of which var types exist: no var strings or annotations, and
+  /// var sets (opt or not) only of int (or of bot/top while still being inferred).
+  bool isVarifiableBase() const {
+    return bt() != BT_STRING && bt() != BT_ANN &&
+           (st() != ST_SET || bt() == BT_INT || bt() == BT_BOT || bt() == BT_TOP);
+  }
+  /// Return true if this type is varifiable (non-array, and every nested type is varifiable)
   bool isVarifiable(const EnvI& env) const;
   /// Return true if the predicate holds for this type or any nested type for structs
   bool contains(const EnvI& env, std::function<bool(const Type)> p) const;

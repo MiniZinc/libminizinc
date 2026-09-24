@@ -881,6 +881,9 @@ IntVal b_max_parsetint(EnvI& env, Call* call) {
 }
 IntSetVal* b_lb_set(EnvI& env, Expression* e) {
   Expression* ee = follow_id_to_value(e);
+  if (ee == env.constants.absent) {
+    return IntSetVal::a();
+  }
   if (Expression::type(ee).isPar()) {
     return eval_intset(env, ee);
   }
@@ -3889,6 +3892,7 @@ Expression* b_enum2int(EnvI& env, Call* call) {
   return call->arg(0);
 }
 
+// NOLINTNEXTLINE(readability-function-size): just the registration calls for all builtins
 void register_builtins(Env& e) {
   EnvI& env = e.envi();
   Model* m = env.model;
@@ -4328,15 +4332,22 @@ void register_builtins(Env& e) {
     t[0] = Type::varsetint();
     rb(env, m, ASTString("ub"), t, b_ub_set);
     rb(env, m, ASTString("lb"), t, b_lb_set);
+    t[0].ot(Type::OT_OPTIONAL);
+    rb(env, m, ASTString("ub"), t, b_ub_set);
+    rb(env, m, ASTString("lb"), t, b_lb_set);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::varsetint(1);
     rb(env, m, ASTString("lb_array"), t, b_array_lb_set);
+    t[0].ot(Type::OT_OPTIONAL);
+    rb(env, m, ASTString("lb_array"), t, b_array_lb_set);
   }
   {
     std::vector<Type> t(1);
     t[0] = Type::varsetint(1);
+    rb(env, m, ASTString("ub_array"), t, b_array_ub_set);
+    t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("ub_array"), t, b_array_ub_set);
   }
   {
@@ -4470,6 +4481,8 @@ void register_builtins(Env& e) {
   {
     std::vector<Type> t(1);
     t[0] = Type::varsetint();
+    rb(env, m, ASTString("has_ub_set"), t, b_has_ub_set);
+    t[0].ot(Type::OT_OPTIONAL);
     rb(env, m, ASTString("has_ub_set"), t, b_has_ub_set);
   }
   {
