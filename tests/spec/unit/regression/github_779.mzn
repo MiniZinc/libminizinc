@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode]
+solvers: [gecode, chuffed]
 expected: !Result
   solution: !Solution
     xy_shapes: [!!set {2}, !!set {1, 2}]

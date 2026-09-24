@@ -3447,6 +3447,15 @@ predicate mzn_internal_set_card(var set of $$E: s, set of int: e) :: mzn_interna
 predicate mzn_internal_set_card(var set of $$E: s, var set of int: e) :: mzn_internal_representation = card(s) in e;
 predicate mzn_internal_set_card(var set of $$E: s, int: e) :: mzn_internal_representation = card(s) = e;
 predicate mzn_internal_set_card(var set of $$E: s, var int: e) :: mzn_internal_representation = card(s) = e;
+% The cardinality of an optional set is only restricted if the set occurs
+predicate mzn_internal_set_card(var opt set of $$E: s, set of int: e) :: mzn_internal_representation =
+  absent(s) \/ card(deopt(s)) in e;
+predicate mzn_internal_set_card(var opt set of $$E: s, var set of int: e) :: mzn_internal_representation =
+  absent(s) \/ card(deopt(s)) in e;
+predicate mzn_internal_set_card(var opt set of $$E: s, int: e) :: mzn_internal_representation =
+  absent(s) \/ card(deopt(s)) = e;
+predicate mzn_internal_set_card(var opt set of $$E: s, var int: e) :: mzn_internal_representation =
+  absent(s) \/ card(deopt(s)) = e;
 
 predicate mzn_internal_array_elem_in(var $$E: x, set of $$E: dom) :: mzn_internal_representation = x in dom;
 predicate mzn_internal_array_elem_in(var $$E: x, var set of $$E: dom) :: mzn_internal_representation = x in dom;

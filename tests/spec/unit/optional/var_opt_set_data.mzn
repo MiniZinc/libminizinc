@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode]
+solvers: [gecode, chuffed]
 extra_files: [var_opt_set_data.dzn]
 expected: !Result
   solution: !Solution
