@@ -21,6 +21,10 @@ Changes:
    which raises the CMake required to build MiniZinc to 3.20.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
+-  Make ``x in S`` true when the optional value ``x`` is absent (it was false).
+   An absent value is now ignored consistently: ``<> in S`` is equivalent to
+   ``{<>} subset S``, and agrees with the ``set_in`` constraint on optional
+   integers and with the other relations on optional values, such as ``<=``.
 
 Bug fixes:
 ^^^^^^^^^^
@@ -35,6 +39,9 @@ Bug fixes:
 -  Fix an "unexpected absent literal" internal error when a function that
    compares optional values is used to compute an output value
    (:bugref:`1057`).
+-  Fix "unexpected absent literal" internal errors for par array comprehensions
+   that produce optional sets, and for functions returning arrays of optional
+   sets that contain ``<>``.
 
 .. _v2.10.1:
 

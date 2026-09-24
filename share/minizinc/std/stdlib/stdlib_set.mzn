@@ -10,21 +10,21 @@ function bool: 'in'($$E: x, set of $$E: y) :: mzn_internal_representation;
 function var bool: 'in'(var $$E: x, set of $$E: y);
 /** @group stdlib.builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var $$E: x, var set of $$E: y);
-/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
-function var bool: 'in'(var opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
-/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
-function bool: 'in'(opt $$E: x, set of $$E: y) = occurs(x) /\ deopt(x) in y;
-/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
-function var bool: 'in'(var opt $$E: x, var set of $$E: y) = occurs(x) /\ deopt(x) in y;
+/** @group stdlib.builtins.set \a x is an element of the set \a y. True if \a x is absent. */
+function var bool: 'in'(var opt $$E: x, set of $$E: y) = absent(x) \/ deopt(x) in y;
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. True if \a x is absent. */
+function bool: 'in'(opt $$E: x, set of $$E: y) = absent(x) \/ deopt(x) in y;
+/** @group stdlib.builtins.set \a x is an element of the set \a y. True if \a x is absent. */
+function var bool: 'in'(var opt $$E: x, var set of $$E: y) = absent(x) \/ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function bool: 'in'(float: x, set of float: y) :: mzn_internal_representation;
 /** @group stdlib.builtins.set Test if \a x is an element of the set \a y */
 function var bool: 'in'(var float: x, set of float: y);
-/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. False if \a x is absent. */
-function bool: 'in'(opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
-/** @group stdlib.builtins.set \a x is an element of the set \a y. False if \a x is absent. */
-function var bool: 'in'(var opt float: x, set of float: y) = occurs(x) /\ deopt(x) in y;
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. True if \a x is absent. */
+function bool: 'in'(opt float: x, set of float: y) = absent(x) \/ deopt(x) in y;
+/** @group stdlib.builtins.set \a x is an element of the set \a y. True if \a x is absent. */
+function var bool: 'in'(var opt float: x, set of float: y) = absent(x) \/ deopt(x) in y;
 
 /** @group stdlib.builtins.set Test if \a x is a subset of \a y */
 function bool: 'subset'(set of $T: x, set of $T: y) :: mzn_internal_representation;
@@ -183,3 +183,162 @@ function array [int] of $$E: set_to_sparse_inverse(set of $$E: S);
 /* set2iter will be used to redefine comprehensions over set decision variables
 when it has a definition. */
 function array [int] of var opt $$E: set2iter(var set of $$E: s) :: mzn_internal_representation;
+
+/*
+  Set operations on option types
+
+  An absent operand is ignored: a relation with an absent operand is true, and an operation with
+  an absent operand returns the other operand. If all operands of an operation are absent, the
+  result is the identity of the operation if it has one ({} for union and symdiff), and absent
+  otherwise (intersect, diff). In particular, e in s is equivalent to {e} subset s.
+  Equality and disequality are strong: <> is only equal to <>.
+*/
+
+/** @group stdlib.builtins.set \a x is an element of the set \a y. True if \a y is absent. */
+function var bool: 'in'(var $$E: x, var opt set of $$E: y) = absent(y) \/ x in deopt(y);
+/** @group stdlib.builtins.set \a x is an element of the set \a y. True if \a x or \a y is absent. */
+function var bool: 'in'(var opt $$E: x, var opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) in deopt(y);
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. True if \a y is absent. */
+function bool: 'in'($$E: x, opt set of $$E: y) = absent(y) \/ x in deopt(y);
+/** @group stdlib.builtins.set Test if \a x is an element of the set \a y. True if \a x or \a y is absent. */
+function bool: 'in'(opt $$E: x, opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) in deopt(y);
+
+/** @group stdlib.builtins.set \a x is a subset of \a y. True if \a x or \a y is absent. */
+function var bool: 'subset'(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(y) \/ (x default {}) subset deopt(y);
+/** @group stdlib.builtins.set Test if \a x is a subset of \a y. True if \a x or \a y is absent. */
+function bool: 'subset'(opt set of $$E: x, opt set of $$E: y) =
+  absent(y) \/ (x default {}) subset deopt(y);
+/** @group stdlib.builtins.set \a x is a superset of \a y. True if \a x or \a y is absent. */
+function var bool: 'superset'(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(x) \/ deopt(x) superset (y default {});
+/** @group stdlib.builtins.set Test if \a x is a superset of \a y. True if \a x or \a y is absent. */
+function bool: 'superset'(opt set of $$E: x, opt set of $$E: y) =
+  absent(x) \/ deopt(x) superset (y default {});
+
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function var bool: '<'(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function bool: '<'(opt set of $$E: x, opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function var bool: '<='(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function bool: '<='(opt set of $$E: x, opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function var bool: '>'(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function bool: '>'(opt set of $$E: x, opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function var bool: '>='(var opt set of $$E: x, var opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+/** @group stdlib.builtins.set Set ordering. True if \a x or \a y is absent. */
+function bool: '>='(opt set of $$E: x, opt set of $$E: y) =
+  absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+
+/** @group stdlib.builtins.set Return the union of sets \a x and \a y, ignoring absent sets.
+  The union of two absent sets is the empty set. */
+function var set of $$E: 'union'(var opt set of $$E: x, var opt set of $$E: y)
+  :: promise_commutative = (x default {}) union (y default {});
+/** @group stdlib.builtins.set Return the union of sets \a x and \a y, ignoring absent sets.
+  The union of two absent sets is the empty set. */
+function set of $$E: 'union'(opt set of $$E: x, opt set of $$E: y) :: promise_commutative =
+  (x default {}) union (y default {});
+
+/** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y,
+  ignoring absent sets. The symmetric difference of two absent sets is the empty set. */
+function var set of $$E: 'symdiff'(var opt set of $$E: x, var opt set of $$E: y)
+  :: promise_commutative = (x default {}) symdiff (y default {});
+/** @group stdlib.builtins.set Return the symmetric set difference of sets \a x and \a y,
+  ignoring absent sets. The symmetric difference of two absent sets is the empty set. */
+function set of $$E: 'symdiff'(opt set of $$E: x, opt set of $$E: y) :: promise_commutative =
+  (x default {}) symdiff (y default {});
+
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring absent sets.
+  The intersection of two absent sets is absent. */
+function var opt set of $$E: 'intersect'(var opt set of $$E: x, var opt set of $$E: y)
+  :: promise_commutative =
+  let {
+    any: u = ub(x) union ub(y);
+  } in mzn_opt_set(occurs(x) \/ occurs(y), (x default u) intersect (y default u), u);
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring \a y if it is absent. */
+function var set of $$E: 'intersect'(var set of $$E: x, var opt set of $$E: y) =
+  x intersect (y default ub(x));
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring \a x if it is absent. */
+function var set of $$E: 'intersect'(var opt set of $$E: x, var set of $$E: y) =
+  (x default ub(y)) intersect y;
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring absent sets.
+  The intersection of two absent sets is absent. */
+function opt set of $$E: 'intersect'(opt set of $$E: x, opt set of $$E: y) :: promise_commutative =
+  if absent(x) then y elseif absent(y) then x else deopt(x) intersect deopt(y) endif;
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring \a y if it is absent. */
+function set of $$E: 'intersect'(set of $$E: x, opt set of $$E: y) =
+  if absent(y) then x else x intersect deopt(y) endif;
+/** @group stdlib.builtins.set Return the intersection of sets \a x and \a y, ignoring \a x if it is absent. */
+function set of $$E: 'intersect'(opt set of $$E: x, set of $$E: y) =
+  if absent(x) then y else deopt(x) intersect y endif;
+
+/** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \), ignoring
+  \a y if it is absent. Absent if \a x is absent. */
+function var opt set of $$E: 'diff'(var opt set of $$E: x, var opt set of $$E: y) =
+  mzn_opt_set(occurs(x), (x default {}) diff (y default {}), ub(x));
+/** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \), ignoring
+  \a y if it is absent. */
+function var set of $$E: 'diff'(var set of $$E: x, var opt set of $$E: y) = x diff (y default {});
+/** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \), ignoring
+  \a y if it is absent. Absent if \a x is absent. */
+function opt set of $$E: 'diff'(opt set of $$E: x, opt set of $$E: y) =
+  if absent(x) then <> else deopt(x) diff (y default {}) endif;
+/** @group stdlib.builtins.set Return the set difference of sets \(\a x \setminus \a y \), ignoring
+  \a y if it is absent. */
+function set of $$E: 'diff'(set of $$E: x, opt set of $$E: y) = x diff (y default {});
+
+/** @group stdlib.builtins.set Return the cardinality of the set \a x. Absent if \a x is absent. */
+function var opt int: card(var opt set of $$E: x) =
+  if occurs(x) then card(deopt(x)) else <> endif;
+/** @group stdlib.builtins.set Return the cardinality of the set \a x. Absent if \a x is absent. */
+function opt int: card(opt set of $$E: x) = if occurs(x) then card(deopt(x)) else <> endif;
+
+/** @group stdlib.builtins.set Return the minimum of the set \a s. Absent if \a s is absent. */
+function var opt $$E: min(var opt set of $$E: s) = if occurs(s) then min(deopt(s)) else <> endif;
+/** @group stdlib.builtins.set Return the minimum of the set \a s. Absent if \a s is absent. */
+function opt $$E: min(opt set of $$E: s) = if occurs(s) then min(deopt(s)) else <> endif;
+/** @group stdlib.builtins.set Return the maximum of the set \a s. Absent if \a s is absent. */
+function var opt $$E: max(var opt set of $$E: s) = if occurs(s) then max(deopt(s)) else <> endif;
+/** @group stdlib.builtins.set Return the maximum of the set \a s. Absent if \a s is absent. */
+function opt $$E: max(opt set of $$E: s) = if occurs(s) then max(deopt(s)) else <> endif;
+
+/** @group stdlib.builtins.set Return the union of the sets in array \a x, ignoring absent sets */
+function var set of $$E: array_union(array [$T] of var opt set of $$E: x) :: promise_commutative =
+  array_union([xi default {} | xi in array1d(x)]);
+/** @group stdlib.builtins.set Return the union of the sets in array \a x, ignoring absent sets */
+function set of $$E: array_union(array [$T] of opt set of $$E: x) :: promise_commutative =
+  array_union([xi default {} | xi in array1d(x)]);
+/** @group stdlib.builtins.set Return the intersection of the sets in array \a x, ignoring absent
+  sets. Absent if all sets are absent (or \a x is empty). */
+function var opt set of $$E: array_intersect(array [$T] of var opt set of $$E: x)
+  :: promise_commutative =
+  if length(x) = 0 then
+    <>
+  else
+    let {
+      any: u = ub_array(x);
+    } in mzn_opt_set(
+      exists (xi in array1d(x)) (occurs(xi)),
+      array_intersect([xi default u | xi in array1d(x)]),
+      u,
+    )
+  endif;
+/** @group stdlib.builtins.set Return the intersection of the sets in array \a x, ignoring absent
+  sets. Absent if all sets are absent (or \a x is empty). */
+function opt set of $$E: array_intersect(array [$T] of opt set of $$E: x) :: promise_commutative =
+  let {
+    any: xs = [deopt(xi) | xi in array1d(x) where occurs(xi)];
+  } in if length(xs) = 0 then <> else array_intersect(xs) endif;

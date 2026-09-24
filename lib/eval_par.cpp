@@ -517,7 +517,14 @@ public:
           }
         } else {
           for (unsigned int i = 0; i < v->size(); i++) {
-            IntSetVal* iv = eval_intset(env, (*v)[i]);
+            auto* v_i = (*v)[i];
+            if (Expression::type(v_i).isOpt()) {
+              v_i = eval_par(env, v_i);
+              if (v_i == env.constants.absent) {
+                continue;
+              }
+            }
+            IntSetVal* iv = eval_intset(env, v_i);
             IntSetRanges isv_r(isv);
             IntSetRanges v_r(iv);
             if (!Ranges::subset(v_r, isv_r)) {
@@ -756,7 +763,8 @@ ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_FLOAT) {
     auto a = eval_comp<EvalFloatLit>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
-  } else if (e->type().st() == Type::ST_SET) {
+  } else if (e->type().st() == Type::ST_SET && !e->type().isOpt()) {
+    // (opt sets may contain <>, so they are evaluated by EvalPar below)
     auto a = eval_comp<EvalSetLit>(env, e);
     ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_STRING) {
