@@ -40,13 +40,14 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     Expression::type(ret, ret_t);
     return ret;
   }
+  if (t.ot() == Type::OT_OPTIONAL) {
+    // (including opt sets)
+    return env.constants.absent;
+  }
   if (t.st() == Type::ST_SET) {
     Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
     Expression::type(ret, ret_t);
     return ret;
-  }
-  if (t.ot() == Type::OT_OPTIONAL) {
-    return env.constants.absent;
   }
   switch (t.bt()) {
     case Type::BT_INT:
