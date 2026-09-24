@@ -27,6 +27,11 @@ Changes:
    which raises the CMake required to build MiniZinc to 3.20.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
+-  Report a type error when a ``var`` type-inst variable (for example in a
+   parameter ``var $T: x``) would be instantiated with a type that has no
+   ``var`` version, such as ``string`` or ``set of float``. Such calls used to
+   produce invalid types like ``var string``. Use ``any $T`` for parameters
+   that can be both par and var.
 -  Make ``x in S`` true when the optional value ``x`` is absent (it was false).
    An absent value is now ignored consistently: ``<> in S`` is equivalent to
    ``{<>} subset S``, and agrees with the ``set_in`` constraint on optional
