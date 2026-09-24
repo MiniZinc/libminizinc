@@ -34,6 +34,18 @@ predicate var_dom(var set of int: x, set of int: s) =
 
 predicate var_dom(set of int: x, set of int: s) = x subset s;
 
+predicate var_dom(var opt set of int: x, set of int: s) =
+  % An absent set has the empty set as its value (see opt_internal_set)
+  if is_fixed(x) /\ absent(fix(x)) then true else var_dom(deopt(x), s) endif;
+predicate var_dom(array [$T] of var opt set of int: x, set of int: d) =
+  let {
+    array [int] of var opt set of int: xx = array1d(x);
+  } in forall (i in index_set(xx)) (var_dom(xx[i], d));
+
+test var_dom(opt set of int: x, set of int: s) = absent(x) \/ deopt(x) subset s;
+test var_dom(array [$T] of opt set of int: x, set of int: d) =
+  forall (xx in array1d(x)) (var_dom(xx, d));
+
 predicate var_dom(var float: x, float: l, float: u) =
   if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true else x >= l /\ x <= u endif;
 
@@ -192,6 +204,16 @@ function var float: objective_deopt_(var opt float: x, bool: direction) =
   } in if occurs(x) then deopt(x) else worst endif;
 
 predicate mzn_alias_eq(var set of int: x, var set of int: y) = set_eq(x, y);
+predicate mzn_alias_eq(var opt set of int: x, var opt set of int: y) =
+  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
+/* True iff both \a x and \a y are absent or
+  both are present and have the same value. */
+predicate set_eq(var opt set of int: x, var opt set of int: y) :: promise_commutative =
+  (absent(x) /\ absent(y)) \/ (occurs(x) /\ occurs(y) /\ (deopt(x) = deopt(y)) :: maybe_partial);
+/* True iff only one of \a x and \a y is absent or
+  both are present and have different values. */
+predicate set_ne(var opt set of int: x, var opt set of int: y) :: promise_commutative =
+  (absent(x) != absent(y)) \/ (occurs(x) /\ occurs(y) /\ (deopt(x) != deopt(y)) :: maybe_partial);
 
 % Par versions of element to allow for dynamic dispatch
 function any $T: element(int: idx, array [int] of any $T: x) = x[idx];

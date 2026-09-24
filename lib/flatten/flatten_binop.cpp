@@ -25,7 +25,10 @@
 namespace MiniZinc {
 
 ASTString op_to_builtin(EnvI& env, Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
-  if (Expression::type(op_rhs).st() == Type::ST_SET) {
+  // The rhs may be <> (type opt bot) when comparing a (var) opt set, so check the lhs as well
+  if (Expression::type(op_rhs).st() == Type::ST_SET ||
+      (Expression::type(op_rhs).bt() == Type::BT_BOT &&
+       Expression::type(op_lhs).st() == Type::ST_SET)) {
     switch (bot) {
       case BOT_LE:
         return env.constants.ids.set_.lt;

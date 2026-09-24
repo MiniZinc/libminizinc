@@ -25,6 +25,10 @@ function float: ub(var opt float: x);
 function set of $$E: lb(var set of $$E: x);
 /** @group stdlib.reflect Return upper bound of \a x */
 function set of $$E: ub(var set of $$E: x);
+/** @group stdlib.reflect Return lower bound of \a x (the elements that \a x contains if it occurs) */
+function set of $$E: lb(var opt set of $$E: x);
+/** @group stdlib.reflect Return upper bound of \a x (the elements that \a x may contain if it occurs) */
+function set of $$E: ub(var opt set of $$E: x);
 /** @group stdlib.reflect Return array of lower bounds of the elements in array \a x */
 function array [$U] of $$E: lb(array [$U] of var $$E: x) = arrayXd(x, [lb(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of upper bounds of the elements in array \a x */
@@ -40,6 +44,12 @@ function array [$U] of set of $$E: lb(array [$U] of var set of $$E: x) =
   arrayXd(x, [lb(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return array of upper bounds of the elements in array \a x */
 function array [$U] of set of $$E: ub(array [$U] of var set of $$E: x) =
+  arrayXd(x, [ub(xx) | xx in array1d(x)]);
+/** @group stdlib.reflect Return array of lower bounds of the elements in array \a x */
+function array [$U] of set of $$E: lb(array [$U] of var opt set of $$E: x) =
+  arrayXd(x, [lb(xx) | xx in array1d(x)]);
+/** @group stdlib.reflect Return array of upper bounds of the elements in array \a x */
+function array [$U] of set of $$E: ub(array [$U] of var opt set of $$E: x) =
   arrayXd(x, [ub(xx) | xx in array1d(x)]);
 /** @group stdlib.reflect Return minimum of all lower bounds of the elements in array \a x */
 function $$E: lb_array(array [$U] of var $$E: x);
@@ -61,6 +71,10 @@ function float: ub_array(array [$U] of var opt float: x);
 function set of $$E: lb_array(array [$U] of var set of $$E: x);
 /** @group stdlib.reflect Return union of all upper bounds of the elements in array \a x */
 function set of $$E: ub_array(array [$U] of var set of $$E: x);
+/** @group stdlib.reflect Return intersection of all lower bounds of the elements in array \a x */
+function set of $$E: lb_array(array [$U] of var opt set of $$E: x);
+/** @group stdlib.reflect Return union of all upper bounds of the elements in array \a x */
+function set of $$E: ub_array(array [$U] of var opt set of $$E: x);
 /** @group stdlib.reflect Return domain of \a x */
 function set of $$E: dom(var $$E: x);
 /** @group stdlib.reflect Return domain of \a x */
@@ -88,6 +102,8 @@ function par bool: has_bounds(var $$E: x);
 function par bool: has_bounds(var float: x);
 /** @group stdlib.reflect Test if variable \a x has a declared, finite upper bound */
 function par bool: has_ub_set(var set of $$E: x);
+/** @group stdlib.reflect Test if variable \a x has a declared, finite upper bound */
+function par bool: has_ub_set(var opt set of $$E: x);
 
 /** @group stdlib.reflect Check if the value of \a x is fixed at this point
   in evaluation. If it is fixed, return its value, otherwise abort. */

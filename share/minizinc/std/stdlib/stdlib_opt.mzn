@@ -266,6 +266,64 @@ predicate mzn_reverse_map_var(
     constraint (x = reverse_map_var_opt(b, dx)) :: is_reverse_map;
   } in true;
 
+/***
+  @groupdef stdlib.optiontypes.set Option type support for sets
+*/
+
+/** @group stdlib.optiontypes.set True iff \a x is not absent */
+function var bool: occurs(var opt set of int: x) :: promise_total = occurs_set(x);
+
+function bool: occurs_set(opt set of int: x) :: promise_total = occurs(x);
+function bool: occurs_set(var set of int: x) :: promise_total = true;
+function var bool: occurs_set(var opt set of int: x) :: promise_total =
+  let {
+    any: xx = opt_internal_set(x);
+    any: b = xx.1;
+    any: dx = xx.2;
+    constraint (x = reverse_map_var_opt(b, dx)) :: is_reverse_map;
+  } in xx.1;
+
+/** @group stdlib.optiontypes.set Return value of \a x (assumes that \a x is not absent) */
+function var set of int: deopt(var opt set of int: x) :: promise_total = deopt_set(x);
+
+function set of int: deopt_set(opt set of int: x) :: promise_total = deopt(x);
+function var set of int: deopt_set(var set of int: x) :: promise_total = x;
+function var set of int: deopt_set(var opt set of int: x) :: promise_total =
+  let {
+    any: xx = opt_internal_set(x);
+    any: b = xx.1;
+    any: dx = xx.2;
+    constraint (x = reverse_map_var_opt(b, dx)) :: is_reverse_map;
+  } in xx.2;
+
+/** @group stdlib.optiontypes.set Return array of the value of \a x[i] (assumes that \a x[i] is not absent). */
+function array [$$U] of var set of int: deopt(array [$$U] of var opt set of int: x)
+  :: promise_total = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
+
+/** @group stdlib.optiontypes.set True iff \a x is absent */
+function var bool: absent(var opt set of int: x) :: promise_total = not occurs(x);
+
+/* The representation of a var opt set is a Boolean that is true iff the set occurs, and a set
+  variable that is its value if it occurs. An absent set always has the empty set as its value,
+  which avoids duplicate solutions for absent sets. */
+function tuple(var bool, var set of int): opt_internal_set(var opt set of int: x)
+  :: promise_total =
+  let {
+    var bool: b;
+    var set of ub(x): s;
+    constraint b \/ s = {};
+  } in (b, s);
+
+predicate mzn_reverse_map_var(
+  var opt set of int: x,
+) =
+  let {
+    any: xx = opt_internal_set(x);
+    any: b = xx.1;
+    any: dx = xx.2;
+    constraint (x = reverse_map_var_opt(b, dx)) :: is_reverse_map;
+  } in true;
+
 function var opt $T: reverse_map_var_opt(var bool: b, var $T: dx) :: output_only;
 function opt $T: reverse_map_var_opt(bool: b, $T: dx) :: promise_total =
   if b then dx else <> endif;

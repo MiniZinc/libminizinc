@@ -1,9 +1,11 @@
 /***
 !Test
 solvers: [gecode]
-expected: !Error
-  type: TypeError
+expected: !Result
+  solution: !Solution
+    v: 1
+    x: [!!set {1}, null]
 ***/
 
 var 1..1: v;
-any: x = [{v}, <>];
+any: x :: output = [{v}, <>];
