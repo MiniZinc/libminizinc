@@ -2463,10 +2463,6 @@ public:
               throw TypeError(_env, Expression::loc(c->where(i)), oss.str());
             }
             if (!c->set()) {
-              if (Expression::type(c_e).isSet()) {
-                throw TypeError(_env, Expression::loc(c->where(i)),
-                                "variable where clause not allowed in set-valued comprehension");
-              }
               tt.ot(Type::OT_OPTIONAL);
             }
             tt.mkVar(_env);

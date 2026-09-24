@@ -2006,6 +2006,352 @@ function var set of int: element(
     )
   endif;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Element on optional sets
+
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt set of int: element(var opt int: idx, array [int] of var set of int: x) =
+  if absent(idx) then <> else element(deopt(idx), x) endif;
+
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  array [int, int] of var set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of2(x));
+      any: i2 = idx2 default min(index_set_2of2(x));
+      any: xx = element(i1, i2, x);
+    } in if absent(idx1) \/ absent(idx2) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  array [int, int, int] of var set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of3(x));
+      any: i2 = idx2 default min(index_set_2of3(x));
+      any: i3 = idx3 default min(index_set_3of3(x));
+      any: xx = element(i1, i2, i3, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  array [int, int, int, int] of var set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) /\ absent(idx4) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of4(x));
+      any: i2 = idx2 default min(index_set_2of4(x));
+      any: i3 = idx3 default min(index_set_3of4(x));
+      any: i4 = idx4 default min(index_set_4of4(x));
+      any: xx = element(i1, i2, i3, i4, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) \/ absent(idx4) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  var opt int: idx5,
+  array [int, int, int, int, int] of var set of int: x,
+) =
+  if length(x) = 0 then
+    let {
+      constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) /\ absent(idx4) /\ absent(idx5);
+    } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of5(x));
+      any: i2 = idx2 default min(index_set_2of5(x));
+      any: i3 = idx3 default min(index_set_3of5(x));
+      any: i4 = idx4 default min(index_set_4of5(x));
+      any: i5 = idx5 default min(index_set_5of5(x));
+      any: xx = element(i1, i2, i3, i4, i5, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) \/ absent(idx4) \/ absent(idx5) then
+      <>
+    else
+      xx
+    endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5, \a idx6].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  var opt int: idx5,
+  var opt int: idx6,
+  array [int, int, int, int, int, int] of var set of int: x,
+) =
+  if length(x) = 0 then
+    let {
+      constraint
+        absent(idx1) /\
+          absent(idx2) /\
+          absent(idx3) /\
+          absent(idx4) /\
+          absent(idx5) /\
+          absent(idx6);
+    } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of6(x));
+      any: i2 = idx2 default min(index_set_2of6(x));
+      any: i3 = idx3 default min(index_set_3of6(x));
+      any: i4 = idx4 default min(index_set_4of6(x));
+      any: i5 = idx5 default min(index_set_5of6(x));
+      any: i6 = idx6 default min(index_set_6of6(x));
+      any: xx = element(i1, i2, i3, i4, i5, i6, x);
+    } in if absent(idx1) \/
+      absent(idx2) \/
+      absent(idx3) \/
+      absent(idx4) \/
+      absent(idx5) \/
+      absent(idx6) then
+      <>
+    else
+      xx
+    endif
+  endif;
+
+/* Return \a x[\a idx] */
+function var opt set of int: element(var int: idx, array [int] of var opt set of int: x) =
+  let {
+    var bool: occ = element(idx, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d = element(idx, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return \a x[\a idx1, \a idx2] */
+function var opt set of int: element(
+  var int: idx1,
+  var int: idx2,
+  array [int, int] of var opt set of int: x,
+) =
+  let {
+    var bool: occ = element(idx1, idx2, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d = element(idx1, idx2, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return \a x[\a idx1, \a idx2, \a idx3] */
+function var opt set of int: element(
+  var int: idx1,
+  var int: idx2,
+  var int: idx3,
+  array [int, int, int] of var opt set of int: x,
+) =
+  let {
+    var bool: occ = element(idx1, idx2, idx3, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d = element(idx1, idx2, idx3, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return \a x[\a idx1, \a idx2, \a idx3, \a idx4] */
+function var opt set of int: element(
+  var int: idx1,
+  var int: idx2,
+  var int: idx3,
+  var int: idx4,
+  array [int, int, int, int] of var opt set of int: x,
+) =
+  let {
+    var bool: occ = element(idx1, idx2, idx3, idx4, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d = element(idx1, idx2, idx3, idx4, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5] */
+function var opt set of int: element(
+  var int: idx1,
+  var int: idx2,
+  var int: idx3,
+  var int: idx4,
+  var int: idx5,
+  array [int, int, int, int, int] of var opt set of int: x,
+) =
+  let {
+    var bool: occ = element(idx1, idx2, idx3, idx4, idx5, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d =
+      element(idx1, idx2, idx3, idx4, idx5, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5, \a idx6] */
+function var opt set of int: element(
+  var int: idx1,
+  var int: idx2,
+  var int: idx3,
+  var int: idx4,
+  var int: idx5,
+  var int: idx6,
+  array [int, int, int, int, int, int] of var opt set of int: x,
+) =
+  let {
+    var bool: occ =
+      element(idx1, idx2, idx3, idx4, idx5, idx6, arrayXd(x, [occurs(x_i) | x_i in x]));
+    var set of int: d =
+      element(idx1, idx2, idx3, idx4, idx5, idx6, arrayXd(x, [x_i default {} | x_i in x]));
+  } in if occ then d else <> endif;
+
+/* Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt set of int: element(var opt int: idx, array [int] of var opt set of int: x) =
+  if length(x) > 0 /\ not had_zero(idx) /\ min(index_set(x)) = 1 then
+    element(deopt(idx), array1d(0..max(index_set(x)), [<>] ++ x))
+  else
+    if absent(idx) then <> else element(deopt(idx), x) endif
+  endif;
+
+/* Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  array [int, int] of var opt set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of2(x));
+      any: i2 = idx2 default min(index_set_2of2(x));
+      any: xx = element(i1, i2, x);
+    } in if absent(idx1) \/ absent(idx2) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  array [int, int, int] of var opt set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of3(x));
+      any: i2 = idx2 default min(index_set_2of3(x));
+      any: i3 = idx3 default min(index_set_3of3(x));
+      any: xx = element(i1, i2, i3, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  array [int, int, int, int] of var opt set of int: x,
+) =
+  if length(x) = 0 then
+    let { constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) /\ absent(idx4) } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of4(x));
+      any: i2 = idx2 default min(index_set_2of4(x));
+      any: i3 = idx3 default min(index_set_3of4(x));
+      any: i4 = idx4 default min(index_set_4of4(x));
+      any: xx = element(i1, i2, i3, i4, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) \/ absent(idx4) then <> else xx endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  var opt int: idx5,
+  array [int, int, int, int, int] of var opt set of int: x,
+) =
+  if length(x) = 0 then
+    let {
+      constraint absent(idx1) /\ absent(idx2) /\ absent(idx3) /\ absent(idx4) /\ absent(idx5);
+    } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of5(x));
+      any: i2 = idx2 default min(index_set_2of5(x));
+      any: i3 = idx3 default min(index_set_3of5(x));
+      any: i4 = idx4 default min(index_set_4of5(x));
+      any: i5 = idx5 default min(index_set_5of5(x));
+      any: xx = element(i1, i2, i3, i4, i5, x);
+    } in if absent(idx1) \/ absent(idx2) \/ absent(idx3) \/ absent(idx4) \/ absent(idx5) then
+      <>
+    else
+      xx
+    endif
+  endif;
+
+/* Return absent if any index is absent, otherwise return \a x[\a idx1, \a idx2, \a idx3, \a idx4, \a idx5, \a idx6].
+   Undefined if any non-absent index is out of bounds. */
+function var opt set of int: element(
+  var opt int: idx1,
+  var opt int: idx2,
+  var opt int: idx3,
+  var opt int: idx4,
+  var opt int: idx5,
+  var opt int: idx6,
+  array [int, int, int, int, int, int] of var opt set of int: x,
+) =
+  if length(x) = 0 then
+    let {
+      constraint
+        absent(idx1) /\
+          absent(idx2) /\
+          absent(idx3) /\
+          absent(idx4) /\
+          absent(idx5) /\
+          absent(idx6);
+    } in <>
+  else
+    let {
+      any: i1 = idx1 default min(index_set_1of6(x));
+      any: i2 = idx2 default min(index_set_2of6(x));
+      any: i3 = idx3 default min(index_set_3of6(x));
+      any: i4 = idx4 default min(index_set_4of6(x));
+      any: i5 = idx5 default min(index_set_5of6(x));
+      any: i6 = idx6 default min(index_set_6of6(x));
+      any: xx = element(i1, i2, i3, i4, i5, i6, x);
+    } in if absent(idx1) \/
+      absent(idx2) \/
+      absent(idx3) \/
+      absent(idx4) \/
+      absent(idx5) \/
+      absent(idx6) then
+      <>
+    else
+      xx
+    endif
+  endif;
+
 %%%%%%%%%%%%%%%%%%
 % Element on bools
 

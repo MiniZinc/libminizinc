@@ -271,7 +271,7 @@ predicate mzn_reverse_map_var(
 */
 
 /** @group stdlib.optiontypes.set True iff \a x is not absent */
-function var bool: occurs(var opt set of int: x) :: promise_total = occurs_set(x);
+function var bool: occurs(var opt set of $$E: x) :: promise_total = occurs_set(enum2int(x));
 
 function bool: occurs_set(opt set of int: x) :: promise_total = occurs(x);
 function bool: occurs_set(var set of int: x) :: promise_total = true;
@@ -284,7 +284,8 @@ function var bool: occurs_set(var opt set of int: x) :: promise_total =
   } in xx.1;
 
 /** @group stdlib.optiontypes.set Return value of \a x (assumes that \a x is not absent) */
-function var set of int: deopt(var opt set of int: x) :: promise_total = deopt_set(x);
+function var set of $$E: deopt(var opt set of $$E: x) :: promise_total =
+  to_enum_internal(enum_of(x), deopt_set(enum2int(x)));
 
 function set of int: deopt_set(opt set of int: x) :: promise_total = deopt(x);
 function var set of int: deopt_set(var set of int: x) :: promise_total = x;
@@ -297,11 +298,11 @@ function var set of int: deopt_set(var opt set of int: x) :: promise_total =
   } in xx.2;
 
 /** @group stdlib.optiontypes.set Return array of the value of \a x[i] (assumes that \a x[i] is not absent). */
-function array [$$U] of var set of int: deopt(array [$$U] of var opt set of int: x)
+function array [$$U] of var set of $$E: deopt(array [$$U] of var opt set of $$E: x)
   :: promise_total = array1d(index_set(x), [deopt(x[i]) | i in index_set(x)]);
 
 /** @group stdlib.optiontypes.set True iff \a x is absent */
-function var bool: absent(var opt set of int: x) :: promise_total = not occurs(x);
+function var bool: absent(var opt set of $$E: x) :: promise_total = not occurs(x);
 
 /* The representation of a var opt set is a Boolean that is true iff the set occurs, and a set
   variable that is its value if it occurs. An absent set always has the empty set as its value,

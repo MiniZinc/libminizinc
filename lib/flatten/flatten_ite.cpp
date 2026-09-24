@@ -471,7 +471,10 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(i0, i1);
         isv_branches = IntSetVal::ai(u);
       }
-      if (isv_branches->min().isFinite() || isv_branches->max().isFinite()) {
+      // All branches may be empty or absent, in which case the union is empty. For an opt set
+      // result, this is flattened into a domain (which only applies if the set occurs).
+      if (isv_branches->empty() || isv_branches->min().isFinite() ||
+          isv_branches->max().isFinite()) {
         auto* nr_in = new BinOp(Location().introduce(), nr->id(), BOT_SUBSET,
                                 new SetLit(Location().introduce(), isv_branches));
         nr_in->type(Type::varbool());
