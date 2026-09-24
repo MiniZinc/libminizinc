@@ -17,6 +17,7 @@
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/typecheck.hh>
 #include <minizinc/values.hh>
 
 #include <algorithm>
@@ -1766,6 +1767,30 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
         throw TypeError(env, get_loc(it.second.first, call, fi), ss.str());
       }
     }
+  }
+  if (call != nullptr) {
+    // A type-inst variable under `var' (e.g. `var $T') must be instantiated with a type that has
+    // a var version: `var string' or `var set of float' do not exist. (`any $T' can be
+    // instantiated with both par and var types.) The fields of a struct keep their own inst, so
+    // only nested types that are themselves var are checked (`tuple(string, var int)' is valid).
+    auto checkVarifiable = [&](TypeInst* ti, const std::string& what) {
+      if (!ti->type().isvar() || !ti->hasTiVariable()) {
+        return;
+      }
+      Type t = type_from_tmap(env, ti, tmap);
+      if (t.contains(env, [](Type tt) { return tt.isvar() && !tt.isVarifiableBase(); })) {
+        std::ostringstream ss;
+        ss << "invalid instantiation of " << what << " `" << *ti << "' in call to `"
+           << demonomorphise_identifier(fi->id()) << "': `" << t.toString(env)
+           << "' is not a valid type (use `any' instead of `var' to allow both par and var "
+              "instantiations)";
+        throw TypeError(env, get_loc(t, call, fi), ss.str());
+      }
+    };
+    for (unsigned int i = 0; i < ta.size(); i++) {
+      checkVarifiable(fi->param(i)->ti(), "parameter type-inst");
+    }
+    checkVarifiable(fi->ti(), "return type-inst");
   }
   return type_from_tmap(env, fi->ti(), tmap);
 }
