@@ -2103,7 +2103,15 @@ void finalise_output(EnvI& e) {
                 }
 
                 bool needOutputAnn = true;
-                if (Id* ident = Expression::dynamicCast<Id>(reallyFlat->e())) {
+                Id* ident = Expression::dynamicCast<Id>(reallyFlat->e());
+                // The reverse mapper may be further down a chain of aliases (e.g. if the
+                // variable was bound to the result of a function call)
+                while (ident != nullptr && e.reverseMappers.find(ident) == e.reverseMappers.end() &&
+                       ident->decl() != nullptr && ident->decl()->e() != nullptr &&
+                       Expression::isa<Id>(ident->decl()->e())) {
+                  ident = Expression::cast<Id>(ident->decl()->e());
+                }
+                if (ident != nullptr) {
                   if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
                     needOutputAnn = false;
                     remove_is_output(vd);
