@@ -881,9 +881,17 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
 
   EE ret;
 
+  // A Boolean argument (only possible for a user-defined operator, the built-in ones coerce it to
+  // an integer first) has no known polarity: the enclosing Boolean context says nothing about it
+  auto argCtx = [](Ctx c, Expression* arg) {
+    if (Expression::type(arg).isbool()) {
+      c.b = C_MIX;
+    }
+    return c;
+  };
   std::vector<EE> ees(2);
-  ees[0] = flat_exp(env, ctx0, bo->lhs(), nullptr, b);
-  ees[1] = flat_exp(env, ctx1, bo->rhs(), nullptr, b);
+  ees[0] = flat_exp(env, argCtx(ctx0, bo->lhs()), bo->lhs(), nullptr, b);
+  ees[1] = flat_exp(env, argCtx(ctx1, bo->rhs()), bo->rhs(), nullptr, b);
 
   if (Expression::type(ees[0].r()).isPar() && Expression::type(ees[1].r()).isPar()) {
     GCLock lock;

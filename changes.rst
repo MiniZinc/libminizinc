@@ -75,6 +75,10 @@ Bug fixes:
    coerce the set into an array.
 -  Fix user-defined operators used in the output missing from the output model
    (``.ozn`` file), which made standalone output processing fail.
+-  Fix a Boolean argument of a user-defined operator with a non-Boolean result
+   being flattened in the context of the whole expression, which could turn it
+   into a top-level constraint (e.g. ``(x > 1) + "abc"`` for an operator
+   ``'+'(var bool, string)`` required ``x > 1``).
 
 .. _v2.10.1:
 
