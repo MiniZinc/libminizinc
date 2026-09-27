@@ -640,11 +640,20 @@ void make_par(EnvI& env, Expression* e) {
     /// a specialised (monomorphised) copy of a polymorphic function is re-resolved by the name of
     /// that copy, like a call, so that it finds the par copy of the same instance: the polymorphic
     /// original cannot be evaluated without knowing its type-inst variables.
+    /// The operator is resolved in the model, which has all overloads (the output model may only
+    /// have some of them, e.g. a user-defined one that is less specific than one of the stdlib),
+    /// and then mapped to its copy in the output model if there is one.
     FunctionI* operatorDecl(FunctionI* cur, const ASTString& op,
                             const std::vector<Expression*>& args) {
-      auto match = [&](const ASTString& id) {
-        auto* fi = env.output->matchFn(env, id, args, false);
-        return fi != nullptr ? fi : env.model->matchFn(env, id, args, false);
+      auto match = [&](const ASTString& id) -> FunctionI* {
+        auto* fi = env.model->matchFn(env, id, args, false);
+        if (fi == nullptr) {
+          return env.output->matchFn(env, id, args, false);
+        }
+        if (auto* fi_copy = env.cmap.find(fi)) {
+          return fi_copy->cast<FunctionI>();
+        }
+        return fi;
       };
       if (cur != nullptr && cur->isMonomorphised()) {
         if (auto* fi = match(cur->id())) {
@@ -1796,6 +1805,37 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
       }
       c->decl(decl);
     }
+    /// Copy the user-defined function that an operator calls into the output model, and return
+    /// the copy. The operator is written to the .ozn by its name, so a specialised
+    /// (monomorphised) function is copied under the operator's name: it becomes a monomorphic
+    /// overload that the operator resolves to when the .ozn is parsed again.
+    FunctionI* collectOperator(FunctionI* decl, const ASTString& op) {
+      if (decl == nullptr || decl->fromStdLib() || decl->e() == nullptr ||
+          env.cmap.findOrig(decl) != nullptr) {
+        // Not user-defined, or already a function of the output model
+        return decl;
+      }
+      if (auto* cached = env.cmap.find(decl)) {
+        return cached->cast<FunctionI>();
+      }
+      auto* decl_copy = copy(env, env.cmap, decl)->cast<FunctionI>();
+      if (decl->isMonomorphised()) {
+        decl_copy->id(op);
+      }
+      (void)env.output->registerFn(env, decl_copy, true);
+      env.output->addItem(decl_copy);
+      make_par(env, decl_copy->e());
+      top_down(*this, decl_copy->e());
+      CollectOccurrencesE ce(env, env.outputVarOccurrences, decl_copy);
+      top_down(ce, decl_copy->e());
+      top_down(ce, decl_copy->ti());
+      for (unsigned int i = decl_copy->paramCount(); (i--) != 0U;) {
+        top_down(ce, decl_copy->param(i));
+      }
+      return decl_copy;
+    }
+    void vBinOp(BinOp* bo) { bo->decl(collectOperator(bo->decl(), bo->opToString())); }
+    void vUnOp(UnOp* uo) { uo->decl(collectOperator(uo->decl(), uo->opToString())); }
   } _cf(e);
   top_down(_cf, outputItem->e());
 

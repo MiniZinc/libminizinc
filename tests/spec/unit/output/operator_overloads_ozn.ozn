@@ -1,0 +1,6 @@
+output let {array [int] of string: X_INTRODUCED_0_ = [""++format(fix(x) > 1)++" "++format((fix(x) > 1)+"abc")++" "++format(-(fix(x) > 1))++" "++format(p union {2.5})++"\n"]} in (["\"output\": {","\"default\": ",showJSON(concat(X_INTRODUCED_0_)),", \"raw\": ",showJSON(concat(X_INTRODUCED_0_)),"}, \"sections\": [\"default\", \"raw\"]"]);
+function int : '+'(bool: a,string: s) = bool2int(a)+string_length(s);
+function int : '-'(bool: a) = -bool2int(a)-10;
+function set of float : 'union'(opt set of float: x,set of float: y) = ((x) default ({})) union y;
+int: x;
+opt set of float: p = 1.5..1.5;
