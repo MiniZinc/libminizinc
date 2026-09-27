@@ -636,24 +636,27 @@ void make_par(EnvI& env, Expression* e) {
         c->decl(env.model->matchFn(env, c, false));
       }
     }
+    /// Re-resolve the function of an operator for the (now par) arguments. An operator that calls
+    /// a specialised (monomorphised) copy of a polymorphic function is re-resolved by the name of
+    /// that copy, like a call, so that it finds the par copy of the same instance: the polymorphic
+    /// original cannot be evaluated without knowing its type-inst variables.
+    FunctionI* operatorDecl(FunctionI* cur, const ASTString& op,
+                            const std::vector<Expression*>& args) {
+      auto match = [&](const ASTString& id) {
+        auto* fi = env.output->matchFn(env, id, args, false);
+        return fi != nullptr ? fi : env.model->matchFn(env, id, args, false);
+      };
+      if (cur != nullptr && cur->isMonomorphised()) {
+        if (auto* fi = match(cur->id())) {
+          return fi;
+        }
+      }
+      return match(op);
+    }
     void vBinOp(BinOp* bo) {
-      std::vector<Expression*> args = {bo->lhs(), bo->rhs()};
-      auto* fi = env.output->matchFn(env, bo->opToString(), args, false);
-      if (fi != nullptr) {
-        bo->decl(fi);
-      } else {
-        bo->decl(env.model->matchFn(env, bo->opToString(), args, false));
-      }
+      bo->decl(operatorDecl(bo->decl(), bo->opToString(), {bo->lhs(), bo->rhs()}));
     }
-    void vUnop(UnOp* uo) {
-      std::vector<Expression*> args = {uo->e()};
-      auto* fi = env.output->matchFn(env, uo->opToString(), args, false);
-      if (fi != nullptr) {
-        uo->decl(fi);
-      } else {
-        uo->decl(env.model->matchFn(env, uo->opToString(), args, false));
-      }
-    }
+    void vUnOp(UnOp* uo) { uo->decl(operatorDecl(uo->decl(), uo->opToString(), {uo->e()})); }
   } _decls(env);
   top_down(_decls, e);
 }

@@ -1774,7 +1774,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     // instantiated with both par and var types.) The fields of a struct keep their own inst, so
     // only nested types that are themselves var are checked (`tuple(string, var int)' is valid).
     auto checkVarifiable = [&](TypeInst* ti, const std::string& what) {
-      if (!ti->type().isvar() || !ti->hasTiVariable()) {
+      if (!ti->type().isvar() || ti->type().any() || !ti->hasTiVariable()) {
+        // (`any' is represented as var, but takes the inst of the argument)
         return;
       }
       Type t = type_from_tmap(env, ti, tmap);
