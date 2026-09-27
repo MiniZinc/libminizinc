@@ -209,7 +209,16 @@ start_flatten_arrayaccess:
         GCLock lock;
         Expression* newal = new ArrayLit(Expression::loc(al), composed_e, dims);
         Type t = al->type();
+        // The composed array has the dimensions of the inner index array. If the type carries
+        // (index and element) enum information, it has to be rebuilt for the new dimensions.
+        unsigned int arrayEnumId = t.typeId();
+        t.typeId(0);
         t.dim(static_cast<int>(dims.size()));
+        if (arrayEnumId != 0) {
+          std::vector<unsigned int> enumIds(dims.size() + 1, 0);
+          enumIds.back() = env.getArrayEnum(arrayEnumId).back();
+          t.typeId(env.registerArrayEnum(enumIds));
+        }
         Expression::type(newal, t);
         eev.r = newal;
         auto* n_aa = new ArrayAccess(Expression::loc(aa), newal, aa_inner->idx());

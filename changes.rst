@@ -59,6 +59,8 @@ Bug fixes:
    report arbitrary values) when they were defined through a chain of aliases to
    a reverse-mapped variable, for example a Boolean result of a function call
    with the linear library.
+-  Fix an internal error when a variable array access ``a[b[i, j]]`` into an
+   enum-indexed array was composed with a multi-dimensional index array.
 
 .. _v2.10.1:
 
