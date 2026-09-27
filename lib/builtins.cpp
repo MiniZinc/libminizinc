@@ -1811,6 +1811,21 @@ bool b_annotate(EnvI& env, Call* call) {
 }
 
 FloatVal b_int2float(EnvI& env, Call* call) { return eval_int(env, call->arg(0)); }
+FloatSetVal* b_int2float_set(EnvI& env, Call* call) {
+  // Coerce element-wise: the integer range 1..3 becomes {1.0, 2.0, 3.0}, not the interval 1.0..3.0
+  IntSetVal* isv = eval_intset(env, call->arg(0));
+  if (!isv->empty() && (!isv->min().isFinite() || !isv->max().isFinite())) {
+    throw EvalError(env, Expression::loc(call->arg(0)),
+                    "cannot coerce an infinite set of int to a set of float");
+  }
+  std::vector<FloatSetVal::Range> ranges;
+  for (IntSetRanges isr(isv); isr(); ++isr) {
+    for (IntVal i = isr.min(); i <= isr.max(); ++i) {
+      ranges.emplace_back(FloatVal(i), FloatVal(i));
+    }
+  }
+  return FloatSetVal::a(ranges);
+}
 IntVal b_ceil(EnvI& env, Call* call) {
   return static_cast<IntVal>(ceil(eval_float(env, call->arg(0))));
 }
@@ -4609,6 +4624,8 @@ void register_builtins(Env& e) {
     std::vector<Type> t(1);
     t[0] = Type::parint();
     rb(env, m, ASTString("int2float"), t, b_int2float);
+    t[0] = Type::parsetint();
+    rb(env, m, ASTString("int2float"), t, b_int2float_set);
   }
   {
     std::vector<Type> t(1);

@@ -67,6 +67,12 @@ Bug fixes:
 -  Fix a crash when comparing par sets of floats (``subset``, ``superset``,
    ``=``, ``!=`` and the set orderings), and add the missing ``array_union``
    and ``array_intersect`` builtins for arrays of float sets.
+-  Coerce a set of integers used where a set of floats is expected
+   element-wise, so that for example ``1..3`` becomes ``{1.0, 2.0, 3.0}``.
+   Mixing sets of integers and floats (e.g. ``{1} subset S`` for a float set
+   ``S``, ``x in 1..3`` for a float variable ``x``, or passing both to a function
+   on ``set of $T``) used to fail with internal errors, type errors, a crash, or
+   coerce the set into an array.
 
 .. _v2.10.1:
 
