@@ -73,6 +73,8 @@ Bug fixes:
    ``S``, ``x in 1..3`` for a float variable ``x``, or passing both to a function
    on ``set of $T``) used to fail with internal errors, type errors, a crash, or
    coerce the set into an array.
+-  Fix user-defined operators used in the output missing from the output model
+   (``.ozn`` file), which made standalone output processing fail.
 
 .. _v2.10.1:
 
