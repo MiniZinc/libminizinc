@@ -55,6 +55,10 @@ Bug fixes:
    sets that contain ``<>``.
 -  Fix set variables that are only used in the output (for example as a field of
    a tuple) remaining in the FlatZinc for solvers without set support.
+-  Fix output variables that could be left unconstrained in the FlatZinc (and
+   report arbitrary values) when they were defined through a chain of aliases to
+   a reverse-mapped variable, for example a Boolean result of a function call
+   with the linear library.
 
 .. _v2.10.1:
 
