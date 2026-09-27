@@ -2041,9 +2041,19 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       // even though bool is a subtype
       ty.bt(Type::BT_INT);
     }
-    if (!ty.structBT()) {
-      ty.st(curTiiT.st());
-    }
+    // The set-ness of an argument belongs to the type-inst variable unless the parameter itself
+    // is a set (`set of $T'), so bring the type of every occurrence into the shape of parameter n
+    auto toParamShape = [&](Type t, const Type& paramT) {
+      if (!t.structBT()) {
+        if (curTiiT.st() == Type::ST_SET) {
+          t.st(Type::ST_SET);
+        } else if (paramT.st() == Type::ST_SET) {
+          t.st(Type::ST_PLAIN);
+        }
+      }
+      return t;
+    };
+    ty = toParamShape(ty, curTiiT);
     if (dimTy.dim() != ty.dim()) {
       if (dimTy.dim() == 0) {
         ty = ty.elemType(env);
@@ -2056,10 +2066,9 @@ Type FunctionI::argtype(EnvI& env, const std::vector<Expression*>& ta, unsigned 
       if ((param(i)->ti()->domain() != nullptr) &&
           Expression::isa<TIId>(param(i)->ti()->domain()) &&
           Expression::cast<TIId>(param(i)->ti()->domain())->v() == tv) {
-        Type toCheck = env.getTransparentType(ta[i]);
+        Type toCheck = toParamShape(env.getTransparentType(ta[i]), param(i)->ti()->type());
         if (!toCheck.structBT()) {
           toCheck.ot(curTiiT.ot());
-          toCheck.st(curTiiT.st());
         }
         if (dimTy.dim() != toCheck.dim()) {
           if (dimTy.dim() == 0) {

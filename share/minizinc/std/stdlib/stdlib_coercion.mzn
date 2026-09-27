@@ -86,6 +86,11 @@ function float: int2float(int: x);
 function opt float: int2float(opt int: x) = if occurs(x) then int2float(deopt(x)) else <> endif;
 /** @group stdlib.builtins.coercion Return integer \a x coerced to a float  */
 function var float: int2float(var int: x) :: promise_total :: mzn_internal_representation;
+/** @group stdlib.builtins.coercion Return set of integers \a x coerced to a set of floats  */
+function set of float: int2float(set of int: x);
+/** @group stdlib.builtins.coercion Return set of integers \a x coerced to a set of floats  */
+function opt set of float: int2float(opt set of int: x) =
+  if occurs(x) then int2float(deopt(x)) else <> endif;
 
 /** @group stdlib.builtins.coercion Return optional 0/1 float that is absent iff \a x
   is absent, and 1 iff \a x occurs and is true. */
