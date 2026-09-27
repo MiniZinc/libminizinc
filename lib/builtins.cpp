@@ -3069,6 +3069,36 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
   }
 }
 
+FloatSetVal* b_array_union_float(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  FloatSetVal* fsv = FloatSetVal::a();
+  for (unsigned int i = 0; i < al->size(); i++) {
+    FloatSetRanges r0(fsv);
+    FloatSetRanges r1(eval_floatset(env, (*al)[i]));
+    Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(r0, r1);
+    fsv = FloatSetVal::ai(u);
+  }
+  return fsv;
+}
+
+FloatSetVal* b_array_intersect_float(EnvI& env, Call* call) {
+  assert(call->argCount() == 1);
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  if (al->empty()) {
+    throw ResultUndefinedError(env, Expression::loc(call),
+                               "intersection of empty array is undefined");
+  }
+  FloatSetVal* fsv = eval_floatset(env, (*al)[0]);
+  for (unsigned int i = 1; i < al->size(); i++) {
+    FloatSetRanges r0(fsv);
+    FloatSetRanges r1(eval_floatset(env, (*al)[i]));
+    Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(r0, r1);
+    fsv = FloatSetVal::ai(inter);
+  }
+  return fsv;
+}
+
 Expression* b_sort_by_int(EnvI& env, Call* call) {
   assert(call->argCount() == 2);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
@@ -4743,6 +4773,12 @@ void register_builtins(Env& e) {
     t[0] = Type::parsetint(1);
     rb(env, m, ASTString("array_intersect"), t, b_array_intersect);
     rb(env, m, ASTString("array_union"), t, b_array_union);
+  }
+  {
+    std::vector<Type> t(1);
+    t[0] = Type::parsetfloat(1);
+    rb(env, m, ASTString("array_intersect"), t, b_array_intersect_float);
+    rb(env, m, ASTString("array_union"), t, b_array_union_float);
   }
   {
     std::vector<Type> t(1);

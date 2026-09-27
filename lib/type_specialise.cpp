@@ -34,6 +34,13 @@ struct TIOcc {
 typedef std::unordered_map<ASTString, std::vector<TIOcc>> TIOccMap;
 
 Type type_meet(const Type& t0, const Type& t1) {
+  // bot (the type of e.g. `<>' or `[]') is below every other type
+  if (t0.bt() == Type::BT_BOT) {
+    return t1;
+  }
+  if (t1.bt() == Type::BT_BOT) {
+    return t0;
+  }
   Type m = t0;
   if (t0.bt() == Type::BT_FLOAT || t1.bt() == Type::BT_FLOAT) {
     m.bt(Type::BT_FLOAT);
@@ -74,6 +81,21 @@ Type base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ) {
 void adapt_to_base_type(EnvI& env, std::vector<Type>& types, const TIOcc& occ, Type bt) {
   if (occ.idxSet == -1) {
     Type& t = types[occ.idx];
+    if (t.bt() == Type::BT_BOT && bt.typeId() != 0) {
+      // A bot occurrence takes the enum or struct type of the others
+      t.bt(bt.bt());
+      if (t.dim() == 0) {
+        t.typeId(bt.typeId());
+      } else {
+        std::vector<unsigned int> et(t.dim() + 1, 0);
+        if (t.typeId() != 0) {
+          et = env.getArrayEnum(t.typeId());
+        }
+        et[et.size() - 1] = bt.typeId();
+        t.typeId(env.registerArrayEnum(et));
+      }
+      return;
+    }
     t.bt(bt.bt());
     if (t.typeId() != 0 && bt.typeId() == 0) {
       if (t.dim() > 0) {
@@ -284,6 +306,9 @@ class ConcreteCallAgenda {
 private:
   std::vector<Call*> _agenda;
   std::unordered_set<Call*> _seen;
+  /// Operators (BinOp/UnOp) calling a polymorphic function with a body, each paired with a call
+  /// that stands in for the operator during specialisation
+  std::vector<std::pair<Expression*, KeepAlive>> _operators;
 
 public:
   void push(Call* c) {
@@ -294,6 +319,28 @@ public:
   Call* back() const { return _agenda.back(); }
   void pop() { _agenda.pop_back(); }
   bool empty() const { return _agenda.empty(); }
+
+  /// Specialise operator \a op (with arguments \a args) like a call to its function
+  void pushOperator(Expression* op, FunctionI* decl, const ASTString& id,
+                    const std::vector<Expression*>& args) {
+    GCLock lock;
+    Call* shadow = Call::a(Expression::loc(op).introduce(), id, args);
+    shadow->decl(decl);
+    shadow->type(Expression::type(op));
+    _operators.emplace_back(op, shadow);
+    push(shadow);
+  }
+  /// Point the operators to the specialised functions of their stand-in calls
+  void finishOperators() {
+    for (auto& op : _operators) {
+      FunctionI* decl = Expression::cast<Call>(op.second())->decl();
+      if (auto* bo = Expression::dynamicCast<BinOp>(op.first)) {
+        bo->decl(decl);
+      } else {
+        Expression::cast<UnOp>(op.first)->decl(decl);
+      }
+    }
+  }
 };
 
 class CollectConcreteCalls : public EVisitor {
@@ -307,6 +354,22 @@ public:
           agenda.push(c);
         }
       }
+    }
+  }
+  // Operators that resolve to a polymorphic function with a body are evaluated by calling that
+  // function, so it must be specialised in the same way as for a call (otherwise a par operator
+  // on e.g. `set of $T' would evaluate the body with $T unknown).
+  static bool needsSpecialisation(FunctionI* decl) {
+    return decl != nullptr && decl->e() != nullptr && decl->isPolymorphic();
+  }
+  void vBinOp(BinOp* bo) {
+    if (needsSpecialisation(bo->decl())) {
+      agenda.pushOperator(bo, bo->decl(), bo->opToString(), {bo->lhs(), bo->rhs()});
+    }
+  }
+  void vUnOp(UnOp* uo) {
+    if (needsSpecialisation(uo->decl())) {
+      agenda.pushOperator(uo, uo->decl(), uo->opToString(), {uo->e()});
     }
   }
 };
@@ -802,6 +865,7 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
   }
 
   instantiate.finish();
+  agenda.finishOperators();
 }
 
 std::string demonomorphise_identifier(const ASTString& ident) {

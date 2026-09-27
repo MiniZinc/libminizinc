@@ -1557,6 +1557,39 @@ bool eval_bool(EnvI& env, Expression* e) {
           } catch (ResultUndefinedError&) {
             return false;
           }
+        } else if (Expression::type(lhs).isSet() && Expression::type(rhs).isSet() &&
+                   (Expression::type(lhs).bt() == Type::BT_FLOAT ||
+                    Expression::type(rhs).bt() == Type::BT_FLOAT)) {
+          try {
+            GCLock lock;
+            FloatSetVal* v0 = eval_floatset(env, lhs);
+            FloatSetVal* v1 = eval_floatset(env, rhs);
+            FloatSetRanges ir0(v0);
+            FloatSetRanges ir1(v1);
+            switch (bo->op()) {
+              case BOT_LE:
+                return Ranges::less(ir0, ir1);
+              case BOT_LQ:
+                return Ranges::less_eq(ir0, ir1);
+              case BOT_GR:
+                return Ranges::less(ir1, ir0);
+              case BOT_GQ:
+                return Ranges::less_eq(ir1, ir0);
+              case BOT_EQ:
+                return Ranges::equal(ir0, ir1);
+              case BOT_NQ:
+                return !Ranges::equal(ir0, ir1);
+              case BOT_SUBSET:
+                return Ranges::subset(ir0, ir1);
+              case BOT_SUPERSET:
+                return Ranges::subset(ir1, ir0);
+              default:
+                assert(false);
+                throw EvalError(env, Expression::loc(e), "not a bool expression", bo->opToString());
+            }
+          } catch (ResultUndefinedError&) {
+            return false;
+          }
         } else if (Expression::type(lhs).isSet() && Expression::type(rhs).isSet()) {
           try {
             GCLock lock;

@@ -16,7 +16,7 @@ Changes:
    different from the empty set. The set operations (``in``, ``subset``,
    ``union``, ``intersect``, ``card`` etc.) ignore absent operands, like the
    other operations on option types. Par optional sets support the same
-   operations.
+   operations, including optional sets of floats.
 -  Warn when ``op`` or ``lambda`` is used as an identifier or ``==`` is used
    where assignment syntax requires ``=``. These forms are not accepted by the
    new parser.
@@ -59,8 +59,14 @@ Bug fixes:
    report arbitrary values) when they were defined through a chain of aliases to
    a reverse-mapped variable, for example a Boolean result of a function call
    with the linear library.
+-  Fix an "invalid set literal type" internal error when a user-defined
+   operator with a polymorphic body (e.g. on ``set of $T``) was evaluated on
+   par arguments.
 -  Fix an internal error when a variable array access ``a[b[i, j]]`` into an
    enum-indexed array was composed with a multi-dimensional index array.
+-  Fix a crash when comparing par sets of floats (``subset``, ``superset``,
+   ``=``, ``!=`` and the set orderings), and add the missing ``array_union``
+   and ``array_intersect`` builtins for arrays of float sets.
 
 .. _v2.10.1:
 
