@@ -36,12 +36,17 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
         elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
       }
     } else {
-      if (c_root && Expression::type(e).bt() == Type::BT_BOOL &&
-          Expression::type(e).st() == Type::ST_PLAIN) {
+      bool unknownUses = c_root && Expression::type(e).bt() == Type::BT_BOOL &&
+                         Expression::type(e).st() == Type::ST_PLAIN;
+      if (unknownUses) {
         eval_ctx.b = C_MIX;
       }
       for (unsigned int i = al->size(); (i--) != 0U;) {
-        elems_ee[i] = flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
+        // Flatten an element once the uses of the array are known (see defer_bool_expr)
+        Id* deferred = unknownUses ? defer_bool_expr(env, (*al)[i]) : nullptr;
+        elems_ee[i] = deferred != nullptr
+                          ? EE(deferred, env.constants.literalTrue)
+                          : flat_exp(env, eval_ctx, (*al)[i], rr, ctx.partialityVar(env));
       }
     }
     std::vector<Expression*> elems(elems_ee.size());

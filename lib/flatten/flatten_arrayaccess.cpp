@@ -29,7 +29,11 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
   nctx.neg = false;
-  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nctx.partialityVar(env));
+  // The access only uses one element of the array. Uses of the element add their own context, and
+  // an access with a variable index adds it to all elements (see below).
+  EE eev = Expression::isa<Id>(aa->v()) && Expression::type(aa->v()).isvar()
+               ? flatten_id(env, nctx, aa->v(), nullptr, nctx.partialityVar(env), false, true)
+               : flat_exp(env, nctx, aa->v(), nullptr, nctx.partialityVar(env));
   std::vector<EE> ees;
 
 start_flatten_arrayaccess:

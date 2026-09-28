@@ -287,8 +287,9 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   }
 
   Ctx eval_ctx = ctx;
-  if (ctx.b == C_ROOT && r != env.constants.varIgnore && c->type().bt() == Type::BT_BOOL &&
-      c->type().st() == Type::ST_PLAIN) {
+  bool unknownUses = ctx.b == C_ROOT && r != env.constants.varIgnore &&
+                     c->type().bt() == Type::BT_BOOL && c->type().st() == Type::ST_PLAIN;
+  if (unknownUses) {
     eval_ctx.b = C_MIX;
   }
 
@@ -296,12 +297,18 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   public:
     Ctx ctx;
     VarDecl* rr;
-    EvalF(const Ctx& ctx0, VarDecl* rr0) : ctx(ctx0), rr(rr0) {}
+    bool deferElements;
+    EvalF(const Ctx& ctx0, VarDecl* rr0, bool deferElements0)
+        : ctx(ctx0), rr(rr0), deferElements(deferElements0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) const {
+      // Flatten an element once the uses of the array are known (see defer_bool_expr)
+      if (Id* deferred = deferElements ? defer_bool_expr(env, e0) : nullptr) {
+        return EE(deferred, env.constants.literalTrue);
+      }
       return flat_exp(env, ctx, e0, rr, ctx.partialityVar(env));
     }
-  } _evalf(eval_ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr);
+  } _evalf(eval_ctx, r == env.constants.varIgnore ? env.constants.varTrue : nullptr, unknownUses);
   std::vector<EE> elems_ee;
   bool wasUndefined = false;
   EvaluatedComp<EE> evalResult;

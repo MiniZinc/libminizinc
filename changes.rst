@@ -42,6 +42,11 @@ Changes:
    ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
    was already the case for JSON input, which now also supports record types
    that are combined using ``++``.
+-  Flatten the definitions of ``var bool`` variables (top-level and in lets), and
+   of the elements of ``var bool`` arrays, after their uses, in the context of
+   those uses. A variable that is only used positively can now be half-reified,
+   together with the expressions in its definition, as when the definition is
+   written in place.
 
 Bug fixes:
 ^^^^^^^^^^

@@ -15,7 +15,7 @@
 namespace MiniZinc {
 
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
-              bool doNotFollowChains) {
+              bool doNotFollowChains, bool elementAccess) {
   CallStackItem _csi(env, e);
   EE ret;
   Id* id = Expression::cast<Id>(e);
@@ -278,6 +278,10 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       Expression* lit = follow_id(vd->e());
       assert(Expression::isa<ArrayLit>(lit));
       env.reverseMappers.insert(vd->id(), lit);
+    }
+    if (!elementAccess && ctx.b != C_ROOT) {
+      // A root context says nothing about the elements of an array (for example an alias)
+      add_ctx_ann_elements(env, rete, ctx.b);
     }
     ret.r = bind(env, ctx, r, rete);
   }

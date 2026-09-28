@@ -59,7 +59,10 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     }
     VarDecl* vd = new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr, false);
     v->flat(vd);
-    if (v->e() != nullptr) {
+    std::vector<VarDecl*> refs;
+    Let* def = deferrable_bool_def(env, v, refs);
+    bool deferredDef = def != nullptr && defer_bool_def(env, vd, def, std::move(refs));
+    if (!deferredDef && v->e() != nullptr) {
       Ctx nctx;
       if (Expression::type(v->e()).isbool()) {
         nctx.b = C_MIX;
