@@ -21,7 +21,7 @@ void OptimizeRegistry::reg(const MiniZinc::ASTString& call, optimizer opt) {
 
 OptimizeRegistry::ConstraintStatus OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i,
                                                              MiniZinc::Call* c,
-                                                             Expression*& rewrite) {
+                                                             Ref<Expression>& rewrite) {
   auto it = _m.find(c->id());
   if (it != _m.end()) {
     return it->second(env, i, c, rewrite);
@@ -36,14 +36,15 @@ OptimizeRegistry& OptimizeRegistry::registry() {
 
 namespace Optimizers {
 
-OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expression*& rewrite) {
-  ArrayLit* al_c = eval_array_lit(env, c->arg(0));
+OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c,
+                                            Ref<Expression>& rewrite) {
+  Ref<ArrayLit> al_c = eval_array_lit(env, c->arg(0));
   std::vector<IntVal> coeffs(al_c->size());
   for (unsigned int i = 0; i < al_c->size(); i++) {
     coeffs[i] = eval_int(env, (*al_c)[i]);
   }
-  ArrayLit* al_x = eval_array_lit(env, c->arg(1));
-  std::vector<KeepAlive> x(al_x->size());
+  Ref<ArrayLit> al_x = eval_array_lit(env, c->arg(1));
+  std::vector<Ref<Expression>> x(al_x->size());
   for (unsigned int i = 0; i < al_x->size(); i++) {
     x[i] = (*al_x)[i];
   }
@@ -65,8 +66,8 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
   }
   if (coeffs.size() == 1 && (ii->isa<ConstraintI>() || ii->cast<VarDeclI>()->e()->ti()->domain() ==
                                                            env.constants.literalTrue)) {
-    VarDecl* vd = Expression::cast<Id>(x[0]())->decl();
-    IntSetVal* domain =
+    VarDecl* vd = Expression::cast<Id>(x[0])->decl();
+    Ref<IntSetVal> domain =
         vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
     assert(!domain->empty());
     if (c->id() == env.constants.ids.int_.lin_eq) {
@@ -76,10 +77,10 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         if ((domain != nullptr) && !domain->contains(nd)) {
           return OptimizeRegistry::CS_FAILED;
         }
-        std::vector<Expression*> args(2);
-        args[0] = x[0]();
+        std::vector<Ref<Expression>> args(2);
+        args[0] = x[0];
         args[1] = IntLit::a(nd);
-        Call* nc = Call::a(Location(), env.constants.ids.int_.eq, args);
+        Ref<Call> nc = Call::a(Location(), env.constants.ids.int_.eq, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
@@ -122,13 +123,13 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
             return OptimizeRegistry::CS_ENTAILED;
           }
         }
-        std::vector<Expression*> args(2);
-        args[0] = x[0]();
+        std::vector<Ref<Expression>> args(2);
+        args[0] = x[0];
         args[1] = IntLit::a(nd);
         if (swapSign) {
           std::swap(args[0], args[1]);
         }
-        Call* nc = Call::a(Location(), env.constants.ids.int_.le, args);
+        Ref<Call> nc = Call::a(Location(), env.constants.ids.int_.le, args);
         nc->type(Type::varbool());
         rewrite = nc;
         return OptimizeRegistry::CS_REWRITE;
@@ -137,30 +138,30 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
   } else if (c->id() == env.constants.ids.int_.lin_eq && coeffs.size() == 2 &&
              ((coeffs[0] == 1 && coeffs[1] == -1) || (coeffs[1] == 1 && coeffs[0] == -1)) &&
              eval_int(env, c->arg(2)) - d == 0) {
-    std::vector<Expression*> args(2);
-    args[0] = x[0]();
-    args[1] = x[1]();
-    Call* nc = Call::a(Location(), env.constants.ids.int_.eq, args);
+    std::vector<Ref<Expression>> args(2);
+    args[0] = x[0];
+    args[1] = x[1];
+    Ref<Call> nc = Call::a(Location(), env.constants.ids.int_.eq, args);
     rewrite = nc;
     return OptimizeRegistry::CS_REWRITE;
   }
   if (coeffs.size() < al_c->size()) {
-    std::vector<Expression*> coeffs_e(coeffs.size());
+    std::vector<Ref<Expression>> coeffs_e(coeffs.size());
     std::vector<Expression*> x_e(coeffs.size());
     for (unsigned int i = 0; i < coeffs.size(); i++) {
       coeffs_e[i] = IntLit::a(coeffs[i]);
-      x_e[i] = x[i]();
+      x_e[i] = x[i];
     }
-    auto* al_c_new = new ArrayLit(Expression::loc(al_c), coeffs_e);
+    auto al_c_new = make<ArrayLit>(Expression::loc(al_c), coeffs_e);
     al_c_new->type(Type::parint(1));
-    auto* al_x_new = new ArrayLit(Expression::loc(al_x), x_e);
+    auto al_x_new = make<ArrayLit>(Expression::loc(al_x), x_e);
     al_x_new->type(al_x->type());
 
-    std::vector<Expression*> args(3);
+    std::vector<Ref<Expression>> args(3);
     args[0] = al_c_new;
     args[1] = al_x_new;
     args[2] = IntLit::a(eval_int(env, c->arg(2)) - d);
-    Call* nc = Call::a(Location(), c->id(), args);
+    Ref<Call> nc = Call::a(Location(), c->id(), args);
     nc->type(Type::varbool());
     for (ExpressionSetIter it = Expression::ann(c).begin(); it != Expression::ann(c).end(); ++it) {
       Expression::addAnnotation(nc, *it);
@@ -172,15 +173,16 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c,
+                                             Ref<Expression>& rewrite) {
   if (c->type().isint()) {
-    ArrayLit* al_c = eval_array_lit(env, c->arg(0));
+    Ref<ArrayLit> al_c = eval_array_lit(env, c->arg(0));
     std::vector<IntVal> coeffs(al_c->size());
     for (unsigned int j = 0; j < al_c->size(); j++) {
       coeffs[j] = eval_int(env, (*al_c)[j]);
     }
-    ArrayLit* al_x = eval_array_lit(env, c->arg(1));
-    std::vector<KeepAlive> x(al_x->size());
+    Ref<ArrayLit> al_x = eval_array_lit(env, c->arg(1));
+    std::vector<Ref<Expression>> x(al_x->size());
     for (unsigned int j = 0; j < al_x->size(); j++) {
       x[j] = (*al_x)[j];
     }
@@ -192,26 +194,26 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
     }
     if (coeffs.size() < al_c->size()) {
       if (coeffs.size() == 1 && coeffs[0] == 1 && d == 0) {
-        rewrite = x[0]();
+        rewrite = x[0];
         return OptimizeRegistry::CS_REWRITE;
       }
 
-      std::vector<Expression*> coeffs_e(coeffs.size());
+      std::vector<Ref<Expression>> coeffs_e(coeffs.size());
       std::vector<Expression*> x_e(coeffs.size());
       for (unsigned int j = 0; j < coeffs.size(); j++) {
         coeffs_e[j] = IntLit::a(coeffs[j]);
-        x_e[j] = x[j]();
+        x_e[j] = x[j];
       }
-      auto* al_c_new = new ArrayLit(Expression::loc(al_c), coeffs_e);
+      auto al_c_new = make<ArrayLit>(Expression::loc(al_c), coeffs_e);
       al_c_new->type(Type::parint(1));
-      auto* al_x_new = new ArrayLit(Expression::loc(al_x), x_e);
+      auto al_x_new = make<ArrayLit>(Expression::loc(al_x), x_e);
       al_x_new->type(al_x->type());
 
-      std::vector<Expression*> args(3);
+      std::vector<Ref<Expression>> args(3);
       args[0] = al_c_new;
       args[1] = al_x_new;
       args[2] = IntLit::a(d);
-      Call* nc = Call::a(Location(), c->id(), args);
+      Ref<Call> nc = Call::a(Location(), c->id(), args);
       nc->type(c->type());
       for (ExpressionSetIter it = Expression::ann(c).begin(); it != Expression::ann(c).end();
            ++it) {
@@ -224,28 +226,29 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_element(EnvI& env, Item* i, Call* c,
+                                             Ref<Expression>& rewrite) {
   if (Expression::isa<IntLit>(c->arg(0))) {
     IntVal idx = eval_int(env, c->arg(0));
-    ArrayLit* al = eval_array_lit(env, c->arg(1));
+    Ref<ArrayLit> al = eval_array_lit(env, c->arg(1));
     if (idx < 1 || idx > al->size()) {
       return OptimizeRegistry::CS_FAILED;
     }
     Expression* result = (*al)[static_cast<int>(idx.toInt()) - 1];
-    std::vector<Expression*> args(2);
+    std::vector<Ref<Expression>> args(2);
     args[0] = result;
     args[1] = c->arg(2);
-    Call* eq = Call::a(Location(), env.constants.ids.int_.eq, args);
+    Ref<Call> eq = Call::a(Location(), env.constants.ids.int_.eq, args);
     rewrite = eq;
     return OptimizeRegistry::CS_REWRITE;
   }
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   std::vector<VarDecl*> pos;
   std::vector<VarDecl*> neg;
-  ArrayLit* al_pos = eval_array_lit(env, c->arg(0));
+  Ref<ArrayLit> al_pos = eval_array_lit(env, c->arg(0));
   for (unsigned int j = 0; j < al_pos->size(); j++) {
     if (Id* ident = Expression::dynamicCast<Id>((*al_pos)[j])) {
       if (ident->decl()->ti()->domain() == nullptr) {
@@ -253,7 +256,7 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
       }
     }
   }
-  ArrayLit* al_neg = eval_array_lit(env, c->arg(1));
+  Ref<ArrayLit> al_neg = eval_array_lit(env, c->arg(1));
   for (unsigned int j = 0; j < al_neg->size(); j++) {
     if (Id* ident = Expression::dynamicCast<Id>((*al_neg)[j])) {
       if (ident->decl()->ti()->domain() == nullptr) {
@@ -288,8 +291,8 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_forall(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
-  ArrayLit* al = eval_array_lit(env, c->arg(0));
+OptimizeRegistry::ConstraintStatus o_forall(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
+  Ref<ArrayLit> al = eval_array_lit(env, c->arg(0));
   bool subsumed = true;
   for (unsigned int j = 0; j < al->size(); j++) {
     if (Expression::type((*al)[j]).isPar()) {
@@ -314,8 +317,8 @@ OptimizeRegistry::ConstraintStatus o_forall(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_exists(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
-  ArrayLit* al = eval_array_lit(env, c->arg(0));
+OptimizeRegistry::ConstraintStatus o_exists(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
+  Ref<ArrayLit> al = eval_array_lit(env, c->arg(0));
   bool failed = true;
   for (unsigned int j = 0; j < al->size(); j++) {
     if (Expression::type((*al)[j]).isPar()) {
@@ -340,7 +343,7 @@ OptimizeRegistry::ConstraintStatus o_exists(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   if (c->argCount() == 2) {
     Expression* e0 = c->arg(0);
     Expression* e1 = c->arg(1);
@@ -352,8 +355,8 @@ OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression
       std::swap(e0, e1);
     }
     if (Expression::type(e0).isPar()) {
-      Call* eq = Call::a(Location(), env.constants.ids.bool_.eq,
-                         {e1, env.constants.boollit(!eval_bool(env, e0))});
+      Ref<Call> eq = Call::a(Location(), env.constants.ids.bool_.eq,
+                             {e1, env.constants.boollit(!eval_bool(env, e0))});
       rewrite = eq;
       return OptimizeRegistry::CS_REWRITE;
     }
@@ -361,7 +364,7 @@ OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_div(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_div(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   if (Expression::type(c->arg(1)).isPar()) {
     IntVal c1v = eval_int(env, c->arg(1));
     if (Expression::type(c->arg(0)).isPar() && c->argCount() == 3 &&
@@ -374,8 +377,8 @@ OptimizeRegistry::ConstraintStatus o_div(EnvI& env, Item* i, Call* c, Expression
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
-  Expression* result = nullptr;
+OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
+  Ref<Expression> result;
   Expression* arg0 = c->arg(0);
   Expression* arg1 = c->arg(1);
   if (Expression::type(arg0).isPar() && Expression::type(arg1).isPar()) {
@@ -412,18 +415,18 @@ OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expressi
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   if (Expression::type(c->arg(1)).isPar()) {
     if (Expression::type(c->arg(0)).isPar()) {
-      IntSetVal* isv = eval_intset(env, c->arg(1));
+      Ref<IntSetVal> isv = eval_intset(env, c->arg(1));
       return isv->contains(eval_int(env, c->arg(0))) ? OptimizeRegistry::CS_ENTAILED
                                                      : OptimizeRegistry::CS_FAILED;
     }
     if (Id* ident = Expression::dynamicCast<Id>(c->arg(0))) {
       VarDecl* vd = ident->decl();
-      IntSetVal* isv = eval_intset(env, c->arg(1));
+      Ref<IntSetVal> isv = eval_intset(env, c->arg(1));
       if (vd->ti()->domain() != nullptr) {
-        IntSetVal* dom = eval_intset(env, vd->ti()->domain());
+        Ref<IntSetVal> dom = eval_intset(env, vd->ti()->domain());
         {
           IntSetRanges isv_r(isv);
           IntSetRanges dom_r(dom);
@@ -439,10 +442,10 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
           }
         }
       } else if (isv->min() == isv->max()) {
-        std::vector<Expression*> args(2);
+        std::vector<Ref<Expression>> args(2);
         args[0] = vd->id();
         args[1] = IntLit::a(isv->min());
-        Call* eq = Call::a(Location(), env.constants.ids.int_.eq, args);
+        Ref<Call> eq = Call::a(Location(), env.constants.ids.int_.eq, args);
         rewrite = eq;
         return OptimizeRegistry::CS_REWRITE;
       }
@@ -451,7 +454,7 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   Expression* e0 = c->arg(0);
   Expression* e1 = c->arg(1);
   if (Expression::type(e0).isPar() && Expression::type(e1).isPar()) {
@@ -465,7 +468,7 @@ OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Express
     if (Expression::type(e1).isPar()) {
       if (ident->decl()->ti()->domain() != nullptr) {
         IntVal e1v = eval_int(env, e1);
-        IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
+        Ref<IntSetVal> isv = eval_intset(env, ident->decl()->ti()->domain());
         if (!isv->contains(e1v)) {
           return OptimizeRegistry::CS_ENTAILED;
         }
@@ -479,7 +482,7 @@ OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Express
   return OptimizeRegistry::CS_OK;
 }
 
-OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Ref<Expression>& rewrite) {
   Expression* e0 = c->arg(0);
   Expression* e1 = c->arg(1);
   if (Expression::type(e0).isPar() && Expression::type(e1).isPar()) {
@@ -495,7 +498,7 @@ OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Express
     if (Expression::type(e1).isPar()) {
       if (ident->decl()->ti()->domain() != nullptr) {
         IntVal e1v = eval_int(env, e1);
-        IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
+        Ref<IntSetVal> isv = eval_intset(env, ident->decl()->ti()->domain());
         if (!swapped) {
           if (isv->max() <= e1v) {
             return OptimizeRegistry::CS_ENTAILED;
@@ -519,19 +522,10 @@ OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Express
 }
 
 class Register {
-private:
-  Model* _keepAliveModel;
-
 public:
   Register() {
-    GCLock lock;
-    _keepAliveModel = new Model;
     ASTString id_element("array_int_element");
     ASTString id_var_element("array_var_int_element");
-    std::vector<Expression*> e;
-    e.push_back(new StringLit(Location(), id_element));
-    e.push_back(new StringLit(Location(), id_var_element));
-    _keepAliveModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(), e)));
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_eq, o_linear);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_le, o_linear);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.lin_ne, o_linear);
@@ -549,7 +543,6 @@ public:
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.ne, o_int_ne);
     OptimizeRegistry::registry().reg(Constants::constants().ids.int_.le, o_int_le);
   }
-  ~Register() { delete _keepAliveModel; }
 } _r;  // NOLINT(bugprone-throwing-static-initialization)
 
 }  // namespace Optimizers

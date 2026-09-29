@@ -22,7 +22,6 @@ void ParamConfig::load(const std::string& filename) {
     Env confenv;
     JSONParser jp(confenv.envi());
     Model m;
-    GCLock lock;
     jp.parse(&m, filename, false);
     for (auto& i : m) {
       if (auto* ai = i->dynamicCast<AssignI>()) {

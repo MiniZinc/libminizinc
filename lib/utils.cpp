@@ -313,6 +313,11 @@ void OverflowHandler::OverflowInfo::overflow(int sig, siginfo_t* info, void* con
 
 void OverflowHandler::install(const char** argv) {
   _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo(argv, ::malloc(SIGSTKSZ)));
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+  return;  // AddressSanitizer reports crashes itself
+#endif
+#endif
   stack_t stk;
   stk.ss_sp = _ofi->altstack;
   if (stk.ss_sp != nullptr) {

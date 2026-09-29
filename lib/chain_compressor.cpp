@@ -60,7 +60,7 @@ bool ImpCompressor::trackItem(Item* i) {
     if (auto* c = Expression::dynamicCast<Call>(ci->e())) {
       // clause([...], [...]); e.g. x -> y
       if (c->id() == _env.constants.ids.clause) {
-        ArrayLit* negative = eval_array_lit(_env, c->arg(1));
+        Ref<ArrayLit> negative = eval_array_lit(_env, c->arg(1));
         for (unsigned int j = 0; j < negative->size(); ++j) {
           auto* var = Expression::dynamicCast<Id>((*negative)[j]);
           if (var != nullptr) {
@@ -102,7 +102,6 @@ bool ImpCompressor::trackItem(Item* i) {
           if (c->id() == _env.constants.ids.exists) {
             storeItem(vdi->e(), i);
           } else {
-            GCLock lock;
             std::vector<Type> args;
             args.reserve(c->argCount() + 1);
             for (unsigned int j = 0; j < c->argCount(); ++j) {
@@ -130,8 +129,8 @@ void ImpCompressor::compress() {
     if (auto* ci = it->second->dynamicCast<ConstraintI>()) {
       auto* c = Expression::cast<Call>(ci->e());
       if (c->id() == _env.constants.ids.clause) {
-        auto* positive = eval_array_lit(_env, c->arg(0));
-        auto* negative = eval_array_lit(_env, c->arg(1));
+        auto positive = eval_array_lit(_env, c->arg(0));
+        auto negative = eval_array_lit(_env, c->arg(1));
         if (positive->size() == 1 && negative->size() == 1) {
           auto* var = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*positive)[0]));
           if (var != nullptr) {
@@ -206,14 +205,13 @@ void ImpCompressor::compress() {
 }
 
 bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
-  GCLock lock;
   if (auto* ci = i->dynamicCast<ConstraintI>()) {
     auto* c = Expression::cast<Call>(ci->e());
     // Given (x -> y) /\ (y -> z), produce x -> z
     if (c->id() == _env.constants.ids.clause) {
       // Get clause array literals to be changed
-      auto* positive = eval_array_lit(_env, c->arg(0));
-      auto* negative = eval_array_lit(_env, c->arg(1));
+      auto positive = eval_array_lit(_env, c->arg(0));
+      auto negative = eval_array_lit(_env, c->arg(1));
       // Avoid creating a -> a (constraint can just be removed)
       if (positive->size() == 1 && negative->size() == 1) {
         auto* positiveDecl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*positive)[0]));
@@ -241,11 +239,11 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
           }
         }
       }
-      negative = new ArrayLit(Expression::loc(negative).introduce(), contents);
+      negative = make<ArrayLit>(Expression::loc(negative).introduce(), contents);
       negative->type(Type::varbool(1));
 
       negative = arrayLitCopyReplace(negative, oldLHS, newLHS);
-      auto* nci = constructClause(positive, negative);
+      auto nci = constructClause(positive, negative);
 
       _boolConstraints.push_back(addItem(nci));
       removeItem(i);
@@ -264,11 +262,11 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
     auto* c = Expression::cast<Call>(vdi->e()->e());
     // Given: (x -> y) /\  (y -> (a /\ b /\ ...)), produce (x -> a) /\ (x -> b) /\ ...
     if (c->id() == _env.constants.ids.forall) {
-      auto* exprs = eval_array_lit(_env, c->arg(0));
+      auto exprs = eval_array_lit(_env, c->arg(0));
       for (unsigned int j = 0; j < exprs->size(); ++j) {
         auto* rhsDecl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*exprs)[j]));
         if (rhsDecl != newLHS) {
-          ConstraintI* nci = constructClause((*exprs)[j], newLHS->id());
+          Ref<ConstraintI> nci = constructClause((*exprs)[j], newLHS->id());
           _boolConstraints.push_back(addItem(nci));
         }
       }
@@ -277,16 +275,16 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
     }
     if (Expression::ann(vdi->e()).contains(_env.constants.ctx.pos)) {
       if (c->id() == _env.constants.ids.exists) {
-        auto* positive = eval_array_lit(_env, c->arg(0));
+        auto positive = eval_array_lit(_env, c->arg(0));
         auto* positiveDecl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*positive)[0]));
         if (positiveDecl != newLHS) {
-          ConstraintI* nci = constructClause(positive, newLHS->id());
+          Ref<ConstraintI> nci = constructClause(positive, newLHS->id());
           _boolConstraints.push_back(addItem(nci));
         }
         removeItem(i);
         return true;
       }
-      ConstraintI* nci = constructHalfReif(c, newLHS->id());
+      Ref<ConstraintI> nci = constructHalfReif(c, newLHS->id());
       assert(nci);
       addItem(nci);
       return true;
@@ -295,9 +293,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
   return false;
 }
 
-ArrayLit* ImpCompressor::arrayLitCopyReplace(ArrayLit* arr, VarDecl* oldVar, VarDecl* newVar) {
-  assert(GC::locked());
-
+Ref<ArrayLit> ImpCompressor::arrayLitCopyReplace(ArrayLit* arr, VarDecl* oldVar, VarDecl* newVar) {
   std::vector<Expression*> contents = std::vector<Expression*>(arr->size());
   for (unsigned int i = 0; i < arr->size(); ++i) {
     auto* vd = Expression::cast<VarDecl>(follow_id_to_decl((*arr)[i]));
@@ -307,20 +303,19 @@ ArrayLit* ImpCompressor::arrayLitCopyReplace(ArrayLit* arr, VarDecl* oldVar, Var
       contents[i] = vd->id();
     }
   }
-  auto* ret = new ArrayLit(Expression::loc(arr).introduce(), contents);
+  auto ret = make<ArrayLit>(Expression::loc(arr).introduce(), contents);
   ret->type(arr->type());
   return ret;
 }
-ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
-  assert(GC::locked());
-  std::vector<Expression*> args(2);
+Ref<ConstraintI> ImpCompressor::constructClause(Expression* pos, Expression* neg) {
+  std::vector<Ref<Expression>> args(2);
   if (Expression::dynamicCast<ArrayLit>(pos) != nullptr) {
     args[0] = pos;
   } else {
     assert(Expression::type(neg).isbool());
     std::vector<Expression*> eVec(1);
     eVec[0] = pos;
-    args[0] = new ArrayLit(Expression::loc(pos).introduce(), eVec);
+    args[0] = make<ArrayLit>(Expression::loc(pos).introduce(), eVec);
     Expression::type(args[0], Type::varbool(1));
   }
   if (Expression::dynamicCast<ArrayLit>(neg) != nullptr) {
@@ -329,7 +324,7 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
     assert(Expression::type(neg).isbool());
     std::vector<Expression*> eVec(1);
     eVec[0] = neg;
-    args[1] = new ArrayLit(Expression::loc(neg).introduce(), eVec);
+    args[1] = make<ArrayLit>(Expression::loc(neg).introduce(), eVec);
     Expression::type(args[1], Type::varbool(1));
   }
   // NEVER CREATE (a -> a)
@@ -339,17 +334,16 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
          !Expression::isa<Id>((*Expression::cast<ArrayLit>(args[1]))[0]) ||
          Expression::cast<Id>((*Expression::cast<ArrayLit>(args[0]))[0])->decl() !=
              Expression::cast<Id>((*Expression::cast<ArrayLit>(args[1]))[0])->decl());
-  auto* nc = Call::a(MiniZinc::Location().introduce(), _env.constants.ids.clause, args);
+  auto nc = Call::a(MiniZinc::Location().introduce(), _env.constants.ids.clause, args);
   nc->type(Type::varbool());
   nc->decl(_env.model->matchFn(_env, nc, false));
   assert(nc->decl());
 
-  return new ConstraintI(MiniZinc::Location().introduce(), nc);
+  return make<ConstraintI>(MiniZinc::Location().introduce(), nc);
 }
 
-ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
+Ref<ConstraintI> ImpCompressor::constructHalfReif(Call* call, Id* control) {
   assert(_env.fopts.enableHalfReification);
-  assert(GC::locked());
   auto cid = EnvI::halfReifyId(call->id());
   std::vector<Expression*> args(call->argCount());
   for (unsigned int i = 0; i < call->argCount(); ++i) {
@@ -358,10 +352,10 @@ ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
   args.push_back(control);
   FunctionI* decl = _env.model->matchFn(_env, cid, args, false);
   if (decl != nullptr) {
-    auto* nc = Call::a(Expression::loc(call).introduce(), cid, args);
+    auto nc = Call::a(Expression::loc(call).introduce(), cid, args);
     nc->decl(decl);
     nc->type(Type::varbool());
-    return new ConstraintI(Expression::loc(call).introduce(), nc);
+    return make<ConstraintI>(Expression::loc(call).introduce(), nc);
   }
   return nullptr;
 }
@@ -376,8 +370,8 @@ bool LECompressor::trackItem(Item* i) {
       // {int,float}_lin_le([c1,c2,...], [x, y,...], 0);
       if (call->id() == _env.constants.ids.int_.lin_le ||
           call->id() == _env.constants.ids.float_.lin_le) {
-        ArrayLit* as = eval_array_lit(_env, call->arg(0));
-        ArrayLit* bs = eval_array_lit(_env, call->arg(1));
+        Ref<ArrayLit> as = eval_array_lit(_env, call->arg(0));
+        Ref<ArrayLit> bs = eval_array_lit(_env, call->arg(1));
         assert(as->size() == bs->size());
 
         for (unsigned int j = 0; j < as->size(); ++j) {
@@ -430,8 +424,8 @@ void LECompressor::compress() {
     if (auto* ci = it->second->dynamicCast<ConstraintI>()) {
       auto* call = Expression::cast<Call>(ci->e());
       if (call->id() == _env.constants.ids.int_.lin_le) {
-        ArrayLit* as = eval_array_lit(_env, call->arg(0));
-        ArrayLit* bs = eval_array_lit(_env, call->arg(1));
+        Ref<ArrayLit> as = eval_array_lit(_env, call->arg(0));
+        Ref<ArrayLit> bs = eval_array_lit(_env, call->arg(1));
         IntVal c = eval_int(_env, call->arg(2));
 
         if (bs->size() == 2 && c == IntVal(0)) {
@@ -504,22 +498,22 @@ void LECompressor::compress() {
         }
       }
       if (alias != nullptr) {
-        VarDecl* i2f_lhs;
+        Ref<VarDecl> i2f_lhs;
 
         auto search = _aliasMap.find(lhs);
         if (search != _aliasMap.end()) {
           i2f_lhs = search->second;
         } else {
           // Create new int2float
-          Call* i2f =
+          Ref<Call> i2f =
               Call::a(Expression::loc(lhs).introduce(), _env.constants.ids.int2float, {lhs->id()});
           i2f->decl(_env.model->matchFn(_env, i2f, false));
           assert(i2f->decl());
           i2f->type(Type::varfloat());
-          auto* domain = new SetLit(Expression::loc(lhs).introduce(),
-                                    eval_floatset(_env, lhs->ti()->domain()));
-          auto* i2f_ti = new TypeInst(Expression::loc(lhs).introduce(), Type::varfloat(), domain);
-          i2f_lhs = new VarDecl(Expression::loc(lhs).introduce(), i2f_ti, _env.genId(), i2f);
+          auto domain = make<SetLit>(Expression::loc(lhs).introduce(),
+                                     eval_floatset(_env, lhs->ti()->domain()));
+          auto i2f_ti = make<TypeInst>(Expression::loc(lhs).introduce(), Type::varfloat(), domain);
+          i2f_lhs = make<VarDecl>(Expression::loc(lhs).introduce(), i2f_ti, _env.genId(), i2f);
           i2f_lhs->type(Type::varfloat());
           addItem(VarDeclI::a(Expression::loc(lhs).introduce(), i2f_lhs));
         }
@@ -550,7 +544,6 @@ void LECompressor::compress() {
 template <class Lit>
 void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   typedef typename LinearTraits<Lit>::Val Val;
-  GCLock lock;
 
   auto* ci = i->cast<ConstraintI>();
   auto* call = Expression::cast<Call>(ci->e());
@@ -561,13 +554,13 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
   CollectDecls cd(_env, _env.varOccurrences, _deletedVarDecls, i);
   top_down(cd, ci->e());
 
-  ArrayLit* al_c = eval_array_lit(_env, call->arg(0));
+  Ref<ArrayLit> al_c = eval_array_lit(_env, call->arg(0));
   std::vector<Val> coeffs(al_c->size());
   for (unsigned int j = 0; j < al_c->size(); j++) {
     coeffs[j] = LinearTraits<Lit>::eval(_env, (*al_c)[j]);
   }
-  ArrayLit* al_x = eval_array_lit(_env, call->arg(1));
-  std::vector<KeepAlive> x(al_x->size());
+  Ref<ArrayLit> al_x = eval_array_lit(_env, call->arg(1));
+  std::vector<Ref<Expression>> x(al_x->size());
   for (unsigned int j = 0; j < al_x->size(); j++) {
     Expression* decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al_x)[j]));
     if (decl && decl == oldVar) {
@@ -590,22 +583,22 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
     return;
   }
   rhs -= d;
-  std::vector<Expression*> coeffs_e(coeffs.size());
+  std::vector<Ref<Expression>> coeffs_e(coeffs.size());
   std::vector<Expression*> x_e(coeffs.size());
   for (unsigned int j = 0; j < coeffs.size(); j++) {
     coeffs_e[j] = Lit::a(coeffs[j]);
-    x_e[j] = x[j]();
+    x_e[j] = x[j];
     Expression* decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl(x_e[j]));
     if (decl && Expression::cast<VarDecl>(decl) == newVar) {
       storeItem(newVar, i);
     }
   }
 
-  auto* al_c_new = new ArrayLit(Expression::loc(al_c).introduce(), coeffs_e);
+  auto al_c_new = make<ArrayLit>(Expression::loc(al_c).introduce(), coeffs_e);
   al_c_new->type(al_c->type());
   call->arg(0, al_c_new);
 
-  auto* al_x_new = new ArrayLit(Expression::loc(al_x).introduce(), x_e);
+  auto al_x_new = make<ArrayLit>(Expression::loc(al_x).introduce(), x_e);
   al_x_new->type(al_x->type());
   call->arg(1, al_x_new);
 
@@ -618,8 +611,8 @@ void LECompressor::leReplaceVar(Item* i, VarDecl* oldVar, VarDecl* newVar) {
 
 bool LECompressor::eqBounds(Expression* a, Expression* b) {
   // TODO: (To optimise) Check lb(lhs) >= lb(rhs) and enforce ub(lhs) <= ub(rhs)
-  IntSetVal* dom_a = nullptr;
-  IntSetVal* dom_b = nullptr;
+  Ref<IntSetVal> dom_a;
+  Ref<IntSetVal> dom_b;
 
   if (auto* a_decl = Expression::dynamicCast<VarDecl>(follow_id_to_decl(a))) {
     if (a_decl->ti()->domain() != nullptr) {

@@ -83,7 +83,7 @@ public:
   Status next() override { return SolverInstance::ERROR; }
   void resetSolver() override { assert(false); };
 
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
   void printStatistics() override;
 
 protected:

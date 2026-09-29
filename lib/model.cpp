@@ -93,6 +93,9 @@ Model::~Model() {
       }
     }
   }
+  for (auto* i : _items) {
+    RC::dec(i);
+  }
 }
 
 VarDeclIteratorContainer Model::vardecls() { return VarDeclIteratorContainer(this); }
@@ -112,7 +115,8 @@ SolveI* Model::solveItem() { return _solveItem; }
 
 OutputI* Model::outputItem() { return _outputItem; }
 
-void Model::addItem(Item* i) {
+void Model::addItem(Arg<Item> i) {
+  RC::inc(i);
   _items.push_back(i);
   if (i->isa<SolveI>()) {
     Model* m = this;
@@ -387,7 +391,7 @@ std::vector<Type> normalized_param_sig(EnvI& env, const FunctionI* fi) {
 // Map every nameable parameter of \a fi to its declaration. Returns false if \a fi cannot
 // be the target of a call that supplies all of its arguments by name, either because a
 // parameter that must be supplied cannot be named, or because two parameters share a name.
-bool nameable_params(FunctionI* fi, ASTStringMap<VarDecl*>& byName) {
+bool nameable_params(FunctionI* fi, std::unordered_map<ASTString, VarDecl*>& byName) {
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     VarDecl* p = fi->param(i);
     if (!is_nameable(p)) {
@@ -415,8 +419,8 @@ bool nameable_params(FunctionI* fi, ASTStringMap<VarDecl*>& byName) {
 // the types agree on K* then the call K* is ambiguous, and if they disagree on some name in
 // K* then so does every larger K.
 bool ambiguous_named_call(FunctionI* a, FunctionI* b) {
-  ASTStringMap<VarDecl*> pa;
-  ASTStringMap<VarDecl*> pb;
+  std::unordered_map<ASTString, VarDecl*> pa;
+  std::unordered_map<ASTString, VarDecl*> pb;
   if (!nameable_params(a, pa) || !nameable_params(b, pb)) {
     return false;
   }
@@ -521,7 +525,6 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
 
   addEntry(fe);
   if (fe.isPolymorphic) {
-    GCLock lock;
     FnEntry cur = fe;
     cur.isPolymorphicVariant = true;
 
@@ -549,7 +552,8 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
 
     // Create a parameter TypeInst in the format of a tuple TypeInst
     // Immediately copy so the internal TypeInst values can be changed
-    auto* paramtuple = Expression::cast<TypeInst>(copy(env, cur.fi->paramTypes()));
+    auto paramTypes = cur.fi->paramTypes();
+    auto paramtuple = copy(env, paramTypes).cast<TypeInst>();
     paramtuple->collectTypeIds(type_id_map, type_ids);
 
     std::vector<size_t> stack;
@@ -1980,9 +1984,6 @@ void Model::checkReifParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  // Deriving the base id (ASTString) and emitting warnings allocates GC objects.
-  GCLock lock;
-
   // Exact per-parameter type equality over the leading `n` parameters (names ignored).
   auto leadingTypesEqual = [](const FunctionI* rf, const FunctionI* bf, unsigned int n) {
     for (unsigned int j = 0; j < n; j++) {
@@ -2096,9 +2097,6 @@ void Model::checkAuthoritativeParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  // Deriving normalised signatures and emitting warnings allocates GC objects.
-  GCLock lock;
-
   for (const auto& bucket : m->_fnmap) {
     auto ait = m->_fnAnchors.find(bucket.first);
     if (ait == m->_fnAnchors.end()) {
@@ -2334,10 +2332,15 @@ std::vector<Item*>::iterator Model::end() { return _items.end(); }
 std::vector<Item*>::const_iterator Model::end() const { return _items.end(); }
 
 void Model::compact() {
-  struct {
-    bool operator()(const Item* i) { return i->removed(); }
-  } isremoved;
-  _items.erase(remove_if(_items.begin(), _items.end(), isremoved), _items.end());
+  size_t kept = 0;
+  for (auto* i : _items) {
+    if (i->removed()) {
+      RC::dec(i);  // releasing an item does not read _items
+    } else {
+      _items[kept++] = i;
+    }
+  }
+  _items.resize(kept);
 }
 
 }  // namespace MiniZinc

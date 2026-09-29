@@ -29,6 +29,7 @@
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/timer.hh>
 #include <minizinc/utils.hh>
 
 #include <chrono>
@@ -206,7 +207,6 @@ MznSolver::~MznSolver() {
   // TODO cleanup the used solver interfaces
   _si = nullptr;
   _siOpt = nullptr;
-  GC::trigger();
 }
 
 bool MznSolver::ifMzn2Fzn() const { return _isMzn2fzn; }
@@ -229,7 +229,6 @@ void MznSolver::addSolverInterface(SolverFactory* sf) {
 }
 
 void MznSolver::addSolverInterface() {
-  GCLock lock;
   if (_sf == nullptr) {
     if (get_global_solver_registry()->getSolverFactories().empty()) {
       _log << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
@@ -578,7 +577,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_FINISH;
     }
     if (argv[i] == "--config-dirs") {
-      GCLock lock;
       _os << "{\n";
       _os << "  \"globalConfigFile\" : \""
           << Printer::escapeStringLit(FileUtils::global_config_file()) << "\",\n";
@@ -1016,7 +1014,6 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
 
 SolverInstance::Status MznSolver::solve() {
   {  // To be able to clean up flatzinc after PrcessFlt()
-    GCLock lock;
     getSI()->processFlatZinc();
   }
 
@@ -1030,7 +1027,6 @@ SolverInstance::Status MznSolver::solve() {
     }
     ~Solve() {
       // Put in destructor so that this still happens when interrupted
-      GCLock lock;
       if (!solver.getSI()->getSolns2Out()->fStatusPrinted) {
         solver.getSI()->getSolns2Out()->evalStatus(status);
       }
@@ -1094,7 +1090,6 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     _si = _sf->createSI(env, _log, _siOpt);
     _si->setSolns2Out(&s2out);
     {  // To be able to clean up flatzinc after PrcessFlt()
-      GCLock lock;
       _si->options()->verbose = getFlagVerbose();
       _si->options()->printStatistics = getFlagStatistics();
     }
@@ -1158,7 +1153,6 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
         _sf->processOption(_siOpt, i, i_flag);
       }
 
-      // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
       addSolverInterface();
       return solve();
     }

@@ -379,7 +379,7 @@ void FZNSolverInstance::processFlatZinc() {}
 
 void FZNSolverInstance::resetSolver() {}
 
-Expression* FZNSolverInstance::getSolutionValue(Id* id) {
+Ref<Expression> FZNSolverInstance::getSolutionValue(Id* id) {
   assert(false);
   return nullptr;
 }

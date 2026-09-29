@@ -148,7 +148,7 @@ void p_int_lt_imp(SolverInstanceBase& s, const Call* call) {
 void p_int_lin_cmp(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
   const Annotation& ann = Expression::ann(call);
   IntArgs ia = GecodeSolverInstance::arg2intargs(call->arg(0));
-  ArrayLit* vars = s.arg2arraylit(call->arg(1));
+  Ref<ArrayLit> vars = s.arg2arraylit(call->arg(1));
   int singleIntVar;
   if (s.isBoolArray(vars, singleIntVar)) {
     if (singleIntVar != -1) {
@@ -195,7 +195,7 @@ void p_int_lin_cmp_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, c
     return;
   }
   IntArgs ia = GecodeSolverInstance::arg2intargs(call->arg(0));
-  ArrayLit* vars = s.arg2arraylit(call->arg(1));
+  Ref<ArrayLit> vars = s.arg2arraylit(call->arg(1));
   int singleIntVar;
   if (s.isBoolArray(vars, singleIntVar)) {
     if (singleIntVar != -1) {
@@ -1101,7 +1101,7 @@ void p_regular(SolverInstanceBase& s, const Call* call) {
   t[noOfTrans].i_state = -1;
 
   // Final states
-  IntSetVal* isv = eval_intset(s.env().envi(), call->arg(5));
+  Ref<IntSetVal> isv = eval_intset(s.env().envi(), call->arg(5));
   IntSetRanges isr(isv);
 
   std::vector<int> f;
@@ -1884,7 +1884,7 @@ void p_link_set_to_booleans(SolverInstanceBase& s, const Call* ce) {
 void p_array_set_element(SolverInstanceBase& s, const Call* ce) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   bool isConstant = true;
-  ArrayLit* a = gi.arg2arraylit(ce->arg(1));
+  Ref<ArrayLit> a = gi.arg2arraylit(ce->arg(1));
   for (unsigned int i = a->size(); (i--) != 0U;) {
     if (Expression::type((*a)[i]).isvar()) {
       isConstant = false;
@@ -1906,7 +1906,7 @@ void p_array_set_element_op(SolverInstanceBase& s, const Call* ce, SetOpType op,
                             const IntSet& universe = IntSet(Set::Limits::min, Set::Limits::max)) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   bool isConstant = true;
-  ArrayLit* a = gi.arg2arraylit(ce->arg(1));
+  Ref<ArrayLit> a = gi.arg2arraylit(ce->arg(1));
   for (unsigned int i = a->size(); (i--) != 0;) {
     if (Expression::type((*a)[i]).isvar()) {
       isConstant = false;

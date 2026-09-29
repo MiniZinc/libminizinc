@@ -13,7 +13,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <cassert>
 #include <vector>
@@ -24,7 +24,7 @@ EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   CallStackItem _csi(env, e);
   EE ret;
   auto* aa = Expression::cast<ArrayAccess>(e);
-  KeepAlive aa_ka = aa;
+  Ref<Expression> aa_ka = aa;
 
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
@@ -40,10 +40,10 @@ start_flatten_arrayaccess:
     }
     if (Expression::type(tmp).isPar()) {
       ArrayLit* al;
-      if (Expression::isa<ArrayLit>(eev.r())) {
-        al = Expression::cast<ArrayLit>(eev.r());
+      if (Expression::isa<ArrayLit>(eev.r)) {
+        al = Expression::cast<ArrayLit>(eev.r);
       } else {
-        Id* id = Expression::cast<Id>(eev.r());
+        Id* id = Expression::cast<Id>(eev.r);
         if (id->decl() == nullptr) {
           throw InternalError("undefined identifier");
         }
@@ -60,7 +60,7 @@ start_flatten_arrayaccess:
 
       bool allAbsent = true;
       bool anyAbsent = false;
-      std::vector<KeepAlive> elems;
+      std::vector<Ref<Expression>> elems;
       std::vector<IntVal> idx(aa->idx().size());
       std::vector<std::pair<int, int>> dims;
       std::vector<Expression*> newaccess;
@@ -72,8 +72,7 @@ start_flatten_arrayaccess:
           tmp = vd->id();
         }
         if (Expression::type(tmp).isPar()) {
-          GCLock lock;
-          auto* v = eval_par(env, tmp);
+          auto v = eval_par(env, tmp);
           if (v == env.constants.absent) {
             anyAbsent = true;
             idx[j] = al->min(j);
@@ -92,11 +91,10 @@ start_flatten_arrayaccess:
       }
       if (stack.empty()) {
         ArrayAccessSucess success;
-        KeepAlive ka;
+        Ref<Expression> ka;
         if (allAbsent) {
           ka = env.constants.absent;
         } else {
-          GCLock lock;
           ka = eval_arrayaccess(env, al, idx, success);
           if (anyAbsent) {
             ka = env.constants.absent;
@@ -106,14 +104,14 @@ start_flatten_arrayaccess:
           }
         }
         ees.emplace_back(nullptr, env.constants.boollit(success()));
-        ees.emplace_back(nullptr, eev.b());
+        ees.emplace_back(nullptr, eev.b);
         if (aa->type().isbool() && !aa->type().isOpt()) {
           ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
-          ees.emplace_back(nullptr, ka());
+          ees.emplace_back(nullptr, ka);
           ret.r = conj(env, r, ctx, ees);
         } else {
           ret.b = conj(env, b, ctx, ees);
-          ret.r = bind(env, ctx, r, ka());
+          ret.r = bind(env, ctx, r, ka);
         }
         return ret;
       }
@@ -124,15 +122,14 @@ start_flatten_arrayaccess:
           for (int i = al->min(nonpar[cur]); i <= al->max(nonpar[cur]); i++) {
             idx[nonpar[cur]] = i;
             ArrayAccessSucess success;
-            GCLock lock;
-            Expression* al_idx = eval_arrayaccess(env, al, idx, success);
+            Ref<Expression> al_idx = eval_arrayaccess(env, al, idx, success);
             if (!success()) {
               if (env.inMaybePartial == 0) {
                 ResultUndefinedError warning(env, Expression::loc(al),
                                              success.errorMessage(env, al));
               }
               ees.emplace_back(nullptr, env.constants.literalFalse);
-              ees.emplace_back(nullptr, eev.b());
+              ees.emplace_back(nullptr, eev.b);
               if (aa->type().isbool() && !aa->type().isOpt()) {
                 ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
                 ret.r = conj(env, r, ctx, ees);
@@ -156,17 +153,12 @@ start_flatten_arrayaccess:
           }
         }
       }
-      std::vector<Expression*> elems_e(elems.size());
-      for (unsigned int i = 0; i < elems.size(); i++) {
-        elems_e[i] = elems[i]();
-      }
       {
-        GCLock lock;
-        Expression* newal = new ArrayLit(Expression::loc(al), elems_e, dims);
+        Ref<Expression> newal = make<ArrayLit>(Expression::loc(al), elems, dims);
         Expression::type(
             newal, Type::arrType(env, Type::partop(static_cast<int>(dims.size())), al->type()));
-        eev.r = newal;
-        auto* n_aa = new ArrayAccess(Expression::loc(aa), newal, newaccess);
+        eev.r = newal.get();
+        auto n_aa = make<ArrayAccess>(Expression::loc(aa), newal, newaccess);
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -177,10 +169,10 @@ start_flatten_arrayaccess:
   if (aa->idx().size() == 1 && Expression::isa<ArrayAccess>(aa->idx()[0])) {
     auto* aa_inner = Expression::cast<ArrayAccess>(aa->idx()[0]);
     ArrayLit* al;
-    if (Expression::isa<ArrayLit>(eev.r())) {
-      al = Expression::cast<ArrayLit>(eev.r());
+    if (Expression::isa<ArrayLit>(eev.r)) {
+      al = Expression::cast<ArrayLit>(eev.r);
     } else {
-      Id* id = Expression::cast<Id>(eev.r());
+      Id* id = Expression::cast<Id>(eev.r);
       if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
@@ -190,11 +182,10 @@ start_flatten_arrayaccess:
       al = Expression::cast<ArrayLit>(follow_id(id));
     }
     if (Expression::type(aa_inner->v()).isPar()) {
-      KeepAlive ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
-      auto* al_inner = Expression::cast<ArrayLit>(ka_al_inner());
+      Ref<Expression> ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
+      auto* al_inner = Expression::cast<ArrayLit>(ka_al_inner);
       std::vector<Expression*> composed_e(al_inner->size());
       for (unsigned int i = 0; i < al_inner->size(); i++) {
-        GCLock lock;
         IntVal inner_idx = eval_int(env, (*al_inner)[i]);
         if (inner_idx < al->min(0) || inner_idx > al->max(0)) {
           goto flatten_arrayaccess;
@@ -206,8 +197,7 @@ start_flatten_arrayaccess:
         dims[i] = std::make_pair(al_inner->min(i), al_inner->max(i));
       }
       {
-        GCLock lock;
-        Expression* newal = new ArrayLit(Expression::loc(al), composed_e, dims);
+        Ref<Expression> newal = make<ArrayLit>(Expression::loc(al), composed_e, dims);
         Type t = al->type();
         // The composed array has the dimensions of the inner index array. If the type carries
         // (index and element) enum information, it has to be rebuilt for the new dimensions.
@@ -220,8 +210,8 @@ start_flatten_arrayaccess:
           t.typeId(env.registerArrayEnum(enumIds));
         }
         Expression::type(newal, t);
-        eev.r = newal;
-        auto* n_aa = new ArrayAccess(Expression::loc(aa), newal, aa_inner->idx());
+        eev.r = newal.get();
+        auto n_aa = make<ArrayAccess>(Expression::loc(aa), newal, aa_inner->idx());
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -240,11 +230,11 @@ flatten_arrayaccess:
     }
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, dimctx.partialityVar(env)));
   }
-  ees.emplace_back(nullptr, eev.b());
+  ees.emplace_back(nullptr, eev.b);
 
   bool parAccess = true;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
-    if (!Expression::type(ees[i].r()).isPar()) {
+    if (!Expression::type(ees[i].r).isPar()) {
       parAccess = false;
       break;
     }
@@ -252,10 +242,10 @@ flatten_arrayaccess:
 
   if (parAccess) {
     ArrayLit* al;
-    if (Expression::isa<ArrayLit>(eev.r())) {
-      al = Expression::cast<ArrayLit>(eev.r());
+    if (Expression::isa<ArrayLit>(eev.r)) {
+      al = Expression::cast<ArrayLit>(eev.r);
     } else {
-      Id* id = Expression::cast<Id>(eev.r());
+      Id* id = Expression::cast<Id>(eev.r);
       if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
@@ -264,15 +254,14 @@ flatten_arrayaccess:
       }
       al = Expression::cast<ArrayLit>(follow_id(id));
     }
-    KeepAlive ka;
+    Ref<Expression> ka;
     ArrayAccessSucess success;
     bool allAbsent = true;
     bool anyAbsent = false;
     {
-      GCLock lock;
       std::vector<IntVal> dims(aa->idx().size());
       for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
-        auto* v = eval_par(env, ees[i].r());
+        auto v = eval_par(env, ees[i].r);
         if (v == env.constants.absent) {
           anyAbsent = true;
           dims[i] = al->min(i);
@@ -296,33 +285,32 @@ flatten_arrayaccess:
     ees.emplace_back(nullptr, env.constants.boollit(success()));
     if (aa->type().isbool() && !aa->type().isOpt()) {
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
-      ees.emplace_back(nullptr, ka());
+      ees.emplace_back(nullptr, ka);
       ret.r = conj(env, r, ctx, ees);
     } else {
       ret.b = conj(env, b, ctx, ees);
-      ret.r = bind(env, ctx, r, ka());
+      ret.r = bind(env, ctx, r, ka);
     }
   } else if (aa->type().structBT()) {
     // x[i], where x is an array of tuples, and i is an index variable
     // Strategy: create/flatten a seperate array access for each field, combine to new tuple literal
-    assert(Expression::type(eev.r()).bt() == aa->type().bt());
+    assert(Expression::type(eev.r).bt() == aa->type().bt());
 
     std::vector<Expression*> idx(aa->idx().size());
     for (size_t i = 0; i < aa->idx().size(); ++i) {
-      idx[i] = ees[i].r();
+      idx[i] = ees[i].r;
     }
 
     StructType* res_st = env.getStructType(aa->type());
 
     // Construct field based array access expressions
-    std::vector<KeepAlive> field_aa(res_st->size());
+    std::vector<Ref<Expression>> field_aa(res_st->size());
     {
-      GCLock lock;
-      std::vector<Expression*> field_al = field_slices(env, eev.r());
+      std::vector<Ref<Expression>> field_al = field_slices(env, eev.r);
       assert(res_st->size() == field_al.size());
       for (unsigned int i = 0; i < res_st->size(); ++i) {
-        field_aa[i] = new ArrayAccess(Expression::loc(aa).introduce(), field_al[i], idx);
-        Expression::type(field_aa[i](), (*res_st)[i]);
+        field_aa[i] = make<ArrayAccess>(Expression::loc(aa).introduce(), field_al[i], idx);
+        Expression::type(field_aa[i], (*res_st)[i]);
       }
     }
     // Flatten field based array access expressions
@@ -330,14 +318,14 @@ flatten_arrayaccess:
     std::vector<Expression*> field_res(res_st->size());
     for (unsigned int i = 0; i < res_st->size(); ++i) {
       // TODO: Does the context need to be changed? Are 'r' and 'b' correct?
-      CallStackItem _csi(env, IntLit::a(i));
-      EE ee = flat_exp(env, ctx, field_aa[i](), nullptr, b);
-      field_res[i] = ee.r();
+      auto il = IntLit::a(i);
+      CallStackItem _csi(env, il);
+      EE ee = flat_exp(env, ctx, field_aa[i], nullptr, b);
+      field_res[i] = ee.r;
       ees.push_back(ee);
     }
     {
-      GCLock lock;
-      ArrayLit* tuple_lit = ArrayLit::constructTuple(Location().introduce(), field_res);
+      Ref<ArrayLit> tuple_lit = ArrayLit::constructTuple(Location().introduce(), field_res);
       tuple_lit->type(aa->type());
       ret.r = bind(env, ctx, r, tuple_lit);
       ret.b = conj(env, b, ctx, ees);
@@ -345,13 +333,12 @@ flatten_arrayaccess:
   } else {
     std::vector<Expression*> args(aa->idx().size() + 1);
     for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
-      args[i] = ees[i].r();
+      args[i] = ees[i].r;
     }
-    args[aa->idx().size()] = eev.r();
-    KeepAlive ka;
+    args[aa->idx().size()] = eev.r;
+    Ref<Expression> ka;
     {
-      GCLock lock;
-      Call* cc = Call::a(Expression::loc(e).introduce(), env.constants.ids.element, args);
+      Ref<Call> cc = Call::a(Expression::loc(e).introduce(), env.constants.ids.element, args);
       cc->type(aa->type());
       FunctionI* fi = nullptr;
       try {
@@ -360,7 +347,7 @@ flatten_arrayaccess:
         // Actual array is bottom, but previously had a type so use that version
         args[aa->idx().size()] = aa->v();
         fi = env.model->matchFn(env, cc->id(), args, false);
-        args[aa->idx().size()] = eev.r();
+        args[aa->idx().size()] = eev.r;
       }
       if (fi == nullptr) {
         throw FlatteningError(env, Expression::loc(cc), "cannot find matching declaration");
@@ -368,11 +355,11 @@ flatten_arrayaccess:
       assert(fi);
       assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));
       cc->decl(fi);
-      ka = cc;
+      ka = std::move(cc);
     }
     Ctx elemctx = ctx;
     elemctx.neg = false;
-    EE ee = flat_exp(env, elemctx, ka(), nullptr, elemctx.partialityVar(env));
+    EE ee = flat_exp(env, elemctx, ka, nullptr, elemctx.partialityVar(env));
     ees.push_back(ee);
     if (aa->type().isbool() && !aa->type().isOpt()) {
       ee.b = ee.r;
@@ -380,7 +367,7 @@ flatten_arrayaccess:
       ret.r = conj(env, r, ctx, ees);
       ret.b = bind(env, ctx, b, env.constants.boollit(!ctx.neg));
     } else {
-      ret.r = bind(env, ctx, r, ee.r());
+      ret.r = bind(env, ctx, r, ee.r);
       ret.b = conj(env, b, ctx, ees);
     }
   }

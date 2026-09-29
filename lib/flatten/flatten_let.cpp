@@ -18,7 +18,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   EE ret;
   Let* let = Expression::cast<Let>(e);
   std::vector<EE> cs;
-  std::vector<KeepAlive> flatmap;
+  std::vector<Ref<Expression>> flatmap;
   {
     LetPushBindings lpb(let);
     for (unsigned int i = 0; i < let->let().size(); i++) {
@@ -47,12 +47,11 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
 
           CallStackItem csi_vd(env, vd);
           EE ee = flat_exp(env, nctx, vd->e(), nullptr, nctx.partialityVar(env));
-          let_e = ee.r();
+          let_e = ee.r;
           cs.push_back(ee);
           check_index_sets(env, vd, let_e);
           if (vd->ti()->domain() != nullptr) {
-            GCLock lock;
-            auto* c = mk_domain_constraint(env, ee.r(), vd->ti()->domain());
+            auto c = mk_domain_constraint(env, ee.r, vd->ti()->domain());
             if (c != nullptr) {
               VarDecl* b_b = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
               VarDecl* r_r = (nctx.b == C_ROOT && b == env.constants.varTrue) ? b : nullptr;
@@ -72,9 +71,8 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
                                   "free variable in non-positive context");
           }
           CallStackItem csi_vd(env, vd);
-          GCLock lock;
-          TypeInst* ti = eval_typeinst(env, ctx, vd);
-          VarDecl* nvd = new_vardecl(env, ctx, ti, nullptr, vd, nullptr);
+          Ref<TypeInst> ti = eval_typeinst(env, ctx, vd);
+          Ref<VarDecl> nvd = new_vardecl(env, ctx, ti, nullptr, vd, nullptr);
           let_e = nvd->id();
           vd->e(let_e);
         }
@@ -105,7 +103,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       nctx.neg = false;
       VarDecl* bb = b;
       for (EE& ee : cs) {
-        if (ee.b() != env.constants.literalTrue) {
+        if (ee.b != env.constants.literalTrue) {
           bb = nullptr;
           break;
         }
@@ -118,7 +116,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       } else {
         cs.push_back(ee);
-        ret.r = bind(env, Ctx(), r, ee.r());
+        ret.r = bind(env, Ctx(), r, ee.r);
         ret.b = conj(env, b, Ctx(), cs);
       }
     }
@@ -126,7 +124,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   // Restore previous mapping
   for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(let->let()[i])) {
-      vd->flat(Expression::cast<VarDecl>(flatmap[j++]()));
+      vd->flat(Expression::cast<VarDecl>(flatmap[j++]));
     }
   }
   return ret;

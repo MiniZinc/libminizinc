@@ -46,37 +46,36 @@ EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDec
     }
     std::vector<Expression*> elems(elems_ee.size());
     for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
-      elems[i] = elems_ee[i].r();
+      elems[i] = elems_ee[i].r;
     }
     std::vector<std::pair<int, int> > dims(al->dims());
     for (unsigned int i = al->dims(); (i--) != 0U;) {
       dims[i] = std::pair<int, int>(al->min(i), al->max(i));
     }
-    KeepAlive ka;
+    Ref<Expression> ka;
     {
-      GCLock lock;
       if (al->type().istuple() || al->type().isrecord()) {
         assert(dims.size() == 1 && dims[0].first == 1 && dims[0].second == al->size());
 
-        auto* alr = ArrayLit::constructTuple(Expression::loc(al).introduce(), elems);
+        auto alr = ArrayLit::constructTuple(Expression::loc(al).introduce(), elems);
         alr->type(al->type());
         alr->flat(true);
 
         // Add reverse mapper for tuple literal containing variables
-        VarDecl* vd = new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), al->type()),
-                                  nullptr, nullptr, alr);
+        auto ti = make<TypeInst>(Location().introduce(), al->type());
+        Ref<VarDecl> vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, alr);
         vd->ti()->setStructDomain(env, al->type());
-        env.reverseMappers.insert(vd->id(), alr);
+        env.reverseMappers.insert(vd->id(), alr.get());
         ka = vd->id();
       } else {
-        auto* alr = new ArrayLit(Expression::loc(al).introduce(), elems, dims);
+        auto alr = make<ArrayLit>(Expression::loc(al).introduce(), elems, dims);
         alr->type(al->type());
         alr->flat(true);
-        ka = alr;
+        ka = std::move(alr);
       }
     }
     ret.b = conj(env, b, Ctx(), elems_ee);
-    ret.r = bind(env, Ctx(), r, ka());
+    ret.r = bind(env, Ctx(), r, ka);
   }
   return ret;
 }

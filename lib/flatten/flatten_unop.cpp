@@ -30,34 +30,28 @@ EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       case UOT_PLUS:
         return flat_exp(env, ctx, uo->e(), r, b);
       case UOT_MINUS: {
-        GC::lock();
         if (UnOp* uo_inner = Expression::dynamicCast<UnOp>(uo->e())) {
           if (uo_inner->op() == UOT_MINUS) {
             return flat_exp(env, ctx, uo_inner->e(), r, b);
           }
         }
-        Expression* zero;
+        Ref<Expression> zero;
         if (Expression::type(uo->e()).bt() == Type::BT_INT) {
           zero = IntLit::a(0);
         } else {
           zero = FloatLit::a(0.0);
         }
-        auto* bo = new BinOp(Location().introduce(), zero, BOT_MINUS, uo->e());
+        auto bo = make<BinOp>(Location().introduce(), zero, BOT_MINUS, uo->e());
         bo->type(uo->type());
-        KeepAlive ka(bo);
-        GC::unlock();
-        return flat_exp(env, ctx, ka(), r, b);
+        return flat_exp(env, ctx, bo, r, b);
       }
       default:
         throw InternalError("unhandled unary operator");
     }
   }  // else (!isBuiltin)
-  GC::lock();
-  Call* c = Call::a(Expression::loc(uo).introduce(), uo->opToString(), {uo->e()});
+  Ref<Call> c = Call::a(Expression::loc(uo).introduce(), uo->opToString(), {uo->e()});
   c->decl(env.model->matchFn(env, c, false));
   c->type(uo->type());
-  KeepAlive ka(c);
-  GC::unlock();
   return flat_exp(env, ctx, c, r, b);
 }
 }  // namespace MiniZinc

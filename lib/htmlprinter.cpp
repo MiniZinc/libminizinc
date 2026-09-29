@@ -19,6 +19,8 @@
 #include <minizinc/prettyprinter.hh>
 
 #include <cctype>
+#include <iomanip>
+#include <map>
 #include <sstream>
 #include <utility>
 
@@ -751,7 +753,6 @@ public:
       os << "</div><div class='mzn-vardecl-doc'>\n";
       os << addHTML(ds);
       os << "</div></div>";
-      GCLock lock;
       HtmlDocOutput::DocItem::DocType dt =
           vdi->e()->type().isPar() ? (vdi->e()->type().isAnn() ? HtmlDocOutput::DocItem::T_ANN
                                                                : HtmlDocOutput::DocItem::T_PAR)
@@ -788,7 +789,6 @@ public:
         allArgs.insert(param.first);
       }
 
-      GCLock lock;
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
         std::string param(fi->param(i)->id()->str().c_str(), fi->param(i)->id()->str().size());
         if (allArgs.find(param) == allArgs.end()) {
@@ -800,12 +800,11 @@ public:
 
       std::string sig;
       {
-        GCLock lock;
         std::vector<VarDecl*> params(fi->paramCount());
         for (unsigned int i = 0; i < fi->paramCount(); i++) {
           params[i] = fi->param(i);
         }
-        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
+        auto fi_c = make<FunctionI>(Location(), fi->id(), fi->ti(), params);
         std::ostringstream oss_sig;
         oss_sig << *fi_c;
         sig = oss_sig.str();
@@ -1552,7 +1551,6 @@ public:
       FunDoc funDoc = FunDoc(Printer::quoteId(vdi->e()->id()->str()), sig, os_sig.str(),
                              HtmlDocOutput::trim(ds));
 
-      GCLock lock;
       HtmlDocOutput::DocItem::DocType dt =
           vdi->e()->type().isPar() ? (vdi->e()->type().isAnn() ? HtmlDocOutput::DocItem::T_ANN
                                                                : HtmlDocOutput::DocItem::T_PAR)
@@ -1612,7 +1610,6 @@ public:
               allArgs.insert(param.first);
             }
 
-            GCLock lock;
             for (unsigned int i = 0; i < fi->paramCount(); i++) {
               if (allArgs.find(std::string(fi->param(i)->id()->str().c_str(),
                                            fi->param(i)->id()->str().size())) == allArgs.end()) {
@@ -1624,12 +1621,11 @@ public:
 
             std::string sig;
             {
-              GCLock lock;
               std::vector<VarDecl*> params(fi->paramCount());
               for (unsigned int i = 0; i < fi->paramCount(); i++) {
                 params[i] = fi->param(i);
               }
-              auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), params);
+              auto fi_c = make<FunctionI>(Location(), fi->id(), fi->ti(), params);
               std::ostringstream oss_sig;
               oss_sig << *fi_c;
               sig = oss_sig.str();

@@ -61,7 +61,7 @@ public:
 /// Topological sorting of items
 class TopoSorter {
 public:
-  typedef std::vector<KeepAlive> Decls;
+  typedef std::vector<Ref<Expression>> Decls;
   typedef std::unordered_map<VarDecl*, int> PosMap;
 
   /// List of all declarations
@@ -75,10 +75,10 @@ public:
   /// A set of identifiers that require a toString function (for enums)
   IdMap<bool>& needToString;
   /// A list of enum constructors that require type checking
-  std::vector<KeepAlive>& enumConstructorSetTypes;
+  std::vector<Ref<Expression>>& enumConstructorSetTypes;
 
   TopoSorter(Model* model0, IdMap<bool>& needToString0,
-             std::vector<KeepAlive>& enumConstructorSetTypes0)
+             std::vector<Ref<Expression>>& enumConstructorSetTypes0)
       : model(model0),
         needToString(needToString0),
         enumConstructorSetTypes(enumConstructorSetTypes0) {}

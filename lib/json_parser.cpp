@@ -10,7 +10,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/ast.hh>
-#include <minizinc/astmap.hh>
 #include <minizinc/aststring.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/flatten_internal.hh>
@@ -93,11 +92,12 @@ Location JSONParser::errLocation() const {
   return loc;
 }
 
-TypeInst* JSONParser::resolveAlias(TypeInst* ti) {
+Ref<TypeInst> JSONParser::resolveAlias(TypeInst* ti) {
   if (ti == nullptr || _aliases.empty()) {
     return ti;
   }
-  ASTStringSet visited;
+  std::unordered_set<ASTString> visited;
+  Ref<TypeInst> ret;  // owns the newest composed TypeInst
   while (ti != nullptr && ti->domain() != nullptr && Expression::isa<Id>(ti->domain())) {
     auto* id = Expression::cast<Id>(ti->domain());
     auto it = _aliases.find(id->str());
@@ -108,14 +108,13 @@ TypeInst* JSONParser::resolveAlias(TypeInst* ti) {
       break;  // cycle guard
     }
     TypeInst* alias = it->second;
-    GCLock lock;
     // Compose: take alias's base type and domain, but preserve outer's ranges if present.
     Type t = alias->type();
     bool outerIsArray = ti->isarray();
     if (outerIsArray) {
       t.dim(static_cast<int>(ti->ranges().size()));
     }
-    auto* newTi = new TypeInst(Location().introduce(), t, alias->domain());
+    auto newTi = make<TypeInst>(Location().introduce(), t, alias->domain());
     newTi->setIsEnum(alias->isEnum());
     if (outerIsArray) {
       std::vector<TypeInst*> rs(ti->ranges().size());
@@ -130,13 +129,16 @@ TypeInst* JSONParser::resolveAlias(TypeInst* ti) {
       }
       newTi->setRanges(rs);
     }
-    ti = newTi;
+    ret = newTi;
+    ti = ret;
   }
   return ti;
 }
 
 bool JSONParser::collectRecordFields(TypeInst* ti, std::vector<VarDecl*>& fields) {
-  ti = resolveAlias(ti);
+  // A composed alias shares the alias's domain, so the fields outlive it
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);
+  ti = resolvedTi;
   if (ti == nullptr || ti->domain() == nullptr) {
     return false;
   }
@@ -446,20 +448,20 @@ void JSONParser::expectEof(istream& is) {
   }
 }
 
-Expression* JSONParser::parseEnumDef(std::istream& is) {
+Ref<Expression> JSONParser::parseEnumDef(std::istream& is) {
   // precondition: opening bracket has been read
-  vector<Expression*> constructors;
-  vector<Expression*> literals;
+  vector<Ref<Expression>> constructors;
+  vector<Ref<Expression>> literals;
   for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
     switch (next.t) {
       case T_COMMA:
         break;
       case T_STRING:
-        literals.push_back(new Id(Location().introduce(), next.s, nullptr));
+        literals.emplace_back(make<Id>(Location().introduce(), next.s, nullptr));
         break;
       case T_OBJ_OPEN: {
         if (!literals.empty()) {
-          constructors.push_back(new SetLit(Location().introduce(), literals));
+          constructors.emplace_back(make<SetLit>(Location().introduce(), literals));
           literals.clear();
         }
         auto k = expectString(is);
@@ -472,19 +474,19 @@ Expression* JSONParser::parseEnumDef(std::istream& is) {
     }
   }
   if (!literals.empty() || constructors.empty()) {
-    constructors.push_back(new SetLit(Location().introduce(), literals));
+    constructors.emplace_back(make<SetLit>(Location().introduce(), literals));
   }
-  auto* arg = new ArrayLit(Location().introduce(), constructors);
+  auto arg = make<ArrayLit>(Location().introduce(), constructors);
   return Call::a(Location().introduce(), _env.constants.ids.enumFromConstructors, {arg});
 }
 
-Expression* JSONParser::parseEnumConstructorDef(std::istream& is, const std::string& seen) {
+Ref<Expression> JSONParser::parseEnumConstructorDef(std::istream& is, const std::string& seen) {
   // precondition: already parsed '{ "e" :' or '{ "c" :' or '{ "i":'
   //               seen = "e" or "c" or "i"
   auto key = seen;
-  Expression* e = nullptr;
+  Ref<Expression> e;
   std::string c;
-  Expression* i = nullptr;
+  Ref<Expression> i;
 
   for (;;) {
     if (key == "e" && i == nullptr) {
@@ -510,7 +512,7 @@ Expression* JSONParser::parseEnumConstructorDef(std::istream& is, const std::str
             throw JSONError(_env, errLocation(), "invalid enum constructor");
           }
           if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
-            e = new SetLit(Location().introduce(), al->getVec());
+            e = make<SetLit>(Location().introduce(), al->getVec());
           }
           return Call::a(Location().introduce(), c, {e});
         }
@@ -519,15 +521,16 @@ Expression* JSONParser::parseEnumConstructorDef(std::istream& is, const std::str
             throw JSONError(_env, errLocation(), "invalid anonymous enum constructor");
           }
           if (auto* al = Expression::dynamicCast<ArrayLit>(i)) {
-            i = new SetLit(Location().introduce(), al->getVec());
+            i = make<SetLit>(Location().introduce(), al->getVec());
           }
           return Call::a(Location().introduce(), _env.constants.ids.anon_enum_set, {i});
         }
         if (e != nullptr && Expression::isa<StringLit>(e)) {
           // TODO: Deprecate this syntax and require direct strings
-          return new SetLit(
+          return make<SetLit>(
               Location().introduce(),
-              {new Id(Location().introduce(), Expression::cast<StringLit>(e)->v(), nullptr)});
+              std::vector<Ref<Expression>>{
+                  make<Id>(Location().introduce(), Expression::cast<StringLit>(e)->v(), nullptr)});
         }
         throw JSONError(_env, errLocation(), "invalid enum constructor");
       default:
@@ -536,12 +539,12 @@ Expression* JSONParser::parseEnumConstructorDef(std::istream& is, const std::str
   }
 }
 
-Expression* JSONParser::parseEnum(std::istream& is) {
+Ref<Expression> JSONParser::parseEnum(std::istream& is) {
   Token next = readToken(is);
   switch (next.t) {
     case T_STRING:
       // Enum identifier
-      return new Id(Location().introduce(), next.s, nullptr);
+      return make<Id>(Location().introduce(), next.s, nullptr);
     case T_INT:
       // Integer member of contructor enum
       return IntLit::a(next.i);
@@ -556,11 +559,11 @@ Expression* JSONParser::parseEnum(std::istream& is) {
   }
 }
 
-Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& seen) {
+Ref<Expression> JSONParser::parseEnumObject(std::istream& is, const std::string& seen) {
   // precondition: already parsed '{ "e" :' or '{ "c" :' or '{ "i":'
   //               seen = "e" or "c" or "i"
   auto key = seen;
-  Expression* e;
+  Ref<Expression> e;
   std::string c;
   int i = -1;
 
@@ -592,7 +595,8 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
           return Call::a(Location().introduce(), c, {e});
         }
         if (i != -1) {
-          return Call::a(Location().introduce(), "to_enum", {e, IntLit::a(i)});
+          auto il = IntLit::a(i);
+          return Call::a(Location().introduce(), "to_enum", {e, il});
         }
         return e;
       default:
@@ -601,10 +605,11 @@ Expression* JSONParser::parseEnumObject(std::istream& is, const std::string& see
   }
 }
 
-Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
-  ti = resolveAlias(ti);
+Ref<Expression> JSONParser::parseSet(istream& is, TypeInst* ti) {
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
+  ti = resolvedTi;
   expectToken(is, T_LIST_OPEN);
-  vector<Expression*> exprs;
+  vector<Ref<Expression>> exprs;
   vector<pair<Token, Token>> ranges;
   TokenT listT = T_COLON;  // dummy marker
   for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
@@ -633,9 +638,9 @@ Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
         }
         listT = T_STRING;
         if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
-          exprs.push_back(new StringLit(Location().introduce(), next.s));
+          exprs.emplace_back(make<StringLit>(Location().introduce(), next.s));
         } else {
-          exprs.push_back(new Id(Location().introduce(), next.s, nullptr));
+          exprs.emplace_back(make<Id>(Location().introduce(), next.s, nullptr));
         }
         break;
       case T_BOOL:
@@ -645,7 +650,7 @@ Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
         if (listT == T_COLON) {
           listT = T_BOOL;
         }
-        exprs.push_back(_env.constants.boollit(next.b));
+        exprs.emplace_back(_env.constants.boollit(next.b));
         break;
       case T_OBJ_OPEN: {
         if (listT != T_COLON && listT != T_OBJ_OPEN) {
@@ -697,38 +702,39 @@ Expression* JSONParser::parseSet(istream& is, TypeInst* ti) {
   expectToken(is, T_OBJ_CLOSE);
 
   if (listT == T_INT) {
-    auto* res = IntSetVal::a();
+    auto res = IntSetVal::a();
     for (const auto& range : ranges) {
-      auto* isv = IntSetVal::a(range.first.i, range.second.i);
+      auto isv = IntSetVal::a(range.first.i, range.second.i);
       IntSetRanges isr(isv);
       IntSetRanges r(res);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
       res = IntSetVal::ai(u);
     }
-    return new SetLit(Location().introduce(), res);
+    return make<SetLit>(Location().introduce(), res);
   }
   if (listT == T_FLOAT) {
-    auto* res = FloatSetVal::a();
+    auto res = FloatSetVal::a();
     for (const auto& range : ranges) {
-      auto* fsv = FloatSetVal::a(range.first.d, range.second.d);
+      auto fsv = FloatSetVal::a(range.first.d, range.second.d);
       FloatSetRanges fsr(fsv);
       FloatSetRanges r(res);
       Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);
       res = FloatSetVal::ai(u);
     }
-    return new SetLit(Location().introduce(), res);
+    return make<SetLit>(Location().introduce(), res);
   }
 
-  return new SetLit(Location().introduce(), exprs);
+  return make<SetLit>(Location().introduce(), exprs);
 }
 
-Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
+Ref<Expression> JSONParser::parseObject(istream& is, TypeInst* ti) {
   // precondition: found T_OBJ_OPEN
-  ti = resolveAlias(ti);
-  std::vector<Expression*> fields;
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
+  ti = resolvedTi;
+  std::vector<Ref<Expression>> fields;
 
-  ASTStringMap<TypeInst*> fieldTIs;
-  ASTStringSet optFields;
+  std::unordered_map<ASTString, TypeInst*> fieldTIs;
+  std::unordered_set<ASTString> optFields;
   std::vector<VarDecl*> fieldDefs;
   if (collectRecordFields(ti, fieldDefs)) {
     for (auto* fieldDef : fieldDefs) {
@@ -763,10 +769,10 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
     }
 
     auto it = fieldTIs.find(key);
-    Expression* e = parseExp(is, true, it != fieldTIs.end() ? it->second : nullptr);
+    Ref<Expression> e = parseExp(is, true, it != fieldTIs.end() ? it->second : nullptr);
 
-    fields.push_back(
-        new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type()), key, e));
+    fields.emplace_back(make<VarDecl>(Location().introduce(),
+                                      make<TypeInst>(Location().introduce(), Type()), key, e));
     optFields.erase(key);
     next = readToken(is);
   } while (next.t == T_COMMA);
@@ -776,20 +782,21 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
   // Add <> literal for known optional fields
   for (const auto& key : optFields) {
-    fields.push_back(new VarDecl(Location().introduce(),
-                                 new TypeInst(Location().introduce(), Type()), key,
-                                 _env.constants.absent));
+    fields.emplace_back(make<VarDecl>(Location().introduce(),
+                                      make<TypeInst>(Location().introduce(), Type()), key,
+                                      _env.constants.absent));
   }
 
-  auto* record = ArrayLit::constructTuple(Location().introduce(), fields);
+  auto record = ArrayLit::constructTuple(Location().introduce(), raw(fields));
   record->type(Type::record());
   return record;
 }
 
-Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_index) {
+Ref<Expression> JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_index) {
   // precondition: opening parenthesis has been read
-  ti = resolveAlias(ti);
-  vector<Expression*> exps;
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
+  ti = resolvedTi;
+  vector<Ref<Expression>> exps;
   Token next = readToken(is);
 
   while (next.t != T_LIST_CLOSE) {
@@ -802,24 +809,24 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
       case T_COMMA:
         break;
       case T_INT:
-        exps.push_back(IntLit::a(next.i));
+        exps.emplace_back(IntLit::a(next.i));
         break;
       case T_FLOAT:
-        exps.push_back(FloatLit::a(next.d));
+        exps.emplace_back(FloatLit::a(next.d));
         break;
       case T_STRING: {
         if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
-          exps.push_back(new StringLit(Location().introduce(), next.s));
+          exps.emplace_back(make<StringLit>(Location().introduce(), next.s));
         } else {
-          exps.push_back(new Id(Location().introduce(), ASTString(next.s), nullptr));
+          exps.emplace_back(make<Id>(Location().introduce(), ASTString(next.s), nullptr));
         }
         break;
       }
       case T_BOOL:
-        exps.push_back(new BoolLit(Location().introduce(), next.b));
+        exps.emplace_back(make<BoolLit>(Location().introduce(), next.b));
         break;
       case T_NULL:
-        exps.push_back(_env.constants.absent);
+        exps.emplace_back(_env.constants.absent);
         break;
       case T_OBJ_OPEN: {
         TypeInst* elTI = ti;
@@ -844,29 +851,30 @@ Expression* JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t range_
       // Converting the element type of the ti
       if (ti->type().isSet()) {
         // Convert array to a set
-        return new SetLit(Location().introduce(), exps);
+        return make<SetLit>(Location().introduce(), exps);
       }
       if (ti->type().bt() == Type::BT_TUPLE) {
         // Add correct index sets if they are non-standard
-        TypeInst* tupTI = ti;
+        Ref<TypeInst> tupTI = ti;
         if (!ti->ranges().empty()) {
-          tupTI = Expression::cast<TypeInst>(copy(_env, ti));
+          tupTI = copy(_env, ti).cast<TypeInst>();
           tupTI->type(ti->type().elemType(_env));
           tupTI->setRanges({});
         }
-        return coerceArray(tupTI, new ArrayLit(Location().introduce(), exps));
+        return coerceArray(tupTI, make<ArrayLit>(Location().introduce(), exps));
       }
     }
     if (ti->isarray() && range_index == 0) {
       // Add correct index sets if they are non-standard
-      return coerceArray(ti, new ArrayLit(Location().introduce(), exps));
+      return coerceArray(ti, make<ArrayLit>(Location().introduce(), exps));
     }
   }
-  return new ArrayLit(Location().introduce(), exps);
+  return make<ArrayLit>(Location().introduce(), exps);
 }
 
-Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* ti) {
-  ti = resolveAlias(ti);
+Ref<Expression> JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* ti) {
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
+  ti = resolvedTi;
   Token next = readToken(is);
   switch (next.t) {
     case T_INT:
@@ -876,11 +884,11 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* 
       return FloatLit::a(next.d);
     case T_STRING:
       if (ti == nullptr || (!ti->isEnum() && ti->type().bt() != Type::BT_UNKNOWN)) {
-        return new StringLit(Location().introduce(), next.s);
+        return make<StringLit>(Location().introduce(), next.s);
       }
-      return new Id(Location().introduce(), ASTString(next.s), nullptr);
+      return make<Id>(Location().introduce(), ASTString(next.s), nullptr);
     case T_BOOL:
-      return new BoolLit(Location().introduce(), next.b);
+      return make<BoolLit>(Location().introduce(), next.b);
     case T_NULL:
       return _env.constants.absent;
     case T_OBJ_OPEN:
@@ -896,10 +904,10 @@ Expression* JSONParser::parseExp(std::istream& is, bool parseObjects, TypeInst* 
   }
 }
 
-Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
-  ti = resolveAlias(ti);
+Ref<Expression> JSONParser::coerceArray(TypeInst* ti, Ref<ArrayLit> al) {
+  Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
+  ti = resolvedTi;
   assert(al != nullptr);
-  const Location& loc = Expression::loc(al);
 
   if (al->empty()) {
     return al;  // Nothing to coerce
@@ -907,14 +915,14 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
 
   // Add dimensions for array parsed by JSON
   if (ti->type().dim() > 1 && Expression::isa<ArrayLit>((*al)[0])) {
-    std::vector<Expression*> elements;
+    std::vector<Ref<Expression>> elements;
     std::vector<std::pair<size_t, ArrayLit*>> it({{0, al}});
     vector<pair<int, int>> dims;
     dims.emplace_back(1, al->size());
     while (!it.empty()) {
       if (it.size() == ti->type().dim()) {
         for (size_t i = 0; i < it.back().second->size(); ++i) {
-          elements.push_back((*it.back().second)[static_cast<unsigned int>(i)]);
+          elements.emplace_back((*it.back().second)[static_cast<unsigned int>(i)]);
         }
         it.pop_back();
       } else {
@@ -945,7 +953,7 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
         }
       }
     }
-    al = new ArrayLit(Expression::loc(al), elements, dims);
+    al = make<ArrayLit>(Expression::loc(al), elements, dims);
   }
 
   // Convert tuples
@@ -957,8 +965,8 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
       auto* types = Expression::cast<ArrayLit>(ti->domain());
       for (unsigned int i = 0; i < al->size(); ++i) {
         if (Expression::isa<ArrayLit>((*al)[i])) {
-          auto* tup = ArrayLit::constructTuple(Expression::loc((*al)[i]),
-                                               Expression::cast<ArrayLit>((*al)[i]));
+          auto tup = ArrayLit::constructTuple(Expression::loc((*al)[i]),
+                                              Expression::cast<ArrayLit>((*al)[i]));
           al->set(i, tup);
 
           if (tup->size() != types->size()) {
@@ -981,11 +989,11 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   }
 
   // Construct index set arguments for an "arrayXd" call.
-  std::vector<Expression*> args(ti->ranges().size() + 1);
+  std::vector<Ref<Expression>> args(ti->ranges().size() + 1);
   for (unsigned int i = 0; i < ti->ranges().size(); ++i) {
     TypeInst* nti = ti->ranges()[i];
     if (nti->domain() == nullptr || Expression::isa<AnonVar>(nti->domain())) {
-      args[i] = new SetLit(Location().introduce(), IntSetVal::a(1, IntVal::infinity()));
+      args[i] = make<SetLit>(Location().introduce(), IntSetVal::a(1, IntVal::infinity()));
     } else {
       args[i] = nti->domain();
     }
@@ -997,22 +1005,22 @@ Expression* JSONParser::coerceArray(TypeInst* ti, ArrayLit* al) {
   } else {
     name = ASTString("array_index_shift");
   }
-  Call* c = Call::a(Expression::loc(al).introduce(), name, args);
-  return c;
+  return Call::a(Expression::loc(al).introduce(), name, args);
 }
 
 void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
   // precondition: found T_OBJ_OPEN
-  ASTStringMap<TypeInst*> knownIds;
+  std::unordered_map<ASTString, TypeInst*> knownIds;
   if (isData) {
     // Collect known VarDecl ids and type aliases from model and includes
     class VarDeclVisitor : public ItemVisitor {
     private:
-      ASTStringMap<TypeInst*>& _knownIds;
-      ASTStringMap<TypeInst*>& _aliasesRef;
+      std::unordered_map<ASTString, TypeInst*>& _knownIds;
+      std::unordered_map<ASTString, TypeInst*>& _aliasesRef;
 
     public:
-      VarDeclVisitor(ASTStringMap<TypeInst*>& knownIds, ASTStringMap<TypeInst*>& aliases)
+      VarDeclVisitor(std::unordered_map<ASTString, TypeInst*>& knownIds,
+                     std::unordered_map<ASTString, TypeInst*>& aliases)
           : _knownIds(knownIds), _aliasesRef(aliases) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
@@ -1030,18 +1038,18 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
     ASTString ast_ident(ident);
     expectToken(is, T_COLON);
     auto it = knownIds.find(ast_ident);
-    Expression* e = parseExp(is, isData, it != knownIds.end() ? it->second : nullptr);
+    Ref<Expression> e = parseExp(is, isData, it != knownIds.end() ? it->second : nullptr);
 
     if (ident[0] != '_' && (!isData || it != knownIds.end())) {
       if (e == nullptr) {
         // This is a nested object
         auto* subModel = new Model;
         parseModel(subModel, is, isData);
-        auto* ii = new IncludeI(Location().introduce(), ast_ident);
+        auto ii = make<IncludeI>(Location().introduce(), ast_ident);
         ii->m(subModel, true);
         m->addItem(ii);
       } else {
-        auto* ai = new AssignI(Expression::loc(e).introduce(), ast_ident, e);
+        auto ai = make<AssignI>(Expression::loc(e).introduce(), ast_ident, e);
         m->addItem(ai);
       }
     }

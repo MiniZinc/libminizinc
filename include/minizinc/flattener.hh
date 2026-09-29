@@ -81,6 +81,8 @@ public:
     assert(_pEnv.get());
     return _pEnv.get();
   }
+  /// Give up the Env without destroying it (the caller now owns it)
+  Env* releaseEnv() { return _pEnv.release(); }
   bool hasInputFiles() const {
     return !_filenames.empty() || _flags.stdinInput || !_flagSolutionCheckModel.empty();
   }

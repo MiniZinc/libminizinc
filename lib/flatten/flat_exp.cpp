@@ -22,21 +22,21 @@ CallArgItem::CallArgItem(EnvI& env0) : env(env0) {
 }
 CallArgItem::~CallArgItem() { env.idStack.pop_back(); }
 
-Expression* create_dummy_value(EnvI& env, const Type& t) {
+Ref<Expression> create_dummy_value(EnvI& env, const Type& t) {
   Type ret_t = t;
   ret_t.mkPar(env);
   if (t.dim() > 0) {
-    Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+    Ref<Expression> ret = make<ArrayLit>(Location().introduce(), std::vector<Expression*>());
     Expression::type(ret, ret_t);
     return ret;
   }
   if (t.istuple() || t.isrecord()) {
     StructType* st = env.getStructType(t);
-    std::vector<Expression*> fields(st->size());
+    std::vector<Ref<Expression>> fields(st->size());
     for (unsigned int i = 0; i < st->size(); ++i) {
       fields[i] = create_dummy_value(env, (*st)[i]);
     }
-    Expression* ret = ArrayLit::constructTuple(Location().introduce(), fields);
+    Ref<Expression> ret = ArrayLit::constructTuple(Location().introduce(), raw(fields));
     Expression::type(ret, ret_t);
     return ret;
   }
@@ -45,7 +45,7 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     return env.constants.absent;
   }
   if (t.st() == Type::ST_SET) {
-    Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
+    Ref<Expression> ret = make<SetLit>(Location().introduce(), std::vector<Expression*>());
     Expression::type(ret, ret_t);
     return ret;
   }
@@ -57,7 +57,7 @@ Expression* create_dummy_value(EnvI& env, const Type& t) {
     case Type::BT_FLOAT:
       return FloatLit::a(0);
     case Type::BT_STRING:
-      return new StringLit(Location().introduce(), "");
+      return make<StringLit>(Location().introduce(), "");
     case Type::BT_ANN:
       return env.constants.ann.empty_annotation;
     default:

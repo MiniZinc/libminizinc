@@ -74,6 +74,8 @@
 /* First part of user prologue.  */
 
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
+/// Hand a new node to the parser state, which owns it until a parent node or the model does
+#define KEEP(e) static_cast<ParserState*>(parm)->owned.keep(e)
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -160,10 +162,10 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
   return true;
 }
 
-Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
+Expression* createDocComment(void* parm, const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
-  args[0] = new StringLit(loc, s);
-  Call* c = Call::a(Location(loc), Constants::constants().ann.doc_comment, args);
+  args[0] = KEEP(make<StringLit>(loc, s));
+  Call* c = KEEP(Call::a(Location(loc), Constants::constants().ann.doc_comment, args));
   Expression::type(c, Type::ann());
   return c;
 }
@@ -201,7 +203,7 @@ IntVal fast_strtointval(const std::string& s) {
   return x;
 }
 
-void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
+void parseFieldTail(void* parm, const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
   auto it = tail.begin();
   auto isWS = [&]() {
     return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
@@ -238,11 +240,11 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
     Expression* field_expr = nullptr;
     if (is_num) {
       IntVal fieldVal = MiniZinc::fast_strtointval(field);
-      field_expr = IntLit::a(fieldVal);
+      field_expr = KEEP(IntLit::a(fieldVal));
     } else {
-      field_expr = new Id(loc, field, nullptr);
+      field_expr = KEEP(make<Id>(loc, field, nullptr));
     }
-    parsed.push_back({ new FieldAccess(loc, nullptr, field_expr) });
+    parsed.push_back({ KEEP(make<FieldAccess>(loc, nullptr, field_expr)) });
   }
 }
 
@@ -926,54 +928,54 @@ static const yytype_uint8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   400,   400,   402,   404,   407,   416,   425,   434,   443,
-     445,   448,   456,   465,   465,   467,   483,   487,   489,   491,
-     492,   494,   496,   498,   500,   502,   505,   505,   505,   506,
-     506,   506,   506,   506,   507,   510,   533,   544,   553,   564,
-     587,   602,   614,   618,   627,   632,   638,   645,   646,   650,
-     658,   659,   663,   667,   678,   680,   687,   692,   697,   704,
-     706,   714,   716,   718,   720,   724,   739,   754,   768,   785,
-     803,   837,   850,   864,   865,   878,   879,   886,   888,   890,
-     895,   896,   898,   903,   904,   908,   919,   931,   931,   932,
-     932,   935,   937,   943,   952,   964,   968,   970,   973,   977,
-     979,   982,   986,   988,   992,   994,  1014,  1015,  1027,  1047,
-    1061,  1064,  1073,  1085,  1098,  1106,  1118,  1128,  1141,  1155,
-    1173,  1177,  1182,  1183,  1187,  1189,  1191,  1193,  1195,  1197,
-    1204,  1214,  1221,  1226,  1232,  1235,  1237,  1241,  1243,  1245,
-    1247,  1249,  1252,  1255,  1257,  1263,  1264,  1266,  1268,  1270,
-    1272,  1281,  1283,  1285,  1287,  1289,  1291,  1293,  1295,  1297,
-    1299,  1301,  1303,  1305,  1307,  1309,  1318,  1320,  1322,  1324,
-    1326,  1328,  1330,  1332,  1334,  1336,  1338,  1340,  1342,  1347,
-    1352,  1357,  1362,  1367,  1372,  1377,  1383,  1389,  1391,  1400,
-    1406,  1407,  1409,  1411,  1413,  1415,  1417,  1419,  1421,  1423,
-    1425,  1427,  1429,  1431,  1433,  1435,  1437,  1439,  1441,  1443,
-    1445,  1454,  1456,  1458,  1460,  1462,  1464,  1466,  1468,  1470,
-    1472,  1474,  1476,  1478,  1480,  1482,  1491,  1493,  1495,  1497,
-    1499,  1501,  1503,  1505,  1507,  1509,  1511,  1513,  1515,  1517,
-    1522,  1527,  1532,  1537,  1542,  1547,  1552,  1557,  1563,  1565,
-    1572,  1581,  1586,  1588,  1592,  1594,  1602,  1604,  1612,  1614,
-    1621,  1623,  1630,  1632,  1639,  1641,  1648,  1650,  1652,  1654,
-    1656,  1658,  1660,  1662,  1664,  1666,  1668,  1670,  1671,  1678,
-    1680,  1687,  1688,  1695,  1697,  1704,  1705,  1712,  1714,  1721,
-    1722,  1729,  1731,  1738,  1739,  1746,  1748,  1755,  1756,  1763,
-    1765,  1772,  1773,  1774,  1781,  1782,  1789,  1790,  1797,  1799,
-    1806,  1807,  1814,  1816,  1825,  1827,  1833,  1841,  1852,  1861,
-    1867,  1876,  1885,  1887,  1896,  1901,  1915,  1923,  1925,  1929,
-    1936,  1946,  1955,  1958,  1960,  1962,  1968,  1970,  1972,  1980,
-    1982,  1985,  1988,  1992,  1995,  1997,  1999,  2001,  2005,  2007,
-    2056,  2058,  2119,  2159,  2162,  2167,  2174,  2179,  2182,  2185,
-    2195,  2207,  2218,  2221,  2225,  2236,  2247,  2268,  2279,  2283,
-    2286,  2293,  2304,  2324,  2338,  2354,  2355,  2359,  2361,  2363,
-    2365,  2367,  2369,  2371,  2373,  2375,  2377,  2379,  2381,  2383,
-    2385,  2387,  2389,  2391,  2393,  2395,  2397,  2399,  2401,  2403,
-    2405,  2407,  2409,  2411,  2413,  2417,  2425,  2457,  2459,  2461,
-    2462,  2484,  2540,  2562,  2619,  2622,  2628,  2634,  2648,  2650,
-    2652,  2668,  2670,  2677,  2686,  2688,  2696,  2698,  2707,  2707,
-    2710,  2718,  2730,  2731,  2734,  2736,  2738,  2742,  2746,  2750,
-    2752,  2754,  2756,  2758,  2760,  2762,  2764,  2766,  2768,  2770,
-    2772,  2774,  2776,  2778,  2780,  2782,  2784,  2786,  2788,  2790,
-    2792,  2794,  2796,  2798,  2800,  2802,  2804,  2806,  2808,  2810,
-    2812,  2814,  2816
+       0,   401,   401,   403,   405,   408,   416,   424,   432,   440,
+     442,   445,   453,   462,   462,   464,   480,   484,   486,   488,
+     489,   491,   493,   495,   497,   499,   502,   502,   502,   503,
+     503,   503,   503,   503,   504,   507,   530,   541,   550,   561,
+     584,   599,   611,   615,   624,   629,   635,   642,   643,   647,
+     655,   656,   660,   664,   675,   677,   684,   689,   694,   701,
+     703,   711,   713,   715,   717,   721,   736,   751,   765,   782,
+     800,   834,   847,   861,   862,   875,   876,   883,   885,   887,
+     892,   893,   895,   900,   901,   905,   916,   928,   928,   929,
+     929,   932,   934,   940,   949,   961,   965,   967,   970,   974,
+     976,   979,   983,   985,   989,   991,  1011,  1012,  1024,  1044,
+    1058,  1061,  1070,  1082,  1095,  1103,  1115,  1125,  1138,  1152,
+    1170,  1174,  1179,  1180,  1184,  1186,  1188,  1190,  1192,  1194,
+    1201,  1211,  1218,  1223,  1229,  1232,  1234,  1238,  1240,  1242,
+    1244,  1246,  1249,  1252,  1254,  1260,  1261,  1263,  1265,  1267,
+    1269,  1278,  1280,  1282,  1284,  1286,  1288,  1290,  1292,  1294,
+    1296,  1298,  1300,  1302,  1304,  1306,  1315,  1317,  1319,  1321,
+    1323,  1325,  1327,  1329,  1331,  1333,  1335,  1337,  1339,  1344,
+    1349,  1354,  1359,  1364,  1369,  1374,  1380,  1386,  1388,  1397,
+    1403,  1404,  1406,  1408,  1410,  1412,  1414,  1416,  1418,  1420,
+    1422,  1424,  1426,  1428,  1430,  1432,  1434,  1436,  1438,  1440,
+    1442,  1451,  1453,  1455,  1457,  1459,  1461,  1463,  1465,  1467,
+    1469,  1471,  1473,  1475,  1477,  1479,  1488,  1490,  1492,  1494,
+    1496,  1498,  1500,  1502,  1504,  1506,  1508,  1510,  1512,  1514,
+    1519,  1524,  1529,  1534,  1539,  1544,  1549,  1554,  1560,  1562,
+    1569,  1578,  1583,  1585,  1589,  1591,  1599,  1601,  1609,  1611,
+    1618,  1620,  1627,  1629,  1636,  1638,  1645,  1647,  1649,  1651,
+    1653,  1655,  1657,  1659,  1661,  1663,  1665,  1667,  1668,  1675,
+    1677,  1684,  1685,  1692,  1694,  1701,  1702,  1709,  1711,  1718,
+    1719,  1726,  1728,  1735,  1736,  1743,  1745,  1752,  1753,  1760,
+    1762,  1769,  1770,  1771,  1778,  1779,  1786,  1787,  1794,  1796,
+    1803,  1804,  1811,  1813,  1822,  1824,  1830,  1838,  1849,  1858,
+    1864,  1873,  1882,  1884,  1893,  1898,  1912,  1920,  1922,  1926,
+    1933,  1943,  1952,  1955,  1957,  1959,  1965,  1967,  1969,  1977,
+    1979,  1982,  1985,  1989,  1992,  1994,  1996,  1998,  2002,  2004,
+    2053,  2055,  2116,  2156,  2159,  2164,  2171,  2176,  2179,  2182,
+    2192,  2204,  2215,  2218,  2222,  2233,  2244,  2265,  2276,  2280,
+    2283,  2290,  2301,  2321,  2335,  2351,  2352,  2356,  2358,  2360,
+    2362,  2364,  2366,  2368,  2370,  2372,  2374,  2376,  2378,  2380,
+    2382,  2384,  2386,  2388,  2390,  2392,  2394,  2396,  2398,  2400,
+    2402,  2404,  2406,  2408,  2410,  2414,  2422,  2454,  2456,  2458,
+    2459,  2481,  2537,  2559,  2616,  2619,  2625,  2631,  2645,  2647,
+    2649,  2665,  2667,  2674,  2683,  2685,  2695,  2697,  2708,  2708,
+    2711,  2719,  2731,  2732,  2735,  2737,  2739,  2743,  2747,  2751,
+    2753,  2755,  2757,  2759,  2761,  2763,  2765,  2767,  2769,  2771,
+    2773,  2775,  2777,  2779,  2781,  2783,  2785,  2787,  2789,  2791,
+    2793,  2795,  2797,  2799,  2801,  2803,  2805,  2807,  2809,  2811,
+    2813,  2815,  2817
 };
 #endif
 
@@ -4013,7 +4015,6 @@ YYLTYPE yylloc = yyloc_default;
 
 /* User initialization code.  */
 {
-  GCLock lock;
   ParserState* pp0 = static_cast<ParserState*>(parm);
   yylloc.filename(ASTString(pp0->filename));
   // Files parsed out of a library bundle start at the line they occupy in the bundle
@@ -4235,9 +4236,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     break;
 
@@ -4246,9 +4246,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     break;
 
@@ -4257,9 +4256,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     break;
 
@@ -4268,9 +4266,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     break;
 
@@ -4303,11 +4300,11 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if (FunctionI* fi = Item::dynamicCast<FunctionI>((yyval.item))) {
           if (pp->parseDocComments) {
-            fi->ann().add(createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
+            fi->ann().add(createDocComment(parm,(yylsp[-1]),(yyvsp[-1].sValue)));
           }
         } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>((yyval.item))) {
           if (pp->parseDocComments) {
-            Expression::addAnnotation(vdi->e(), createDocComment((yylsp[-1]),(yyvsp[-1].sValue)));
+            Expression::addAnnotation(vdi->e(), createDocComment(parm,(yylsp[-1]),(yyvsp[-1].sValue)));
           }
         } else {
           yyerror(&(yylsp[0]), parm, "documentation comments are only supported for function, predicate and variable declarations");
@@ -4356,7 +4353,7 @@ yyreduce:
       { ParserState* pp = static_cast<ParserState*>(parm);
         string canonicalName=pp->canonicalFilename((yyvsp[0].sValue));
         map<string,Model*>::iterator ret = pp->seenModels.find(canonicalName);
-        IncludeI* ii = new IncludeI((yyloc),ASTString((yyvsp[0].sValue)));
+        IncludeI* ii = KEEP(make<IncludeI>((yyloc),ASTString((yyvsp[0].sValue))));
         (yyval.item) = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -4401,9 +4398,9 @@ yyreduce:
 
   case 38: /* vardecl_item: "enum" "identifier" annotations  */
       {
-        TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
+        TypeInst* ti = KEEP(make<TypeInst>((yyloc),Type::parsetint()));
         ti->setIsEnum(true);
-        VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
+        VarDecl* vd = KEEP(make<VarDecl>((yyloc),ti,(yyvsp[-1].sValue)));
         if ((yyvsp[-1].sValue) && (yyvsp[0].expressions1d)) {
           Expression::addAnnotations(vd, *(yyvsp[0].expressions1d));
         }
@@ -4415,16 +4412,16 @@ yyreduce:
   case 39: /* vardecl_item: "enum" "identifier" annotations "=" enum_init  */
       { warnDoubleEqualsAssignment(&(yylsp[-1]), parm, (yyvsp[-1].bValue));
         if ((yyvsp[0].expressions1d)) {
-          TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
+          TypeInst* ti = KEEP(make<TypeInst>((yyloc),Type::parsetint()));
           ti->setIsEnum(true);
           Expression* e;
           if ((yyvsp[0].expressions1d)->size()==1) {
             e = (*(yyvsp[0].expressions1d))[0];
           } else {
-            ArrayLit* al = new ArrayLit((yyloc),*(yyvsp[0].expressions1d));
-            e = Call::a((yyloc), ASTString("enumFromConstructors"), {al});
+            ArrayLit* al = KEEP(make<ArrayLit>((yyloc),*(yyvsp[0].expressions1d)));
+            e = KEEP(Call::a((yyloc), ASTString("enumFromConstructors"), {al}));
           }
-          VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-3].sValue),e);
+          VarDecl* vd = KEEP(make<VarDecl>((yyloc),ti,(yyvsp[-3].sValue),e));
           if ((yyvsp[-3].sValue) && (yyvsp[-2].expressions1d)) {
             Expression::addAnnotations(vd, *(yyvsp[-2].expressions1d));
           }
@@ -4439,12 +4436,12 @@ yyreduce:
 
   case 40: /* vardecl_item: "enum" "identifier" annotations "=" "[" string_lit_list "]"  */
       { warnDoubleEqualsAssignment(&(yylsp[-3]), parm, (yyvsp[-3].bValue));
-        TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
+        TypeInst* ti = KEEP(make<TypeInst>((yyloc),Type::parsetint()));
         ti->setIsEnum(true);
         vector<Expression*> args;
-        args.push_back(new ArrayLit((yyloc),*(yyvsp[-1].expressions1d)));
-        Call* sl = Call::a((yyloc), Constants::constants().ids.anonEnumFromStrings, args);
-        VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-5].sValue),sl);
+        args.push_back(KEEP(make<ArrayLit>((yyloc),*(yyvsp[-1].expressions1d))));
+        Call* sl = KEEP(Call::a((yyloc), Constants::constants().ids.anonEnumFromStrings, args));
+        VarDecl* vd = KEEP(make<VarDecl>((yyloc),ti,(yyvsp[-5].sValue),sl));
         if ((yyvsp[-5].sValue) && (yyvsp[-4].expressions1d)) {
           Expression::addAnnotations(vd, *(yyvsp[-4].expressions1d));
         }
@@ -4457,7 +4454,7 @@ yyreduce:
   case 41: /* vardecl_item: "type" "identifier" annotations "=" ti_expr  */
       { warnDoubleEqualsAssignment(&(yylsp[-1]), parm, (yyvsp[-1].bValue));
         TypeInst* ti = (yyvsp[0].tiexpr);
-        VarDecl* vd = new VarDecl((yyloc), nullptr, (yyvsp[-3].sValue), ti);
+        VarDecl* vd = KEEP(make<VarDecl>((yyloc), nullptr, (yyvsp[-3].sValue), ti));
         if ((yyvsp[-2].expressions1d)) {
           Expression::addAnnotations(vd, *(yyvsp[-2].expressions1d));
         }
@@ -4483,7 +4480,7 @@ yyreduce:
 
   case 44: /* enum_construct: '{' enum_id_list comma_or_none '}'  */
       {
-        (yyval.expression) = new SetLit((yyloc), *(yyvsp[-2].expressions1d));
+        (yyval.expression) = KEEP(make<SetLit>((yyloc), *(yyvsp[-2].expressions1d)));
         delete (yyvsp[-2].expressions1d);
       }
     break;
@@ -4491,14 +4488,14 @@ yyreduce:
   case 45: /* enum_construct: "identifier" '(' expr ')'  */
       {
         vector<Expression*> args({(yyvsp[-1].expression)});
-        (yyval.expression) = Call::a((yyloc), ASTString((yyvsp[-3].sValue)), args);
+        (yyval.expression) = KEEP(Call::a((yyloc), ASTString((yyvsp[-3].sValue)), args));
         free((yyvsp[-3].sValue));
       }
     break;
 
   case 46: /* enum_construct: "_" '(' expr ')'  */
       {
-        (yyval.expression) = Call::a((yyloc), Constants::constants().ids.anon_enum_set, {(yyvsp[-1].expression)});
+        (yyval.expression) = KEEP(Call::a((yyloc), Constants::constants().ids.anon_enum_set, {(yyvsp[-1].expression)}));
       }
     break;
 
@@ -4508,13 +4505,13 @@ yyreduce:
 
   case 48: /* string_lit_list: "string literal"  */
       { (yyval.expressions1d) = new std::vector<Expression*>();
-        (yyval.expressions1d)->push_back(new StringLit((yyloc), (yyvsp[0].sValue))); free((yyvsp[0].sValue));
+        (yyval.expressions1d)->push_back(KEEP(make<StringLit>((yyloc), (yyvsp[0].sValue)))); free((yyvsp[0].sValue));
       }
     break;
 
   case 49: /* string_lit_list: string_lit_list ',' "string literal"  */
       { (yyval.expressions1d) = (yyvsp[-2].expressions1d);
-        if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(new StringLit((yyloc), (yyvsp[0].sValue)));
+        if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(KEEP(make<StringLit>((yyloc), (yyvsp[0].sValue))));
         free((yyvsp[0].sValue));
       }
     break;
@@ -4525,18 +4522,18 @@ yyreduce:
 
   case 51: /* enum_id_list: "identifier"  */
       { (yyval.expressions1d) = new std::vector<Expression*>();
-        (yyval.expressions1d)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue));
+        (yyval.expressions1d)->push_back(KEEP(make<Id>((yyloc),(yyvsp[0].sValue),nullptr))); free((yyvsp[0].sValue));
       }
     break;
 
   case 52: /* enum_id_list: enum_id_list ',' "identifier"  */
-      { (yyval.expressions1d) = (yyvsp[-2].expressions1d); if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(new Id((yyloc),(yyvsp[0].sValue),nullptr)); free((yyvsp[0].sValue)); }
+      { (yyval.expressions1d) = (yyvsp[-2].expressions1d); if ((yyval.expressions1d)) (yyval.expressions1d)->push_back(KEEP(make<Id>((yyloc),(yyvsp[0].sValue),nullptr))); free((yyvsp[0].sValue)); }
     break;
 
   case 53: /* assign_item: "identifier" "=" expr  */
       { warnDoubleEqualsAssignment(&(yylsp[-1]), parm, (yyvsp[-1].bValue));
         if ((yyvsp[0].expression)) {
-          (yyval.item) = new AssignI((yyloc),(yyvsp[-2].sValue),(yyvsp[0].expression));
+          (yyval.item) = KEEP(make<AssignI>((yyloc),(yyvsp[-2].sValue),(yyvsp[0].expression)));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4545,45 +4542,45 @@ yyreduce:
     break;
 
   case 54: /* constraint_item: "constraint" expr  */
-      { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));}
+      { (yyval.item) = KEEP(make<ConstraintI>((yyloc),(yyvsp[0].expression)));}
     break;
 
   case 55: /* constraint_item: "constraint" "::" string_expr expr  */
-      { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = KEEP(make<ConstraintI>((yyloc),(yyvsp[0].expression)));
         if ((yyvsp[0].expression) && (yyvsp[-1].expression))
-          Expression::ann((yyval.item)->cast<ConstraintI>()->e()).add(Call::a((yylsp[-2]), ASTString("mzn_constraint_name"), {(yyvsp[-1].expression)}));
+          Expression::ann((yyval.item)->cast<ConstraintI>()->e()).add(KEEP(Call::a((yylsp[-2]), ASTString("mzn_constraint_name"), {(yyvsp[-1].expression)})));
       }
     break;
 
   case 56: /* solve_item: "solve" annotations "satisfy"  */
-      { (yyval.item) = SolveI::sat((yyloc));
+      { (yyval.item) = KEEP(SolveI::sat((yyloc)));
         if ((yyval.item) && (yyvsp[-1].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-1].expressions1d));
         delete (yyvsp[-1].expressions1d);
       }
     break;
 
   case 57: /* solve_item: "solve" annotations "minimize" expr  */
-      { (yyval.item) = SolveI::min((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = KEEP(SolveI::min((yyloc),(yyvsp[0].expression)));
         if ((yyval.item) && (yyvsp[-2].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expressions1d));
         delete (yyvsp[-2].expressions1d);
       }
     break;
 
   case 58: /* solve_item: "solve" annotations "maximize" expr  */
-      { (yyval.item) = SolveI::max((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = KEEP(SolveI::max((yyloc),(yyvsp[0].expression)));
         if ((yyval.item) && (yyvsp[-2].expressions1d)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expressions1d));
         delete (yyvsp[-2].expressions1d);
       }
     break;
 
   case 59: /* output_item: "output" expr  */
-      { (yyval.item) = new OutputI((yyloc),(yyvsp[0].expression)); }
+      { (yyval.item) = KEEP(make<OutputI>((yyloc),(yyvsp[0].expression))); }
     break;
 
   case 60: /* output_item: "output" "::" output_annotation expr  */
-      { (yyval.item) = new OutputI((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = KEEP(make<OutputI>((yyloc),(yyvsp[0].expression)));
         if ((yyval.item) && (yyvsp[-1].expression)) {
-          (yyval.item)->cast<OutputI>()->ann().add(Call::a((yyloc), ASTString("mzn_output_section"), {(yyvsp[-1].expression)}));
+          (yyval.item)->cast<OutputI>()->ann().add(KEEP(Call::a((yyloc), ASTString("mzn_output_section"), {(yyvsp[-1].expression)})));
         }
       }
     break;
@@ -4593,11 +4590,11 @@ yyreduce:
     break;
 
   case 62: /* output_annotation: "identifier" '(' ')'  */
-      { (yyval.expression) = Call::a((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>()); free((yyvsp[-2].sValue)); }
+      { (yyval.expression) = KEEP(Call::a((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>())); free((yyvsp[-2].sValue)); }
     break;
 
   case 63: /* output_annotation: "identifier" '(' expr_list ')'  */
-      { (yyval.expression) = Call::a((yyloc), (yyvsp[-3].sValue), *(yyvsp[-1].expressions1d)); free((yyvsp[-3].sValue)); }
+      { (yyval.expression) = KEEP(Call::a((yyloc), (yyvsp[-3].sValue), *(yyvsp[-1].expressions1d))); free((yyvsp[-3].sValue)); }
     break;
 
   case 64: /* output_annotation: '(' expr ')'  */
@@ -4609,8 +4606,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[-3].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-3].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
         if ((yyvsp[-3].vardeclexprs)) {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-4].sValue)),new TypeInst((yyloc),
-                             Type::varbool()),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-4].sValue)),KEEP(make<TypeInst>((yyloc),
+                             Type::varbool())),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4626,8 +4623,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[-3].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-3].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
         if ((yyvsp[-3].vardeclexprs)) {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-4].sValue)),new TypeInst((yyloc),
-                             Type::parbool()),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-4].sValue)),KEEP(make<TypeInst>((yyloc),
+                             Type::parbool())),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
          (yyval.item) = nullptr;
        }
@@ -4642,8 +4639,8 @@ yyreduce:
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[-3].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-3].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
-        if ((yyvsp[-3].vardeclexprs)) { (yyval.item) = new FunctionI((yyloc),ASTString(std::string((yyvsp[-5].sValue))+"⁻¹"),new TypeInst((yyloc),
-                                     Type::varbool()),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+        if ((yyvsp[-3].vardeclexprs)) { (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString(std::string((yyvsp[-5].sValue))+"⁻¹"),KEEP(make<TypeInst>((yyloc),
+                                     Type::varbool())),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4659,8 +4656,8 @@ yyreduce:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[-3].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-3].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
         if ((yyvsp[-3].vardeclexprs)) {
-          (yyval.item) = new FunctionI((yyloc),ASTString(std::string((yyvsp[-5].sValue))+"⁻¹"),new TypeInst((yyloc),
-                             Type::parbool()),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString(std::string((yyvsp[-5].sValue))+"⁻¹"),KEEP(make<TypeInst>((yyloc),
+                             Type::parbool())),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4680,7 +4677,7 @@ yyreduce:
           yyerror(&(yylsp[-6]), parm, "return type cannot have `any' type-inst without type-inst variable");
         }
         if ((yyvsp[-3].vardeclexprs))  {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-4].sValue)),(yyvsp[-6].tiexpr),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-4].sValue)),(yyvsp[-6].tiexpr),*(yyvsp[-3].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4714,7 +4711,7 @@ yyreduce:
         }
         if ((yyvsp[-4].vardeclexprs) && (yyvsp[-2].vardeclexpr)) (yyvsp[-4].vardeclexprs)->push_back((yyvsp[-2].vardeclexpr));
         if ((yyvsp[-4].vardeclexprs)) {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-6].sValue)),(yyvsp[-8].tiexpr),*(yyvsp[-4].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-6].sValue)),(yyvsp[-8].tiexpr),*(yyvsp[-4].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib,(yyvsp[-2].vardeclexpr) != nullptr));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4728,12 +4725,12 @@ yyreduce:
   case 71: /* annotation_item: "annotation" "identifier" params  */
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        TypeInst* ti=new TypeInst((yylsp[-2]),Type::ann());
+        TypeInst* ti=KEEP(make<TypeInst>((yylsp[-2]),Type::ann()));
         if ((yyvsp[0].vardeclexprs)==nullptr || (yyvsp[0].vardeclexprs)->empty()) {
-          VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
+          VarDecl* vd = KEEP(make<VarDecl>((yyloc),ti,(yyvsp[-1].sValue)));
           (yyval.item) = VarDeclI::a((yyloc),vd);
         } else {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-1].sValue)),ti,*(yyvsp[0].vardeclexprs),nullptr,pp->isSTDLib);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-1].sValue)),ti,*(yyvsp[0].vardeclexprs),nullptr,pp->isSTDLib));
         }
         free((yyvsp[-1].sValue));
         delete (yyvsp[0].vardeclexprs);
@@ -4743,9 +4740,9 @@ yyreduce:
   case 72: /* annotation_item: "annotation" "identifier" params "=" expr  */
       { warnDoubleEqualsAssignment(&(yylsp[-1]), parm, (yyvsp[-1].bValue));
         ParserState* pp = static_cast<ParserState*>(parm);
-        TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
+        TypeInst* ti=KEEP(make<TypeInst>((yylsp[-4]),Type::ann()));
         if ((yyvsp[-2].vardeclexprs)) {
-          (yyval.item) = new FunctionI((yyloc),ASTString((yyvsp[-3].sValue)),ti,*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib);
+          (yyval.item) = KEEP(make<FunctionI>((yyloc),ASTString((yyvsp[-3].sValue)),ti,*(yyvsp[-2].vardeclexprs),(yyvsp[0].expression),pp->isSTDLib));
         } else {
           (yyval.item) = nullptr;
         }
@@ -4759,9 +4756,9 @@ yyreduce:
 
   case 74: /* ann_param: "ann" ':' "identifier"  */
       { if ((yyvsp[0].sValue)) {
-          auto* ident = new Id((yylsp[0]), (yyvsp[0].sValue), nullptr);
-          auto* ti = new TypeInst((yyloc),Type::ann(1));
-          (yyval.vardeclexpr) = new VarDecl((yyloc), ti, ident);
+          auto* ident = KEEP(make<Id>((yylsp[0]), (yyvsp[0].sValue), nullptr));
+          auto* ti = KEEP(make<TypeInst>((yyloc),Type::ann(1)));
+          (yyval.vardeclexpr) = KEEP(make<VarDecl>((yyloc), ti, ident));
           (yyval.vardeclexpr)->toplevel(false);
         } else {
           (yyval.vardeclexpr) = nullptr;
@@ -4850,7 +4847,7 @@ yyreduce:
 
   case 93: /* ti_expr_and_id_or_anon: ti_expr  */
       { if ((yyvsp[0].tiexpr)) {
-          (yyval.vardeclexpr)=new VarDecl((yyloc), (yyvsp[0].tiexpr), "");
+          (yyval.vardeclexpr)=KEEP(make<VarDecl>((yyloc), (yyvsp[0].tiexpr), ""));
         } else {
           (yyval.vardeclexpr) = nullptr;
         }
@@ -4859,8 +4856,8 @@ yyreduce:
 
   case 94: /* ti_expr_and_id: ti_expr ':' "identifier" annotations  */
       { if ((yyvsp[-3].tiexpr) && (yyvsp[-1].sValue)) {
-          Id* ident = new Id((yylsp[-1]), (yyvsp[-1].sValue), nullptr);
-          (yyval.vardeclexpr) = new VarDecl((yyloc), (yyvsp[-3].tiexpr), ident);
+          Id* ident = KEEP(make<Id>((yylsp[-1]), (yyvsp[-1].sValue), nullptr));
+          (yyval.vardeclexpr) = KEEP(make<VarDecl>((yyloc), (yyvsp[-3].tiexpr), ident));
           if ((yyvsp[0].expressions1d)) Expression::ann((yyval.vardeclexpr)).add(*(yyvsp[0].expressions1d));
         } else {
           (yyval.vardeclexpr) = nullptr;
@@ -4913,16 +4910,16 @@ yyreduce:
   case 105: /* array_index_entry: "identifier" "in" set_expr  */
       {
         if ((yyvsp[0].expression) != nullptr) {
-          Id* binder = new Id((yylsp[-2]), (yyvsp[-2].sValue), nullptr);
+          Id* binder = KEEP(make<Id>((yylsp[-2]), (yyvsp[-2].sValue), nullptr));
           // Wrap the set expression in a TypeInst so the marker carries the
           // same shape as it did when this production accepted a ti_expr.
-          TypeInst* range_ti = new TypeInst((yylsp[0]), Type(), (yyvsp[0].expression));
+          TypeInst* range_ti = KEEP(make<TypeInst>((yylsp[0]), Type(), (yyvsp[0].expression)));
           // Index-binder marker: 2-tuple (range_ti, binder).  Distinguishable
           // from a set-cardinality marker (which has a TypeInst at index 1)
           // by carrying the TypeInst at index 0 and the binder Id at index 1.
           ArrayLit* marker =
-            ArrayLit::constructTuple((yyloc), std::vector<Expression*>({range_ti, binder}));
-          (yyval.tiexpr) = new TypeInst((yyloc), Type(), marker);
+            KEEP(ArrayLit::constructTuple((yyloc), std::vector<Expression*>({range_ti, binder})));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), Type(), marker));
         } else {
           (yyval.tiexpr) = nullptr;
         }
@@ -4933,7 +4930,7 @@ yyreduce:
   case 107: /* ti_expr: "array" "[" array_index_list "]" "of" ti_expr  */
       {
         if ((yyvsp[0].tiexpr) != nullptr && (yyvsp[0].tiexpr)->isarray()) {
-          (yyval.tiexpr) = new TypeInst((yyloc), Type::tuple(), (yyvsp[0].tiexpr));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), Type::tuple(), (yyvsp[0].tiexpr)));
         } else {
           (yyval.tiexpr) = (yyvsp[0].tiexpr);
         }
@@ -4952,14 +4949,14 @@ yyreduce:
         // set when a value is bound to it (see check_index_sets), while call arguments
         // are coerced 1-based with array1d during type-checking.
         if ((yyvsp[0].tiexpr) != nullptr && (yyvsp[0].tiexpr)->isarray()) {
-          (yyval.tiexpr) = new TypeInst((yyloc), Type::tuple(), (yyvsp[0].tiexpr));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), Type::tuple(), (yyvsp[0].tiexpr)));
         } else {
           (yyval.tiexpr) = (yyvsp[0].tiexpr);
         }
         std::vector<TypeInst*> ti(1);
-        ti[0] = new TypeInst((yyloc), Type(),
-                             new BinOp((yyloc), IntLit::a(1), BOT_DOTDOT,
-                                       IntLit::a(IntVal::infinity())));
+        ti[0] = KEEP(make<TypeInst>((yyloc), Type(),
+                             KEEP(make<BinOp>((yyloc), KEEP(IntLit::a(1)), BOT_DOTDOT,
+                                       KEEP(IntLit::a(IntVal::infinity()))))));
         if ((yyval.tiexpr) != nullptr){
           (yyval.tiexpr)->setRanges(ti);
         }
@@ -4972,8 +4969,8 @@ yyreduce:
         if ((yyval.tiexpr) != nullptr) {
           Type tt = Expression::type((yyval.tiexpr));
           tt.dim(0);
-          TypeInst* lhs = new TypeInst((yyloc), tt, (yyvsp[-2].tiexpr)->domain());
-          BinOp* bop = new BinOp((yyloc), lhs, BOT_PLUSPLUS, (yyvsp[0].tiexpr));
+          TypeInst* lhs = KEEP(make<TypeInst>((yyloc), tt, (yyvsp[-2].tiexpr)->domain()));
+          BinOp* bop = KEEP(make<BinOp>((yyloc), lhs, BOT_PLUSPLUS, (yyvsp[0].tiexpr)));
           bop->type(tt);
           (yyval.tiexpr)->domain(bop);
         }
@@ -5040,8 +5037,8 @@ yyreduce:
           Type tt = Expression::type((yyvsp[0].tiexpr));
           tt.st(Type::ST_SET);
           ArrayLit* card_marker =
-            ArrayLit::constructTuple((yyloc), std::vector<Expression*>({(yyvsp[-3].expression), (yyvsp[0].tiexpr)}));
-          (yyval.tiexpr) = new TypeInst((yyloc), tt, card_marker);
+            KEEP(ArrayLit::constructTuple((yyloc), std::vector<Expression*>({(yyvsp[-3].expression), (yyvsp[0].tiexpr)})));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), tt, card_marker));
           (yyval.tiexpr)->setIsEnum((yyvsp[0].tiexpr)->isEnum());
         } else {
           (yyval.tiexpr) = nullptr;
@@ -5103,8 +5100,8 @@ yyreduce:
             tt.otExplicit(true);
           }
           ArrayLit* card_marker =
-            ArrayLit::constructTuple((yyloc), std::vector<Expression*>({(yyvsp[-3].expression), (yyvsp[0].tiexpr)}));
-          (yyval.tiexpr) = new TypeInst((yyloc), tt, card_marker);
+            KEEP(ArrayLit::constructTuple((yyloc), std::vector<Expression*>({(yyvsp[-3].expression), (yyvsp[0].tiexpr)})));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), tt, card_marker));
           (yyval.tiexpr)->setIsEnum((yyvsp[0].tiexpr)->isEnum());
         } else {
           (yyval.tiexpr) = nullptr;
@@ -5113,13 +5110,13 @@ yyreduce:
     break;
 
   case 120: /* base_ti_expr: "any" "type-inst identifier"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::mkAny(),new TIId((yyloc), (yyvsp[0].sValue)));
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::mkAny(),KEEP(make<TIId>((yyloc), (yyvsp[0].sValue)))));
         free((yyvsp[0].sValue));
       }
     break;
 
   case 121: /* base_ti_expr: "any"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::mkAny()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::mkAny())); }
     break;
 
   case 122: /* opt_opt: %empty  */
@@ -5131,30 +5128,30 @@ yyreduce:
     break;
 
   case 124: /* base_ti_expr_tail: "int"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::parint())); }
     break;
 
   case 125: /* base_ti_expr_tail: "bool"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parbool()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::parbool())); }
     break;
 
   case 126: /* base_ti_expr_tail: "float"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parfloat()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::parfloat())); }
     break;
 
   case 127: /* base_ti_expr_tail: "string"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parstring()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::parstring())); }
     break;
 
   case 128: /* base_ti_expr_tail: "ann"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::ann()); }
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::ann())); }
     break;
 
   case 129: /* base_ti_expr_tail: "tuple" '(' ti_expr_list ')'  */
       {
         std::vector<Expression*> tmp((yyvsp[-1].tiexprs)->begin(), (yyvsp[-1].tiexprs)->end());
-        ArrayLit* al = ArrayLit::constructTuple((yyloc), tmp);
-        (yyval.tiexpr) = new TypeInst((yyloc), Type::tuple(), al);
+        ArrayLit* al = KEEP(ArrayLit::constructTuple((yyloc), tmp));
+        (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), Type::tuple(), al));
         delete (yyvsp[-1].tiexprs);
       }
     break;
@@ -5165,15 +5162,15 @@ yyreduce:
           vd->toplevel(false);
         }
         std::vector<Expression*> tmp((yyvsp[-1].vardeclexprs)->begin(), (yyvsp[-1].vardeclexprs)->end());
-        ArrayLit* al = ArrayLit::constructTuple((yyloc), tmp);
-        (yyval.tiexpr) = new TypeInst((yyloc), Type::record(), al);
+        ArrayLit* al = KEEP(ArrayLit::constructTuple((yyloc), tmp));
+        (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc), Type::record(), al));
         delete (yyvsp[-1].vardeclexprs);
       }
     break;
 
   case 131: /* base_ti_expr_tail: set_expr  */
       { if ((yyvsp[0].expression)) {
-          (yyval.tiexpr) = new TypeInst((yyloc),Type(),(yyvsp[0].expression));
+          (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type(),(yyvsp[0].expression)));
         } else {
           (yyval.tiexpr) = nullptr;
         }
@@ -5181,15 +5178,15 @@ yyreduce:
     break;
 
   case 132: /* base_ti_expr_tail: "type-inst identifier"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::top(),
-                         new TIId((yyloc), (yyvsp[0].sValue)));
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::top(),
+                         KEEP(make<TIId>((yyloc), (yyvsp[0].sValue)))));
         free((yyvsp[0].sValue));
       }
     break;
 
   case 133: /* base_ti_expr_tail: "type-inst enum identifier"  */
-      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint(),
-                          new TIId((yyloc), (yyvsp[0].sValue)));
+      { (yyval.tiexpr) = KEEP(make<TypeInst>((yyloc),Type::parint(),
+                          KEEP(make<TIId>((yyloc), (yyvsp[0].sValue)))));
         free((yyvsp[0].sValue));
       }
     break;
@@ -5207,19 +5204,19 @@ yyreduce:
     break;
 
   case 138: /* array_access_expr: ".."  */
-      { (yyval.expression)=new SetLit((yyloc), IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
+      { (yyval.expression)=KEEP(make<SetLit>((yyloc), KEEP(IntSetVal::a(-IntVal::infinity(),IntVal::infinity())))); }
     break;
 
   case 139: /* array_access_expr: "..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {})); }
     break;
 
   case 140: /* array_access_expr: "<.."  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {})); }
     break;
 
   case 141: /* array_access_expr: "<..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {})); }
     break;
 
   case 143: /* expr_list_head: expr  */
@@ -5235,189 +5232,189 @@ yyreduce:
     break;
 
   case 147: /* set_expr: set_expr "union" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression))); }
     break;
 
   case 148: /* set_expr: set_expr "diff" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression))); }
     break;
 
   case 149: /* set_expr: set_expr "symdiff" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression))); }
     break;
 
   case 150: /* set_expr: set_expr ".." set_expr  */
       { if ((yyvsp[-2].expression)==nullptr || (yyvsp[0].expression)==nullptr) {
           (yyval.expression) = nullptr;
         } else if (Expression::isa<IntLit>((yyvsp[-2].expression)) && Expression::isa<IntLit>((yyvsp[0].expression))) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
+          (yyval.expression)=KEEP(make<SetLit>((yyloc), KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))))));
         } else {
-          (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression)));
         }
       }
     break;
 
   case 151: /* set_expr: set_expr "..<" set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 152: /* set_expr: set_expr "<.." set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 153: /* set_expr: set_expr "<..<" set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 154: /* set_expr: set_expr ".."  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("..o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("..o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 155: /* set_expr: set_expr "..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("..<o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("..<o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 156: /* set_expr: set_expr "<.."  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("<..o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("<..o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 157: /* set_expr: set_expr "<..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("<..<o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("<..<o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 158: /* set_expr: ".." set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o.."), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o.."), {(yyvsp[0].expression)})); }
     break;
 
   case 159: /* set_expr: "..<" set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o..<"), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o..<"), {(yyvsp[0].expression)})); }
     break;
 
   case 160: /* set_expr: "<.." set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o<.."), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o<.."), {(yyvsp[0].expression)})); }
     break;
 
   case 161: /* set_expr: "<..<" set_expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o<..<"), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o<..<"), {(yyvsp[0].expression)})); }
     break;
 
   case 162: /* set_expr: "'..<'" '(' set_expr ',' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 163: /* set_expr: "'<..'" '(' set_expr ',' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 164: /* set_expr: "'<..<'" '(' set_expr ',' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 165: /* set_expr: "'..'" '(' expr ',' expr ')'  */
       { if ((yyvsp[-3].expression)==nullptr || (yyvsp[-1].expression)==nullptr) {
           (yyval.expression) = nullptr;
         } else if (Expression::isa<IntLit>((yyvsp[-3].expression)) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))));
+          (yyval.expression)=KEEP(make<SetLit>((yyloc), KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))))));
         } else {
-          (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression)));
         }
       }
     break;
 
   case 166: /* set_expr: "'..<'" '(' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 167: /* set_expr: "'<..'" '(' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 168: /* set_expr: "'<..<'" '(' set_expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 169: /* set_expr: "'..'" '(' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 170: /* set_expr: set_expr "intersect" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression))); }
     break;
 
   case 171: /* set_expr: set_expr "+" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression))); }
     break;
 
   case 172: /* set_expr: set_expr "-" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression))); }
     break;
 
   case 173: /* set_expr: set_expr "*" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression))); }
     break;
 
   case 174: /* set_expr: set_expr "/" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression))); }
     break;
 
   case 175: /* set_expr: set_expr "div" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression))); }
     break;
 
   case 176: /* set_expr: set_expr "mod" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression))); }
     break;
 
   case 177: /* set_expr: set_expr "^" set_expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression))); }
     break;
 
   case 178: /* set_expr: set_expr "~+" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~+"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~+"), args));
       }
     break;
 
   case 179: /* set_expr: set_expr "~-" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~-"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~-"), args));
       }
     break;
 
   case 180: /* set_expr: set_expr "~*" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~*"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~*"), args));
       }
     break;
 
   case 181: /* set_expr: set_expr "~/" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~/"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~/"), args));
       }
     break;
 
   case 182: /* set_expr: set_expr "~div" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~div"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~div"), args));
       }
     break;
 
   case 183: /* set_expr: set_expr "~=" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~="), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~="), args));
       }
     break;
 
   case 184: /* set_expr: set_expr "~!=" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~!="), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~!="), args));
       }
     break;
 
@@ -5425,35 +5422,35 @@ yyreduce:
       {
         vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("default"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("default"), args));
       }
     break;
 
   case 186: /* set_expr: set_expr "quoted identifier" set_expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), (yyvsp[-1].sValue), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), (yyvsp[-1].sValue), args));
         free((yyvsp[-1].sValue));
       }
     break;
 
   case 187: /* set_expr: "+" set_expr  */
-      { (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<UnOp>((yyloc), UOT_PLUS, (yyvsp[0].expression))); }
     break;
 
   case 188: /* set_expr: "-" set_expr  */
       { if ((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) {
-          (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression))));
+          (yyval.expression) = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
         } else if ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression))) {
-          (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression))));
+          (yyval.expression) = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression)))));
         } else {
-          (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
+          (yyval.expression)=KEEP(make<UnOp>((yyloc), UOT_MINUS, (yyvsp[0].expression)));
         }
       }
     break;
 
   case 189: /* set_expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a((-9223372036854775807ll)-1); }
+      { (yyval.expression) = KEEP(IntLit::a((-9223372036854775807ll)-1)); }
     break;
 
   case 191: /* expr: expr "::" annotation_expr  */
@@ -5461,297 +5458,297 @@ yyreduce:
     break;
 
   case 192: /* expr: expr "<->" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQUIV, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_EQUIV, (yyvsp[0].expression))); }
     break;
 
   case 193: /* expr: expr "->" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IMPL, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_IMPL, (yyvsp[0].expression))); }
     break;
 
   case 194: /* expr: expr "<-" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_RIMPL, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_RIMPL, (yyvsp[0].expression))); }
     break;
 
   case 195: /* expr: expr "\\/" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_OR, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_OR, (yyvsp[0].expression))); }
     break;
 
   case 196: /* expr: expr "xor" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_XOR, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_XOR, (yyvsp[0].expression))); }
     break;
 
   case 197: /* expr: expr "/\\" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_AND, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_AND, (yyvsp[0].expression))); }
     break;
 
   case 198: /* expr: expr "<" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LE, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_LE, (yyvsp[0].expression))); }
     break;
 
   case 199: /* expr: expr ">" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GR, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_GR, (yyvsp[0].expression))); }
     break;
 
   case 200: /* expr: expr "<=" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LQ, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_LQ, (yyvsp[0].expression))); }
     break;
 
   case 201: /* expr: expr ">=" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GQ, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_GQ, (yyvsp[0].expression))); }
     break;
 
   case 202: /* expr: expr "=" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQ, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_EQ, (yyvsp[0].expression))); }
     break;
 
   case 203: /* expr: expr "!=" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_NQ, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_NQ, (yyvsp[0].expression))); }
     break;
 
   case 204: /* expr: expr "in" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IN, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_IN, (yyvsp[0].expression))); }
     break;
 
   case 205: /* expr: expr "subset" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUBSET, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_SUBSET, (yyvsp[0].expression))); }
     break;
 
   case 206: /* expr: expr "superset" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUPERSET, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_SUPERSET, (yyvsp[0].expression))); }
     break;
 
   case 207: /* expr: expr "union" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression))); }
     break;
 
   case 208: /* expr: expr "diff" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression))); }
     break;
 
   case 209: /* expr: expr "symdiff" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression))); }
     break;
 
   case 210: /* expr: expr ".." expr  */
       { if ((yyvsp[-2].expression)==nullptr || (yyvsp[0].expression)==nullptr) {
           (yyval.expression) = nullptr;
         } else if (Expression::isa<IntLit>((yyvsp[-2].expression)) && Expression::isa<IntLit>((yyvsp[0].expression))) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
+          (yyval.expression)=KEEP(make<SetLit>((yyloc), KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-2].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))))));
         } else {
-          (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression)));
         }
       }
     break;
 
   case 211: /* expr: expr "..<" expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 212: /* expr: expr "<.." expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 213: /* expr: expr "<..<" expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-2].expression), (yyvsp[0].expression)})); }
     break;
 
   case 214: /* expr: expr ".."  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("..o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("..o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 215: /* expr: expr "..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("..<o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("..<o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 216: /* expr: expr "<.."  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("<..o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("<..o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 217: /* expr: expr "<..<"  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("<..<o"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("<..<o"), {(yyvsp[-1].expression)})); }
     break;
 
   case 218: /* expr: ".." expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o.."), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o.."), {(yyvsp[0].expression)})); }
     break;
 
   case 219: /* expr: "..<" expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o..<"), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o..<"), {(yyvsp[0].expression)})); }
     break;
 
   case 220: /* expr: "<.." expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o<.."), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o<.."), {(yyvsp[0].expression)})); }
     break;
 
   case 221: /* expr: "<..<" expr  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("o<..<"), {(yyvsp[0].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("o<..<"), {(yyvsp[0].expression)})); }
     break;
 
   case 222: /* expr: "'..<'" '(' expr ',' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 223: /* expr: "'<..'" '(' expr ',' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 224: /* expr: "'<..<'" '(' expr ',' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-3].expression), (yyvsp[-1].expression)})); }
     break;
 
   case 225: /* expr: "'..'" '(' expr ',' expr ')'  */
       { if ((yyvsp[-3].expression)==nullptr || (yyvsp[-1].expression)==nullptr) {
           (yyval.expression) = nullptr;
         } else if (Expression::isa<IntLit>((yyvsp[-3].expression)) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
-          (yyval.expression)=new SetLit((yyloc), IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))));
+          (yyval.expression)=KEEP(make<SetLit>((yyloc), KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>((yyvsp[-3].expression))),IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))))));
         } else {
-          (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression)));
         }
       }
     break;
 
   case 226: /* expr: "'..<'" '(' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..<'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 227: /* expr: "'<..'" '(' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 228: /* expr: "'<..<'" '(' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'<..<'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 229: /* expr: "'..'" '(' expr ')'  */
-      { (yyval.expression)=Call::a((yyloc), ASTString("'..'"), {(yyvsp[-1].expression)}); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), ASTString("'..'"), {(yyvsp[-1].expression)})); }
     break;
 
   case 230: /* expr: expr "intersect" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression))); }
     break;
 
   case 231: /* expr: expr "++" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression))); }
     break;
 
   case 232: /* expr: expr "+" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression))); }
     break;
 
   case 233: /* expr: expr "-" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression))); }
     break;
 
   case 234: /* expr: expr "*" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression))); }
     break;
 
   case 235: /* expr: expr "/" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression))); }
     break;
 
   case 236: /* expr: expr "div" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression))); }
     break;
 
   case 237: /* expr: expr "mod" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression))); }
     break;
 
   case 238: /* expr: expr "^" expr  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression))); }
     break;
 
   case 239: /* expr: expr "~+" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~+"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~+"), args));
       }
     break;
 
   case 240: /* expr: expr "~-" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~-"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~-"), args));
       }
     break;
 
   case 241: /* expr: expr "~*" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~*"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~*"), args));
       }
     break;
 
   case 242: /* expr: expr "~/" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~/"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~/"), args));
       }
     break;
 
   case 243: /* expr: expr "~div" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~div"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~div"), args));
       }
     break;
 
   case 244: /* expr: expr "~=" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~="), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~="), args));
       }
     break;
 
   case 245: /* expr: expr "~!=" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("~!="), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("~!="), args));
       }
     break;
 
   case 246: /* expr: expr "default" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), ASTString("default"), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), ASTString("default"), args));
       }
     break;
 
   case 247: /* expr: expr "quoted identifier" expr  */
       { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
-        (yyval.expression)=Call::a((yyloc), (yyvsp[-1].sValue), args);
+        (yyval.expression)=KEEP(Call::a((yyloc), (yyvsp[-1].sValue), args));
         free((yyvsp[-1].sValue));
       }
     break;
 
   case 248: /* expr: "not" expr  */
-      { (yyval.expression)=new UnOp((yyloc), UOT_NOT, (yyvsp[0].expression)); }
+      { (yyval.expression)=KEEP(make<UnOp>((yyloc), UOT_NOT, (yyvsp[0].expression))); }
     break;
 
   case 249: /* expr: "+" expr  */
       { if (((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) || ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression)))) {
           (yyval.expression) = (yyvsp[0].expression);
         } else {
-          (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression));
+          (yyval.expression)=KEEP(make<UnOp>((yyloc), UOT_PLUS, (yyvsp[0].expression)));
         }
       }
     break;
 
   case 250: /* expr: "-" expr  */
       { if ((yyvsp[0].expression) && Expression::isa<IntLit>((yyvsp[0].expression))) {
-          (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression))));
+          (yyval.expression) = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[0].expression)))));
         } else if ((yyvsp[0].expression) && Expression::isa<FloatLit>((yyvsp[0].expression))) {
-          (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression))));
+          (yyval.expression) = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[0].expression)))));
         } else {
-          (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
+          (yyval.expression)=KEEP(make<UnOp>((yyloc), UOT_MINUS, (yyvsp[0].expression)));
         }
       }
     break;
 
   case 251: /* expr: "-" "9223372036854775808"  */
-      { (yyval.expression) = IntLit::a((-9223372036854775807ll)-1); }
+      { (yyval.expression) = KEEP(IntLit::a((-9223372036854775807ll)-1)); }
     break;
 
   case 252: /* expr_atom_head: expr_atom_head_nonstring  */
@@ -5777,12 +5774,12 @@ yyreduce:
     break;
 
   case 256: /* expr_atom_head_nonstring: '(' expr ')' "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-2].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 257: /* expr_atom_head_nonstring: '(' expr ')' access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5791,12 +5788,12 @@ yyreduce:
     break;
 
   case 258: /* expr_atom_head_nonstring: "identifier"  */
-      { (yyval.expression)=new Id((yyloc), (yyvsp[0].sValue), nullptr); free((yyvsp[0].sValue)); }
+      { (yyval.expression)=KEEP(make<Id>((yyloc), (yyvsp[0].sValue), nullptr)); free((yyvsp[0].sValue)); }
     break;
 
   case 259: /* expr_atom_head_nonstring: "identifier" access_tail  */
       { if ((yyvsp[0].expressions1d)) {
-          (yyval.expression)=createAccess((yyloc), new Id((yylsp[-1]),(yyvsp[-1].sValue),nullptr), *(yyvsp[0].expressions1d));
+          (yyval.expression)=createAccess((yyloc), KEEP(make<Id>((yylsp[-1]),(yyvsp[-1].sValue),nullptr)), *(yyvsp[0].expressions1d));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5804,12 +5801,12 @@ yyreduce:
     break;
 
   case 260: /* expr_atom_head_nonstring: "identifier" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),new Id((yyloc), (yyvsp[-1].sValue), nullptr), BOT_POW, IntLit::a(-1)); free((yyvsp[-1].sValue)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),KEEP(make<Id>((yyloc), (yyvsp[-1].sValue), nullptr)), BOT_POW, KEEP(IntLit::a(-1)))); free((yyvsp[-1].sValue)); }
     break;
 
   case 261: /* expr_atom_head_nonstring: "identifier" access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), new Id((yylsp[-2]),(yyvsp[-2].sValue),nullptr), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), KEEP(make<Id>((yylsp[-2]),(yyvsp[-2].sValue),nullptr)), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5817,12 +5814,12 @@ yyreduce:
     break;
 
   case 262: /* expr_atom_head_nonstring: "_"  */
-      { (yyval.expression)=new AnonVar((yyloc)); }
+      { (yyval.expression)=KEEP(make<AnonVar>((yyloc))); }
     break;
 
   case 263: /* expr_atom_head_nonstring: "_" access_tail  */
       { if ((yyvsp[0].expressions1d)) {
-          (yyval.expression)=createAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[0].expressions1d));
+          (yyval.expression)=createAccess((yyloc), KEEP(make<AnonVar>((yyloc))), *(yyvsp[0].expressions1d));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5830,12 +5827,12 @@ yyreduce:
     break;
 
   case 264: /* expr_atom_head_nonstring: "_" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),new AnonVar((yyloc)), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),KEEP(make<AnonVar>((yyloc))), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 265: /* expr_atom_head_nonstring: "_" access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), KEEP(make<AnonVar>((yyloc))), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5843,7 +5840,7 @@ yyreduce:
     break;
 
   case 266: /* expr_atom_head_nonstring: "_" '(' expr ')'  */
-      { (yyval.expression) = Call::a((yyloc), Constants::constants().ids.anon_enum_set, {(yyvsp[-1].expression)}); }
+      { (yyval.expression) = KEEP(Call::a((yyloc), Constants::constants().ids.anon_enum_set, {(yyvsp[-1].expression)})); }
     break;
 
   case 267: /* expr_atom_head_nonstring: "bool literal"  */
@@ -5851,31 +5848,31 @@ yyreduce:
     break;
 
   case 268: /* expr_atom_head_nonstring: "bool literal" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),Constants::constants().boollit(((yyvsp[-1].iValue)!=0)), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),Constants::constants().boollit(((yyvsp[-1].iValue)!=0)), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 269: /* expr_atom_head_nonstring: "integer literal"  */
-      { (yyval.expression)=IntLit::a((yyvsp[0].iValue)); }
+      { (yyval.expression)=KEEP(IntLit::a((yyvsp[0].iValue))); }
     break;
 
   case 270: /* expr_atom_head_nonstring: "integer literal" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),IntLit::a((yyvsp[-1].iValue)), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),KEEP(IntLit::a((yyvsp[-1].iValue))), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 271: /* expr_atom_head_nonstring: "infinity"  */
-      { (yyval.expression)=IntLit::a(IntVal::infinity()); }
+      { (yyval.expression)=KEEP(IntLit::a(IntVal::infinity())); }
     break;
 
   case 272: /* expr_atom_head_nonstring: "infinity" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),IntLit::a(IntVal::infinity()), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),KEEP(IntLit::a(IntVal::infinity())), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 273: /* expr_atom_head_nonstring: "float literal"  */
-      { (yyval.expression)=FloatLit::a((yyvsp[0].dValue)); }
+      { (yyval.expression)=KEEP(FloatLit::a((yyvsp[0].dValue))); }
     break;
 
   case 274: /* expr_atom_head_nonstring: "float literal" "^-1"  */
-      { (yyval.expression)=new BinOp((yyloc),FloatLit::a((yyvsp[-1].dValue)), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc),KEEP(FloatLit::a((yyvsp[-1].dValue))), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 275: /* expr_atom_head_nonstring: "<>"  */
@@ -5896,12 +5893,12 @@ yyreduce:
     break;
 
   case 279: /* expr_atom_head_nonstring: set_literal "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 280: /* expr_atom_head_nonstring: set_literal access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5918,12 +5915,12 @@ yyreduce:
     break;
 
   case 283: /* expr_atom_head_nonstring: set_comp "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 284: /* expr_atom_head_nonstring: set_comp access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5940,12 +5937,12 @@ yyreduce:
     break;
 
   case 287: /* expr_atom_head_nonstring: simple_array_literal "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 288: /* expr_atom_head_nonstring: simple_array_literal access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5962,12 +5959,12 @@ yyreduce:
     break;
 
   case 291: /* expr_atom_head_nonstring: simple_array_literal_2d "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 292: /* expr_atom_head_nonstring: simple_array_literal_2d access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -5984,12 +5981,12 @@ yyreduce:
     break;
 
   case 295: /* expr_atom_head_nonstring: simple_array_comp "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 296: /* expr_atom_head_nonstring: simple_array_comp access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6006,12 +6003,12 @@ yyreduce:
     break;
 
   case 299: /* expr_atom_head_nonstring: if_then_else_expr "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 300: /* expr_atom_head_nonstring: if_then_else_expr access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6046,12 +6043,12 @@ yyreduce:
     break;
 
   case 308: /* expr_atom_head_nonstring: tuple_literal "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 309: /* expr_atom_head_nonstring: tuple_literal access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6068,12 +6065,12 @@ yyreduce:
     break;
 
   case 312: /* expr_atom_head_nonstring: record_literal "^-1"  */
-      { (yyval.expression) = new BinOp((yyloc),(yyvsp[-1].expression), BOT_POW, IntLit::a(-1)); }
+      { (yyval.expression) = KEEP(make<BinOp>((yyloc),(yyvsp[-1].expression), BOT_POW, KEEP(IntLit::a(-1)))); }
     break;
 
   case 313: /* expr_atom_head_nonstring: record_literal access_tail "^-1"  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression)=new BinOp((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, IntLit::a(-1));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc),createAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[-1].expressions1d)), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6081,18 +6078,18 @@ yyreduce:
     break;
 
   case 314: /* string_expr: "string literal"  */
-      { (yyval.expression)=new StringLit((yyloc), (yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
+      { (yyval.expression)=KEEP(make<StringLit>((yyloc), (yyvsp[0].sValue))); free((yyvsp[0].sValue)); }
     break;
 
   case 315: /* string_expr: "interpolated string start" string_quote_rest  */
-      { (yyval.expression)=new BinOp((yyloc), new StringLit((yyloc), (yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression));
+      { (yyval.expression)=KEEP(make<BinOp>((yyloc), KEEP(make<StringLit>((yyloc), (yyvsp[-1].sValue))), BOT_PLUSPLUS, (yyvsp[0].expression)));
         free((yyvsp[-1].sValue));
       }
     break;
 
   case 316: /* string_quote_rest: expr "interpolated string end"  */
       { if ((yyvsp[-1].expression)) {
-          (yyval.expression)=new BinOp((yyloc), Call::a((yyloc), ASTString("format"), {(yyvsp[-1].expression)}), BOT_PLUSPLUS, new StringLit((yyloc),(yyvsp[0].sValue)));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), KEEP(Call::a((yyloc), ASTString("format"), {(yyvsp[-1].expression)})), BOT_PLUSPLUS, KEEP(make<StringLit>((yyloc),(yyvsp[0].sValue)))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6102,8 +6099,8 @@ yyreduce:
 
   case 317: /* string_quote_rest: expr "interpolated string middle" string_quote_rest  */
       { if ((yyvsp[-2].expression)) {
-          (yyval.expression)=new BinOp((yyloc), Call::a((yyloc), ASTString("format"), {(yyvsp[-2].expression)}), BOT_PLUSPLUS,
-                       new BinOp((yyloc), new StringLit((yyloc),(yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression)));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), KEEP(Call::a((yyloc), ASTString("format"), {(yyvsp[-2].expression)})), BOT_PLUSPLUS,
+                       KEEP(make<BinOp>((yyloc), KEEP(make<StringLit>((yyloc),(yyvsp[-1].sValue))), BOT_PLUSPLUS, (yyvsp[0].expression)))));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6115,7 +6112,7 @@ yyreduce:
       {
         (yyval.expressions1d)=new std::vector<Expression*>();
         if ((yyvsp[-1].expressions1d)) {
-          auto* al = new ArrayAccess((yyloc), nullptr, *(yyvsp[-1].expressions1d));
+          auto* al = KEEP(make<ArrayAccess>((yyloc), nullptr, *(yyvsp[-1].expressions1d)));
           (yyval.expressions1d)->push_back(al);
           delete (yyvsp[-1].expressions1d);
         }
@@ -6126,7 +6123,7 @@ yyreduce:
       {
         (yyval.expressions1d)=new std::vector<Expression*>();
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
-        parseFieldTail((yyloc), *(yyval.expressions1d), tail);
+        parseFieldTail(parm, (yyloc), *(yyval.expressions1d), tail);
       }
     break;
 
@@ -6134,7 +6131,7 @@ yyreduce:
       {
         (yyval.expressions1d)=(yyvsp[-3].expressions1d);
         if ((yyval.expressions1d) && (yyvsp[-1].expressions1d)) {
-          auto* al = new ArrayAccess((yyloc), nullptr, *(yyvsp[-1].expressions1d));
+          auto* al = KEEP(make<ArrayAccess>((yyloc), nullptr, *(yyvsp[-1].expressions1d)));
           (yyval.expressions1d)->push_back(al);
           delete (yyvsp[-1].expressions1d);
         }
@@ -6145,17 +6142,17 @@ yyreduce:
       {
         (yyval.expressions1d)=(yyvsp[-1].expressions1d);
         std::string tail((yyvsp[0].sValue)); free((yyvsp[0].sValue));
-        parseFieldTail((yyloc), *(yyval.expressions1d), tail);
+        parseFieldTail(parm, (yyloc), *(yyval.expressions1d), tail);
       }
     break;
 
   case 322: /* set_literal: '{' '}'  */
-      { (yyval.expression) = new SetLit((yyloc), std::vector<Expression*>()); }
+      { (yyval.expression) = KEEP(make<SetLit>((yyloc), std::vector<Expression*>())); }
     break;
 
   case 323: /* set_literal: '{' expr_list '}'  */
       { if ((yyvsp[-1].expressions1d)) {
-          (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expressions1d));
+          (yyval.expression) = KEEP(make<SetLit>((yyloc), *(yyvsp[-1].expressions1d)));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6165,7 +6162,7 @@ yyreduce:
   case 324: /* tuple_literal: '(' expr ',' ')'  */
       {
         std::vector<Expression*> list({ (yyvsp[-2].expression) });
-        (yyval.expression)=ArrayLit::constructTuple((yyloc), list);
+        (yyval.expression)=KEEP(ArrayLit::constructTuple((yyloc), list));
       }
     break;
 
@@ -6178,14 +6175,14 @@ yyreduce:
         if ((yyvsp[-3].expression)) {
           list->insert(list->begin(), (yyvsp[-3].expression));
         }
-        (yyval.expression)=ArrayLit::constructTuple((yyloc), *list);
+        (yyval.expression)=KEEP(ArrayLit::constructTuple((yyloc), *list));
         delete list;
       }
     break;
 
   case 326: /* record_literal: '(' record_field_list_head comma_or_none ')'  */
       {
-        (yyval.expression) = ArrayLit::constructTuple((yyloc), *(yyvsp[-2].expressions1d));
+        (yyval.expression) = KEEP(ArrayLit::constructTuple((yyloc), *(yyvsp[-2].expressions1d)));
         Expression::type((yyval.expression), Type::record());
         delete((yyvsp[-2].expressions1d));
       }
@@ -6201,14 +6198,14 @@ yyreduce:
 
   case 329: /* record_field: "identifier" ':' expr  */
       {
-        (yyval.vardeclexpr) = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
+        (yyval.vardeclexpr) = KEEP(make<VarDecl>((yyloc), KEEP(make<TypeInst>((yyloc), Type())), (yyvsp[-2].sValue), (yyvsp[0].expression)));
         free((yyvsp[-2].sValue));
       }
     break;
 
   case 330: /* set_comp: '{' expr '|' comp_tail '}'  */
       { if ((yyvsp[-1].generatorsPointer)) {
-          (yyval.expression) = new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), true);
+          (yyval.expression) = KEEP(make<Comprehension>((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), true));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6293,13 +6290,13 @@ yyreduce:
     break;
 
   case 348: /* simple_array_literal: "[" "]"  */
-      { (yyval.expression)=new ArrayLit((yyloc), std::vector<MiniZinc::Expression*>()); }
+      { (yyval.expression)=KEEP(make<ArrayLit>((yyloc), std::vector<MiniZinc::Expression*>())); }
     break;
 
   case 349: /* simple_array_literal: "[" comp_expr_list "]"  */
       { if ((yyvsp[-1].indexedexpression2d)) {
           if ((yyvsp[-1].indexedexpression2d)->first.empty()) {
-            (yyval.expression)=new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second);
+            (yyval.expression)=KEEP(make<ArrayLit>((yyloc), (yyvsp[-1].indexedexpression2d)->second));
           } else {
             const auto* tuple = Expression::dynamicCast<ArrayLit>((yyvsp[-1].indexedexpression2d)->first[0]);
             if (tuple) {
@@ -6319,15 +6316,15 @@ yyreduce:
               }
               std::vector<Expression*> arrayNdArgs(dims.size());
               for (unsigned int i = 0; i < dims.size(); i++) {
-                arrayNdArgs[i] = new ArrayLit((yyloc), dims[i]);
+                arrayNdArgs[i] = KEEP(make<ArrayLit>((yyloc), dims[i]));
               }
-              arrayNdArgs.push_back(new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second));
+              arrayNdArgs.push_back(KEEP(make<ArrayLit>((yyloc), (yyvsp[-1].indexedexpression2d)->second)));
 
               if ((yyvsp[-1].indexedexpression2d)->first.size() != (yyvsp[-1].indexedexpression2d)->second.size()) {
                 yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 (yyval.expression)=nullptr;
               } else {
-                (yyval.expression)=Call::a((yyloc), "arrayNd", arrayNdArgs);
+                (yyval.expression)=KEEP(Call::a((yyloc), "arrayNd", arrayNdArgs));
               }
             } else {
               for (const auto* t : (yyvsp[-1].indexedexpression2d)->first) {
@@ -6335,7 +6332,7 @@ yyreduce:
                   yyerror(&(yylsp[-1]), parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              (yyval.expression)=Call::a((yyloc), "arrayNd", {new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->first), new ArrayLit((yyloc), (yyvsp[-1].indexedexpression2d)->second)});
+              (yyval.expression)=KEEP(Call::a((yyloc), "arrayNd", {KEEP(make<ArrayLit>((yyloc), (yyvsp[-1].indexedexpression2d)->first)), KEEP(make<ArrayLit>((yyloc), (yyvsp[-1].indexedexpression2d)->second))}));
             }
           }
           delete (yyvsp[-1].indexedexpression2d);
@@ -6346,7 +6343,7 @@ yyreduce:
     break;
 
   case 350: /* simple_array_literal_2d: "[|" "|]"  */
-      { (yyval.expression)=new ArrayLit((yyloc), std::vector<std::vector<Expression*> >()); }
+      { (yyval.expression)=KEEP(make<ArrayLit>((yyloc), std::vector<std::vector<Expression*> >())); }
     break;
 
   case 351: /* simple_array_literal_2d: "[|" simple_array_literal_2d_indexed_list "|]"  */
@@ -6382,7 +6379,7 @@ yyreduce:
             }
           }
           if (columnHeader.empty() && rowHeader.empty()) {
-            (yyval.expression)=new ArrayLit((yyloc), v);
+            (yyval.expression)=KEEP(make<ArrayLit>((yyloc), v));
           } else {
             std::vector<Expression*> vv;
             for (auto& row : v) {
@@ -6394,16 +6391,16 @@ yyreduce:
               auto nRows = vv.size() / columnHeader.size();
               rowHeader.resize(nRows);
               for (unsigned int i = 0; i < nRows; i++) {
-                rowHeader[i] = IntLit::a(i+1);
+                rowHeader[i] = KEEP(IntLit::a(i+1));
               }
             } else if (columnHeader.empty()) {
               auto nCols = vv.size() / rowHeader.size();
               columnHeader.resize(nCols);
               for (unsigned int i = 0; i < nCols; i++) {
-                columnHeader[i] = IntLit::a(i+1);
+                columnHeader[i] = KEEP(IntLit::a(i+1));
               }
             }
-            (yyval.expression)=Call::a((yyloc), "array2d", {new ArrayLit((yyloc), rowHeader), new ArrayLit((yyloc), columnHeader), new ArrayLit((yyloc), vv)});
+            (yyval.expression)=KEEP(Call::a((yyloc), "array2d", {KEEP(make<ArrayLit>((yyloc), rowHeader)), KEEP(make<ArrayLit>((yyloc), columnHeader)), KEEP(make<ArrayLit>((yyloc), vv))}));
           }
           delete (yyvsp[-1].indexedexpressions2d);
         } else {
@@ -6444,7 +6441,7 @@ yyreduce:
             }
           }
         }
-        (yyval.expression) = new ArrayLit((yyloc),a,dims);
+        (yyval.expression) = KEEP(make<ArrayLit>((yyloc),a,dims));
         delete (yyvsp[-1].expressions3d);
       } else {
         (yyval.expression) = nullptr;
@@ -6561,11 +6558,11 @@ yyreduce:
             tv.push_back((yyvsp[-5].expression));
           }
           tv.push_back((yyvsp[-3].expression));
-          auto* t = ArrayLit::constructTuple((yyloc),tv);
+          auto* t = KEEP(ArrayLit::constructTuple((yyloc),tv));
           Type ty = Type::tuple();
           ty.typeId(Type::COMP_INDEX);
           t->type(ty);
-          (yyval.expression)=new Comprehension((yyloc), t, *(yyvsp[-1].generatorsPointer), false);
+          (yyval.expression)=KEEP(make<Comprehension>((yyloc), t, *(yyvsp[-1].generatorsPointer), false));
           delete (yyvsp[-1].generatorsPointer);
         } else {
           (yyval.expression) = nullptr;
@@ -6575,7 +6572,7 @@ yyreduce:
 
   case 367: /* simple_array_comp: "[" expr '|' comp_tail "]"  */
       { if ((yyvsp[-1].generatorsPointer)) {
-          (yyval.expression)=new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), false);
+          (yyval.expression)=KEEP(make<Comprehension>((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generatorsPointer), false));
         } else {
           (yyval.expression) = nullptr;
         }
@@ -6639,7 +6636,7 @@ yyreduce:
             iexps.push_back((*(yyvsp[-3].expressions1d))[i+1]);
           }
         }
-        (yyval.expression)=new ITE((yyloc), iexps,(yyvsp[-1].expression));
+        (yyval.expression)=KEEP(make<ITE>((yyloc), iexps,(yyvsp[-1].expression)));
         delete (yyvsp[-3].expressions1d);
       }
     break;
@@ -6655,7 +6652,7 @@ yyreduce:
           iexps.push_back((*(yyvsp[-1].expressions1d))[i+1]);
         }
       }
-      (yyval.expression)=new ITE((yyloc), iexps, nullptr);
+      (yyval.expression)=KEEP(make<ITE>((yyloc), iexps, nullptr));
       delete (yyvsp[-1].expressions1d);
     }
     break;
@@ -6785,7 +6782,7 @@ yyreduce:
           (yyval.expression)=nullptr;
           yyerror(&(yylsp[-3]), parm, "syntax error, unary operator with two arguments");
         } else {
-          (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression),static_cast<BinOpType>((yyvsp[-5].iValue)),(yyvsp[-1].expression));
+          (yyval.expression)=KEEP(make<BinOp>((yyloc), (yyvsp[-3].expression),static_cast<BinOpType>((yyvsp[-5].iValue)),(yyvsp[-1].expression)));
         }
       }
     break;
@@ -6812,22 +6809,22 @@ yyreduce:
           if (uot==UOT_PLUS && (yyvsp[-1].expression) && (Expression::isa<IntLit>((yyvsp[-1].expression)) || Expression::isa<FloatLit>((yyvsp[-1].expression)))) {
             (yyval.expression) = (yyvsp[-1].expression);
           } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && Expression::isa<IntLit>((yyvsp[-1].expression))) {
-            (yyval.expression) = IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression))));
+            (yyval.expression) = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>((yyvsp[-1].expression)))));
           } else if (uot==UOT_MINUS && (yyvsp[-1].expression) && Expression::isa<FloatLit>((yyvsp[-1].expression))) {
-            (yyval.expression) = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[-1].expression))));
+            (yyval.expression) = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>((yyvsp[-1].expression)))));
           } else {
-            (yyval.expression)=new UnOp((yyloc), static_cast<UnOpType>(uot),(yyvsp[-1].expression));
+            (yyval.expression)=KEEP(make<UnOp>((yyloc), static_cast<UnOpType>(uot),(yyvsp[-1].expression)));
           }
         }
       }
     break;
 
   case 407: /* call_expr: "identifier" '(' ')'  */
-      { (yyval.expression)=Call::a((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>()); free((yyvsp[-2].sValue)); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>())); free((yyvsp[-2].sValue)); }
     break;
 
   case 408: /* call_expr: "identifier" "^-1" '(' ')'  */
-      { (yyval.expression)=Call::a((yyloc), std::string((yyvsp[-3].sValue))+"⁻¹", std::vector<Expression*>()); free((yyvsp[-3].sValue)); }
+      { (yyval.expression)=KEEP(Call::a((yyloc), std::string((yyvsp[-3].sValue))+"⁻¹", std::vector<Expression*>())); free((yyvsp[-3].sValue)); }
     break;
 
   case 410: /* call_expr: "identifier" '(' comp_or_expr ')'  */
@@ -6844,7 +6841,7 @@ yyreduce:
             args.push_back((*(yyvsp[-1].expressionPairs))[i].first);
           }
           if (!hadWhere) {
-            (yyval.expression)=Call::a((yyloc), (yyvsp[-3].sValue), args);
+            (yyval.expression)=KEEP(Call::a((yyloc), (yyvsp[-3].sValue), args));
           }
         } else {
           (yyval.expression) = nullptr;
@@ -6903,9 +6900,9 @@ yyreduce:
           (yyval.expression)=nullptr;
         } else {
           Generators g; g.g = gens;
-          Comprehension* ac = new Comprehension((yyloc), (yyvsp[-1].expression),g,false);
+          Comprehension* ac = KEEP(make<Comprehension>((yyloc), (yyvsp[-1].expression),g,false));
           vector<Expression*> args; args.push_back(ac);
-          (yyval.expression)=Call::a((yyloc), (yyvsp[-6].sValue), args);
+          (yyval.expression)=KEEP(Call::a((yyloc), (yyvsp[-6].sValue), args));
         }
         free((yyvsp[-6].sValue));
         delete (yyvsp[-4].expressionPairs);
@@ -6926,7 +6923,7 @@ yyreduce:
             args.push_back((*(yyvsp[-1].expressionPairs))[i].first);
           }
           if (!hadWhere) {
-            (yyval.expression)=Call::a((yyloc), std::string((yyvsp[-4].sValue))+"⁻¹", args);
+            (yyval.expression)=KEEP(Call::a((yyloc), std::string((yyvsp[-4].sValue))+"⁻¹", args));
           }
         } else {
           (yyval.expression) = nullptr;
@@ -6985,9 +6982,9 @@ yyreduce:
           (yyval.expression)=nullptr;
         } else {
           Generators g; g.g = gens;
-          Comprehension* ac = new Comprehension((yyloc), (yyvsp[-1].expression),g,false);
+          Comprehension* ac = KEEP(make<Comprehension>((yyloc), (yyvsp[-1].expression),g,false));
           vector<Expression*> args; args.push_back(ac);
-          (yyval.expression)=Call::a((yyloc), std::string((yyvsp[-7].sValue))+"⁻¹", args);
+          (yyval.expression)=KEEP(Call::a((yyloc), std::string((yyvsp[-7].sValue))+"⁻¹", args));
         }
         free((yyvsp[-7].sValue));
         delete (yyvsp[-4].expressionPairs);
@@ -7019,7 +7016,7 @@ yyreduce:
         }
         (yyval.expressionPairs)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[0].expression)) {
-          VarDecl* vd = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
+          VarDecl* vd = KEEP(make<VarDecl>((yyloc), KEEP(make<TypeInst>((yyloc), Type())), (yyvsp[-2].sValue), (yyvsp[0].expression)));
           (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>(vd,nullptr));
         }
         free((yyvsp[-2].sValue));
@@ -7043,7 +7040,7 @@ yyreduce:
         }
         (yyval.expressionPairs)=(yyvsp[-4].expressionPairs);
         if ((yyval.expressionPairs) && (yyvsp[0].expression)) {
-          VarDecl* vd = new VarDecl((yyloc), new TypeInst((yyloc), Type()), (yyvsp[-2].sValue), (yyvsp[0].expression));
+          VarDecl* vd = KEEP(make<VarDecl>((yyloc), KEEP(make<TypeInst>((yyloc), Type())), (yyvsp[-2].sValue), (yyvsp[0].expression)));
           (yyval.expressionPairs)->push_back(pair<Expression*,Expression*>(vd,nullptr));
         }
         free((yyvsp[-2].sValue));
@@ -7056,7 +7053,7 @@ yyreduce:
 
   case 422: /* let_expr: "let" '{' let_vardecl_item_list '}' "in" expr  */
       { if ((yyvsp[-3].expressions1d) && (yyvsp[0].expression)) {
-          (yyval.expression)=new Let((yyloc), *(yyvsp[-3].expressions1d), (yyvsp[0].expression)); delete (yyvsp[-3].expressions1d);
+          (yyval.expression)=KEEP(make<Let>((yyloc), *(yyvsp[-3].expressions1d), (yyvsp[0].expression))); delete (yyvsp[-3].expressions1d);
         } else {
           (yyval.expression)=nullptr;
         }
@@ -7065,7 +7062,7 @@ yyreduce:
 
   case 423: /* let_expr: "let" '{' let_vardecl_item_list comma_or_semi '}' "in" expr  */
       { if ((yyvsp[-4].expressions1d) && (yyvsp[0].expression)) {
-          (yyval.expression)=new Let((yyloc), *(yyvsp[-4].expressions1d), (yyvsp[0].expression)); delete (yyvsp[-4].expressions1d);
+          (yyval.expression)=KEEP(make<Let>((yyloc), *(yyvsp[-4].expressions1d), (yyvsp[0].expression))); delete (yyvsp[-4].expressions1d);
         } else {
           (yyval.expression)=nullptr;
         }
@@ -7080,8 +7077,10 @@ yyreduce:
       { (yyval.expressions1d)=new vector<Expression*>;
         if ((yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
-          (yyval.expressions1d)->push_back(ce->e());
+          // Take the expression over from the constraint item, which is dropped
+          Ref<Expression> e = ce->e();
           ce->e(nullptr);
+          (yyval.expressions1d)->push_back(KEEP(e));
         }
       }
     break;
@@ -7094,8 +7093,10 @@ yyreduce:
       { (yyval.expressions1d)=(yyvsp[-2].expressions1d);
         if ((yyval.expressions1d) && (yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
-          (yyval.expressions1d)->push_back(ce->e());
+          // Take the expression over from the constraint item, which is dropped
+          Ref<Expression> e = ce->e();
           ce->e(nullptr);
+          (yyval.expressions1d)->push_back(KEEP(e));
         }
       }
     break;
@@ -7130,11 +7131,11 @@ yyreduce:
     break;
 
   case 435: /* annotation_expr: "output"  */
-      { (yyval.expression) = new Id((yylsp[0]), Constants::constants().ids.output, nullptr); }
+      { (yyval.expression) = KEEP(make<Id>((yylsp[0]), Constants::constants().ids.output, nullptr)); }
     break;
 
   case 436: /* annotation_expr: string_expr  */
-      { (yyval.expression) = Call::a((yylsp[0]), ASTString("mzn_expression_name"), {(yyvsp[0].expression)}); }
+      { (yyval.expression) = KEEP(Call::a((yylsp[0]), ASTString("mzn_expression_name"), {(yyvsp[0].expression)})); }
     break;
 
   case 437: /* ne_annotations: "::" annotation_expr  */

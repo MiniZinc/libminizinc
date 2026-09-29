@@ -27,6 +27,7 @@
 
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverinstance.hh>
+#include <minizinc/timer.hh>
 
 #include <utility>
 #endif
@@ -685,7 +686,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         Printer p(smm_oss, 0, false, &env->envi());
         p.print(smm);
         Env smm_env(smm);
-        GCLock lock;
         vector<TypeError> typeErrors;
         try {
           MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
@@ -711,10 +711,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           smm->compact();
           std::string smm_compressed =
               FileUtils::encode_base64(FileUtils::deflate_string(smm_oss.str()));
-          auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
-          auto* sl = new StringLit(Location().introduce(), smm_compressed);
-          auto* checkString =
-              new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"), sl);
+          auto ti = make<TypeInst>(Location().introduce(), Type::parstring(), nullptr);
+          auto sl = make<StringLit>(Location().introduce(), smm_compressed);
+          auto checkString =
+              make<VarDecl>(Location().introduce(), ti, ASTString("_mzn_solution_checker"), sl);
           auto* checkStringI = VarDeclI::a(Location().introduce(), checkString);
           env->output()->addItem(checkStringI);
 
@@ -730,10 +730,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
                                "nodes,mzn_stats_time)];\n";
               std::string smm_stats_compressed =
                   FileUtils::encode_base64(FileUtils::deflate_string(smm_stats_oss.str()));
-              auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
-              auto* sl = new StringLit(Location().introduce(), smm_stats_compressed);
-              auto* checkStatsString =
-                  new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"), sl);
+              auto ti = make<TypeInst>(Location().introduce(), Type::parstring(), nullptr);
+              auto sl = make<StringLit>(Location().introduce(), smm_stats_compressed);
+              auto checkStatsString =
+                  make<VarDecl>(Location().introduce(), ti, ASTString("_mzn_stats_checker"), sl);
               auto* checkStatsStringI = VarDeclI::a(Location().introduce(), checkStatsString);
               env->output()->addItem(checkStatsStringI);
             }
@@ -813,7 +813,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           type_demonomorphise_library(*env, m);
           p.print(m);
         }
-        GCLock lock;
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(
             *env, m, typeErrors,
@@ -850,7 +849,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         }
       } else {
         if (_isFlatzinc) {
-          GCLock lock;
           vector<TypeError> typeErrors;
           MiniZinc::typecheck(*env, m, typeErrors,
                               _flags.modelCheckOnly || _flags.modelInterfaceOnly,
@@ -938,7 +936,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         // expressions (also across a separate solns2out invocation). Entries are sorted by
         // variable name so the output is deterministic.
         if (env->envi().assumptionsUsed && !env->envi().assumptionExprs.empty()) {
-          GCLock lock;
           std::vector<std::pair<ASTString, std::string>> entries;
           for (auto& entry : env->envi().assumptionExprs) {
             std::ostringstream oss;
@@ -949,28 +946,29 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           std::sort(entries.begin(), entries.end(),
                     [](const std::pair<ASTString, std::string>& a,
                        const std::pair<ASTString, std::string>& b) { return a.first < b.first; });
-          std::vector<Expression*> tuples;
+          std::vector<Ref<Expression>> tuples;
           tuples.reserve(entries.size());
           for (const auto& e : entries) {
-            std::vector<Expression*> fields(2);
-            fields[0] = new StringLit(Location().introduce(), e.first);
-            fields[1] = new StringLit(Location().introduce(), ASTString(e.second));
-            auto* tuple = ArrayLit::constructTuple(Location().introduce(), fields);
+            std::vector<Ref<Expression>> fields(2);
+            fields[0] = make<StringLit>(Location().introduce(), e.first);
+            fields[1] = make<StringLit>(Location().introduce(), ASTString(e.second));
+            auto tuple = ArrayLit::constructTuple(Location().introduce(), raw(fields));
             env->envi().registerTupleType(tuple);  // sets the tuple's `tuple(string, string)` type
-            tuples.push_back(tuple);
+            tuples.emplace_back(tuple);
           }
           // Declared type: `array[int] of tuple(string, string)`.
-          std::vector<Expression*> fieldTis(2);
-          fieldTis[0] = new TypeInst(Location().introduce(), Type::parstring());
-          fieldTis[1] = new TypeInst(Location().introduce(), Type::parstring());
-          auto* ti = new TypeInst(Location().introduce(), Type::tuple(),
-                                  ArrayLit::constructTuple(Location().introduce(), fieldTis));
-          ti->setRanges({new TypeInst(Location().introduce(), Type::parint())});
+          std::vector<Ref<Expression>> fieldTis(2);
+          fieldTis[0] = make<TypeInst>(Location().introduce(), Type::parstring());
+          fieldTis[1] = make<TypeInst>(Location().introduce(), Type::parstring());
+          auto ti = make<TypeInst>(Location().introduce(), Type::tuple(),
+                                   ArrayLit::constructTuple(Location().introduce(), raw(fieldTis)));
+          auto rangeTi = make<TypeInst>(Location().introduce(), Type::parint());
+          ti->setRanges({rangeTi});
           env->envi().registerTupleType(ti);
-          auto* al = new ArrayLit(Location().introduce(), tuples);
+          auto al = make<ArrayLit>(Location().introduce(), tuples);
           al->type(ti->type());
-          auto* mapVd =
-              new VarDecl(Location().introduce(), ti, ASTString("_mzn_assumption_map"), al);
+          auto mapVd =
+              make<VarDecl>(Location().introduce(), ti, ASTString("_mzn_assumption_map"), al);
           env->output()->addItem(VarDeclI::a(Location().introduce(), mapVd));
         }
 
@@ -1061,8 +1059,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               if (p == nullptr) {
                 return;
               }
-              auto* text = new StringLit(Location(), ASTString(PathStore::toString(p)));
-              Call* expanded =
+              auto text = make<StringLit>(Location(), ASTString(PathStore::toString(p)));
+              auto expanded =
                   Call::a(Expression::loc(ann), Constants::constants().ann.mzn_path, {text});
               Expression::type(expanded, Type::ann());
               a.removeCall(Constants::constants().ann.mzn_path);
@@ -1086,7 +1084,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           private:
             const PathStore& _paths;
           } expandPaths(env->envi().varPathStore.getPaths());
-          GCLock lock;
           iter_items<ExpandPathAnnotations>(expandPaths, env->flat());
         }
 
@@ -1198,11 +1195,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
               _log << "Printing .ozn to stdout ..." << std::endl;
             }
             Printer p(_os, 0, true, &env->envi());
-            std::unique_ptr<Model> ozn;
-            {
-              GCLock lock;
-              ozn.reset(copy(env->envi(), env->output()));
-            }
+            std::unique_ptr<Model> ozn(copy(env->envi(), env->output()));
             type_demonomorphise_library(*env, ozn.get());
             p.print(ozn.get());
             if (_flags.verbose) {
@@ -1215,11 +1208,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             std::ofstream ofs(FILE_PATH(_flagOutputOzn), std::ios::out);
             check_io_status(ofs.good(), " I/O error: cannot open ozn output file. ");
             Printer p(ofs, 0, true, &env->envi());
-            std::unique_ptr<Model> ozn;
-            {
-              GCLock lock;
-              ozn.reset(copy(env->envi(), env->output()));
-            }
+            std::unique_ptr<Model> ozn(copy(env->envi(), env->output()));
             type_demonomorphise_library(*env, ozn.get());
             p.print(ozn.get());
             check_io_status(ofs.good(), " I/O error: cannot write ozn output file. ");
@@ -1256,8 +1245,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     status = SolverInstance::UNSAT;
   }
 
-  if (_flags.verbose) {
-    size_t mem = GC::maxMem();
+  size_t mem = peak_memory();
+  if (_flags.verbose && mem > 0) {
     size_t kb = 1024;
     size_t mb = kb * kb;
     if (mem < kb) {

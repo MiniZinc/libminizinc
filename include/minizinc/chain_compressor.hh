@@ -70,12 +70,12 @@ protected:
 
   // Constructs a clause constraint item with pos and neg as parameters.
   // if pos/neg are not ArrayLit then they will inserted into an ArrayLit.
-  ConstraintI* constructClause(Expression* pos, Expression* neg);
+  Ref<ConstraintI> constructClause(Expression* pos, Expression* neg);
 
   // Copy an ArrayLit replacing one variable.
-  static ArrayLit* arrayLitCopyReplace(ArrayLit* ar, VarDecl* oldVar, VarDecl* newVar);
+  static Ref<ArrayLit> arrayLitCopyReplace(ArrayLit* ar, VarDecl* oldVar, VarDecl* newVar);
 
-  ConstraintI* constructHalfReif(Call* call, Id* control);
+  Ref<ConstraintI> constructHalfReif(Call* call, Id* control);
 };
 
 class LECompressor : public ChainCompressor {

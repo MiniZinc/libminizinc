@@ -15,7 +15,6 @@
 #include <minizinc/solver.hh>
 #include <minizinc/solver_instance.hh>
 
-#include "minizinc/astmap.hh"
 #include "minizinc/aststring.hh"
 
 #include <atlantis/fznBackend.hpp>
@@ -42,14 +41,14 @@ public:
   Status next() override { return SolverInstance::ERROR; }
   void resetSolver() override { assert(false); };
 
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
   void printStatistics() override;
 
 protected:
   Model* _fzn;
   atlantis::logging::Logger _logger;
   std::unique_ptr<atlantis::FznBackend> _backend;
-  ManagedASTStringMap<Expression*> _assignment;
+  std::unordered_map<ASTString, Ref<Expression>> _assignment;
   atlantis::search::SearchStatistics _statistics;
   bool _hadSol = false;
 };
