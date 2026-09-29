@@ -592,14 +592,15 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       }
 
     } else {
-      bool mixContext = (cid != env.constants.ids.forall && cid != env.constants.ids.exists &&
-                         (cid != env.constants.ids.bool2int || c->type().dim() > 0) &&
-                         cid != env.constants.ids.sum &&
-                         cid != env.constants.ids.assert&& cid != env.constants.varRedef->id() &&
-                         cid != env.constants.ids.mzn_reverse_map_var &&
-                         cid != env.constants.ids.arrayXd && cid != env.constants.ids.array2d &&
-                         cid != env.constants.ids.array3d && cid != env.constants.ids.array4d &&
-                         cid != env.constants.ids.array5d && cid != env.constants.ids.array6d);
+      bool mixContext =
+          (cid != env.constants.ids.forall && cid != env.constants.ids.exists &&
+           (cid != env.constants.ids.bool2int || c->type().dim() > 0) &&
+           cid != env.constants.ids.sum &&
+           cid != env.constants.ids.assert&& cid != env.constants.varRedef->id() &&
+           cid != env.constants.ids.mzn_reverse_map_var && cid != env.constants.ids.arrayXd &&
+           cid != env.constants.ids.array1d && cid != env.constants.ids.array2d &&
+           cid != env.constants.ids.array3d && cid != env.constants.ids.array4d &&
+           cid != env.constants.ids.array5d && cid != env.constants.ids.array6d);
       if (cid == env.constants.ids.mzn_reverse_map_var) {
         env.inReverseMapVar = true;
       }
@@ -758,7 +759,9 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
                          Expression::ann(c->decl()->param(i))
                              .contains(env.constants.ctx.promise_antitone)) {
                 argctx.b = -transfer_ctx;
-              } else if (Expression::type(c->arg(i)).isbool()) {
+              } else {
+                // The call can use the argument, or the elements of an array argument, in either
+                // polarity
                 argctx.b = C_MIX;
               }
             } else if (Expression::type(c->arg(i)).bt() == Type::BT_INT) {

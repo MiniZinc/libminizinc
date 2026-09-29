@@ -79,6 +79,10 @@ Bug fixes:
    being flattened in the context of the whole expression, which could turn it
    into a top-level constraint (e.g. ``(x > 1) + "abc"`` for an operator
    ``'+'(var bool, string)`` required ``x > 1``).
+-  Fix the elements of a Boolean array argument of a call being flattened in the
+   context of the call, which could half-reify them although the call uses them
+   in both polarities (e.g. ``xorall([x > 5, x > 7]) \/ q`` allowed ``x = 8``
+   with ``q`` false).
 
 .. _v2.10.1:
 
