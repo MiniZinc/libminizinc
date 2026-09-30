@@ -1,0 +1,14 @@
+r = (y: 4);
+a = [(y: 1), (x: 2, y: 3), (y: 4)];
+a2d = [| (y: 1), (y: 2) | (x: 3, y: 4), (y: 5) |];
+a2d_call = array2d(1..1, 1..2, [(y: 1), (x: 2, y: 3)]);
+indexed = [1: (y: 1), 2: (x: 2, y: 3)];
+alias = [(y: 1), (x: 2, y: 3)];
+alias_array = [(y: 1), (x: 2, y: 3)];
+merged = [(y: 1), (x: 2, y: 3)];
+opt_alias = [(y: 1), (x: 2, y: 3)];
+nested = [(r: (b: 1), c: 2), (c: 3, r: (a: 4, b: 5))];
+tup = [((y: 1), 2), ((x: 3, y: 4), 5)];
+enum_field = [(y: 1), (c: A, y: 2)];
+opt_structs = [(y: 1), (t: (1, true), u: (a: 2), y: 3)];
+vars = [(y: 1), (x: 5, y: 2)];

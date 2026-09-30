@@ -1803,7 +1803,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
         auto* aa = new ArrayAccess(Expression::loc(e).introduce(), vd_array1d->id(), {vd_it->id()});
         aa->type(tyElem);
         Expression* elem = add_coercion(env, m, aa, Expression::loc(aa), funarg_t.elemType(env))();
-        auto* comprehension = new Comprehension(Location().introduce(), elem, gens, true);
+        auto* comprehension = new Comprehension(Location().introduce(), elem, gens, false);
         comprehension->type(Type::arrType(env, Type::partop(1), Expression::type(elem)));
 
         auto* arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,

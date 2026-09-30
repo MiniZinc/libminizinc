@@ -56,6 +56,9 @@ protected:
   /// merges the alias's base type/domain with \a ti's ranges. Follows alias chains.
   /// Returns \a ti unchanged when no alias applies.
   TypeInst* resolveAlias(TypeInst* ti);
+  /// Collect the field declarations of record type-inst \a ti (following type-inst synonyms and
+  /// record merges with ++). Returns false if \a ti is not known to be a record type-inst.
+  bool collectRecordFields(TypeInst* ti, std::vector<VarDecl*>& fields);
   Location errLocation() const;
   Token readToken(std::istream& is);
   Token readTokenInternal(std::istream& is);

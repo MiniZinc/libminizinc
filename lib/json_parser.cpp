@@ -135,6 +135,28 @@ TypeInst* JSONParser::resolveAlias(TypeInst* ti) {
   return ti;
 }
 
+bool JSONParser::collectRecordFields(TypeInst* ti, std::vector<VarDecl*>& fields) {
+  ti = resolveAlias(ti);
+  if (ti == nullptr || ti->domain() == nullptr) {
+    return false;
+  }
+  if (auto* bo = Expression::dynamicCast<BinOp>(ti->domain())) {
+    // Record type-insts merged using ++
+    return bo->op() == BOT_PLUSPLUS && Expression::isa<TypeInst>(bo->lhs()) &&
+           Expression::isa<TypeInst>(bo->rhs()) &&
+           collectRecordFields(Expression::cast<TypeInst>(bo->lhs()), fields) &&
+           collectRecordFields(Expression::cast<TypeInst>(bo->rhs()), fields);
+  }
+  if (ti->type().bt() != Type::BT_RECORD || !Expression::isa<ArrayLit>(ti->domain())) {
+    return false;
+  }
+  auto* dom = Expression::cast<ArrayLit>(ti->domain());
+  for (unsigned int i = 0; i < dom->size(); ++i) {
+    fields.push_back(Expression::cast<VarDecl>((*dom)[i]));
+  }
+  return true;
+}
+
 JSONParser::Token JSONParser::readToken(istream& is) {
   string result;
   char buf[1];
@@ -707,16 +729,15 @@ Expression* JSONParser::parseObject(istream& is, TypeInst* ti) {
 
   ASTStringMap<TypeInst*> fieldTIs;
   ASTStringSet optFields;
-  if (ti != nullptr && ti->type().bt() == Type::BT_RECORD) {
-    auto* dom = Expression::cast<ArrayLit>(ti->domain());
-    for (unsigned int i = 0; i < dom->size(); ++i) {
-      auto* fieldDef = Expression::cast<VarDecl>((*dom)[i]);
+  std::vector<VarDecl*> fieldDefs;
+  if (collectRecordFields(ti, fieldDefs)) {
+    for (auto* fieldDef : fieldDefs) {
       fieldTIs.emplace(fieldDef->id()->str(), fieldDef->ti());
-      if (fieldDef->ti()->type().isOpt()) {
+      if (fieldDef->ti()->type().isOpt() || resolveAlias(fieldDef->ti())->type().isOpt()) {
         optFields.insert(fieldDef->id()->str());
       }
     }
-  };
+  }
 
   Token next;
   do {
