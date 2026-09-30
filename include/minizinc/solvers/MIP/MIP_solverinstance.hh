@@ -125,7 +125,7 @@ public:
   std::pair<double, bool> exprToConstEasy(Expression* e);
   double exprToConst(Expression* e);
 
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
 
   void registerConstraints();
 };  // MIPSolverinstance

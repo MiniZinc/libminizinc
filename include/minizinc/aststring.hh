@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <algorithm>
 #include <cstring>
@@ -25,7 +25,7 @@ namespace MiniZinc {
 class ASTStringData;
 
 /**
- * \brief Handle for an interned garbage collected string
+ * \brief Handle for an interned string
  */
 class ASTString {
 protected:
@@ -96,9 +96,6 @@ public:
 
   /// Compute hash value of string
   size_t hash() const;
-
-  /// Mark string during garbage collection
-  void mark() const;
 };
 
 /**
@@ -154,11 +151,9 @@ public:
 };
 
 /**
- * \brief Garbage collected interned string
+ * \brief Interned string (never freed)
  */
 class ASTStringData : public ASTChunk {
-  friend class GC::Heap;
-
 protected:
   /// Interning Hash Map
   using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash,
@@ -184,15 +179,6 @@ public:
   }
   /// Return hash value of string
   size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
-  /// Mark for garbage collection
-  void mark() const { _gcMark = 1; }
-
-protected:
-  /// GC Destructor
-  void destroy() const {
-    assert(interner().find({this->c_str(), this->size()}) != interner().end());
-    interner().erase({this->c_str(), this->size()});
-  };
 };
 
 inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
@@ -201,11 +187,6 @@ inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
 inline bool ASTString::empty() const { return _s == nullptr; }
 // NOLINTNEXTLINE(readability-identifier-naming)
 inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
-inline void ASTString::mark() const {
-  if (_s != nullptr) {
-    _s->mark();
-  }
-}
 
 inline bool operator==(const ASTString& s0, const ASTString& s1) { return s0._s == s1._s; }
 inline bool operator!=(const ASTString& s0, const ASTString& s1) { return s0._s != s1._s; }

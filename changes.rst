@@ -42,6 +42,10 @@ Changes:
    ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
    was already the case for JSON input, which now also supports record types
    that are combined using ``++``.
+-  Replace the mark-and-sweep garbage collector with reference counting, so
+   that nodes are freed as soon as they are no longer used. This makes the
+   compilation of large models faster and reduces its peak memory use. MiniZinc
+   now uses the mimalloc memory allocator.
 
 Bug fixes:
 ^^^^^^^^^^

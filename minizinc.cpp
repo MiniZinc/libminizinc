@@ -32,6 +32,11 @@ using namespace MiniZinc;
 
 namespace {
 
+#ifndef MZN_RC_CHECK
+/// The Env that won't be destroyed, kept reachable to avoid leak checker warnings.
+Env* kept_env = nullptr;
+#endif
+
 int run(const std::string& exe, const std::vector<std::string>& args, bool jsonStream) {
   try {
     Timer startTime;
@@ -82,6 +87,10 @@ int run(const std::string& exe, const std::vector<std::string>& args, bool jsonS
       std::cerr << "   Done (";
       std::cerr << "overall time " << startTime.stoptime() << ")." << std::endl;
     }
+#ifndef MZN_RC_CHECK
+    // Exit without destroying the Env, avoiding reference counting overhead.
+    kept_env = slv.releaseEnv();
+#endif
     return static_cast<int>(!fSuccess);
   } catch (const Exception& e) {
     std::string what = e.what();

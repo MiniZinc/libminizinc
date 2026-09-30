@@ -30,23 +30,21 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
   bool allPar = true;
   bool hadOpt = false;
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
-    elems[i] = elems_ee[i].r();
+    elems[i] = elems_ee[i].r;
     allPar = allPar && Expression::type(elems[i]).isPar();
     hadOpt = hadOpt || Expression::type(elems[i]).isOpt();
   }
 
   ret.b = conj(env, b, Ctx(), elems_ee);
   if (allPar) {
-    GCLock lock;
-    auto* nsl = new SetLit(Location().introduce(), elems);
+    auto nsl = make<SetLit>(Location().introduce(), elems);
     Type nsl_t(Expression::type(e));
     nsl_t.ti(Type::TI_PAR);
     nsl->type(nsl_t);
-    Expression* ee = eval_set_lit(env, nsl);
+    Ref<Expression> ee = eval_set_lit(env, nsl);
     ret.r = bind(env, Ctx(), r, ee);
   } else {
-    GCLock lock;
-    auto* al = new ArrayLit(Expression::loc(sl), elems);
+    auto al = make<ArrayLit>(Expression::loc(sl), elems);
     Type al_t = Type::varint(1);
     if (hadOpt) {
       al_t.ot(Type::OT_OPTIONAL);
@@ -54,7 +52,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     al->type(al_t);
     std::vector<Expression*> args(1);
     args[0] = al;
-    Call* cc = Call::a(Expression::loc(sl).introduce(), "array2set", args);
+    Ref<Call> cc = Call::a(Expression::loc(sl).introduce(), "array2set", args);
     cc->type(Type::varsetint());
     FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
     if (fi == nullptr) {
@@ -64,7 +62,7 @@ EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl*
     assert(env.isSubtype(fi->rtype(env, args, nullptr, false), cc->type(), false));
     cc->decl(fi);
     EE ee = flat_exp(env, Ctx(), cc, nullptr, env.constants.varTrue);
-    ret.r = bind(env, Ctx(), r, ee.r());
+    ret.r = bind(env, Ctx(), r, ee.r);
   }
   return ret;
 }

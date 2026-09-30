@@ -21,8 +21,8 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     nctx.b = ctx.b == C_ROOT ? C_ROOT : C_MIX;
 
     try {
-      KeepAlive ka = flat_cv_exp(env, nctx, e);
-      ret.r = bind(env, ctx, r, ka());
+      Ref<Expression> ka = flat_cv_exp(env, nctx, e);
+      ret.r = bind(env, ctx, r, ka);
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     } catch (ResultUndefinedError&) {
       if (Expression::type(e).isbool()) {
@@ -49,7 +49,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
         VarDecl* vd = ident->decl()->flat();
         if (vd == nullptr) {
           EE flat_ident = flat_exp(env, Ctx(), ident->decl(), nullptr, env.constants.varTrue);
-          vd = Expression::cast<Id>(flat_ident.r())->decl();
+          vd = Expression::cast<Id>(flat_ident.r)->decl();
           ident->decl()->flat(vd);
           auto* al = Expression::cast<ArrayLit>(follow_id(vd->id()));
           if (al->empty()) {
@@ -69,14 +69,14 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     auto it = env.cseMapFind(e);
     if (it != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r)->id());
+      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r.get())->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
-    GCLock lock;
-    ArrayLit* al = nullptr;
+    Ref<ArrayLit> al;
     try {
-      al = Expression::cast<ArrayLit>(follow_id(eval_par(env, e)));
+      Ref<Expression> al_e = eval_par(env, e);
+      al = Expression::cast<ArrayLit>(follow_id(al_e));
     } catch (ResultUndefinedError&) {
       ret.r = create_dummy_value(env, Expression::type(e));
       ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
@@ -85,7 +85,7 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     CallStackItem _csi(env, e);
     if (al->empty() || ((r != nullptr) && r->e() == nullptr)) {
       if (r == nullptr) {
-        ret.r = al;
+        ret.r = std::move(al);
       } else {
         ret.r = bind(env, ctx, r, al);
       }
@@ -94,19 +94,19 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     }
     it = env.cseMapFind(al);
     if (it != env.cseMapEnd()) {
-      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r)->id());
+      ret.r = bind(env, ctx, r, Expression::cast<VarDecl>(it->second.r.get())->id());
       ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
       return ret;
     }
-    std::vector<TypeInst*> ranges(al->dims());
+    std::vector<Ref<TypeInst>> ranges(al->dims());
     for (unsigned int i = 0; i < ranges.size(); i++) {
-      ranges[i] =
-          new TypeInst(Expression::loc(e), Type(),
-                       new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
+      ranges[i] = make<TypeInst>(
+          Expression::loc(e), Type(),
+          make<SetLit>(Location().introduce(), IntSetVal::a(al->min(i), al->max(i))));
     }
-    ASTExprVec<TypeInst> ranges_v(ranges);
-    auto* ti = new TypeInst(Expression::loc(e), al->type(), ranges_v, nullptr);
-    VarDecl* vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
+    ASTExprVec<TypeInst> ranges_v(raw(ranges));
+    auto ti = make<TypeInst>(Expression::loc(e), al->type(), ranges_v, nullptr);
+    Ref<VarDecl> vd = new_vardecl(env, ctx, ti, nullptr, nullptr, al);
     EE ee(vd, nullptr);
     env.cseMapInsert(al, ee);
     env.cseMapInsert(vd->e(), ee);
@@ -115,9 +115,8 @@ EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
     ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
     return ret;
   }
-  GCLock lock;
   try {
-    auto* result = eval_par(env, e);
+    auto result = eval_par(env, e);
     if (Expression::type(result) == Type::parbool()) {
       if (ctx.b == C_ROOT && r == env.constants.varTrue && result == env.constants.boollit(false)) {
         env.fail("expression evaluated to false", Expression::loc(e));

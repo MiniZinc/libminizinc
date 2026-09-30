@@ -223,8 +223,11 @@ private:
   const Syms& _s;
   const char* _buf;
   unsigned int _len;
-  /// Holds items until parsing succeeds and roots them for GC.
+  /// Holds items until parsing succeeds.
   Model* _items;
+  /// Owns the nodes of the current item: the reductions pass nodes as raw pointers until a parent
+  /// node or the model owns them, and nodes of a failed parse are freed with the %Lowerer
+  NodeOwner _owned;
   ASTString _filename;
   bool _ascii;
 
@@ -359,17 +362,18 @@ Expression* Lowerer::expression(const TFReduction* r) {
   }
   if (c.symbol == _s.identifier || c.symbol == _s.quotedIdentifier) {
     ASTString id = identifier(c);
-    return id.empty() ? nullptr : new Id(loc(c), id, nullptr);
+    return id.empty() ? nullptr : _owned.keep(make<Id>(loc(c), id, nullptr));
   }
   if (c.symbol == _s.absent) {
     return Constants::constants().absent;
   }
   if (c.symbol == _s.anonymous) {
-    return new AnonVar(loc(c));
+    return _owned.keep(make<AnonVar>(loc(c)));
   }
   if (c.symbol == _s.infinity) {
     // DataZinc folds the sign into the token, so `-infinity` is one node
-    return IntLit::a(_buf[c.start_byte] == '-' ? -IntVal::infinity() : IntVal::infinity());
+    return _owned.keep(
+        IntLit::a(_buf[c.start_byte] == '-' ? -IntVal::infinity() : IntVal::infinity()));
   }
   return static_cast<Expression*>(c.value);
 }
@@ -392,7 +396,7 @@ Expression* Lowerer::intLiteral(const TFNode& n) {
   } else if (len > 2 && b[0] == '0' && b[1] == 'b') {
     ok = based_to_intval(b + 2, e, 2, v);
   } else if (negated && len == 19 && memcmp(b, "9223372036854775808", 19) == 0) {
-    return IntLit::a(IntVal(-9223372036854775807LL - 1));
+    return _owned.keep(IntLit::a(IntVal(-9223372036854775807LL - 1)));
   } else {
     ok = decimal_to_intval(b, e, v);
   }
@@ -400,7 +404,7 @@ Expression* Lowerer::intLiteral(const TFNode& n) {
     error(n, "invalid integer literal");
     return nullptr;
   }
-  return IntLit::a(negated ? -v : v);
+  return _owned.keep(IntLit::a(negated ? -v : v));
 }
 
 Expression* Lowerer::floatLiteral(const TFNode& n) {
@@ -434,7 +438,7 @@ Expression* Lowerer::floatLiteral(const TFNode& n) {
     error(n, "invalid float literal");
     return nullptr;
   }
-  return FloatLit::a(negated ? -v : v);
+  return _owned.keep(FloatLit::a(negated ? -v : v));
 }
 
 std::string Lowerer::escape(const TFNode& n) {
@@ -522,7 +526,7 @@ Expression* Lowerer::stringLiteral(const TFReduction* r, const ParserLocation& l
     out += _pieces[i];
   }
   _pieces.resize(_pieces.size() - n);
-  return new StringLit(l, out);
+  return _owned.keep(make<StringLit>(l, out));
 }
 
 Expression* Lowerer::arrayLiteral(const TFReduction* r, const ParserLocation& l) {
@@ -558,7 +562,7 @@ Expression* Lowerer::arrayLiteral(const TFReduction* r, const ParserLocation& l)
   _indexed.resize(first);
 
   if (indices.empty()) {
-    return new ArrayLit(l, values);
+    return _owned.keep(make<ArrayLit>(l, values));
   }
   const auto* tuple = Expression::dynamicCast<ArrayLit>(indices[0]);
   if (tuple == nullptr) {
@@ -568,7 +572,9 @@ Expression* Lowerer::arrayLiteral(const TFReduction* r, const ParserLocation& l)
         return nullptr;
       }
     }
-    return Call::a(l, "arrayNd", {new ArrayLit(l, indices), new ArrayLit(l, values)});
+    return _owned.keep(
+        Call::a(l, "arrayNd",
+                {_owned.keep(make<ArrayLit>(l, indices)), _owned.keep(make<ArrayLit>(l, values))}));
   }
   if (indices.size() != values.size()) {
     error(l, r->start_byte, "syntax error, non-uniform indexed array literal");
@@ -587,10 +593,10 @@ Expression* Lowerer::arrayLiteral(const TFReduction* r, const ParserLocation& l)
   }
   std::vector<Expression*> args(dims.size());
   for (unsigned int i = 0; i < dims.size(); i++) {
-    args[i] = new ArrayLit(l, dims[i]);
+    args[i] = _owned.keep(make<ArrayLit>(l, dims[i]));
   }
-  args.push_back(new ArrayLit(l, values));
-  return Call::a(l, "arrayNd", args);
+  args.push_back(_owned.keep(make<ArrayLit>(l, values)));
+  return _owned.keep(Call::a(l, "arrayNd", args));
 }
 
 void* Lowerer::row2d(const TFReduction* r) {
@@ -692,7 +698,7 @@ Expression* Lowerer::arrayLiteral2d(const TFReduction* r, const ParserLocation& 
     return nullptr;
   }
   if (columnHeader.empty() && rowHeader.empty()) {
-    return new ArrayLit(l, grid);
+    return _owned.keep(make<ArrayLit>(l, grid));
   }
   std::vector<Expression*> flat;
   for (auto& row : grid) {
@@ -704,18 +710,19 @@ Expression* Lowerer::arrayLiteral2d(const TFReduction* r, const ParserLocation& 
     size_t n = columnHeader.empty() ? 0 : flat.size() / columnHeader.size();
     rowHeader.resize(n);
     for (unsigned int i = 0; i < n; i++) {
-      rowHeader[i] = IntLit::a(i + 1);
+      rowHeader[i] = _owned.keep(IntLit::a(i + 1));
     }
   } else if (columnHeader.empty()) {
     size_t n = rowHeader.empty() ? 0 : flat.size() / rowHeader.size();
     columnHeader.resize(n);
     for (unsigned int i = 0; i < n; i++) {
-      columnHeader[i] = IntLit::a(i + 1);
+      columnHeader[i] = _owned.keep(IntLit::a(i + 1));
     }
   }
-  return Call::a(
+  return _owned.keep(Call::a(
       l, "array2d",
-      {new ArrayLit(l, rowHeader), new ArrayLit(l, columnHeader), new ArrayLit(l, flat)});
+      {_owned.keep(make<ArrayLit>(l, rowHeader)), _owned.keep(make<ArrayLit>(l, columnHeader)),
+       _owned.keep(make<ArrayLit>(l, flat))}));
 }
 
 void* Lowerer::row3d(const TFReduction* r) {
@@ -793,7 +800,7 @@ Expression* Lowerer::arrayLiteral3d(const TFReduction* r, const ParserLocation& 
   }
   std::vector<Expression*> flat(_exprs.begin() + static_cast<long>(base), _exprs.end());
   _exprs.resize(base);
-  return new ArrayLit(l, flat, dims);
+  return _owned.keep(make<ArrayLit>(l, flat, dims));
 }
 
 Expression* Lowerer::recordMember(const TFReduction* r, const ParserLocation& l) {
@@ -810,7 +817,7 @@ Expression* Lowerer::recordMember(const TFReduction* r, const ParserLocation& l)
   if (name.empty() || value == nullptr) {
     return nullptr;
   }
-  return new VarDecl(l, new TypeInst(l, Type()), name, value);
+  return _owned.keep(make<VarDecl>(l, _owned.keep(make<TypeInst>(l, Type())), name, value));
 }
 
 Expression* Lowerer::recordLiteral(const TFReduction* r, const ParserLocation& l) {
@@ -824,7 +831,7 @@ Expression* Lowerer::recordLiteral(const TFReduction* r, const ParserLocation& l
     error(l, r->start_byte, "syntax error, empty record literal");
     return nullptr;
   }
-  ArrayLit* al = ArrayLit::constructTuple(l, fields);
+  ArrayLit* al = _owned.keep(ArrayLit::constructTuple(l, fields));
   Expression::type(al, Type::record());
   return al;
 }
@@ -835,7 +842,7 @@ void Lowerer::noteDataCall(Call* c) {
       return;
     }
   }
-  _pp.dataFileCalls.push_back(c);
+  _pp.dataFileCalls.emplace_back(c);
 }
 
 Expression* Lowerer::callExpr(const TFReduction* r, const ParserLocation& l) {
@@ -854,7 +861,7 @@ Expression* Lowerer::callExpr(const TFReduction* r, const ParserLocation& l) {
   }
   // parser_ts_mzn.cpp:callExpr, minus the forms the DataZinc grammar cannot produce.
   if (fn->symbol == _s.anonymous) {
-    return Call::a(l, Constants::constants().ids.anon_enum_set, args);
+    return _owned.keep(Call::a(l, Constants::constants().ids.anon_enum_set, args));
   }
   if (fn->symbol == _s.quotedIdentifier) {
     std::string t = text(*fn);
@@ -865,7 +872,7 @@ Expression* Lowerer::callExpr(const TFReduction* r, const ParserLocation& l) {
           error(l, r->start_byte, "syntax error, unary operator with two arguments");
           return nullptr;
         }
-        return new UnOp(l, UOT_NOT, args[0]);
+        return _owned.keep(make<UnOp>(l, UOT_NOT, args[0]));
       }
       if (args.size() != 2) {
         error(l, r->start_byte, "syntax error, binary operator with unary argument list");
@@ -874,17 +881,18 @@ Expression* Lowerer::callExpr(const TFReduction* r, const ParserLocation& l) {
       auto bot = static_cast<BinOpType>(q->bot);
       if (bot == BOT_DOTDOT && Expression::isa<IntLit>(args[0]) &&
           Expression::isa<IntLit>(args[1])) {
-        return new SetLit(l, IntSetVal::a(IntLit::v(Expression::cast<IntLit>(args[0])),
-                                          IntLit::v(Expression::cast<IntLit>(args[1]))));
+        return _owned.keep(make<SetLit>(
+            l, _owned.keep(IntSetVal::a(IntLit::v(Expression::cast<IntLit>(args[0])),
+                                        IntLit::v(Expression::cast<IntLit>(args[1]))))));
       }
-      return new BinOp(l, args[0], bot, args[1]);
+      return _owned.keep(make<BinOp>(l, args[0], bot, args[1]));
     }
     // Open ranges remain calls.
     ASTString id = identifier(*fn);
     if (id.empty()) {
       return nullptr;
     }
-    Call* c = Call::a(l, id, args);
+    Call* c = _owned.keep(Call::a(l, id, args));
     noteDataCall(c);
     return c;
   }
@@ -893,7 +901,7 @@ Expression* Lowerer::callExpr(const TFReduction* r, const ParserLocation& l) {
     error(*fn, "syntax error, `" + name + "' is a reserved keyword");
     return nullptr;
   }
-  Call* c = Call::a(l, ASTString(name), args);
+  Call* c = _owned.keep(Call::a(l, ASTString(name), args));
   noteDataCall(c);
   return c;
 }
@@ -915,17 +923,18 @@ Expression* Lowerer::infixExpr(const TFReduction* r, const ParserLocation& l) {
   }
   std::string o = text(*op);
   if (o == "++") {
-    return new BinOp(l, lhs, BOT_PLUSPLUS, rhs);
+    return _owned.keep(make<BinOp>(l, lhs, BOT_PLUSPLUS, rhs));
   }
   if (o == "union" || o == "∪") {
-    return new BinOp(l, lhs, BOT_UNION, rhs);
+    return _owned.keep(make<BinOp>(l, lhs, BOT_UNION, rhs));
   }
   if (o == "..") {
     if (Expression::isa<IntLit>(lhs) && Expression::isa<IntLit>(rhs)) {
-      return new SetLit(l, IntSetVal::a(IntLit::v(Expression::cast<IntLit>(lhs)),
-                                        IntLit::v(Expression::cast<IntLit>(rhs))));
+      return _owned.keep(
+          make<SetLit>(l, _owned.keep(IntSetVal::a(IntLit::v(Expression::cast<IntLit>(lhs)),
+                                                   IntLit::v(Expression::cast<IntLit>(rhs))))));
     }
-    return new BinOp(l, lhs, BOT_DOTDOT, rhs);
+    return _owned.keep(make<BinOp>(l, lhs, BOT_DOTDOT, rhs));
   }
   error(l, r->start_byte, "internal: unhandled operator '" + o + "'");
   return nullptr;
@@ -945,7 +954,8 @@ void* Lowerer::assignment(const TFReduction* r, const ParserLocation& l) {
   if (name.empty() || value == nullptr) {
     return nullptr;
   }
-  _items->addItem(new AssignI(l, name, value));
+  _items->addItem(make<AssignI>(l, name, value));
+  _owned.clear();  // (the model owns the item, and nothing else is on the stack)
   return nullptr;
 }
 
@@ -1021,10 +1031,10 @@ void* Lowerer::reduce(const TFReduction* r) {
             "empty set literals written as `∅' are not supported by this version of MiniZinc");
       return nullptr;
     }
-    return new SetLit(l, members(r));
+    return _owned.keep(make<SetLit>(l, members(r)));
   }
   if (sym == _s.tupleLiteral) {
-    return ArrayLit::constructTuple(l, members(r));
+    return _owned.keep(ArrayLit::constructTuple(l, members(r)));
   }
   if (sym == _s.recordMember) {
     return recordMember(r, l);

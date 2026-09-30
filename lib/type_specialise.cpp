@@ -171,11 +171,11 @@ std::vector<Type> instantiated_types(EnvI& env, Call* call) {
     }
     TypeInst* ti = decl->param(i)->ti();
     for (int j = 0; j < static_cast<int>(ti->ranges().size()); j++) {
-      if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
+      if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
         least_common_supertype(env, call, types, ti_var_types, tiid->v(), TIOcc(i, j));
       }
     }
-    if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+    if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
       least_common_supertype(env, call, types, ti_var_types, tiid->v(), TIOcc(i));
     }
   }
@@ -308,7 +308,7 @@ private:
   std::unordered_set<Call*> _seen;
   /// Operators (BinOp/UnOp) calling a polymorphic function with a body, each paired with a call
   /// that stands in for the operator during specialisation
-  std::vector<std::pair<Expression*, KeepAlive>> _operators;
+  std::vector<std::pair<Expression*, Ref<Expression>>> _operators;
 
 public:
   void push(Call* c) {
@@ -323,8 +323,7 @@ public:
   /// Specialise operator \a op (with arguments \a args) like a call to its function
   void pushOperator(Expression* op, FunctionI* decl, const ASTString& id,
                     const std::vector<Expression*>& args) {
-    GCLock lock;
-    Call* shadow = Call::a(Expression::loc(op).introduce(), id, args);
+    Ref<Call> shadow = Call::a(Expression::loc(op).introduce(), id, args);
     shadow->decl(decl);
     shadow->type(Expression::type(op));
     _operators.emplace_back(op, shadow);
@@ -333,7 +332,7 @@ public:
   /// Point the operators to the specialised functions of their stand-in calls
   void finishOperators() {
     for (auto& op : _operators) {
-      FunctionI* decl = Expression::cast<Call>(op.second())->decl();
+      FunctionI* decl = Expression::cast<Call>(op.second)->decl();
       if (auto* bo = Expression::dynamicCast<BinOp>(op.first)) {
         bo->decl(decl);
       } else {
@@ -415,7 +414,7 @@ public:
         _typer(typer),
         _specialised(new Model) {}
 
-  static bool walkTIMap(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* struct_ti,
+  static bool walkTIMap(EnvI& env, std::unordered_map<ASTString, Type>& ti_map, TypeInst* struct_ti,
                         StructType* tt) {
     auto* al = Expression::cast<ArrayLit>(struct_ti->domain());
     assert(al->size() == tt->size() ||
@@ -448,7 +447,8 @@ public:
       }
       curType.typeId(concrete_type.typeId());
       ti->type(curType);
-      if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+      // (a Ref: the code below may replace the domain that owns tiid)
+      if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
         // The TIId `$T` binds to the underlying type without the parameter-level
         // var modifier (the `var` in `var $T` decorates the parameter, not $T).
         // Store the par form so later uses of $T (in other parameters or the
@@ -497,7 +497,7 @@ public:
         }
       }
       for (unsigned int j = 0; j < ti->ranges().size(); j++) {
-        if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
+        if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->ranges()[j]->domain())) {
           if (tiid->isEnum()) {
             // find concrete enum type
             if (curType.typeId() == 0) {
@@ -519,11 +519,11 @@ public:
           } else {
             ti_map.emplace(tiid->v(), Type::parint(curType.dim()));
             // add concrete number of ranges
-            std::vector<TypeInst*> newRanges(curType.dim());
+            std::vector<Ref<TypeInst>> newRanges(curType.dim());
             for (int k = 0; k < curType.dim(); k++) {
-              newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+              newRanges[k] = make<TypeInst>(Location().introduce(), Type::parint());
             }
-            ti->setRanges(newRanges);
+            ti->setRanges(raw(newRanges));
             break;  // only one general tiid allowed in index set
           }
         }
@@ -551,7 +551,8 @@ public:
     return true;
   }
 
-  static void updateReturnTypeInst(EnvI& env, ASTStringMap<Type>& ti_map, TypeInst* ti) {
+  static void updateReturnTypeInst(EnvI& env, std::unordered_map<ASTString, Type>& ti_map,
+                                   TypeInst* ti) {
     if (ti->type().structBT()) {
       auto* al = Expression::cast<ArrayLit>(ti->domain());
       auto* st = env.getStructType(ti->type());
@@ -566,7 +567,7 @@ public:
       ti_t.ti(isVar ? Type::TI_VAR : Type::TI_PAR);
       ti_t.typeId(ti_tid);
       ti->type(ti_t);
-    } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+    } else if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
       Type ret_type = ti_map.find(tiid->v())->second;
       if (ret_type.dim() != 0 && ti->type().dim() == 0) {
         ret_type = ret_type.elemType(env);
@@ -602,7 +603,7 @@ public:
     }
     // update index sets in return type
     for (unsigned int i = 0; i < ti->ranges().size(); i++) {
-      if (TIId* tiid = Expression::dynamicCast<TIId>(ti->ranges()[i]->domain())) {
+      if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->ranges()[i]->domain())) {
         Type ret_type = ti_map.find(tiid->v())->second;
         if (tiid->isEnum()) {
           // find concrete enum type
@@ -624,9 +625,9 @@ public:
           }
         } else {
           // add concrete number of ranges
-          std::vector<TypeInst*> newRanges(ret_type.dim());
+          std::vector<Ref<TypeInst>> newRanges(ret_type.dim());
           for (int k = 0; k < ret_type.dim(); k++) {
-            newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+            newRanges[k] = make<TypeInst>(Location().introduce(), Type::parint());
           }
           auto t = ti->type();
           t.typeId(0);
@@ -634,7 +635,7 @@ public:
           // Type ID is actually element type, array will be registered later
           t.typeId(ti->type().typeId());
           ti->type(t);
-          ti->setRanges(newRanges);
+          ti->setRanges(raw(newRanges));
           break;  // only one general tiid allowed in index set
         }
       }
@@ -668,9 +669,8 @@ public:
         VarDecl* enumDecl = _env.getEnum(enumId)->e();
         call->arg(0, enumDecl->id());
       } else {
-        GCLock lock;
-        IntSetVal* inf = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-        call->arg(0, new SetLit(Location().introduce(), inf));
+        Ref<IntSetVal> inf = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+        call->arg(0, make<SetLit>(Location().introduce(), inf));
       }
       FunctionI* newDecl = _env.model->matchFn(_env, call, false);
       call->decl(newDecl);
@@ -740,7 +740,7 @@ public:
 
         // Copy function (without following Ids or copying other function decls)
         _typer.reset(_env, fi);
-        auto* fi_copy = copy(_env, fi, false, false, false)->cast<FunctionI>();
+        auto fi_copy = copy(_env, fi, false, false, false).cast<FunctionI>();
         fi_copy->isMonomorphised(true);
         // Rename copy
         std::ostringstream oss;
@@ -752,7 +752,8 @@ public:
         std::unordered_map<ASTString, Type> ti_map;
         // Update parameter types
         TypeList tt(concrete_types);
-        walkTIMap(_env, ti_map, fi_copy->paramTypes(), &tt);
+        auto paramTypes = fi_copy->paramTypes();
+        walkTIMap(_env, ti_map, paramTypes, &tt);
         // Update VarDecl types based on updated TypeInst objects
         for (unsigned int i = 0; i < fi_copy->paramCount(); ++i) {
           fi_copy->param(i)->type(fi_copy->param(i)->ti()->type());
@@ -768,7 +769,7 @@ public:
           for (unsigned int i = 0; i < fi_copy->paramCount(); i++) {
             args[i] = fi_copy->param(i)->id();
           }
-          Call* body = Call::a(Location().introduce(), fi->id(), args);
+          Ref<Call> body = Call::a(Location().introduce(), fi->id(), args);
           body->decl(fi);
           body->type(fi_copy->ti()->type());
           fi_copy->e(body);
@@ -858,7 +859,6 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
   Instantiator instantiate(env.envi(), agenda, instanceMap, typer);
 
   while (!agenda.empty()) {
-    GCLock lock;
     Call* call = agenda.back();
     agenda.pop();
     instantiate(call);
@@ -919,7 +919,7 @@ public:
 
 void type_demonomorphise_library(Env& e, Model* model) {
   std::vector<FunctionI*> toRename;
-  ASTStringSet functionIds;
+  std::unordered_set<ASTString> functionIds;
   for (auto& fi : model->functions()) {
     if (!fi.fromStdLib()) {
       if (fi.id().beginsWith("\\")) {
@@ -931,7 +931,6 @@ void type_demonomorphise_library(Env& e, Model* model) {
     }
   }
   for (auto* fi : toRename) {
-    GCLock lock;
     std::string ident(fi->id().c_str());
     ident[0] = '_';
     while (functionIds.find(ASTString(ident)) != functionIds.end()) {

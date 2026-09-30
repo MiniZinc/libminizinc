@@ -12,8 +12,7 @@
 #pragma once
 
 #include <minizinc/ast.hh>
-#include <minizinc/astmap.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/warning.hh>
 
 #include <iterator>
@@ -64,13 +63,14 @@ public:
 };
 
 /// A MiniZinc model
-class Model : public GCMarker {
+class Model {
   friend Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
 
 public:
   struct FnEntry {
     std::vector<Type> t;
-    FunctionI* fi;
+    /// The model owns the functions it registers (also those that are not items)
+    Ref<FunctionI> fi;
     bool isPolymorphic;
     bool isPolymorphicVariant;
     FnEntry(EnvI& env, FunctionI* fi0);
@@ -83,28 +83,20 @@ public:
   /// registerFn before the override merge can consume the body-less
   /// declaration.
   struct FnAnchor {
-    FunctionI* fi;  ///< the body-less declaration (source of canonical names)
+    Ref<FunctionI> fi;  ///< the body-less declaration (source of canonical names)
   };
 
 protected:
   /// Add all instances of polymorphic entry \a fe to \a entries
   static void addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<FnEntry>& entries);
 
-  void mark() override {
-    _filepath.mark();
-    _filename.mark();
-    for (auto& _item : _items) {
-      Item::mark(_item);
-    }
-  };
-
   /// Type of map from identifiers to function declarations
-  using FnMap = ASTStringMap<std::vector<FnEntry>>;
+  using FnMap = std::unordered_map<ASTString, std::vector<FnEntry>>;
   /// Map from identifiers to function declarations
   FnMap _fnmap;
 
   /// Type of map from identifiers to their name-authority anchors
-  using FnAnchorMap = ASTStringMap<std::vector<FnAnchor>>;
+  using FnAnchorMap = std::unordered_map<ASTString, std::vector<FnAnchor>>;
   /// Body-less declarations that fix the canonical parameter names for their
   /// overload family, captured in registerFn keyed by identifier. Populated
   /// eagerly because the override merge in registerFn replaces a body-less
@@ -141,10 +133,10 @@ public:
   /// Construct empty model
   Model();
   /// Destructor
-  ~Model() override;
+  ~Model();
 
   /// Add \a i to the model
-  void addItem(Item* i);
+  void addItem(Arg<Item> i);
 
   /// Get parent model
   Model* parent() const { return _parent; }

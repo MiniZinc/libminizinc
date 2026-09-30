@@ -12,12 +12,14 @@
 #pragma once
 
 #include <minizinc/exception.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -651,14 +653,14 @@ public:
   }
 
   /// Allocate empty set from context
-  static IntSetVal* a() {
+  static Ref<IntSetVal> a() {
     auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(0));
     new (r) IntSetVal();
     return r;
   }
 
   /// Allocate set \f$\{m,n\}\f$ from context
-  static IntSetVal* a(IntVal m, IntVal n) {
+  static Ref<IntSetVal> a(IntVal m, IntVal n) {
     if (m > n) {
       return a();
     }
@@ -669,7 +671,7 @@ public:
 
   /// Allocate set using iterator \a i
   template <class I>
-  static IntSetVal* ai(I& i) {
+  static Ref<IntSetVal> ai(I& i) {
     std::vector<Range> s;
     for (; i(); ++i) {
       s.push_back(Range(i.min(), i.max()));
@@ -680,7 +682,7 @@ public:
   }
 
   /// Allocate set from vector \a s0 (may contain duplicates)
-  static IntSetVal* a(const std::vector<IntVal>& s0) {
+  static Ref<IntSetVal> a(const std::vector<IntVal>& s0) {
     if (s0.empty()) {
       return a();
     }
@@ -703,7 +705,7 @@ public:
     new (r) IntSetVal(ranges);
     return r;
   }
-  static IntSetVal* a(const std::vector<Range>& ranges) {
+  static Ref<IntSetVal> a(const std::vector<Range>& ranges) {
     auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) IntSetVal(ranges);
     return r;
@@ -734,9 +736,6 @@ public:
     }
     return true;
   }
-
-  /// Mark for garbage collection
-  void mark() { _gcMark = 1; }
 };
 
 /// Iterator over an IntSetVal
@@ -888,14 +887,14 @@ public:
   }
 
   /// Allocate empty set from context
-  static FloatSetVal* a() {
+  static Ref<FloatSetVal> a() {
     auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(0));
     new (r) FloatSetVal();
     return r;
   }
 
   /// Allocate set \f$\{m,n\}\f$ from context
-  static FloatSetVal* a(FloatVal m, FloatVal n) {
+  static Ref<FloatSetVal> a(FloatVal m, FloatVal n) {
     if (m > n) {
       return a();
     }
@@ -906,7 +905,7 @@ public:
 
   /// Allocate set using iterator \a i
   template <class I>
-  static FloatSetVal* ai(I& i) {
+  static Ref<FloatSetVal> ai(I& i) {
     std::vector<Range> s;
     for (; i(); ++i) {
       s.push_back(Range(i.min(), i.max()));
@@ -917,7 +916,7 @@ public:
   }
 
   /// Allocate set from vector \a s0 (may contain duplicates)
-  static FloatSetVal* a(const std::vector<FloatVal>& s0) {
+  static Ref<FloatSetVal> a(const std::vector<FloatVal>& s0) {
     if (s0.empty()) {
       return a();
     }
@@ -940,7 +939,7 @@ public:
     new (r) FloatSetVal(ranges);
     return r;
   }
-  static FloatSetVal* a(const std::vector<Range>& ranges) {
+  static Ref<FloatSetVal> a(const std::vector<Range>& ranges) {
     auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) FloatSetVal(ranges);
     return r;
@@ -971,9 +970,6 @@ public:
     }
     return true;
   }
-
-  /// Mark for garbage collection
-  void mark() { _gcMark = 1; }
 };
 
 /// Iterator over an IntSetVal

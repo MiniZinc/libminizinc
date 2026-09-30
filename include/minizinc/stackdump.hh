@@ -20,8 +20,6 @@ namespace MiniZinc {
 class EnvI;
 class Expression;
 
-// IMPORTANT: StackDump currently depends on the warning/error keeping the expression in _stack
-// alive from their marking member function.
 class StackDump {
 public:
   StackDump(EnvI& env);
@@ -30,15 +28,9 @@ public:
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
 
-  void mark() {
-    for (auto pair : _stack) {
-      Expression::mark(pair.first);
-    }
-  }
-
 private:
   EnvI* _env;
-  std::vector<std::pair<Expression*, bool>> _stack;
+  std::vector<std::pair<Ref<Expression>, bool>> _stack;
 };
 
 }  // namespace MiniZinc

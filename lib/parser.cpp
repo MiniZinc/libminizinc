@@ -58,7 +58,6 @@ void run_parser(MiniZinc::ParserState& pp) {
   }
   // A failed parse may have seen the keyword in syntax that is not supported yet.
   if (pp.futureKeyword != nullptr && !pp.hadError) {
-    MiniZinc::GCLock lock;
     pp.addWarning(MiniZinc::Location(pp.futureKeywordLoc),
                   std::string("`") + pp.futureKeyword +
                       "' will become a reserved word in a future version of MiniZinc; rename "
@@ -75,13 +74,13 @@ namespace {
 /// the (not yet type checked) type-insts of the declarations in the model.
 class DataRecordCompleter {
 private:
-  ASTStringMap<TypeInst*> _decls;
-  ASTStringMap<TypeInst*> _aliases;
+  std::unordered_map<ASTString, TypeInst*> _decls;
+  std::unordered_map<ASTString, TypeInst*> _aliases;
 
   /// Follow type-inst synonyms. Array type-insts are only resolved when \a elem is true, i.e.,
   /// when looking at the type-inst of their elements.
   TypeInst* resolve(TypeInst* ti, bool elem) const {
-    ASTStringSet visited;
+    std::unordered_set<ASTString> visited;
     while (ti != nullptr && (elem || !ti->isarray()) && ti->domain() != nullptr &&
            Expression::isa<Id>(ti->domain())) {
       auto it = _aliases.find(Expression::cast<Id>(ti->domain())->str());
@@ -135,7 +134,7 @@ private:
 
   /// Complete the record literals in \a e, which is a value for type-inst \a ti (or for its
   /// elements if \a elem is true)
-  Expression* complete(Expression* e, TypeInst* ti, bool elem) {
+  Ref<Expression> complete(Expression* e, TypeInst* ti, bool elem) {
     ti = resolve(ti, elem);
     if (e == nullptr || ti == nullptr) {
       return e;
@@ -177,15 +176,15 @@ private:
     if (!collectFields(ti, fieldDefs)) {
       return e;
     }
-    std::vector<Expression*> fields(al->size());
+    std::vector<Ref<Expression>> fields(al->size());
     for (unsigned int i = 0; i < al->size(); ++i) {
       fields[i] = (*al)[i];
     }
     bool addedField = false;
     for (auto* fieldDef : fieldDefs) {
       VarDecl* field = nullptr;
-      for (auto* f : fields) {
-        auto* vd = Expression::dynamicCast<VarDecl>(f);
+      for (const auto& f : fields) {
+        auto* vd = Expression::dynamicCast<VarDecl>(f.get());
         if (vd != nullptr && vd->id()->str() == fieldDef->id()->str()) {
           field = vd;
           break;
@@ -194,17 +193,17 @@ private:
       if (field != nullptr) {
         field->e(complete(field->e(), fieldDef->ti(), false));
       } else if (fieldDef->ti()->type().isOpt() || resolve(fieldDef->ti(), false)->type().isOpt()) {
-        fields.push_back(new VarDecl(Expression::loc(al).introduce(),
-                                     new TypeInst(Expression::loc(al).introduce(), Type()),
-                                     fieldDef->id()->str(), Constants::constants().absent));
+        fields.emplace_back(make<VarDecl>(Expression::loc(al).introduce(),
+                                          make<TypeInst>(Expression::loc(al).introduce(), Type()),
+                                          fieldDef->id()->str(), Constants::constants().absent));
         addedField = true;
       }
     }
     if (!addedField) {
       return e;
     }
-    auto* completed = ArrayLit::constructTuple(Expression::loc(al), fields);
-    Expression::type(completed, Expression::type(al));
+    auto completed = ArrayLit::constructTuple(Expression::loc(al), raw(fields));
+    completed->type(Expression::type(al));
     return completed;
   }
 
@@ -212,11 +211,12 @@ public:
   DataRecordCompleter(Model* m) {
     class Collector : public ItemVisitor {
     private:
-      ASTStringMap<TypeInst*>& _decls;
-      ASTStringMap<TypeInst*>& _aliases;
+      std::unordered_map<ASTString, TypeInst*>& _decls;
+      std::unordered_map<ASTString, TypeInst*>& _aliases;
 
     public:
-      Collector(ASTStringMap<TypeInst*>& decls, ASTStringMap<TypeInst*>& aliases)
+      Collector(std::unordered_map<ASTString, TypeInst*>& decls,
+                std::unordered_map<ASTString, TypeInst*>& aliases)
           : _decls(decls), _aliases(aliases) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
@@ -272,7 +272,6 @@ namespace {
 /// include path of the standard library, which may be a library bundle)
 std::unordered_set<std::string> global_includes(const std::string& stdPath,
                                                 LibraryBundleCache& bundles) {
-  GCLock lock;
   // Read globals file. If it cannot be found, act as if there are no bad files.
   std::string content;
   const LibraryBundle* bundle = bundles.get(stdPath);
@@ -328,13 +327,11 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   string workingDir = FileUtils::working_directory();
 
   if (!filenames.empty()) {
-    GCLock lock;
     auto rootFileName = FileUtils::file_path(filenames[0], workingDir);
     model->setFilename(rootFileName);
     files.emplace_back(model, nullptr, "", rootFileName);
 
     for (unsigned int i = 1; i < filenames.size(); i++) {
-      GCLock lock;
       auto fullName = FileUtils::file_path(filenames[i], workingDir);
       bool isFzn = (fullName.compare(fullName.length() - 4, 4, ".fzn") == 0);
       if (isFzn) {
@@ -345,7 +342,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         files.emplace_back(includedModel, nullptr, "", fullName);
         seenModels.insert(pair<string, Model*>(fullName, includedModel));
         Location loc(ASTString(filenames[i]), 0, 0, 0, 0);
-        auto* inc = new IncludeI(loc, includedModel->filename());
+        auto inc = make<IncludeI>(loc, includedModel->filename());
         inc->m(includedModel, true);
         model->addItem(inc);
       }
@@ -356,18 +353,16 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       files.emplace_back(includedModel, nullptr, modelString, modelStringName, false, true);
       seenModels.insert(pair<string, Model*>(modelStringName, includedModel));
       Location loc(ASTString(modelStringName), 0, 0, 0, 0);
-      auto* inc = new IncludeI(loc, includedModel->filename());
+      auto inc = make<IncludeI>(loc, includedModel->filename());
       inc->m(includedModel, true);
       model->addItem(inc);
     }
   } else if (!modelString.empty()) {
-    GCLock lock;
     model->setFilename(modelStringName);
     files.emplace_back(model, nullptr, modelString, modelStringName, false, true);
   }
 
   auto include_file = [&](const std::string& libname, bool builtin) {
-    GCLock lock;
     auto* lib = new Model;
     std::string fullname;
     for (const auto& ip : includePaths) {
@@ -389,7 +384,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     files.emplace_back(lib, nullptr, "./", fullname, builtin);
     seenModels.insert(pair<string, Model*>(fullname, lib));
     Location libloc(ASTString(model->filename()), 0, 0, 0, 0);
-    auto* libinc = new IncludeI(libloc, ASTString(libname));
+    auto libinc = make<IncludeI>(libloc, ASTString(libname));
     libinc->m(lib, true);
     model->addItem(libinc);
   };
@@ -405,7 +400,6 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   // }
 
   while (!files.empty()) {
-    GCLock lock;
     ParseWorkItem& np = files.back();
     string parentPath = np.dirName;
     Model* m = np.m;
@@ -484,7 +478,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         files.emplace_back(includedModel, nullptr, "", deprecatedName, isSTDLib, false);
         seenModels.insert(pair<string, Model*>(deprecatedName, includedModel));
         Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
-        auto* inc = new IncludeI(loc, includedModel->filename());
+        auto inc = make<IncludeI>(loc, includedModel->filename());
         inc->m(includedModel, true);
         m->addItem(inc);
         files.emplace_back(includedModel, inc, deprecatedDirName, deprecatedFullPath, isSTDLib,
@@ -534,7 +528,6 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   std::unique_ptr<DataRecordCompleter> recordCompleter;
   for (const auto& f : datafiles) {
-    GCLock lock;
     if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
       JSONParser jp(env.envi());
       jp.parse(model, f, true);
@@ -583,10 +576,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
   }
 
   Model* model;
-  {
-    GCLock lock;
-    model = new Model();
-  }
+  model = new Model();
   try {
     parse(env, model, filenames, datafiles, textModel, textModelName, includePaths,
           checkGlobalOverrides, isFlatZinc, ignoreStdlib, parseDocComments, verbose, err);
@@ -613,10 +603,7 @@ Model* parse_from_string(Env& env, const string& text, const string& filename,
   vector<string> filenames;
   vector<string> datafiles;
   Model* model;
-  {
-    GCLock lock;
-    model = new Model();
-  }
+  model = new Model();
   try {
     parse(env, model, filenames, datafiles, text, filename, includePaths, false, isFlatZinc,
           ignoreStdlib, parseDocComments, verbose, err);

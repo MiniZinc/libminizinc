@@ -20,14 +20,13 @@ EE flatten_anon(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
   if (av->type().isbot()) {
     throw InternalError("type of anonymous variable could not be inferred");
   }
-  GCLock lock;
-  auto* ti = new TypeInst(Location().introduce(), av->type());
+  auto ti = make<TypeInst>(Location().introduce(), av->type());
   if (av->type().bt() == Type::BT_INT && av->type().typeId() != 0) {
     // Ensure enums are bounded by their defining set
     auto* enumVdi = env.getEnum(av->type().typeId());
     ti->domain(eval_par(env, enumVdi->e()->id()));
   }
-  VarDecl* vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
+  Ref<VarDecl> vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
   ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
   ret.r = bind(env, ctx, r, vd->id());
   return ret;

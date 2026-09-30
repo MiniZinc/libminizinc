@@ -220,7 +220,7 @@ public:
   std::vector<VarDecl*> varsWithOutput;
   /// declaration map for processing and printing output
   // typedef std::pair<VarDecl*,Expression*> DE;
-  // ASTStringMap<DE>::t _declmap;
+  // std::unordered_map<ASTString, DE>::t _declmap;
   /// TODO: we can probably get rid of this
   std::unordered_map<VarDecl*, std::vector<Expression*>*> arrayMap;
   /// The solver engine
@@ -242,7 +242,7 @@ public:
   void printStatistics() override;
 
   void processSolution(bool last_sol = false);
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
 
   Gecode::Space* getGecodeModel();
 
@@ -274,7 +274,7 @@ public:
                                     const Gecode::IntSet& od = Gecode::IntSet::empty);
 #endif
   /// convert \a arg to an ArrayLit (throws InternalError if not possible)
-  ArrayLit* arg2arraylit(Expression* arg);
+  Ref<ArrayLit> arg2arraylit(Expression* arg);
   /// Check if \a b is array of Booleans (or has a single integer)
   bool isBoolArray(ArrayLit* a, int& singleInt);
 #ifdef GECODE_HAS_FLOAT_VARS

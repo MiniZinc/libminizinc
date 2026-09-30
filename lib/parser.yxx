@@ -22,6 +22,8 @@
 %lex-param {void* SCANNER}
 %{
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
+/// Hand a new node to the parser state, which owns it until a parent node or the model does
+#define KEEP(e) static_cast<ParserState*>(parm)->owned.keep(e)
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -108,10 +110,10 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
   return true;
 }
 
-Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
+Expression* createDocComment(void* parm, const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
-  args[0] = new StringLit(loc, s);
-  Call* c = Call::a(Location(loc), Constants::constants().ann.doc_comment, args);
+  args[0] = KEEP(make<StringLit>(loc, s));
+  Call* c = KEEP(Call::a(Location(loc), Constants::constants().ann.doc_comment, args));
   Expression::type(c, Type::ann());
   return c;
 }
@@ -149,7 +151,7 @@ IntVal fast_strtointval(const std::string& s) {
   return x;
 }
 
-void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
+void parseFieldTail(void* parm, const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
   auto it = tail.begin();
   auto isWS = [&]() {
     return (*it == ' ' || *it == '\f' || *it == '\xd' || *it == '\t');
@@ -186,11 +188,11 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
     Expression* field_expr = nullptr;
     if (is_num) {
       IntVal fieldVal = MiniZinc::fast_strtointval(field);
-      field_expr = IntLit::a(fieldVal);
+      field_expr = KEEP(IntLit::a(fieldVal));
     } else {
-      field_expr = new Id(loc, field, nullptr);
+      field_expr = KEEP(make<Id>(loc, field, nullptr));
     }
-    parsed.push_back({ new FieldAccess(loc, nullptr, field_expr) });
+    parsed.push_back({ KEEP(make<FieldAccess>(loc, nullptr, field_expr)) });
   }
 }
 
@@ -222,7 +224,6 @@ void parseFieldTail(const ParserLocation& loc, std::vector<Expression*>& parsed,
 
 %initial-action
 {
-  GCLock lock;
   ParserState* pp0 = static_cast<ParserState*>(parm);
   @$.filename(ASTString(pp0->filename));
   // Files parsed out of a library bundle start at the line they occupy in the bundle
@@ -409,36 +410,32 @@ item_list_head:
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($1) {
           pp->model->addItem($1);
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     | doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($2) {
           pp->model->addItem($2);
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     | item_list_head ';' item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($3) {
           pp->model->addItem($3);
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     | item_list_head ';' doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($4) {
           pp->model->addItem($4);
-          GC::unlock();
-          GC::lock();
         }
+        pp->owned.clear();  // (the model owns the item, and nothing else is on the stack)
       }
     | item error_item_start
 { yyerror(&@2, parm, "unexpected item, expecting ';' or end of file"); YYERROR; }
@@ -469,11 +466,11 @@ item : MZN_DOC_COMMENT item_tail
         ParserState* pp = static_cast<ParserState*>(parm);
         if (FunctionI* fi = Item::dynamicCast<FunctionI>($$)) {
           if (pp->parseDocComments) {
-            fi->ann().add(createDocComment(@1,$1));
+            fi->ann().add(createDocComment(parm,@1,$1));
           }
         } else if (VarDeclI* vdi = Item::dynamicCast<VarDeclI>($$)) {
           if (pp->parseDocComments) {
-            Expression::addAnnotation(vdi->e(), createDocComment(@1,$1));
+            Expression::addAnnotation(vdi->e(), createDocComment(parm,@1,$1));
           }
         } else {
           yyerror(&@2, parm, "documentation comments are only supported for function, predicate and variable declarations");
@@ -511,7 +508,7 @@ include_item :
       { ParserState* pp = static_cast<ParserState*>(parm);
         string canonicalName=pp->canonicalFilename($2);
         map<string,Model*>::iterator ret = pp->seenModels.find(canonicalName);
-        IncludeI* ii = new IncludeI(@$,ASTString($2));
+        IncludeI* ii = KEEP(make<IncludeI>(@$,ASTString($2)));
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
@@ -552,9 +549,9 @@ vardecl_item :
       }
     | MZN_ENUM MZN_IDENTIFIER annotations
       {
-        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        TypeInst* ti = KEEP(make<TypeInst>(@$,Type::parsetint()));
         ti->setIsEnum(true);
-        VarDecl* vd = new VarDecl(@$,ti,$2);
+        VarDecl* vd = KEEP(make<VarDecl>(@$,ti,$2));
         if ($2 && $3) {
           Expression::addAnnotations(vd, *$3);
         }
@@ -564,16 +561,16 @@ vardecl_item :
     | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ enum_init
       { warnDoubleEqualsAssignment(&@4, parm, $4);
         if ($5) {
-          TypeInst* ti = new TypeInst(@$,Type::parsetint());
+          TypeInst* ti = KEEP(make<TypeInst>(@$,Type::parsetint()));
           ti->setIsEnum(true);
           Expression* e;
           if ($5->size()==1) {
             e = (*$5)[0];
           } else {
-            ArrayLit* al = new ArrayLit(@$,*$5);
-            e = Call::a(@$, ASTString("enumFromConstructors"), {al});
+            ArrayLit* al = KEEP(make<ArrayLit>(@$,*$5));
+            e = KEEP(Call::a(@$, ASTString("enumFromConstructors"), {al}));
           }
-          VarDecl* vd = new VarDecl(@$,ti,$2,e);
+          VarDecl* vd = KEEP(make<VarDecl>(@$,ti,$2,e));
           if ($2 && $3) {
             Expression::addAnnotations(vd, *$3);
           }
@@ -586,12 +583,12 @@ vardecl_item :
       }
     | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ MZN_LEFT_BRACKET string_lit_list MZN_RIGHT_BRACKET
       { warnDoubleEqualsAssignment(&@4, parm, $4);
-        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        TypeInst* ti = KEEP(make<TypeInst>(@$,Type::parsetint()));
         ti->setIsEnum(true);
         vector<Expression*> args;
-        args.push_back(new ArrayLit(@$,*$6));
-        Call* sl = Call::a(@$, Constants::constants().ids.anonEnumFromStrings, args);
-        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        args.push_back(KEEP(make<ArrayLit>(@$,*$6)));
+        Call* sl = KEEP(Call::a(@$, Constants::constants().ids.anonEnumFromStrings, args));
+        VarDecl* vd = KEEP(make<VarDecl>(@$,ti,$2,sl));
         if ($2 && $3) {
           Expression::addAnnotations(vd, *$3);
         }
@@ -602,7 +599,7 @@ vardecl_item :
     | MZN_TYPE MZN_IDENTIFIER annotations MZN_EQ ti_expr
       { warnDoubleEqualsAssignment(&@4, parm, $4);
         TypeInst* ti = $5;
-        VarDecl* vd = new VarDecl(@$, nullptr, $2, ti);
+        VarDecl* vd = KEEP(make<VarDecl>(@$, nullptr, $2, ti));
         if ($3) {
           Expression::addAnnotations(vd, *$3);
         }
@@ -626,18 +623,18 @@ enum_init :
 enum_construct :
       '{' enum_id_list comma_or_none '}'
       {
-        $$ = new SetLit(@$, *$2);
+        $$ = KEEP(make<SetLit>(@$, *$2));
         delete $2;
       }
     | MZN_IDENTIFIER '(' expr ')'
       {
         vector<Expression*> args({$3});
-        $$ = Call::a(@$, ASTString($1), args);
+        $$ = KEEP(Call::a(@$, ASTString($1), args));
         free($1);
       }
     | MZN_UNDERSCORE '(' expr ')'
       {
-        $$ = Call::a(@$, Constants::constants().ids.anon_enum_set, {$3});
+        $$ = KEEP(Call::a(@$, Constants::constants().ids.anon_enum_set, {$3}));
       }
 
 string_lit_list :
@@ -645,11 +642,11 @@ string_lit_list :
       { $$ = new std::vector<Expression*>(); }
     | MZN_STRING_LITERAL
       { $$ = new std::vector<Expression*>();
-        $$->push_back(new StringLit(@$, $1)); free($1);
+        $$->push_back(KEEP(make<StringLit>(@$, $1))); free($1);
       }
     | string_lit_list ',' MZN_STRING_LITERAL
       { $$ = $1;
-        if ($$) $$->push_back(new StringLit(@$, $3));
+        if ($$) $$->push_back(KEEP(make<StringLit>(@$, $3)));
         free($3);
       }
 
@@ -658,16 +655,16 @@ enum_id_list :
       { $$ = new std::vector<Expression*>(); }
     | MZN_IDENTIFIER
       { $$ = new std::vector<Expression*>();
-        $$->push_back(new Id(@$,$1,nullptr)); free($1);
+        $$->push_back(KEEP(make<Id>(@$,$1,nullptr))); free($1);
       }
     | enum_id_list ',' MZN_IDENTIFIER
-      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,nullptr)); free($3); }
+      { $$ = $1; if ($$) $$->push_back(KEEP(make<Id>(@$,$3,nullptr))); free($3); }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
       { warnDoubleEqualsAssignment(&@2, parm, $2);
         if ($3) {
-          $$ = new AssignI(@$,$1,$3);
+          $$ = KEEP(make<AssignI>(@$,$1,$3));
         } else {
           $$ = nullptr;
         }
@@ -676,37 +673,37 @@ assign_item :
 
 constraint_item :
       MZN_CONSTRAINT expr
-      { $$ = new ConstraintI(@$,$2);}
+      { $$ = KEEP(make<ConstraintI>(@$,$2));}
     | MZN_CONSTRAINT MZN_COLONCOLON string_expr expr
-      { $$ = new ConstraintI(@$,$4);
+      { $$ = KEEP(make<ConstraintI>(@$,$4));
         if ($4 && $3)
-          Expression::ann($$->cast<ConstraintI>()->e()).add(Call::a(@2, ASTString("mzn_constraint_name"), {$3}));
+          Expression::ann($$->cast<ConstraintI>()->e()).add(KEEP(Call::a(@2, ASTString("mzn_constraint_name"), {$3})));
       }
 
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
-      { $$ = SolveI::sat(@$);
+      { $$ = KEEP(SolveI::sat(@$));
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MINIMIZE expr
-      { $$ = SolveI::min(@$,$4);
+      { $$ = KEEP(SolveI::min(@$,$4));
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
     | MZN_SOLVE annotations MZN_MAXIMIZE expr
-      { $$ = SolveI::max(@$,$4);
+      { $$ = KEEP(SolveI::max(@$,$4));
         if ($$ && $2) $$->cast<SolveI>()->ann().add(*$2);
         delete $2;
       }
 
 output_item :
         MZN_OUTPUT expr
-      { $$ = new OutputI(@$,$2); }
+      { $$ = KEEP(make<OutputI>(@$,$2)); }
       | MZN_OUTPUT MZN_COLONCOLON output_annotation expr
-      { $$ = new OutputI(@$,$4);
+      { $$ = KEEP(make<OutputI>(@$,$4));
         if ($$ && $3) {
-          $$->cast<OutputI>()->ann().add(Call::a(@$, ASTString("mzn_output_section"), {$3}));
+          $$->cast<OutputI>()->ann().add(KEEP(Call::a(@$, ASTString("mzn_output_section"), {$3})));
         }
       }
 
@@ -714,9 +711,9 @@ output_annotation :
         string_expr
       { $$ = $1; }
       | MZN_IDENTIFIER '(' ')'
-      { $$ = Call::a(@$, $1, std::vector<Expression*>()); free($1); }
+      { $$ = KEEP(Call::a(@$, $1, std::vector<Expression*>())); free($1); }
       | MZN_IDENTIFIER '(' expr_list ')'
-      { $$ = Call::a(@$, $1, *$3); free($1); }
+      { $$ = KEEP(Call::a(@$, $1, *$3)); free($1); }
       | '(' expr ')'
       { $$ = $2; }
 
@@ -726,8 +723,8 @@ predicate_item :
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($3 && $4) $3->push_back($4);
         if ($3) {
-          $$ = new FunctionI(@$,ASTString($2),new TypeInst(@$,
-                             Type::varbool()),*$3,$6,pp->isSTDLib,$4 != nullptr);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($2),KEEP(make<TypeInst>(@$,
+                             Type::varbool())),*$3,$6,pp->isSTDLib,$4 != nullptr));
         } else {
           $$ = nullptr;
         }
@@ -741,8 +738,8 @@ predicate_item :
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($3 && $4) $3->push_back($4);
         if ($3) {
-          $$ = new FunctionI(@$,ASTString($2),new TypeInst(@$,
-                             Type::parbool()),*$3,$6,pp->isSTDLib,$4 != nullptr);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($2),KEEP(make<TypeInst>(@$,
+                             Type::parbool())),*$3,$6,pp->isSTDLib,$4 != nullptr));
         } else {
          $$ = nullptr;
        }
@@ -755,8 +752,8 @@ predicate_item :
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($4 && $5) $4->push_back($5);
-        if ($4) { $$ = new FunctionI(@$,ASTString(std::string($2)+"⁻¹"),new TypeInst(@$,
-                                     Type::varbool()),*$4,$7,pp->isSTDLib,$5 != nullptr);
+        if ($4) { $$ = KEEP(make<FunctionI>(@$,ASTString(std::string($2)+"⁻¹"),KEEP(make<TypeInst>(@$,
+                                     Type::varbool())),*$4,$7,pp->isSTDLib,$5 != nullptr));
         } else {
           $$ = nullptr;
         }
@@ -770,8 +767,8 @@ predicate_item :
         ParserState* pp = static_cast<ParserState*>(parm);
         if ($4 && $5) $4->push_back($5);
         if ($4) {
-          $$ = new FunctionI(@$,ASTString(std::string($2)+"⁻¹"),new TypeInst(@$,
-                             Type::parbool()),*$4,$7,pp->isSTDLib,$5 != nullptr);
+          $$ = KEEP(make<FunctionI>(@$,ASTString(std::string($2)+"⁻¹"),KEEP(make<TypeInst>(@$,
+                             Type::parbool())),*$4,$7,pp->isSTDLib,$5 != nullptr));
         } else {
           $$ = nullptr;
         }
@@ -791,7 +788,7 @@ function_item :
           yyerror(&@2, parm, "return type cannot have `any' type-inst without type-inst variable");
         }
         if ($5)  {
-          $$ = new FunctionI(@$,ASTString($4),$2,*$5,$8,pp->isSTDLib,$6 != nullptr);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($4),$2,*$5,$8,pp->isSTDLib,$6 != nullptr));
         } else {
           $$ = nullptr;
         }
@@ -823,7 +820,7 @@ function_item :
         }
         if ($5 && $7) $5->push_back($7);
         if ($5) {
-          $$ = new FunctionI(@$,ASTString($3),$1,*$5,$9,pp->isSTDLib,$7 != nullptr);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($3),$1,*$5,$9,pp->isSTDLib,$7 != nullptr));
         } else {
           $$ = nullptr;
         }
@@ -837,12 +834,12 @@ annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        TypeInst* ti=new TypeInst(@1,Type::ann());
+        TypeInst* ti=KEEP(make<TypeInst>(@1,Type::ann()));
         if ($3==nullptr || $3->empty()) {
-          VarDecl* vd = new VarDecl(@$,ti,$2);
+          VarDecl* vd = KEEP(make<VarDecl>(@$,ti,$2));
           $$ = VarDeclI::a(@$,vd);
         } else {
-          $$ = new FunctionI(@$,ASTString($2),ti,*$3,nullptr,pp->isSTDLib);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($2),ti,*$3,nullptr,pp->isSTDLib));
         }
         free($2);
         delete $3;
@@ -850,9 +847,9 @@ annotation_item :
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
       { warnDoubleEqualsAssignment(&@4, parm, $4);
         ParserState* pp = static_cast<ParserState*>(parm);
-        TypeInst* ti=new TypeInst(@1,Type::ann());
+        TypeInst* ti=KEEP(make<TypeInst>(@1,Type::ann()));
         if ($3) {
-          $$ = new FunctionI(@$,ASTString($2),ti,*$3,$5,pp->isSTDLib);
+          $$ = KEEP(make<FunctionI>(@$,ASTString($2),ti,*$3,$5,pp->isSTDLib));
         } else {
           $$ = nullptr;
         }
@@ -864,9 +861,9 @@ ann_param :
       { $$=nullptr; }
     | MZN_ANN ':' MZN_IDENTIFIER
       { if ($3) {
-          auto* ident = new Id(@3, $3, nullptr);
-          auto* ti = new TypeInst(@$,Type::ann(1));
-          $$ = new VarDecl(@$, ti, ident);
+          auto* ident = KEEP(make<Id>(@3, $3, nullptr));
+          auto* ti = KEEP(make<TypeInst>(@$,Type::ann(1)));
+          $$ = KEEP(make<VarDecl>(@$, ti, ident));
           $$->toplevel(false);
         } else {
           $$ = nullptr;
@@ -942,7 +939,7 @@ ti_expr_and_id_or_anon :
       }
     | ti_expr
       { if ($1) {
-          $$=new VarDecl(@$, $1, "");
+          $$=KEEP(make<VarDecl>(@$, $1, ""));
         } else {
           $$ = nullptr;
         }
@@ -951,8 +948,8 @@ ti_expr_and_id_or_anon :
 ti_expr_and_id :
       ti_expr ':' MZN_IDENTIFIER annotations
       { if ($1 && $3) {
-          Id* ident = new Id(@3, $3, nullptr);
-          $$ = new VarDecl(@$, $1, ident);
+          Id* ident = KEEP(make<Id>(@3, $3, nullptr));
+          $$ = KEEP(make<VarDecl>(@$, $1, ident));
           if ($4) Expression::ann($$).add(*$4);
         } else {
           $$ = nullptr;
@@ -994,16 +991,16 @@ array_index_entry :
     | MZN_IDENTIFIER MZN_IN set_expr
       {
         if ($3 != nullptr) {
-          Id* binder = new Id(@1, $1, nullptr);
+          Id* binder = KEEP(make<Id>(@1, $1, nullptr));
           // Wrap the set expression in a TypeInst so the marker carries the
           // same shape as it did when this production accepted a ti_expr.
-          TypeInst* range_ti = new TypeInst(@3, Type(), $3);
+          TypeInst* range_ti = KEEP(make<TypeInst>(@3, Type(), $3));
           // Index-binder marker: 2-tuple (range_ti, binder).  Distinguishable
           // from a set-cardinality marker (which has a TypeInst at index 1)
           // by carrying the TypeInst at index 0 and the binder Id at index 1.
           ArrayLit* marker =
-            ArrayLit::constructTuple(@$, std::vector<Expression*>({range_ti, binder}));
-          $$ = new TypeInst(@$, Type(), marker);
+            KEEP(ArrayLit::constructTuple(@$, std::vector<Expression*>({range_ti, binder})));
+          $$ = KEEP(make<TypeInst>(@$, Type(), marker));
         } else {
           $$ = nullptr;
         }
@@ -1015,7 +1012,7 @@ ti_expr :
     | MZN_ARRAY MZN_LEFT_BRACKET array_index_list MZN_RIGHT_BRACKET MZN_OF ti_expr  %prec MZN_NOT
       {
         if ($6 != nullptr && $6->isarray()) {
-          $$ = new TypeInst(@$, Type::tuple(), $6);
+          $$ = KEEP(make<TypeInst>(@$, Type::tuple(), $6));
         } else {
           $$ = $6;
         }
@@ -1032,14 +1029,14 @@ ti_expr :
         // set when a value is bound to it (see check_index_sets), while call arguments
         // are coerced 1-based with array1d during type-checking.
         if ($3 != nullptr && $3->isarray()) {
-          $$ = new TypeInst(@$, Type::tuple(), $3);
+          $$ = KEEP(make<TypeInst>(@$, Type::tuple(), $3));
         } else {
           $$ = $3;
         }
         std::vector<TypeInst*> ti(1);
-        ti[0] = new TypeInst(@$, Type(),
-                             new BinOp(@$, IntLit::a(1), BOT_DOTDOT,
-                                       IntLit::a(IntVal::infinity())));
+        ti[0] = KEEP(make<TypeInst>(@$, Type(),
+                             KEEP(make<BinOp>(@$, KEEP(IntLit::a(1)), BOT_DOTDOT,
+                                       KEEP(IntLit::a(IntVal::infinity()))))));
         if ($$ != nullptr){
           $$->setRanges(ti);
         }
@@ -1050,8 +1047,8 @@ ti_expr :
         if ($$ != nullptr) {
           Type tt = Expression::type($$);
           tt.dim(0);
-          TypeInst* lhs = new TypeInst(@$, tt, $1->domain());
-          BinOp* bop = new BinOp(@$, lhs, BOT_PLUSPLUS, $3);
+          TypeInst* lhs = KEEP(make<TypeInst>(@$, tt, $1->domain()));
+          BinOp* bop = KEEP(make<BinOp>(@$, lhs, BOT_PLUSPLUS, $3));
           bop->type(tt);
           $$->domain(bop);
         }
@@ -1108,8 +1105,8 @@ base_ti_expr :
           Type tt = Expression::type($6);
           tt.st(Type::ST_SET);
           ArrayLit* card_marker =
-            ArrayLit::constructTuple(@$, std::vector<Expression*>({$3, $6}));
-          $$ = new TypeInst(@$, tt, card_marker);
+            KEEP(ArrayLit::constructTuple(@$, std::vector<Expression*>({$3, $6})));
+          $$ = KEEP(make<TypeInst>(@$, tt, card_marker));
           $$->setIsEnum($6->isEnum());
         } else {
           $$ = nullptr;
@@ -1163,19 +1160,19 @@ base_ti_expr :
             tt.otExplicit(true);
           }
           ArrayLit* card_marker =
-            ArrayLit::constructTuple(@$, std::vector<Expression*>({$5, $8}));
-          $$ = new TypeInst(@$, tt, card_marker);
+            KEEP(ArrayLit::constructTuple(@$, std::vector<Expression*>({$5, $8})));
+          $$ = KEEP(make<TypeInst>(@$, tt, card_marker));
           $$->setIsEnum($8->isEnum());
         } else {
           $$ = nullptr;
         }
       }
     | MZN_ANY MZN_TI_IDENTIFIER
-      { $$ = new TypeInst(@$,Type::mkAny(),new TIId(@$, $2));
+      { $$ = KEEP(make<TypeInst>(@$,Type::mkAny(),KEEP(make<TIId>(@$, $2))));
         free($2);
       }
     | MZN_ANY
-      { $$ = new TypeInst(@$,Type::mkAny()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::mkAny())); }
 
 opt_opt:
       /* nothing */
@@ -1185,20 +1182,20 @@ opt_opt:
 
 base_ti_expr_tail :
       MZN_INT
-      { $$ = new TypeInst(@$,Type::parint()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::parint())); }
     | MZN_BOOL
-      { $$ = new TypeInst(@$,Type::parbool()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::parbool())); }
     | MZN_FLOAT
-      { $$ = new TypeInst(@$,Type::parfloat()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::parfloat())); }
     | MZN_STRING
-      { $$ = new TypeInst(@$,Type::parstring()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::parstring())); }
     | MZN_ANN
-      { $$ = new TypeInst(@$,Type::ann()); }
+      { $$ = KEEP(make<TypeInst>(@$,Type::ann())); }
     | MZN_TUPLE '(' ti_expr_list ')'
       {
         std::vector<Expression*> tmp($3->begin(), $3->end());
-        ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
-        $$ = new TypeInst(@$, Type::tuple(), al);
+        ArrayLit* al = KEEP(ArrayLit::constructTuple(@$, tmp));
+        $$ = KEEP(make<TypeInst>(@$, Type::tuple(), al));
         delete $3;
       }
     | MZN_RECORD '(' ti_expr_and_id_list ')'
@@ -1207,25 +1204,25 @@ base_ti_expr_tail :
           vd->toplevel(false);
         }
         std::vector<Expression*> tmp($3->begin(), $3->end());
-        ArrayLit* al = ArrayLit::constructTuple(@$, tmp);
-        $$ = new TypeInst(@$, Type::record(), al);
+        ArrayLit* al = KEEP(ArrayLit::constructTuple(@$, tmp));
+        $$ = KEEP(make<TypeInst>(@$, Type::record(), al));
         delete $3;
       }
     | set_expr
       { if ($1) {
-          $$ = new TypeInst(@$,Type(),$1);
+          $$ = KEEP(make<TypeInst>(@$,Type(),$1));
         } else {
           $$ = nullptr;
         }
       }
     | MZN_TI_IDENTIFIER
-      { $$ = new TypeInst(@$,Type::top(),
-                         new TIId(@$, $1));
+      { $$ = KEEP(make<TypeInst>(@$,Type::top(),
+                         KEEP(make<TIId>(@$, $1))));
         free($1);
       }
     | MZN_TI_ENUM_IDENTIFIER
-      { $$ = new TypeInst(@$,Type::parint(),
-                          new TIId(@$, $1));
+      { $$ = KEEP(make<TypeInst>(@$,Type::parint(),
+                          KEEP(make<TIId>(@$, $1))));
         free($1);
       }
 
@@ -1241,13 +1238,13 @@ array_access_expr :
       expr
       { $$ = $1; }
     | MZN_DOTDOT
-      { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
+      { $$=KEEP(make<SetLit>(@$, KEEP(IntSetVal::a(-IntVal::infinity(),IntVal::infinity())))); }
     | MZN_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("'..<'"), {}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {})); }
     | MZN_LE_DOTDOT
-      { $$=Call::a(@$, ASTString("'<..'"), {}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {})); }
     | MZN_LE_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("'<..<'"), {}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {})); }
 
 expr_list : expr_list_head comma_or_none
 
@@ -1264,141 +1261,141 @@ set_expr :
     | set_expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) Expression::addAnnotation($1, $3); $$=$1; }
     | set_expr MZN_UNION set_expr
-      { $$=new BinOp(@$, $1, BOT_UNION, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_UNION, $3)); }
     | set_expr MZN_DIFF set_expr
-      { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_DIFF, $3)); }
     | set_expr MZN_SYMDIFF set_expr
-      { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_SYMDIFF, $3)); }
     | set_expr MZN_DOTDOT set_expr
       { if ($1==nullptr || $3==nullptr) {
           $$ = nullptr;
         } else if (Expression::isa<IntLit>($1) && Expression::isa<IntLit>($3)) {
-          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))));
+          $$=KEEP(make<SetLit>(@$, KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))))));
         } else {
-          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+          $$=KEEP(make<BinOp>(@$, $1, BOT_DOTDOT, $3));
         }
       }
     | set_expr MZN_DOTDOT_LE set_expr
-      { $$=Call::a(@$, ASTString("'..<'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$1, $3})); }
     | set_expr MZN_LE_DOTDOT set_expr
-      { $$=Call::a(@$, ASTString("'<..'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$1, $3})); }
     | set_expr MZN_LE_DOTDOT_LE set_expr
-      { $$=Call::a(@$, ASTString("'<..<'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$1, $3})); }
     | set_expr MZN_DOTDOT
-      { $$=Call::a(@$, ASTString("..o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("..o"), {$1})); }
     | set_expr MZN_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("..<o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("..<o"), {$1})); }
     | set_expr MZN_LE_DOTDOT
-      { $$=Call::a(@$, ASTString("<..o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("<..o"), {$1})); }
     | set_expr MZN_LE_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("<..<o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("<..<o"), {$1})); }
     | MZN_DOTDOT set_expr
-      { $$=Call::a(@$, ASTString("o.."), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o.."), {$2})); }
     | MZN_DOTDOT_LE set_expr
-      { $$=Call::a(@$, ASTString("o..<"), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o..<"), {$2})); }
     | MZN_LE_DOTDOT set_expr
-      { $$=Call::a(@$, ASTString("o<.."), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o<.."), {$2})); }
     | MZN_LE_DOTDOT_LE set_expr
-      { $$=Call::a(@$, ASTString("o<..<"), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o<..<"), {$2})); }
     | MZN_DOTDOT_LE_QUOTED '(' set_expr ',' set_expr ')'
-      { $$=Call::a(@$, ASTString("'..<'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$3, $5})); }
     | MZN_LE_DOTDOT_QUOTED '(' set_expr ',' set_expr ')'
-      { $$=Call::a(@$, ASTString("'<..'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$3, $5})); }
     | MZN_LE_DOTDOT_LE_QUOTED '(' set_expr ',' set_expr ')'
-      { $$=Call::a(@$, ASTString("'<..<'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$3, $5})); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
         } else if (Expression::isa<IntLit>($3) && Expression::isa<IntLit>($5)) {
-          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))));
+          $$=KEEP(make<SetLit>(@$, KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))))));
         } else {
-          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+          $$=KEEP(make<BinOp>(@$, $3, BOT_DOTDOT, $5));
         }
       }
     | MZN_DOTDOT_LE_QUOTED '(' set_expr ')'
-      { $$=Call::a(@$, ASTString("'..<'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$3})); }
     | MZN_LE_DOTDOT_QUOTED '(' set_expr ')'
-      { $$=Call::a(@$, ASTString("'<..'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$3})); }
     | MZN_LE_DOTDOT_LE_QUOTED '(' set_expr ')'
-      { $$=Call::a(@$, ASTString("'<..<'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$3})); }
     | MZN_DOTDOT_QUOTED '(' expr ')'
-      { $$=Call::a(@$, ASTString("'..'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..'"), {$3})); }
     | set_expr MZN_INTERSECT set_expr
-      { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_INTERSECT, $3)); }
     | set_expr MZN_PLUS set_expr
-      { $$=new BinOp(@$, $1, BOT_PLUS, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_PLUS, $3)); }
     | set_expr MZN_MINUS set_expr
-      { $$=new BinOp(@$, $1, BOT_MINUS, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MINUS, $3)); }
     | set_expr MZN_MULT set_expr
-      { $$=new BinOp(@$, $1, BOT_MULT, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MULT, $3)); }
     | set_expr MZN_DIV set_expr
-      { $$=new BinOp(@$, $1, BOT_DIV, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_DIV, $3)); }
     | set_expr MZN_IDIV set_expr
-      { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_IDIV, $3)); }
     | set_expr MZN_MOD set_expr
-      { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MOD, $3)); }
     | set_expr MZN_POW set_expr
-      { $$=new BinOp(@$, $1, BOT_POW, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_POW, $3)); }
     | set_expr MZN_WEAK_PLUS set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~+"), args);
+        $$=KEEP(Call::a(@$, ASTString("~+"), args));
       }
     | set_expr MZN_WEAK_MINUS set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~-"), args);
+        $$=KEEP(Call::a(@$, ASTString("~-"), args));
       }
     | set_expr MZN_WEAK_MULT set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~*"), args);
+        $$=KEEP(Call::a(@$, ASTString("~*"), args));
       }
     | set_expr MZN_WEAK_DIV set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~/"), args);
+        $$=KEEP(Call::a(@$, ASTString("~/"), args));
       }
     | set_expr MZN_WEAK_IDIV set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~div"), args);
+        $$=KEEP(Call::a(@$, ASTString("~div"), args));
       }
     | set_expr MZN_WEAK_EQ set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~="), args);
+        $$=KEEP(Call::a(@$, ASTString("~="), args));
       }
     | set_expr MZN_WEAK_NQ set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~!="), args);
+        $$=KEEP(Call::a(@$, ASTString("~!="), args));
       }
     | set_expr MZN_DEFAULT set_expr
       {
         vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("default"), args);
+        $$=KEEP(Call::a(@$, ASTString("default"), args));
       }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, $2, args);
+        $$=KEEP(Call::a(@$, $2, args));
         free($2);
       }
     | MZN_PLUS set_expr %prec MZN_NOT
-      { $$=new UnOp(@$, UOT_PLUS, $2); }
+      { $$=KEEP(make<UnOp>(@$, UOT_PLUS, $2)); }
     | MZN_MINUS set_expr %prec MZN_NOT
       { if ($2 && Expression::isa<IntLit>($2)) {
-          $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
+          $$ = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>($2))));
         } else if ($2 && Expression::isa<FloatLit>($2)) {
-          $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2)));
+          $$ = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2))));
         } else {
-          $$=new UnOp(@$, UOT_MINUS, $2);
+          $$=KEEP(make<UnOp>(@$, UOT_MINUS, $2));
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a((-9223372036854775807ll)-1); }
+      { $$ = KEEP(IntLit::a((-9223372036854775807ll)-1)); }
 
 ///
 
@@ -1407,179 +1404,179 @@ expr :
     | expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) Expression::addAnnotation($1, $3); $$=$1; }
     | expr MZN_EQUIV expr
-      { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_EQUIV, $3)); }
     | expr MZN_IMPL expr
-      { $$=new BinOp(@$, $1, BOT_IMPL, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_IMPL, $3)); }
     | expr MZN_RIMPL expr
-      { $$=new BinOp(@$, $1, BOT_RIMPL, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_RIMPL, $3)); }
     | expr MZN_OR expr
-      { $$=new BinOp(@$, $1, BOT_OR, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_OR, $3)); }
     | expr MZN_XOR expr
-      { $$=new BinOp(@$, $1, BOT_XOR, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_XOR, $3)); }
     | expr MZN_AND expr
-      { $$=new BinOp(@$, $1, BOT_AND, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_AND, $3)); }
     | expr MZN_LE expr
-      { $$=new BinOp(@$, $1, BOT_LE, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_LE, $3)); }
     | expr MZN_GR expr
-      { $$=new BinOp(@$, $1, BOT_GR, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_GR, $3)); }
     | expr MZN_LQ expr
-      { $$=new BinOp(@$, $1, BOT_LQ, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_LQ, $3)); }
     | expr MZN_GQ expr
-      { $$=new BinOp(@$, $1, BOT_GQ, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_GQ, $3)); }
     | expr MZN_EQ expr
-      { $$=new BinOp(@$, $1, BOT_EQ, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_EQ, $3)); }
     | expr MZN_NQ expr
-      { $$=new BinOp(@$, $1, BOT_NQ, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_NQ, $3)); }
     | expr MZN_IN expr
-      { $$=new BinOp(@$, $1, BOT_IN, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_IN, $3)); }
     | expr MZN_SUBSET expr
-      { $$=new BinOp(@$, $1, BOT_SUBSET, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_SUBSET, $3)); }
     | expr MZN_SUPERSET expr
-      { $$=new BinOp(@$, $1, BOT_SUPERSET, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_SUPERSET, $3)); }
     | expr MZN_UNION expr
-      { $$=new BinOp(@$, $1, BOT_UNION, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_UNION, $3)); }
     | expr MZN_DIFF expr
-      { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_DIFF, $3)); }
     | expr MZN_SYMDIFF expr
-      { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_SYMDIFF, $3)); }
     | expr MZN_DOTDOT expr
       { if ($1==nullptr || $3==nullptr) {
           $$ = nullptr;
         } else if (Expression::isa<IntLit>($1) && Expression::isa<IntLit>($3)) {
-          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))));
+          $$=KEEP(make<SetLit>(@$, KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>($1)),IntLit::v(Expression::cast<IntLit>($3))))));
         } else {
-          $$=new BinOp(@$, $1, BOT_DOTDOT, $3);
+          $$=KEEP(make<BinOp>(@$, $1, BOT_DOTDOT, $3));
         }
       }
     | expr MZN_DOTDOT_LE expr
-      { $$=Call::a(@$, ASTString("'..<'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$1, $3})); }
     | expr MZN_LE_DOTDOT expr
-      { $$=Call::a(@$, ASTString("'<..'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$1, $3})); }
     | expr MZN_LE_DOTDOT_LE expr
-      { $$=Call::a(@$, ASTString("'<..<'"), {$1, $3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$1, $3})); }
     | expr MZN_DOTDOT
-      { $$=Call::a(@$, ASTString("..o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("..o"), {$1})); }
     | expr MZN_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("..<o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("..<o"), {$1})); }
     | expr MZN_LE_DOTDOT
-      { $$=Call::a(@$, ASTString("<..o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("<..o"), {$1})); }
     | expr MZN_LE_DOTDOT_LE
-      { $$=Call::a(@$, ASTString("<..<o"), {$1}); }
+      { $$=KEEP(Call::a(@$, ASTString("<..<o"), {$1})); }
     | MZN_DOTDOT expr
-      { $$=Call::a(@$, ASTString("o.."), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o.."), {$2})); }
     | MZN_DOTDOT_LE expr
-      { $$=Call::a(@$, ASTString("o..<"), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o..<"), {$2})); }
     | MZN_LE_DOTDOT expr
-      { $$=Call::a(@$, ASTString("o<.."), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o<.."), {$2})); }
     | MZN_LE_DOTDOT_LE expr
-      { $$=Call::a(@$, ASTString("o<..<"), {$2}); }
+      { $$=KEEP(Call::a(@$, ASTString("o<..<"), {$2})); }
     | MZN_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
-      { $$=Call::a(@$, ASTString("'..<'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$3, $5})); }
     | MZN_LE_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { $$=Call::a(@$, ASTString("'<..'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$3, $5})); }
     | MZN_LE_DOTDOT_LE_QUOTED '(' expr ',' expr ')'
-      { $$=Call::a(@$, ASTString("'<..<'"), {$3, $5}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$3, $5})); }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
       { if ($3==nullptr || $5==nullptr) {
           $$ = nullptr;
         } else if (Expression::isa<IntLit>($3) && Expression::isa<IntLit>($5)) {
-          $$=new SetLit(@$, IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))));
+          $$=KEEP(make<SetLit>(@$, KEEP(IntSetVal::a(IntLit::v(Expression::cast<IntLit>($3)),IntLit::v(Expression::cast<IntLit>($5))))));
         } else {
-          $$=new BinOp(@$, $3, BOT_DOTDOT, $5);
+          $$=KEEP(make<BinOp>(@$, $3, BOT_DOTDOT, $5));
         }
       }
     | MZN_DOTDOT_LE_QUOTED '(' expr ')'
-      { $$=Call::a(@$, ASTString("'..<'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..<'"), {$3})); }
     | MZN_LE_DOTDOT_QUOTED '(' expr ')'
-      { $$=Call::a(@$, ASTString("'<..'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..'"), {$3})); }
     | MZN_LE_DOTDOT_LE_QUOTED '(' expr ')'
-      { $$=Call::a(@$, ASTString("'<..<'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'<..<'"), {$3})); }
     | MZN_DOTDOT_QUOTED '(' expr ')'
-      { $$=Call::a(@$, ASTString("'..'"), {$3}); }
+      { $$=KEEP(Call::a(@$, ASTString("'..'"), {$3})); }
     | expr MZN_INTERSECT expr
-      { $$=new BinOp(@$, $1, BOT_INTERSECT, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_INTERSECT, $3)); }
     | expr MZN_PLUSPLUS expr
-      { $$=new BinOp(@$, $1, BOT_PLUSPLUS, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_PLUSPLUS, $3)); }
     | expr MZN_PLUS expr
-      { $$=new BinOp(@$, $1, BOT_PLUS, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_PLUS, $3)); }
     | expr MZN_MINUS expr
-      { $$=new BinOp(@$, $1, BOT_MINUS, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MINUS, $3)); }
     | expr MZN_MULT expr
-      { $$=new BinOp(@$, $1, BOT_MULT, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MULT, $3)); }
     | expr MZN_DIV expr
-      { $$=new BinOp(@$, $1, BOT_DIV, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_DIV, $3)); }
     | expr MZN_IDIV expr
-      { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_IDIV, $3)); }
     | expr MZN_MOD expr
-      { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_MOD, $3)); }
     | expr MZN_POW expr
-      { $$=new BinOp(@$, $1, BOT_POW, $3); }
+      { $$=KEEP(make<BinOp>(@$, $1, BOT_POW, $3)); }
     | expr MZN_WEAK_PLUS expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~+"), args);
+        $$=KEEP(Call::a(@$, ASTString("~+"), args));
       }
     | expr MZN_WEAK_MINUS expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~-"), args);
+        $$=KEEP(Call::a(@$, ASTString("~-"), args));
       }
     | expr MZN_WEAK_MULT expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~*"), args);
+        $$=KEEP(Call::a(@$, ASTString("~*"), args));
       }
     | expr MZN_WEAK_DIV expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~/"), args);
+        $$=KEEP(Call::a(@$, ASTString("~/"), args));
       }
     | expr MZN_WEAK_IDIV expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~div"), args);
+        $$=KEEP(Call::a(@$, ASTString("~div"), args));
       }
     | expr MZN_WEAK_EQ expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~="), args);
+        $$=KEEP(Call::a(@$, ASTString("~="), args));
       }
     | expr MZN_WEAK_NQ expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("~!="), args);
+        $$=KEEP(Call::a(@$, ASTString("~!="), args));
       }
     | expr MZN_DEFAULT expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, ASTString("default"), args);
+        $$=KEEP(Call::a(@$, ASTString("default"), args));
       }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
-        $$=Call::a(@$, $2, args);
+        $$=KEEP(Call::a(@$, $2, args));
         free($2);
       }
     | MZN_NOT expr %prec MZN_NOT
-      { $$=new UnOp(@$, UOT_NOT, $2); }
+      { $$=KEEP(make<UnOp>(@$, UOT_NOT, $2)); }
     | MZN_PLUS expr %prec MZN_MULT
       { if (($2 && Expression::isa<IntLit>($2)) || ($2 && Expression::isa<FloatLit>($2))) {
           $$ = $2;
         } else {
-          $$=new UnOp(@$, UOT_PLUS, $2);
+          $$=KEEP(make<UnOp>(@$, UOT_PLUS, $2));
         }
       }
     | MZN_MINUS expr %prec MZN_MULT
       { if ($2 && Expression::isa<IntLit>($2)) {
-          $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($2)));
+          $$ = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>($2))));
         } else if ($2 && Expression::isa<FloatLit>($2)) {
-          $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2)));
+          $$ = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($2))));
         } else {
-          $$=new UnOp(@$, UOT_MINUS, $2);
+          $$=KEEP(make<UnOp>(@$, UOT_MINUS, $2));
         }
       }
     | MZN_MINUS MZN_MAX_NEGATIVE_INTEGER_LITERAL %prec MZN_NOT
-      { $$ = IntLit::a((-9223372036854775807ll)-1); }
+      { $$ = KEEP(IntLit::a((-9223372036854775807ll)-1)); }
 
 
 expr_atom_head :
@@ -1600,69 +1597,69 @@ expr_atom_head_nonstring :
         delete $4;
       }
     | '(' expr ')' MZN_POW_MINUS1
-      { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$, $2, BOT_POW, KEEP(IntLit::a(-1)))); }
     | '(' expr ')' access_tail MZN_POW_MINUS1
       { if ($4) {
-          $$=new BinOp(@$,createAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $2, *$4), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
         delete $4;
       }
     | MZN_IDENTIFIER
-      { $$=new Id(@$, $1, nullptr); free($1); }
+      { $$=KEEP(make<Id>(@$, $1, nullptr)); free($1); }
     | MZN_IDENTIFIER access_tail
       { if ($2) {
-          $$=createAccess(@$, new Id(@1,$1,nullptr), *$2);
+          $$=createAccess(@$, KEEP(make<Id>(@1,$1,nullptr)), *$2);
         } else {
           $$ = nullptr;
         }
         free($1); delete $2; }
     | MZN_IDENTIFIER MZN_POW_MINUS1
-      { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
+      { $$=KEEP(make<BinOp>(@$,KEEP(make<Id>(@$, $1, nullptr)), BOT_POW, KEEP(IntLit::a(-1)))); free($1); }
     | MZN_IDENTIFIER access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, KEEP(make<Id>(@1,$1,nullptr)), *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
         free($1); delete $2; }
     | MZN_UNDERSCORE
-      { $$=new AnonVar(@$); }
+      { $$=KEEP(make<AnonVar>(@$)); }
     | MZN_UNDERSCORE access_tail
       { if ($2) {
-          $$=createAccess(@$, new AnonVar(@$), *$2);
+          $$=createAccess(@$, KEEP(make<AnonVar>(@$)), *$2);
         } else {
           $$ = nullptr;
         }
         delete $2; }
     | MZN_UNDERSCORE MZN_POW_MINUS1
-      { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$,KEEP(make<AnonVar>(@$)), BOT_POW, KEEP(IntLit::a(-1)))); }
     | MZN_UNDERSCORE access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, KEEP(make<AnonVar>(@$)), *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
         delete $2; }
     | MZN_UNDERSCORE '(' expr ')'
-      { $$ = Call::a(@$, Constants::constants().ids.anon_enum_set, {$3}); }
+      { $$ = KEEP(Call::a(@$, Constants::constants().ids.anon_enum_set, {$3})); }
     | MZN_BOOL_LITERAL
       { $$=Constants::constants().boollit(($1!=0)); }
     | MZN_BOOL_LITERAL MZN_POW_MINUS1
-      { $$=new BinOp(@$,Constants::constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$,Constants::constants().boollit(($1!=0)), BOT_POW, KEEP(IntLit::a(-1)))); }
     | MZN_INTEGER_LITERAL
-      { $$=IntLit::a($1); }
+      { $$=KEEP(IntLit::a($1)); }
     | MZN_INTEGER_LITERAL MZN_POW_MINUS1
-      { $$=new BinOp(@$,IntLit::a($1), BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$,KEEP(IntLit::a($1)), BOT_POW, KEEP(IntLit::a(-1)))); }
     | MZN_INFINITY
-      { $$=IntLit::a(IntVal::infinity()); }
+      { $$=KEEP(IntLit::a(IntVal::infinity())); }
     | MZN_INFINITY MZN_POW_MINUS1
-      { $$=new BinOp(@$,IntLit::a(IntVal::infinity()), BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$,KEEP(IntLit::a(IntVal::infinity())), BOT_POW, KEEP(IntLit::a(-1)))); }
     | MZN_FLOAT_LITERAL
-      { $$=FloatLit::a($1); }
+      { $$=KEEP(FloatLit::a($1)); }
     | MZN_FLOAT_LITERAL MZN_POW_MINUS1
-      { $$=new BinOp(@$,FloatLit::a($1), BOT_POW, IntLit::a(-1)); }
+      { $$=KEEP(make<BinOp>(@$,KEEP(FloatLit::a($1)), BOT_POW, KEEP(IntLit::a(-1)))); }
     | MZN_ABSENT
       { $$=Constants::constants().absent; }
     | MZN_ABSENT MZN_POW_MINUS1
@@ -1676,10 +1673,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | set_literal MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | set_literal access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1693,10 +1690,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | set_comp MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | set_comp access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1710,10 +1707,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | simple_array_literal MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | simple_array_literal access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1727,10 +1724,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | simple_array_literal_2d MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | simple_array_literal_2d access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1744,10 +1741,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | simple_array_comp MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | simple_array_comp access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1761,10 +1758,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | if_then_else_expr MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | if_then_else_expr access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1795,10 +1792,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | tuple_literal MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | tuple_literal access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1812,10 +1809,10 @@ expr_atom_head_nonstring :
         }
         delete $2; }
     | record_literal MZN_POW_MINUS1
-      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+      { $$ = KEEP(make<BinOp>(@$,$1, BOT_POW, KEEP(IntLit::a(-1)))); }
     | record_literal access_tail MZN_POW_MINUS1
       { if ($2) {
-          $$=new BinOp(@$,createAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+          $$=KEEP(make<BinOp>(@$,createAccess(@$, $1, *$2), BOT_POW, KEEP(IntLit::a(-1))));
         } else {
           $$ = nullptr;
         }
@@ -1823,16 +1820,16 @@ expr_atom_head_nonstring :
 
 string_expr:
       MZN_STRING_LITERAL
-      { $$=new StringLit(@$, $1); free($1); }
+      { $$=KEEP(make<StringLit>(@$, $1)); free($1); }
     | MZN_STRING_QUOTE_START string_quote_rest
-      { $$=new BinOp(@$, new StringLit(@$, $1), BOT_PLUSPLUS, $2);
+      { $$=KEEP(make<BinOp>(@$, KEEP(make<StringLit>(@$, $1)), BOT_PLUSPLUS, $2));
         free($1);
       }
 
 string_quote_rest:
       expr MZN_STRING_QUOTE_END
       { if ($1) {
-          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS, new StringLit(@$,$2));
+          $$=KEEP(make<BinOp>(@$, KEEP(Call::a(@$, ASTString("format"), {$1})), BOT_PLUSPLUS, KEEP(make<StringLit>(@$,$2))));
         } else {
           $$ = nullptr;
         }
@@ -1840,8 +1837,8 @@ string_quote_rest:
       }
     | expr MZN_STRING_QUOTE_MID string_quote_rest
       { if ($1) {
-          $$=new BinOp(@$, Call::a(@$, ASTString("format"), {$1}), BOT_PLUSPLUS,
-                       new BinOp(@$, new StringLit(@$,$2), BOT_PLUSPLUS, $3));
+          $$=KEEP(make<BinOp>(@$, KEEP(Call::a(@$, ASTString("format"), {$1})), BOT_PLUSPLUS,
+                       KEEP(make<BinOp>(@$, KEEP(make<StringLit>(@$,$2)), BOT_PLUSPLUS, $3))));
         } else {
           $$ = nullptr;
         }
@@ -1853,7 +1850,7 @@ access_tail :
       {
         $$=new std::vector<Expression*>();
         if ($2) {
-          auto* al = new ArrayAccess(@$, nullptr, *$2);
+          auto* al = KEEP(make<ArrayAccess>(@$, nullptr, *$2));
           $$->push_back(al);
           delete $2;
         }
@@ -1862,13 +1859,13 @@ access_tail :
       {
         $$=new std::vector<Expression*>();
         std::string tail($1); free($1);
-        parseFieldTail(@$, *$$, tail);
+        parseFieldTail(parm, @$, *$$, tail);
       }
     | access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       {
         $$=$1;
         if ($$ && $3) {
-          auto* al = new ArrayAccess(@$, nullptr, *$3);
+          auto* al = KEEP(make<ArrayAccess>(@$, nullptr, *$3));
           $$->push_back(al);
           delete $3;
         }
@@ -1877,16 +1874,16 @@ access_tail :
       {
         $$=$1;
         std::string tail($2); free($2);
-        parseFieldTail(@$, *$$, tail);
+        parseFieldTail(parm, @$, *$$, tail);
       }
 
 
 set_literal :
       '{' '}'
-      { $$ = new SetLit(@$, std::vector<Expression*>()); }
+      { $$ = KEEP(make<SetLit>(@$, std::vector<Expression*>())); }
     | '{' expr_list '}'
       { if ($2) {
-          $$ = new SetLit(@$, *$2);
+          $$ = KEEP(make<SetLit>(@$, *$2));
         } else {
           $$ = nullptr;
         }
@@ -1896,7 +1893,7 @@ tuple_literal :
       '(' expr ',' ')'
       {
         std::vector<Expression*> list({ $2 });
-        $$=ArrayLit::constructTuple(@$, list);
+        $$=KEEP(ArrayLit::constructTuple(@$, list));
       }
     | '(' expr ',' expr_list ')'
       {
@@ -1907,14 +1904,14 @@ tuple_literal :
         if ($2) {
           list->insert(list->begin(), $2);
         }
-        $$=ArrayLit::constructTuple(@$, *list);
+        $$=KEEP(ArrayLit::constructTuple(@$, *list));
         delete list;
       }
 
 record_literal :
       '(' record_field_list_head comma_or_none ')'
       {
-        $$ = ArrayLit::constructTuple(@$, *$2);
+        $$ = KEEP(ArrayLit::constructTuple(@$, *$2));
         Expression::type($$, Type::record());
         delete($2);
       }
@@ -1928,14 +1925,14 @@ record_field_list_head :
 record_field:
       MZN_IDENTIFIER ':' expr
       {
-        $$ = new VarDecl(@$, new TypeInst(@$, Type()), $1, $3);
+        $$ = KEEP(make<VarDecl>(@$, KEEP(make<TypeInst>(@$, Type())), $1, $3));
         free($1);
       }
 
 set_comp :
       '{' expr '|' comp_tail '}'
       { if ($4) {
-          $$ = new Comprehension(@$, $2, *$4, true);
+          $$ = KEEP(make<Comprehension>(@$, $2, *$4, true));
         } else {
           $$ = nullptr;
         }
@@ -2003,11 +2000,11 @@ id_list_head :
 
 simple_array_literal :
       MZN_LEFT_BRACKET MZN_RIGHT_BRACKET
-      { $$=new ArrayLit(@$, std::vector<MiniZinc::Expression*>()); }
+      { $$=KEEP(make<ArrayLit>(@$, std::vector<MiniZinc::Expression*>())); }
     | MZN_LEFT_BRACKET comp_expr_list MZN_RIGHT_BRACKET
       { if ($2) {
           if ($2->first.empty()) {
-            $$=new ArrayLit(@$, $2->second);
+            $$=KEEP(make<ArrayLit>(@$, $2->second));
           } else {
             const auto* tuple = Expression::dynamicCast<ArrayLit>($2->first[0]);
             if (tuple) {
@@ -2027,15 +2024,15 @@ simple_array_literal :
               }
               std::vector<Expression*> arrayNdArgs(dims.size());
               for (unsigned int i = 0; i < dims.size(); i++) {
-                arrayNdArgs[i] = new ArrayLit(@$, dims[i]);
+                arrayNdArgs[i] = KEEP(make<ArrayLit>(@$, dims[i]));
               }
-              arrayNdArgs.push_back(new ArrayLit(@$, $2->second));
+              arrayNdArgs.push_back(KEEP(make<ArrayLit>(@$, $2->second)));
 
               if ($2->first.size() != $2->second.size()) {
                 yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 $$=nullptr;
               } else {
-                $$=Call::a(@$, "arrayNd", arrayNdArgs);
+                $$=KEEP(Call::a(@$, "arrayNd", arrayNdArgs));
               }
             } else {
               for (const auto* t : $2->first) {
@@ -2043,7 +2040,7 @@ simple_array_literal :
                   yyerror(&@2, parm, "syntax error, non-uniform indexed array literal");
                 }
               }
-              $$=Call::a(@$, "arrayNd", {new ArrayLit(@$, $2->first), new ArrayLit(@$, $2->second)});
+              $$=KEEP(Call::a(@$, "arrayNd", {KEEP(make<ArrayLit>(@$, $2->first)), KEEP(make<ArrayLit>(@$, $2->second))}));
             }
           }
           delete $2;
@@ -2054,7 +2051,7 @@ simple_array_literal :
 
 simple_array_literal_2d :
       MZN_LEFT_2D_BRACKET MZN_RIGHT_2D_BRACKET
-      { $$=new ArrayLit(@$, std::vector<std::vector<Expression*> >()); }
+      { $$=KEEP(make<ArrayLit>(@$, std::vector<std::vector<Expression*> >())); }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_indexed_list MZN_RIGHT_2D_BRACKET
       { if ($2) {
           std::vector<std::vector<Expression*>> v($2->size());
@@ -2088,7 +2085,7 @@ simple_array_literal_2d :
             }
           }
           if (columnHeader.empty() && rowHeader.empty()) {
-            $$=new ArrayLit(@$, v);
+            $$=KEEP(make<ArrayLit>(@$, v));
           } else {
             std::vector<Expression*> vv;
             for (auto& row : v) {
@@ -2100,16 +2097,16 @@ simple_array_literal_2d :
               auto nRows = vv.size() / columnHeader.size();
               rowHeader.resize(nRows);
               for (unsigned int i = 0; i < nRows; i++) {
-                rowHeader[i] = IntLit::a(i+1);
+                rowHeader[i] = KEEP(IntLit::a(i+1));
               }
             } else if (columnHeader.empty()) {
               auto nCols = vv.size() / rowHeader.size();
               columnHeader.resize(nCols);
               for (unsigned int i = 0; i < nCols; i++) {
-                columnHeader[i] = IntLit::a(i+1);
+                columnHeader[i] = KEEP(IntLit::a(i+1));
               }
             }
-            $$=Call::a(@$, "array2d", {new ArrayLit(@$, rowHeader), new ArrayLit(@$, columnHeader), new ArrayLit(@$, vv)});
+            $$=KEEP(Call::a(@$, "array2d", {KEEP(make<ArrayLit>(@$, rowHeader)), KEEP(make<ArrayLit>(@$, columnHeader)), KEEP(make<ArrayLit>(@$, vv))}));
           }
           delete $2;
         } else {
@@ -2148,7 +2145,7 @@ simple_array_literal_2d :
             }
           }
         }
-        $$ = new ArrayLit(@$,a,dims);
+        $$ = KEEP(make<ArrayLit>(@$,a,dims));
         delete $2;
       } else {
         $$ = nullptr;
@@ -2255,11 +2252,11 @@ simple_array_comp :
             tv.push_back($2);
           }
           tv.push_back($4);
-          auto* t = ArrayLit::constructTuple(@$,tv);
+          auto* t = KEEP(ArrayLit::constructTuple(@$,tv));
           Type ty = Type::tuple();
           ty.typeId(Type::COMP_INDEX);
           t->type(ty);
-          $$=new Comprehension(@$, t, *$6, false);
+          $$=KEEP(make<Comprehension>(@$, t, *$6, false));
           delete $6;
         } else {
           $$ = nullptr;
@@ -2267,7 +2264,7 @@ simple_array_comp :
       }
     | MZN_LEFT_BRACKET expr '|' comp_tail MZN_RIGHT_BRACKET
       { if ($4) {
-          $$=new Comprehension(@$, $2, *$4, false);
+          $$=KEEP(make<Comprehension>(@$, $2, *$4, false));
         } else {
           $$ = nullptr;
         }
@@ -2332,7 +2329,7 @@ if_then_else_expr :
             iexps.push_back((*$5)[i+1]);
           }
         }
-        $$=new ITE(@$, iexps,$7);
+        $$=KEEP(make<ITE>(@$, iexps,$7));
         delete $5;
       }
   | MZN_IF expr MZN_THEN expr elseif_list MZN_ENDIF
@@ -2346,7 +2343,7 @@ if_then_else_expr :
           iexps.push_back((*$5)[i+1]);
         }
       }
-      $$=new ITE(@$, iexps, nullptr);
+      $$=KEEP(make<ITE>(@$, iexps, nullptr));
       delete $5;
     }
 
@@ -2419,7 +2416,7 @@ quoted_op_call :
           $$=nullptr;
           yyerror(&@3, parm, "syntax error, unary operator with two arguments");
         } else {
-          $$=new BinOp(@$, $3,static_cast<BinOpType>($1),$5);
+          $$=KEEP(make<BinOp>(@$, $3,static_cast<BinOpType>($1),$5));
         }
       }
     | quoted_op '(' expr ')'
@@ -2444,20 +2441,20 @@ quoted_op_call :
           if (uot==UOT_PLUS && $3 && (Expression::isa<IntLit>($3) || Expression::isa<FloatLit>($3))) {
             $$ = $3;
           } else if (uot==UOT_MINUS && $3 && Expression::isa<IntLit>($3)) {
-            $$ = IntLit::a(-IntLit::v(Expression::cast<IntLit>($3)));
+            $$ = KEEP(IntLit::a(-IntLit::v(Expression::cast<IntLit>($3))));
           } else if (uot==UOT_MINUS && $3 && Expression::isa<FloatLit>($3)) {
-            $$ = FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($3)));
+            $$ = KEEP(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>($3))));
           } else {
-            $$=new UnOp(@$, static_cast<UnOpType>(uot),$3);
+            $$=KEEP(make<UnOp>(@$, static_cast<UnOpType>(uot),$3));
           }
         }
       }
 
 call_expr :
       MZN_IDENTIFIER '(' ')'
-      { $$=Call::a(@$, $1, std::vector<Expression*>()); free($1); }
+      { $$=KEEP(Call::a(@$, $1, std::vector<Expression*>())); free($1); }
     | MZN_IDENTIFIER MZN_POW_MINUS1 '(' ')'
-      { $$=Call::a(@$, std::string($1)+"⁻¹", std::vector<Expression*>()); free($1); }
+      { $$=KEEP(Call::a(@$, std::string($1)+"⁻¹", std::vector<Expression*>())); free($1); }
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       {
@@ -2473,7 +2470,7 @@ call_expr :
             args.push_back((*$3)[i].first);
           }
           if (!hadWhere) {
-            $$=Call::a(@$, $1, args);
+            $$=KEEP(Call::a(@$, $1, args));
           }
         } else {
           $$ = nullptr;
@@ -2530,9 +2527,9 @@ call_expr :
           $$=nullptr;
         } else {
           Generators g; g.g = gens;
-          Comprehension* ac = new Comprehension(@$, $6,g,false);
+          Comprehension* ac = KEEP(make<Comprehension>(@$, $6,g,false));
           vector<Expression*> args; args.push_back(ac);
-          $$=Call::a(@$, $1, args);
+          $$=KEEP(Call::a(@$, $1, args));
         }
         free($1);
         delete $3;
@@ -2551,7 +2548,7 @@ call_expr :
             args.push_back((*$4)[i].first);
           }
           if (!hadWhere) {
-            $$=Call::a(@$, std::string($1)+"⁻¹", args);
+            $$=KEEP(Call::a(@$, std::string($1)+"⁻¹", args));
           }
         } else {
           $$ = nullptr;
@@ -2608,9 +2605,9 @@ call_expr :
           $$=nullptr;
         } else {
           Generators g; g.g = gens;
-          Comprehension* ac = new Comprehension(@$, $7,g,false);
+          Comprehension* ac = KEEP(make<Comprehension>(@$, $7,g,false));
           vector<Expression*> args; args.push_back(ac);
-          $$=Call::a(@$, std::string($1)+"⁻¹", args);
+          $$=KEEP(Call::a(@$, std::string($1)+"⁻¹", args));
         }
         free($1);
         delete $4;
@@ -2640,7 +2637,7 @@ comp_or_expr_head :
         }
         $$=new vector<pair<Expression*,Expression*> >;
         if ($3) {
-          VarDecl* vd = new VarDecl(@$, new TypeInst(@$, Type()), $1, $3);
+          VarDecl* vd = KEEP(make<VarDecl>(@$, KEEP(make<TypeInst>(@$, Type())), $1, $3));
           $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
         }
         free($1);
@@ -2658,7 +2655,7 @@ comp_or_expr_head :
         }
         $$=$1;
         if ($$ && $5) {
-          VarDecl* vd = new VarDecl(@$, new TypeInst(@$, Type()), $3, $5);
+          VarDecl* vd = KEEP(make<VarDecl>(@$, KEEP(make<TypeInst>(@$, Type())), $3, $5));
           $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
         }
         free($3);
@@ -2669,14 +2666,14 @@ let_expr :
       { $$=$5; }
     | MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $6) {
-          $$=new Let(@$, *$3, $6); delete $3;
+          $$=KEEP(make<Let>(@$, *$3, $6)); delete $3;
         } else {
           $$=nullptr;
         }
       }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $7) {
-          $$=new Let(@$, *$3, $7); delete $3;
+          $$=KEEP(make<Let>(@$, *$3, $7)); delete $3;
         } else {
           $$=nullptr;
         }
@@ -2689,8 +2686,10 @@ let_vardecl_item_list :
       { $$=new vector<Expression*>;
         if ($1) {
           ConstraintI* ce = $1->cast<ConstraintI>();
-          $$->push_back(ce->e());
+          // Take the expression over from the constraint item, which is dropped
+          Ref<Expression> e = ce->e();
           ce->e(nullptr);
+          $$->push_back(KEEP(e));
         }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
@@ -2699,8 +2698,10 @@ let_vardecl_item_list :
       { $$=$1;
         if ($$ && $3) {
           ConstraintI* ce = $3->cast<ConstraintI>();
-          $$->push_back(ce->e());
+          // Take the expression over from the constraint item, which is dropped
+          Ref<Expression> e = ce->e();
           ce->e(nullptr);
+          $$->push_back(KEEP(e));
         }
       }
 
@@ -2734,9 +2735,9 @@ annotation_expr :
       expr_atom_head_nonstring
       { $$ = $1; }
     | MZN_OUTPUT
-      { $$ = new Id(@1, Constants::constants().ids.output, nullptr); }
+      { $$ = KEEP(make<Id>(@1, Constants::constants().ids.output, nullptr)); }
     | string_expr
-      { $$ = Call::a(@1, ASTString("mzn_expression_name"), {$1}); }
+      { $$ = KEEP(Call::a(@1, ASTString("mzn_expression_name"), {$1})); }
 
 ne_annotations :
       MZN_COLONCOLON annotation_expr

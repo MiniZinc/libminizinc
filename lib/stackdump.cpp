@@ -136,7 +136,6 @@ void StackDump::print(std::ostream& os) const {
            << std::endl;
         break;
       case Expression::E_VARDECL: {
-        GCLock lock;
         os << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'"
            << std::endl;
       } break;
@@ -256,7 +255,6 @@ void StackDump::json(std::ostream& os) const {
         ss << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'";
         break;
       case Expression::E_VARDECL: {
-        GCLock lock;
         ss << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'";
       } break;
       case Expression::E_LET:

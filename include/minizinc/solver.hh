@@ -15,6 +15,7 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/solver_config.hh>
 #include <minizinc/solver_instance_base.hh>
+#include <minizinc/timer.hh>
 
 #include <iostream>
 #include <memory>
@@ -188,6 +189,8 @@ public:
     return _siOpt;
   }
   bool getFlagVerbose() const { return flagVerbose; /*getFlt()->getFlagVerbose();*/ }
+  /// Give up the Env of the flattener without destroying it (the caller now owns it)
+  Env* releaseEnv() { return _flt.releaseEnv(); }
   void printUsage(std::ostream& os);
 
 private:

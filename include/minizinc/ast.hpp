@@ -11,7 +11,10 @@
 
 namespace MiniZinc {
 
-inline bool Expression::equal(const Expression* e0, const Expression* e1) {
+inline bool Expression::equal(Arg<const Expression> a0, Arg<const Expression> a1) {
+  // Arg: a temporary Ref lives until the comparison is done
+  const Expression* e0 = a0;
+  const Expression* e1 = a1;
   if (e0 == e1) {
     return true;
   }
@@ -59,7 +62,7 @@ inline IntLit::IntLit(const Location& loc, IntVal v)
   rehash();
 }
 
-inline IntLit* IntLit::a(MiniZinc::IntVal v) {
+inline Ref<IntLit> IntLit::a(MiniZinc::IntVal v) {
   if (v.isFinite()) {
     IntLit* ret = intToUnboxedInt(v.toInt());
     if (ret != nullptr) {
@@ -67,24 +70,27 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
     }
   }
 
-  auto it = Constants::constants().integerMap.find(v);
-  if (it == Constants::constants().integerMap.end() || it->second() == nullptr) {
-    auto* il = new IntLit(Location().introduce(), v);
-    if (it == Constants::constants().integerMap.end()) {
-      Constants::constants().integerMap.insert(std::make_pair(v, il));
-    } else {
-      it->second = il;
+  auto& cache = Constants::constants().integerMap;
+  auto it = cache.find(v);
+  if (it != cache.end()) {
+    if (Expression* cached = it->second.get()) {
+      return Expression::cast<IntLit>(cached);
     }
-    return il;
   }
-  return Expression::cast<IntLit>(it->second());
+  Ref<IntLit> il(RC::adopt(new IntLit(Location().introduce(), v)));
+  if (it == cache.end()) {
+    cache.insert(std::make_pair(v, il.get()));
+  } else {
+    it->second = il.get();
+  }
+  return il;
 }
 
-inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
+inline Ref<IntLit> IntLit::aEnum(IntVal v, unsigned int enumId) {
   if (enumId == 0) {
     return a(v);
   }
-  auto* il = new IntLit(Location().introduce(), v);
+  Ref<IntLit> il(RC::adopt(new IntLit(Location().introduce(), v)));
   Type tt(Expression::type(il));
   tt.typeId(enumId);
   Expression::type(il, tt);
@@ -167,7 +173,7 @@ inline FloatLit::FloatLit(const Location& loc, FloatVal v)
   rehash();
 }
 
-inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
+inline Ref<FloatLit> FloatLit::a(MiniZinc::FloatVal v) {
   if (sizeof(double) <= sizeof(void*) && v.isFinite()) {
     FloatLit* ret = Expression::doubleToUnboxedFloatVal(v.toDouble());
     if (ret != nullptr) {
@@ -175,17 +181,20 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
     }
   }
 
-  auto it = Constants::constants().floatMap.find(v);
-  if (it == Constants::constants().floatMap.end() || it->second() == nullptr) {
-    auto* fl = new FloatLit(Location().introduce(), v);
-    if (it == Constants::constants().floatMap.end()) {
-      Constants::constants().floatMap.insert(std::make_pair(v, fl));
-    } else {
-      it->second = fl;
+  auto& cache = Constants::constants().floatMap;
+  auto it = cache.find(v);
+  if (it != cache.end()) {
+    if (Expression* cached = it->second.get()) {
+      return Expression::cast<FloatLit>(cached);
     }
-    return fl;
   }
-  return Expression::cast<FloatLit>(it->second());
+  Ref<FloatLit> fl(RC::adopt(new FloatLit(Location().introduce(), v)));
+  if (it == cache.end()) {
+    cache.insert(std::make_pair(v, fl.get()));
+  } else {
+    it->second = fl.get();
+  }
+  return fl;
 }
 
 inline SetLit::SetLit(const Location& loc, const std::vector<Expression*>& v)
@@ -247,7 +256,7 @@ inline Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
   rehash();
 }
 
-inline void Id::decl(VarDecl* d) { _decl = d; }
+inline void Id::decl(VarDecl* d) { RC::setIdDecl(this, d); }
 
 inline ASTString Id::v() const {
   if ((_decl != nullptr) && Expression::isa<Id>(_decl)) {
@@ -293,7 +302,7 @@ inline TIId::TIId(const Location& loc, const ASTString& v)
 inline AnonVar::AnonVar(const Location& loc) : BoxedExpression(loc, E_ANON, Type()) { rehash(); }
 
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
-                          const std::vector<std::pair<int, int> >& dims)
+                          const std::vector<std::pair<int, int>>& dims)
     : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = v->_flag2;
@@ -368,23 +377,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v
   rehash();
 }
 
-inline ArrayLit::ArrayLit(const Location& loc, const std::vector<KeepAlive>& v)
-    : BoxedExpression(loc, E_ARRAYLIT, Type()) {
-  _flag1 = false;
-  _flag2 = false;
-  _secondaryId = AL_ARRAY;
-  std::vector<int> d(2);
-  d[0] = 1;
-  d[1] = static_cast<int>(v.size());
-  std::vector<Expression*> vv(v.size());
-  for (unsigned int i = 0; i < v.size(); i++) {
-    vv[i] = v[i]();
-  }
-  compress(vv, d);
-  rehash();
-}
-
-inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Expression*> >& v)
+inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Expression*>>& v)
     : BoxedExpression(loc, E_ARRAYLIT, Type()) {
   _flag1 = false;
   _flag2 = false;
@@ -404,14 +397,15 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
   rehash();
 }
 
-inline ArrayLit* ArrayLit::constructTuple(const Location& loc, const std::vector<Expression*>& v) {
-  auto* t = new ArrayLit(loc, v);
+inline Ref<ArrayLit> ArrayLit::constructTuple(const Location& loc,
+                                              const std::vector<Expression*>& v) {
+  auto t = make<ArrayLit>(loc, v);
   t->_secondaryId = AL_TUPLE;
   return t;
 }
 
-inline ArrayLit* ArrayLit::constructTuple(const Location& loc, ArrayLit* v) {
-  auto* t = new ArrayLit(loc, v);
+inline Ref<ArrayLit> ArrayLit::constructTuple(const Location& loc, Arg<ArrayLit> v) {
+  auto t = make<ArrayLit>(loc, v);
   t->_secondaryId = AL_TUPLE;
   return t;
 }
@@ -487,24 +481,33 @@ inline bool Call::hasId() const {
   return (reinterpret_cast<mzn_uintptr_t>(_uId.decl) & static_cast<mzn_uintptr_t>(1)) == 0;
 }
 
-inline ASTString Call::id() const { return hasId() ? _uId.id : decl()->id(); }
+inline ASTString Call::id() const { return hasId() ? _uId.id : rawDecl()->id(); }
 
 inline void Call::id(const ASTString& i) {
+  FunctionI* old = rawDecl();
   _uId.id = i;
   assert(hasId());
-  assert(decl() == nullptr);
+  RC::decWeak(old);
 }
 
-inline FunctionI* Call::decl() const {
+inline FunctionI* Call::rawDecl() const {
   return hasId() ? nullptr
                  : reinterpret_cast<FunctionI*>(reinterpret_cast<mzn_uintptr_t>(_uId.decl) &
                                                 ~static_cast<mzn_uintptr_t>(1));
 }
 
-inline void Call::decl(FunctionI* f) {
+inline FunctionI* Call::decl() const {
+  FunctionI* f = rawDecl();
+  return RC::alive(f) ? f : nullptr;
+}
+
+inline void Call::decl(Arg<FunctionI> f) {
   assert(f != nullptr);
-  _uId.decl = reinterpret_cast<FunctionI*>(reinterpret_cast<mzn_uintptr_t>(f) |
-                                           static_cast<mzn_uintptr_t>(1));
+  RC::incWeak(f);
+  FunctionI* old = rawDecl();
+  _uId.decl = reinterpret_cast<FunctionI*>(
+      reinterpret_cast<mzn_uintptr_t>(static_cast<FunctionI*>(f)) | static_cast<mzn_uintptr_t>(1));
+  RC::decWeak(old);
 }
 
 inline unsigned int Call::argCount() const {
@@ -518,12 +521,12 @@ inline Expression* Call::arg(unsigned int i) const {
              ? (*static_cast<const CallNary*>(this)->_args)[i]
              : static_cast<const Call4*>(this)->_data[i];
 }
-inline void Call::arg(unsigned int i, Expression* e) {
+inline void Call::arg(unsigned int i, Arg<Expression> e) {
   assert(i < argCount());
   if (static_cast<CallKind>(_secondaryId) >= CK_NARY) {
-    (*static_cast<CallNary*>(this)->_args)[i] = e;
+    static_cast<CallNary*>(this)->_args->set(i, e);
   } else {
-    static_cast<Call4*>(this)->_data[i] = e;
+    RC::set(static_cast<Call4*>(this)->_data[i], e);
   }
 }
 
@@ -539,7 +542,7 @@ inline Call::CallArgs::CallArgs(const Call* c) {
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
     : BoxedExpression(loc, E_CALL, Type()) {
   _flag1 = false;
-  id(ASTString(id0));
+  _uId.id = ASTString(id0);
   if (args.size() >= CK_NARY) {
     _secondaryId = CK_NARY;
     static_cast<CallNary*>(this)->_args = ASTExprVec<Expression>(args).vec();
@@ -556,26 +559,26 @@ inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<E
   assert(decl() == nullptr);
 }
 
-inline Call* Call::a(const Location& loc, const ASTString& id0,
-                     const std::vector<Expression*>& args) {
+inline Ref<Call> Call::a(const Location& loc, const ASTString& id0,
+                         const std::vector<Expression*>& args) {
   switch (args.size()) {
     case 0:
-      return new Call1(loc, id0, {});
+      return RC::adopt(new Call1(loc, id0, {}));
     case 1:
-      return new Call1(loc, id0, args);
+      return RC::adopt(new Call1(loc, id0, args));
     case 2:
-      return new Call2(loc, id0, args);
+      return RC::adopt(new Call2(loc, id0, args));
     case 3:
-      return new Call3(loc, id0, args);
+      return RC::adopt(new Call3(loc, id0, args));
     case 4:
-      return new Call4(loc, id0, args);
+      return RC::adopt(new Call4(loc, id0, args));
     default:
-      return new CallNary(loc, id0, args);
+      return RC::adopt(new CallNary(loc, id0, args));
   }
 }
 
-inline Call* Call::a(const Location& loc, const std::string& id0,
-                     const std::vector<Expression*>& args) {
+inline Ref<Call> Call::a(const Location& loc, const std::string& id0,
+                         const std::vector<Expression*>& args) {
   return Call::a(loc, ASTString(id0), args);
 }
 
@@ -625,7 +628,7 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e
     : BoxedExpression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   if (id->decl() == nullptr) {
     _id = id;
-    _id->decl(this);
+    RC::setIdDecl(id, this);
   } else if (id->idn() == -1) {
     _id = new Id(Expression::loc(id), id->v(), this);
   } else {
@@ -644,9 +647,9 @@ inline Expression* VarDecl::e() const {
   return (_e == nullptr || isUnboxedVal(_e)) ? _e : untag(_e);
 }
 
-inline void VarDecl::e(Expression* rhs) {
+inline void VarDecl::e(Arg<Expression> rhs) {
   assert(rhs == nullptr || !Expression::isa<Id>(rhs) || Expression::cast<Id>(rhs) != _id);
-  _e = rhs;
+  RC::set(_e, rhs);
 }
 
 inline bool VarDecl::toplevel() const { return (_secondaryId & 1U) == 1U; }
@@ -677,7 +680,7 @@ inline void VarDecl::evaluated(bool t) {
     }
   }
 }
-inline void VarDecl::flat(VarDecl* vd) { _flat = vd; }
+inline void VarDecl::flat(VarDecl* vd) { RC::setWeak(_flat, vd); }
 
 inline TypeInst::TypeInst(const Location& loc, const Type& type, const ASTExprVec<TypeInst>& ranges,
                           Expression* domain)
@@ -710,18 +713,18 @@ inline AssignI::AssignI(const Location& loc, const ASTString& id, Expression* e)
 inline ConstraintI::ConstraintI(const Location& loc, Expression* e) : Item(loc, II_CON), _e(e) {}
 
 inline SolveI::SolveI(const Location& loc, Expression* e) : Item(loc, II_SOL), _e(e) {}
-inline SolveI* SolveI::sat(const Location& loc) {
-  auto* si = new SolveI(loc, nullptr);
+inline Ref<SolveI> SolveI::sat(const Location& loc) {
+  Ref<SolveI> si = RC::adopt(new SolveI(loc, nullptr));
   si->_secondaryId = ST_SAT;
   return si;
 }
-inline SolveI* SolveI::min(const Location& loc, Expression* e) {
-  auto* si = new SolveI(loc, e);
+inline Ref<SolveI> SolveI::min(const Location& loc, Arg<Expression> e) {
+  Ref<SolveI> si = RC::adopt(new SolveI(loc, e));
   si->_secondaryId = ST_MIN;
   return si;
 }
-inline SolveI* SolveI::max(const Location& loc, Expression* e) {
-  auto* si = new SolveI(loc, e);
+inline Ref<SolveI> SolveI::max(const Location& loc, Arg<Expression> e) {
+  Ref<SolveI> si = RC::adopt(new SolveI(loc, e));
   si->_secondaryId = ST_MAX;
   return si;
 }
@@ -751,14 +754,25 @@ inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* 
 }
 
 inline void FunctionI::init(const std::vector<VarDecl*>& params) {
-  _params = ASTExprVec<VarDecl>(params);
+  RC::setVec(_params, ASTExprVec<VarDecl>(params));
 }
 
-inline void FunctionI::markParams() {
-  _params.mark();
-  for (auto* p : _params) {
-    Expression::mark(p);
-  }
+/// Casts for Ref::cast and Ref::dynamicCast (the second argument only selects the type)
+template <class U>
+U* node_cast(Expression* e, U* /*type*/) {
+  return Expression::cast<U>(e);
+}
+template <class U>
+U* node_cast(Item* i, U* /*type*/) {
+  return Item::cast<U>(i);
+}
+template <class U>
+U* node_dynamic_cast(Expression* e, U* /*type*/) {
+  return Expression::dynamicCast<U>(e);
+}
+template <class U>
+U* node_dynamic_cast(Item* i, U* /*type*/) {
+  return i == nullptr ? nullptr : i->dynamicCast<U>();
 }
 
 }  // namespace MiniZinc

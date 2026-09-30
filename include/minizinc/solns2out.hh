@@ -21,6 +21,7 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/solver_instance.hh>
+#include <minizinc/timer.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/utils.hh>
 
@@ -42,8 +43,8 @@ protected:
   Env* _env = nullptr;
   Model* _outputModel = nullptr;
 
-  typedef std::pair<VarDecl*, KeepAlive> DE;
-  ManagedASTStringMap<DE> _declmap;
+  typedef std::pair<VarDecl*, Ref<Expression>> DE;
+  std::unordered_map<ASTString, DE> _declmap;
   Expression* _outputExpr = nullptr;
   std::string _checkerModel;
   std::string _statisticsCheckerModel;

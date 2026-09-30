@@ -37,7 +37,7 @@ add_library(mzn
   lib/flatten/flatten_unop.cpp
   lib/flatten/flatten_vardecl.cpp
   lib/flattener.cpp
-  lib/gc.cpp
+  lib/memory.cpp
   lib/htmlprinter.cpp
   lib/json_parser.cpp
   lib/library_bundle.cpp
@@ -74,7 +74,6 @@ add_library(mzn
   include/minizinc/ast.hpp
   include/minizinc/astexception.hh
   include/minizinc/astiterator.hh
-  include/minizinc/astmap.hh
   include/minizinc/aststring.hh
   include/minizinc/astvec.hh
   include/minizinc/blackbox.hh
@@ -90,7 +89,7 @@ add_library(mzn
   include/minizinc/flatten.hh
   include/minizinc/flatten_internal.hh
   include/minizinc/flattener.hh
-  include/minizinc/gc.hh
+  include/minizinc/memory.hh
   include/minizinc/hash.hh
   include/minizinc/htmlprinter.hh
   include/minizinc/interrupt.hh
@@ -141,6 +140,27 @@ target_include_directories(mzn PRIVATE
 )
 
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+
+if(MZN_RC_CHECK)
+  target_compile_definitions(mzn PUBLIC MZN_RC_CHECK)
+endif()
+
+if(MZN_USE_MIMALLOC)
+  # AST nodes call mi_malloc/mi_free directly (lib/memory.cpp). With MZN_MIMALLOC_OVERRIDE,
+  # mimalloc also replaces malloc for the whole process.
+  set(MI_OVERRIDE ${MZN_MIMALLOC_OVERRIDE} CACHE BOOL "" FORCE)
+  set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+  set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(mimalloc
+    URL https://github.com/microsoft/mimalloc/archive/refs/tags/v3.5.3.tar.gz
+    URL_HASH SHA256=3b4a15153a59905995f7070296ed604bb5ccc00cabb8b93446931aff77224d47)
+  FetchContent_MakeAvailable(mimalloc)
+  set_property(DIRECTORY "${mimalloc_SOURCE_DIR}" PROPERTY EXCLUDE_FROM_ALL TRUE)
+  # As for tree-sitter: embed the objects in libmzn
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:mimalloc-obj>)
+  target_include_directories(mzn PRIVATE $<TARGET_PROPERTY:mimalloc-obj,INTERFACE_INCLUDE_DIRECTORIES>)
+  target_compile_definitions(mzn PRIVATE MZN_USE_MIMALLOC)
+endif()
 
 ### Add Solver Interfaces to the MiniZinc library when available
 include(cmake/targets/libminizinc_atlantis.cmake)

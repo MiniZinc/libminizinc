@@ -86,7 +86,6 @@ void AtlantisSolverInstance::processFlatZinc() {
   _backend->setOnSolution([&](const atlantis::invariantgraph::FznInvariantGraph& invariantGraph,
                               const atlantis::search::Assignment& assignment) {
     {
-      GCLock lock;
       for (const auto& outputVar : invariantGraph.outputBoolVars()) {
         _assignment[ASTString(outputVar.identifier)] =
             _env.envi().constants.boollit(varToBool(assignment, outputVar.var));
@@ -100,16 +99,16 @@ void AtlantisSolverInstance::processFlatZinc() {
         for (size_t i = 0; i < outputVarArray.vars.size(); ++i) {
           vals[i] = _env.envi().constants.boollit(varToBool(assignment, outputVarArray.vars[i]));
         }
-        auto* al = new ArrayLit(Location().introduce(), vals);
+        auto al = make<ArrayLit>(Location().introduce(), vals);
         Expression::type(al, Type::parbool(1));
         _assignment[ASTString(outputVarArray.identifier)] = al;
       }
       for (const auto& outputVarArray : invariantGraph.outputIntVarArrays()) {
-        std::vector<Expression*> vals(outputVarArray.vars.size());
+        std::vector<Ref<Expression>> vals(outputVarArray.vars.size());
         for (size_t i = 0; i < outputVarArray.vars.size(); ++i) {
           vals[i] = IntLit::a(varToInt(assignment, outputVarArray.vars[i]));
         }
-        auto* al = new ArrayLit(Location().introduce(), vals);
+        auto al = make<ArrayLit>(Location().introduce(), vals);
         Expression::type(al, Type::parint(1));
         _assignment[ASTString(outputVarArray.identifier)] = al;
       }
@@ -140,7 +139,7 @@ SolverInstanceBase::Status AtlantisSolverInstance::solve() {
   }
   return SolverInstanceBase::Status::UNKNOWN;
 }
-Expression* AtlantisSolverInstance::getSolutionValue(Id* i) { return _assignment[i->str()]; }
+Ref<Expression> AtlantisSolverInstance::getSolutionValue(Id* i) { return _assignment[i->str()]; }
 
 void AtlantisSolverInstance::printStatistics() {
   auto* solns2out = getSolns2Out();

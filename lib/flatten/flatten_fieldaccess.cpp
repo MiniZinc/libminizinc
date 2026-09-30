@@ -29,7 +29,7 @@ EE flatten_fieldaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, Var
   nctx.b = +nctx.b;
   nctx.neg = false;
   EE ret = flat_exp(env, nctx, fa->v(), nullptr, b);
-  auto* al = Expression::cast<ArrayLit>(eval_array_lit(env, ret.r()));
+  Ref<ArrayLit> al = eval_array_lit(env, ret.r);
 
   // Resolve field
   IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));

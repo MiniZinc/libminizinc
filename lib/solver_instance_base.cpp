@@ -32,7 +32,6 @@ void SolverInstanceBase::processPermanentConstraints(Model::iterator begin, Mode
 
 void Registry::add(const ASTString name, poster p) { _registry.insert(std::make_pair(name, p)); }
 void Registry::add(const std::string& name, poster p) {
-  GCLock lock;
   ASTString str(name);
   add(str, p);
 }
@@ -63,7 +62,6 @@ template class SolverInstanceBase2<true>;
 
 template <bool AsgArray>
 void SolverInstanceBase2<AsgArray>::printSolution() {
-  GCLock lock;
   assignSolutionToOutput();
   SolverInstanceBase::printSolution();
 }
@@ -80,8 +78,6 @@ void SolverInstanceBase2<AsgArray>::printSolution() {
 
 template <bool AsgArray>
 void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
-  GCLock lock;
-
   MZN_ASSERT_HARD_MSG(
       nullptr != _pS2Out,
       "Setup a Solns2Out object to use default solution extraction/reporting procs");
@@ -115,7 +111,7 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
       assert(vd->e());
 
       if (auto* al = Expression::dynamicCast<ArrayLit>(vd->e())) {
-        std::vector<Expression*> array_elems;
+        std::vector<Ref<Expression>> array_elems;
         ArrayLit& array = *al;
         for (unsigned int j = 0; j < array.size(); j++) {
           if (Id* id = Expression::dynamicCast<Id>(array[j])) {
@@ -123,22 +119,21 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
             // std::endl;
             array_elems.push_back(getSolutionValue(id));
           } else if (auto* floatLit = Expression::dynamicCast<FloatLit>(array[j])) {
-            array_elems.push_back(floatLit);
+            array_elems.emplace_back(floatLit);
           } else if (auto* intLit = Expression::dynamicCast<IntLit>(array[j])) {
-            array_elems.push_back(intLit);
+            array_elems.emplace_back(intLit);
           } else if (auto* boolLit = Expression::dynamicCast<BoolLit>(array[j])) {
-            array_elems.push_back(boolLit);
+            array_elems.emplace_back(boolLit);
           } else if (auto* setLit = Expression::dynamicCast<SetLit>(array[j])) {
-            array_elems.push_back(setLit);
+            array_elems.emplace_back(setLit);
           } else if (auto* strLit = Expression::dynamicCast<StringLit>(array[j])) {
-            array_elems.push_back(strLit);
+            array_elems.emplace_back(strLit);
           } else {
             std::ostringstream oss;
             oss << "Error: array element " << *array[j] << " is not an id nor a literal";
             throw InternalError(oss.str());
           }
         }
-        GCLock lock;
         ArrayLit* dims;
         Expression* e = output_array_ann->arg(0);
         if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
@@ -148,9 +143,9 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
         } else {
           throw -1;
         }
-        std::vector<std::pair<int, int> > dims_v;
+        std::vector<std::pair<int, int>> dims_v;
         for (unsigned int i = 0; i < dims->length(); i++) {
-          IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
+          Ref<IntSetVal> isv = eval_intset(getEnv()->envi(), (*dims)[i]);
           if (isv->empty()) {
             dims_v.emplace_back(1, 0);
           } else {
@@ -158,7 +153,7 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
                                 static_cast<int>(isv->max().toInt()));
           }
         }
-        auto* array_solution = new ArrayLit(Location(), array_elems, dims_v);
+        auto array_solution = make<ArrayLit>(Location(), array_elems, dims_v);
         if (array_elems.empty()) {
           Expression::type(array_solution, Type::bot(static_cast<int>(dims_v.size())));
         } else {
@@ -166,12 +161,11 @@ void SolverInstanceBase2<AsgArray>::assignSolutionToOutput() {
           t.dim(static_cast<int>(dims_v.size()));
           Expression::type(array_solution, t);
         }
-        KeepAlive ka(array_solution);
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);
       }
     } else {
-      Expression* sol = getSolutionValue(vd->id());
+      Ref<Expression> sol = getSolutionValue(vd->id());
       vd->e(sol);
       auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
       de.first->e(sol);
