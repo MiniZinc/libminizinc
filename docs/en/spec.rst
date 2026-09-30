@@ -1325,6 +1325,18 @@ where the fields are sorted in alphabetical order.
 |TyInit|
 A record variable must be initialised at instance-time if any of its constituent elements must be initialised at instance-time.
 
+In a data file (see :ref:`spec-Model-Instance-Files`), a record literal may omit
+optional fields of the declared record type; the missing fields are absent. For
+example, given the declaration
+
+.. code-block:: minizinc
+
+  array[1..2] of record(opt int: x, int: y): a;
+
+a data file can assign :mzn:`a = [(y: 1), (x: 2, y: 3)];`, which is equivalent
+to :mzn:`a = [(x: <>, y: 1), (x: 2, y: 3)];`. This does not apply to
+expressions in the model.
+
 |TyCoercions|
 :mzn:`record(TI1: x1, ..., TIn: xn)` |coerce| :mzn:`record(UI1: x1, ..., UIn: xn)` if :mzn:`TI1` |coerce| :mzn:`UI1`, ..., :mzn:`TIn` |coerce| :mzn:`UIn`.
 
@@ -4343,6 +4355,9 @@ MiniZinc supports coercion of some JSON input types for more convenient input:
   - A list of values can be coerced to a set
 
   - A string value can be coerced to an enumerated type value (but not a constructor call)
+
+  - An object can be used as the value of a record, and optional fields of the record type
+    may be omitted (they are absent)
 
 Assume a MiniZinc model declaring the following parameters:
 

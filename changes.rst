@@ -36,6 +36,12 @@ Changes:
    An absent value is now ignored consistently: ``<> in S`` is equivalent to
    ``{<>} subset S``, and agrees with the ``set_in`` constraint on optional
    integers and with the other relations on optional values, such as ``<=``.
+-  Allow record literals in data files (``.dzn`` files and data given with
+   ``-D``) to omit optional fields of the declared record type. The missing
+   fields are absent, so an array of records can be given as
+   ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
+   was already the case for JSON input, which now also supports record types
+   that are combined using ``++``.
 
 Bug fixes:
 ^^^^^^^^^^

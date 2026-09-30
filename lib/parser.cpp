@@ -69,6 +69,176 @@ void run_parser(MiniZinc::ParserState& pp) {
 
 namespace MiniZinc {
 
+namespace {
+/// Record literals in data files may omit the optional fields of the declared record type. This
+/// adds the missing fields as absent values (as the JSON parser does for JSON objects), guided by
+/// the (not yet type checked) type-insts of the declarations in the model.
+class DataRecordCompleter {
+private:
+  ASTStringMap<TypeInst*> _decls;
+  ASTStringMap<TypeInst*> _aliases;
+
+  /// Follow type-inst synonyms. Array type-insts are only resolved when \a elem is true, i.e.,
+  /// when looking at the type-inst of their elements.
+  TypeInst* resolve(TypeInst* ti, bool elem) const {
+    ASTStringSet visited;
+    while (ti != nullptr && (elem || !ti->isarray()) && ti->domain() != nullptr &&
+           Expression::isa<Id>(ti->domain())) {
+      auto it = _aliases.find(Expression::cast<Id>(ti->domain())->str());
+      if (it == _aliases.end() || !visited.insert(it->first).second) {
+        break;
+      }
+      ti = it->second;
+    }
+    return ti;
+  }
+
+  /// Collect the field declarations of record type-inst \a ti (following type-inst synonyms and
+  /// record merges with ++). Returns false if \a ti is not known to be a record type-inst.
+  bool collectFields(TypeInst* ti, std::vector<VarDecl*>& fields) const {
+    ti = resolve(ti, true);
+    if (ti == nullptr || ti->domain() == nullptr) {
+      return false;
+    }
+    if (auto* bo = Expression::dynamicCast<BinOp>(ti->domain())) {
+      return bo->op() == BOT_PLUSPLUS && Expression::isa<TypeInst>(bo->lhs()) &&
+             Expression::isa<TypeInst>(bo->rhs()) &&
+             collectFields(Expression::cast<TypeInst>(bo->lhs()), fields) &&
+             collectFields(Expression::cast<TypeInst>(bo->rhs()), fields);
+    }
+    if (ti->type().bt() != Type::BT_RECORD || !Expression::isa<ArrayLit>(ti->domain())) {
+      return false;
+    }
+    auto* dom = Expression::cast<ArrayLit>(ti->domain());
+    for (unsigned int i = 0; i < dom->size(); ++i) {
+      auto* fieldDef = Expression::dynamicCast<VarDecl>((*dom)[i]);
+      if (fieldDef == nullptr) {
+        return false;
+      }
+      fields.push_back(fieldDef);
+    }
+    return true;
+  }
+
+  static bool isArrayXd(const ASTString& id) {
+    const auto& ids = Constants::constants().ids;
+    if (id == "arrayNd") {
+      return true;
+    }
+    for (int i = 1; i <= 6; ++i) {
+      if (id == ids.arrayNd(i)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Complete the record literals in \a e, which is a value for type-inst \a ti (or for its
+  /// elements if \a elem is true)
+  Expression* complete(Expression* e, TypeInst* ti, bool elem) {
+    ti = resolve(ti, elem);
+    if (e == nullptr || ti == nullptr) {
+      return e;
+    }
+    if (!elem && ti->isarray()) {
+      if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+        if (!al->isTuple()) {
+          for (unsigned int i = 0; i < al->size(); ++i) {
+            al->set(i, complete((*al)[i], ti, true));
+          }
+        }
+      } else if (auto* c = Expression::dynamicCast<Call>(e)) {
+        // arrayNd(..., [elements])
+        if (c->argCount() > 0 && isArrayXd(c->id())) {
+          unsigned int last = c->argCount() - 1;
+          c->arg(last, complete(c->arg(last), ti, false));
+        }
+      }
+      return e;
+    }
+    auto* al = Expression::dynamicCast<ArrayLit>(e);
+    if (al == nullptr || !al->isTuple()) {
+      return e;
+    }
+    if (Expression::type(al).bt() != Type::BT_RECORD) {
+      // Tuple literal
+      if (ti->type().bt() == Type::BT_TUPLE && ti->domain() != nullptr &&
+          Expression::isa<ArrayLit>(ti->domain())) {
+        auto* dom = Expression::cast<ArrayLit>(ti->domain());
+        if (dom->size() == al->size()) {
+          for (unsigned int i = 0; i < al->size(); ++i) {
+            al->set(i, complete((*al)[i], Expression::cast<TypeInst>((*dom)[i]), false));
+          }
+        }
+      }
+      return e;
+    }
+    std::vector<VarDecl*> fieldDefs;
+    if (!collectFields(ti, fieldDefs)) {
+      return e;
+    }
+    std::vector<Expression*> fields(al->size());
+    for (unsigned int i = 0; i < al->size(); ++i) {
+      fields[i] = (*al)[i];
+    }
+    bool addedField = false;
+    for (auto* fieldDef : fieldDefs) {
+      VarDecl* field = nullptr;
+      for (auto* f : fields) {
+        auto* vd = Expression::dynamicCast<VarDecl>(f);
+        if (vd != nullptr && vd->id()->str() == fieldDef->id()->str()) {
+          field = vd;
+          break;
+        }
+      }
+      if (field != nullptr) {
+        field->e(complete(field->e(), fieldDef->ti(), false));
+      } else if (fieldDef->ti()->type().isOpt() || resolve(fieldDef->ti(), false)->type().isOpt()) {
+        fields.push_back(new VarDecl(Expression::loc(al).introduce(),
+                                     new TypeInst(Expression::loc(al).introduce(), Type()),
+                                     fieldDef->id()->str(), Constants::constants().absent));
+        addedField = true;
+      }
+    }
+    if (!addedField) {
+      return e;
+    }
+    auto* completed = ArrayLit::constructTuple(Expression::loc(al), fields);
+    Expression::type(completed, Expression::type(al));
+    return completed;
+  }
+
+public:
+  DataRecordCompleter(Model* m) {
+    class Collector : public ItemVisitor {
+    private:
+      ASTStringMap<TypeInst*>& _decls;
+      ASTStringMap<TypeInst*>& _aliases;
+
+    public:
+      Collector(ASTStringMap<TypeInst*>& decls, ASTStringMap<TypeInst*>& aliases)
+          : _decls(decls), _aliases(aliases) {}
+      void vVarDeclI(VarDeclI* vdi) {
+        VarDecl* vd = vdi->e();
+        if (vd->isTypeAlias()) {
+          _aliases.emplace(vd->id()->str(), Expression::cast<TypeInst>(vd->e()));
+        } else {
+          _decls.emplace(vd->id()->str(), vd->ti());
+        }
+      }
+    } collector(_decls, _aliases);
+    iter_items(collector, m);
+  }
+  /// Complete the record literals in the data file assignment \a ai
+  void run(AssignI* ai) {
+    auto it = _decls.find(ai->id());
+    if (it != _decls.end()) {
+      ai->e(complete(ai->e(), it->second, false));
+    }
+  }
+};
+}  // namespace
+
 std::string ParserState::canonicalFilename(const std::string& f) const {
   if (FileUtils::is_absolute(f) || std::string(filename).empty()) {
     return f;
@@ -362,6 +532,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     }
   }
 
+  std::unique_ptr<DataRecordCompleter> recordCompleter;
   for (const auto& f : datafiles) {
     GCLock lock;
     if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
@@ -384,11 +555,20 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         s = FileUtils::read_file_contents(f);
       }
 
+      if (recordCompleter == nullptr) {
+        recordCompleter.reset(new DataRecordCompleter(model));
+      }
+      unsigned int firstItem = model->size();
       ParserState pp(f, s, env.envi(), err, includePaths, files, seenModels, bundles, model,
                      env.envi().dataFileCalls, true, false, false, parseDocComments);
       run_parser(pp);
       if (pp.hadError) {
         throw MultipleErrors<SyntaxError>(pp.syntaxErrors);
+      }
+      for (unsigned int i = firstItem; i < model->size(); ++i) {
+        if (auto* ai = (*model)[i]->dynamicCast<AssignI>()) {
+          recordCompleter->run(ai);
+        }
       }
     }
   }
