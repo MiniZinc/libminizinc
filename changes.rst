@@ -89,6 +89,8 @@ Bug fixes:
    context of the call, which could half-reify them although the call uses them
    in both polarities (e.g. ``xorall([x > 5, x > 7]) \/ q`` allowed ``x = 8``
    with ``q`` false).
+-  Fix an "arithmetic operation on infinite value" error when outputting a
+   ``list of var`` declaration.
 
 .. _v2.10.1:
 

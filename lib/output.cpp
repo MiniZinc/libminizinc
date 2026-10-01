@@ -670,6 +670,22 @@ void make_par(EnvI& env, Expression* e) {
   top_down(_decls, e);
 }
 
+/// Set \a args to the concrete index sets of output array \a vd and return its number of elements.
+/// An index set that is absent or the `1..infinity' of a `list' is taken from \a flat instead.
+IntVal output_index_sets(EnvI& env, VarDecl* vd, VarDecl* flat, std::vector<Expression*>& args) {
+  IntVal size = 1;
+  for (unsigned int i = 0; i < args.size(); i++) {
+    Expression* dom = vd->ti()->ranges()[i]->domain();
+    IntSetVal* range = dom == nullptr ? nullptr : eval_intset(env, dom);
+    if (range == nullptr || is_list_index_set(range)) {
+      range = eval_intset(env, flat->ti()->ranges()[i]->domain());
+    }
+    args[i] = new SetLit(Location().introduce(), range);
+    size *= range->empty() ? 0 : (range->max() - range->min() + 1);
+  }
+  return size;
+}
+
 void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, IntVal size1d) {
   auto* flat_copy = e.cmap.find(vd->flat());
   if (flat_copy != nullptr) {
@@ -901,16 +917,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           if (nvi->e()->type().dim() == 0) {
             Expression::addAnnotation(reallyFlat, env.constants.ann.output_var);
           } else {
-            for (unsigned int i = 0; i < args.size(); i++) {
-              IntSetVal* range;
-              if (nvi->e()->ti()->ranges()[i]->domain() == nullptr) {
-                range = eval_intset(env, reallyFlat->ti()->ranges()[i]->domain());
-              } else {
-                range = eval_intset(env, nvi->e()->ti()->ranges()[i]->domain());
-              }
-              args[i] = new SetLit(Location().introduce(), range);
-              flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
-            }
+            flatSize = output_index_sets(env, nvi->e(), reallyFlat, args);
             if (env.fopts.ignoreStdlib) {
               // Ensure array?d call output by solver is available in output model
               std::vector<Type> ts(dims + 1);
@@ -1957,17 +1964,8 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                   if (needOutputAnn) {
                     const auto dims = vd_orig->type().dim();
                     std::vector<Expression*> args(dims);
-                    IntVal flatSize = 1;
-                    for (unsigned int i = 0; i < args.size(); i++) {
-                      IntSetVal* range;
-                      if (vd_orig->ti()->ranges()[i]->domain() == nullptr) {
-                        range = eval_intset(env, vd_followed->flat()->ti()->ranges()[i]->domain());
-                      } else {
-                        range = eval_intset(env, vd_followed->ti()->ranges()[i]->domain());
-                      }
-                      args[i] = new SetLit(Location().introduce(), range);
-                      flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
-                    }
+                    IntVal flatSize =
+                        output_index_sets(env, vd_followed, vd_followed->flat(), args);
                     if (env.fopts.ignoreStdlib) {
                       // Ensure array?d call output by solver is available in output model
                       std::vector<Type> ts(dims + 1);
@@ -2206,16 +2204,7 @@ void finalise_output(EnvI& e) {
                     if (dims == 0) {
                       Expression::addAnnotation(vd->flat(), e.constants.ann.output_var);
                     } else {
-                      for (unsigned int i = 0; i < args.size(); i++) {
-                        IntSetVal* range;
-                        if (vd->ti()->ranges()[i]->domain() == nullptr) {
-                          range = eval_intset(e, vd->flat()->ti()->ranges()[i]->domain());
-                        } else {
-                          range = eval_intset(e, vd->ti()->ranges()[i]->domain());
-                        }
-                        args[i] = new SetLit(Location().introduce(), range);
-                        flatSize *= range->empty() ? 0 : (range->max() - range->min() + 1);
-                      }
+                      flatSize = output_index_sets(e, vd, vd->flat(), args);
                       if (e.fopts.ignoreStdlib) {
                         // Ensure array?d call output by solver is available in output model
                         std::vector<Type> ts(dims + 1);
