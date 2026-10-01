@@ -483,6 +483,33 @@ public:
   // Storage for mznpaths
   VarPathStore varPathStore;
 
+  /// The inverse of a par array of strings or integers, used by the builtin versions of
+  /// arg_val, arg_val_weak and first_duplicate. Maps each value to the position of its first
+  /// occurrence.
+  struct ArgValIndex {
+    std::unordered_map<ASTString, unsigned int> strings;
+    std::unordered_map<IntVal, unsigned int> ints;
+    /// The first position whose value occurs at an earlier position, or -1 if there is none
+    long long int duplicate = -1;
+  };
+  /// Map from arrays to their indexes that does not keep the arrays alive: an entry is removed
+  /// when its array is collected.
+  class ArgValIndexMap : public KeepAliveMap<std::shared_ptr<const ArgValIndex>> {
+  public:
+    void mark() override {}
+    void fixWeakRefs() override {
+      for (auto it = _m.begin(); it != _m.end();) {
+        it = Expression::hasMark(it->first) ? std::next(it) : _m.erase(it);
+      }
+    }
+  };
+  /// The indexes of the arrays seen so far. Arrays are compared structurally, so a copy of an
+  /// array reuses its index. Only arrays of literals are cached, since an array with other
+  /// elements can evaluate differently each time.
+  ArgValIndexMap argValIndexes;
+  /// The number of indexes built (cached or not), for testing the cache
+  long long int argValIndexBuilds = 0;
+
 protected:
   CSEMap _cseMap;
   Model* _flat;

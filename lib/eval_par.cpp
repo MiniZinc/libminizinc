@@ -2407,7 +2407,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           allFlat = false;
           args[i] = ali;
         } else if (!Expression::isa<IntLit>(ali) && !Expression::isa<FloatLit>(ali) &&
-                   !Expression::isa<BoolLit>(ali) &&
+                   !Expression::isa<BoolLit>(ali) && !Expression::isa<StringLit>(ali) &&
                    !(Expression::isa<SetLit>(ali) && Expression::cast<SetLit>(ali)->evaluated())) {
           allFlat = false;
           args[i] = eval_par(env, ali);
