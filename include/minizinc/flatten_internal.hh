@@ -467,6 +467,21 @@ public:
   std::vector<Call*> dataFileCalls;
   std::vector<KeepAlive> checkVars;
   std::vector<KeepAlive> outputVars;
+  /// Whether `var bool` definitions are deferred (while flattening the model and during the
+  /// redefinition loop in flatten(), see defer_bool_def)
+  bool deferBoolDefs = false;
+  /// Bookkeeping for the order of the deferred definitions of flat variables
+  struct DeferredBoolDef {
+    /// Number of other deferred definitions that use the variable. Its definition is flattened
+    /// only once all of them are flattened.
+    int uses = 0;
+    /// The flat variables with a deferred definition that its own definition uses
+    std::vector<VarDecl*> used;
+    /// All flat variables that its own definition uses (counted as occurrences until it is
+    /// flattened)
+    std::vector<VarDecl*> refs;
+  };
+  std::unordered_map<VarDecl*, DeferredBoolDef> deferredBoolDefs;
   OutputSectionStore outputSections;
   std::unordered_map<std::string, int> keyCounters;
   // Maps each FlatZinc variable name originating from an `assume` argument (or the objective)
@@ -694,8 +709,10 @@ inline bool is_list_index_set(IntSetVal* isv) {
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+/// \a elementAccess: the identifier is the array of an access, so this is not a use of all its
+/// elements (see add_ctx_ann_elements)
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
-              bool doNotFollowChains);
+              bool doNotFollowChains, bool elementAccess = false);
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
                       std::vector<std::pair<int, int>> dims, unsigned int field);

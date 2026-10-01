@@ -18,14 +18,32 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
   EE ret;
   Let* let = Expression::cast<Let>(e);
   std::vector<EE> cs;
-  std::vector<KeepAlive> flatmap;
   {
+    LetFlatScope lfs(let);
     LetPushBindings lpb(let);
     for (unsigned int i = 0; i < let->let().size(); i++) {
       Expression* le = let->let()[i];
       if (auto* vd = Expression::dynamicCast<VarDecl>(le)) {
         Expression* let_e = nullptr;
-        if (vd->e() != nullptr) {
+        std::vector<VarDecl*> refs;
+        KeepAlive def = deferrable_bool_def(env, vd, refs);
+        if (def() != nullptr) {
+          // Flatten the definition once all uses are known (see defer_bool_def)
+          CallStackItem csi_vd(env, vd);
+          GCLock lock;
+          VarDecl* nvd =
+              new_vardecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()),
+                          nullptr, vd, nullptr, false);
+          if (!defer_bool_def(env, nvd, Expression::cast<Let>(def()), std::move(refs))) {
+            Ctx nctx = ctx;
+            nctx.neg = false;
+            nctx.b = C_MIX;
+            cs.push_back(flat_exp(env, nctx, vd->e(), nvd, nctx.partialityVar(env)));
+          }
+          let_e = nvd->id();
+          vd->e(let_e);
+          flatten_vardecl_annotations(env, vd, nullptr, vd);
+        } else if (vd->e() != nullptr) {
           Ctx nctx = ctx;
           BCtx transfer_ctx = let->type().bt() == Type::BT_INT ? nctx.i : nctx.b;
           nctx.neg = false;
@@ -78,12 +96,7 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
           let_e = nvd->id();
           vd->e(let_e);
         }
-        flatmap.emplace_back(vd->flat());
-        if (Id* id = Expression::dynamicCast<Id>(let_e)) {
-          vd->flat(id->decl());
-        } else {
-          vd->flat(vd);
-        }
+        LetFlatScope::bind(vd, let_e);
       } else {
         if (ctx.b == C_ROOT || Expression::ann(le).contains(env.constants.ann.promise_total)) {
           (void)flat_exp(env, Ctx(), le, env.constants.varTrue, env.constants.varTrue);
@@ -123,12 +136,25 @@ EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       }
     }
   }
-  // Restore previous mapping
-  for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
-    if (auto* vd = Expression::dynamicCast<VarDecl>(let->let()[i])) {
-      vd->flat(Expression::cast<VarDecl>(flatmap[j++]()));
+  return ret;
+}
+
+LetFlatScope::LetFlatScope(Let* let) {
+  for (auto* e : let->let()) {
+    if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+      _saved.emplace_back(vd, vd->flat());
     }
   }
-  return ret;
+}
+
+LetFlatScope::~LetFlatScope() {
+  for (auto& saved : _saved) {
+    saved.first->flat(Expression::cast<VarDecl>(saved.second()));
+  }
+}
+
+void LetFlatScope::bind(VarDecl* vd, Expression* e) {
+  Id* ident = Expression::dynamicCast<Id>(e);
+  vd->flat(ident != nullptr && ident->decl() != nullptr ? ident->decl() : vd);
 }
 }  // namespace MiniZinc
