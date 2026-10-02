@@ -492,13 +492,19 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
 
 void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
   bool allFlat = true;
+  bool allEvaluated = true;
   for (auto* e : v) {
-    if (!Expression::isa<IntLit>(e) && !Expression::isa<FloatLit>(e) &&
+    if (allEvaluated && !isEvaluatedElement(e)) {
+      allEvaluated = false;
+    }
+    if (allFlat && !Expression::isa<IntLit>(e) && !Expression::isa<FloatLit>(e) &&
         !Expression::isa<BoolLit>(e) &&
         !(Expression::isa<SetLit>(e) && Expression::cast<SetLit>(e)->evaluated()) &&
         !(Expression::isa<Id>(e) && Expression::cast<Id>(e)->decl() != nullptr &&
           Expression::cast<Id>(e)->decl()->flat() == Expression::cast<Id>(e)->decl())) {
       allFlat = false;
+    }
+    if (!allFlat && !allEvaluated) {
       break;
     }
   }
@@ -520,9 +526,11 @@ void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int
     compress.resize(i);
     _u.v = ASTExprVec<Expression>(compress).vec();
     _u.v->flag(true);
+    _u.v->evaluated(allEvaluated);
     _dims = ASTIntVec(dims);
   } else {
     _u.v = ASTExprVec<Expression>(v).vec();
+    _u.v->evaluated(allEvaluated);
     if (dims.size() != 2 || dims[0] != 1) {
       // only allocate dims vector if it is not a 1d array indexed from 1
       _dims = ASTIntVec(dims);

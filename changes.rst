@@ -47,7 +47,10 @@ Changes:
    by later calls, so that repeated lookups in a large array no longer scan it.
    Add the function ``first_duplicate``, which returns a value that occurs more
    than once in such an array, or ``<>`` if all values are distinct.
--  Avoid copying par arrays of strings when they are passed to a function.
+-  Avoid copying or re-evaluating par arrays whose elements are already values
+   (including arrays of strings, sets and optional values) each time they are
+   passed to a function, which made repeated calls on large arrays take time
+   linear in the size of the array.
 
 Bug fixes:
 ^^^^^^^^^^

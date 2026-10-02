@@ -292,6 +292,17 @@ inline TIId::TIId(const Location& loc, const ASTString& v)
 
 inline AnonVar::AnonVar(const Location& loc) : BoxedExpression(loc, E_ANON, Type()) { rehash(); }
 
+inline bool ArrayLit::isEvaluatedElement(const Expression* e) {
+  if (Expression::isa<IntLit>(e) || Expression::isa<FloatLit>(e) || Expression::isa<BoolLit>(e) ||
+      Expression::isa<StringLit>(e)) {
+    return true;
+  }
+  if (Expression::isa<SetLit>(e)) {
+    return Expression::cast<SetLit>(e)->evaluated();
+  }
+  return Expression::isa<Id>(e) && e == Constants::constants().absent;
+}
+
 inline ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
                           const std::vector<std::pair<int, int> >& dims)
     : BoxedExpression(loc, E_ARRAYLIT, Type()) {
