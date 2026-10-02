@@ -1,0 +1,12 @@
+predicate int_lin_le_imp(array [int] of int: as,array [int] of var int: bs,int: c,var bool: r);
+array [1..3] of int: X_INTRODUCED_3_ = [-1,-1,-1];
+var 0..10: x:: output_var;
+var 0..10: y:: output_var;
+var 0..10: z:: output_var;
+var bool: q:: output_var;
+var bool: r:: output_var;
+var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+constraint bool_clause([q,X_INTRODUCED_2_],[]);
+constraint bool_clause([r,X_INTRODUCED_2_],[]);
+constraint int_lin_le_imp(X_INTRODUCED_3_,[x,y,z],-3,X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+solve  satisfy;

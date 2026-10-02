@@ -25,6 +25,9 @@ Changes:
    tree-sitter runtime only to report syntax errors in models.
 -  Download the tree-sitter runtime when configuring instead of vendoring it,
    which raises the CMake required to build MiniZinc to 3.20.
+-  Emit shared linear expressions once while continuing to inline single-use
+   expressions. Reordered, shifted, and commonly scaled integer expressions are
+   recognised as equivalent.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
 -  Report a type error when a ``var`` type-inst variable (for example in a

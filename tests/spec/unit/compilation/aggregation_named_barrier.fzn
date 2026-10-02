@@ -1,0 +1,15 @@
+predicate int_le_imp(var int: a,var int: b,var bool: r);
+array [1..5] of int: X_INTRODUCED_7_ = [1,1,1,1,-1];
+var 0..10: X_INTRODUCED_0_;
+var 0..10: X_INTRODUCED_1_;
+var 0..10: X_INTRODUCED_2_;
+var 0..10: X_INTRODUCED_3_;
+var {0,1,2,3,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40}: X_INTRODUCED_4_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_5_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_6_ ::var_is_introduced :: is_defined_var;
+array [1..4] of var int: a:: output_array([1..4]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_];
+constraint bool_clause([X_INTRODUCED_5_,X_INTRODUCED_6_],[]);
+constraint int_lin_eq(X_INTRODUCED_7_,[X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,X_INTRODUCED_3_,X_INTRODUCED_4_],0):: defines_var(X_INTRODUCED_4_);
+constraint int_le_imp(X_INTRODUCED_4_,4,X_INTRODUCED_5_):: defines_var(X_INTRODUCED_5_);
+constraint int_le_imp(11,X_INTRODUCED_4_,X_INTRODUCED_6_):: defines_var(X_INTRODUCED_6_);
+solve  satisfy;

@@ -12,7 +12,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/astiterator.hh>
 #include <minizinc/chain_compressor.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 
 namespace MiniZinc {
 
