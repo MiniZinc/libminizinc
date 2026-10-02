@@ -2396,6 +2396,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
       // fall through
     case Expression::E_ARRAYLIT: {
       ArrayLit* al = eval_array_lit(env, e);
+      if (al->evaluated() && (!al->type().isbot() || al->empty())) {
+        // The array is its own value. (A non-empty array of type bot is copied below, which
+        // fixes its type.)
+        return al;
+      }
       std::vector<Expression*> args(al->size());
       bool allFlat = true;
       // Tuple/record literals can mix par and var fields. A var field cannot
@@ -2407,7 +2412,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           allFlat = false;
           args[i] = ali;
         } else if (!Expression::isa<IntLit>(ali) && !Expression::isa<FloatLit>(ali) &&
-                   !Expression::isa<BoolLit>(ali) &&
+                   !Expression::isa<BoolLit>(ali) && !Expression::isa<StringLit>(ali) &&
                    !(Expression::isa<SetLit>(ali) && Expression::cast<SetLit>(ali)->evaluated())) {
           allFlat = false;
           args[i] = eval_par(env, ali);
@@ -2494,6 +2499,12 @@ Expression* eval_par(EnvI& env, Expression* e) {
     default: {
       if (Expression::type(e).dim() != 0) {
         ArrayLit* al = eval_array_lit(env, e);
+        if (al->evaluated() &&
+            ((al->type().bt() != Type::BT_BOT && al->type().bt() != Type::BT_TOP) || al->empty())) {
+          // The array is its own value. (A non-empty array of type bot or top is copied below,
+          // which fixes its type.)
+          return al;
+        }
         std::vector<Expression*> args(al->size());
         for (unsigned int i = al->size(); (i--) != 0U;) {
           args[i] = eval_par(env, (*al)[i]);

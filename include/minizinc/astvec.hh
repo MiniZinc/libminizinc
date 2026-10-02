@@ -158,11 +158,17 @@ public:
   bool flag() const { return _flag1; }
   /// Set flag
   void flag(bool f) { _flag1 = f; }
+  /// Whether all elements are evaluated par values (only maintained for array literals, see
+  /// ArrayLit::evaluated)
+  bool evaluated() const { return _flag2; }
+  /// Set whether all elements are evaluated par values
+  void evaluated(bool f) { _flag2 = f; }
 };
 
 template <class T>
 ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
   _flag1 = false;
+  _flag2 = false;
   for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     (*this)[i] = v[i];
   }

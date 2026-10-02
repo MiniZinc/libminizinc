@@ -42,6 +42,15 @@ Changes:
    ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
    was already the case for JSON input, which now also supports record types
    that are combined using ``++``.
+-  Make ``arg_val`` and ``arg_val_weak`` on par arrays of strings, integers or
+   enums use a hash map that is built on the first call for an array and reused
+   by later calls, so that repeated lookups in a large array no longer scan it.
+   Add the function ``first_duplicate``, which returns a value that occurs more
+   than once in such an array, or ``<>`` if all values are distinct.
+-  Avoid copying or re-evaluating par arrays whose elements are already values
+   (including arrays of strings, sets and optional values) each time they are
+   passed to a function, which made repeated calls on large arrays take time
+   linear in the size of the array.
 
 Bug fixes:
 ^^^^^^^^^^

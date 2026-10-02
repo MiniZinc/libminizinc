@@ -269,6 +269,91 @@ IntVal b_arg_max_float(EnvI& env, Call* call) {
   return IntVal(m_idx) + al->min(0);
 }
 
+/// The index of the par array \a al, an array of strings if \a strings is true and of integers
+/// otherwise. The index is cached if every element of \a al is a literal.
+std::shared_ptr<const EnvI::ArgValIndex> arg_val_index(EnvI& env, ArrayLit* al, bool strings) {
+  // Only arrays of literals are cached, and an array with other elements never equals one of
+  // them, so the cache can be consulted before checking the elements
+  auto it = env.argValIndexes.find(al);
+  if (it != env.argValIndexes.end()) {
+    return it->second;
+  }
+  bool literal = true;
+  for (unsigned int i = 0; i < al->size() && literal; i++) {
+    literal = strings ? Expression::isa<StringLit>((*al)[i]) : Expression::isa<IntLit>((*al)[i]);
+  }
+  env.argValIndexBuilds++;
+  auto index = std::make_shared<EnvI::ArgValIndex>();
+  for (unsigned int i = 0; i < al->size(); i++) {
+    bool inserted;
+    if (strings) {
+      auto* sl = Expression::dynamicCast<StringLit>((*al)[i]);
+      ASTString s = sl != nullptr ? sl->v() : ASTString(eval_string(env, (*al)[i]));
+      inserted = index->strings.emplace(s, i).second;
+    } else {
+      inserted = index->ints.emplace(eval_int(env, (*al)[i]), i).second;
+    }
+    if (!inserted && index->duplicate == -1) {
+      index->duplicate = i;
+    }
+  }
+  if (literal) {
+    env.argValIndexes.insert(al, index);
+  }
+  return index;
+}
+
+/// The position in the array argument of \a call of its value argument, or -1 if the value does
+/// not occur in the array
+long long int arg_val_position(EnvI& env, Call* call, ArrayLit* al) {
+  bool strings = Expression::type(call->arg(1)).bt() == Type::BT_STRING;
+  auto index = arg_val_index(env, al, strings);
+  if (strings) {
+    auto* sl = Expression::dynamicCast<StringLit>(eval_par(env, call->arg(1)));
+    ASTString s = sl != nullptr ? sl->v() : ASTString(eval_string(env, call->arg(1)));
+    auto it = index->strings.find(s);
+    return it == index->strings.end() ? -1LL : static_cast<long long int>(it->second);
+  }
+  auto it = index->ints.find(eval_int(env, call->arg(1)));
+  return it == index->ints.end() ? -1LL : static_cast<long long int>(it->second);
+}
+
+IntVal b_arg_val(EnvI& env, Call* call) {
+  GCLock lock;
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  assert(al->dims() == 1);
+  long long int pos = arg_val_position(env, call, al);
+  if (pos == -1) {
+    throw ResultUndefinedError(env, Expression::loc(call),
+                               "arg_val: the value does not occur in the array");
+  }
+  return IntVal(pos) + al->min(0);
+}
+
+Expression* b_arg_val_weak(EnvI& env, Call* call) {
+  GCLock lock;
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  assert(al->dims() == 1);
+  long long int pos = arg_val_position(env, call, al);
+  if (pos == -1) {
+    return env.constants.absent;
+  }
+  return IntLit::a(IntVal(pos) + al->min(0));
+}
+
+Expression* b_first_duplicate(EnvI& env, Call* call) {
+  GCLock lock;
+  ArrayLit* al = eval_array_lit(env, call->arg(0));
+  assert(al->dims() == 1);
+  auto index = arg_val_index(env, al, Expression::type(call->arg(0)).bt() == Type::BT_STRING);
+  if (index->duplicate == -1) {
+    return env.constants.absent;
+  }
+  return eval_par(env, (*al)[static_cast<unsigned int>(index->duplicate)]);
+}
+
+IntVal b_arg_val_index_builds(EnvI& env, Call* /*call*/) { return env.argValIndexBuilds; }
+
 IntVal b_abs_int(EnvI& env, Call* call) {
   assert(call->argCount() == 1);
   return abs(eval_int(env, call->arg(0)));
@@ -4852,6 +4937,25 @@ void register_builtins(Env& e) {
     std::vector<Type> t(1);
     t[0] = Type::parint(1);
     rb(env, m, ASTString("inverse"), t, b_inverse, true);
+  }
+  {
+    std::vector<Type> t(2);
+    t[0] = Type::parstring(1);
+    t[1] = Type::parstring();
+    rb(env, m, ASTString("arg_val"), t, b_arg_val, true);
+    rb(env, m, ASTString("arg_val_weak"), t, b_arg_val_weak, true);
+    t[0] = Type::parint(1);
+    t[1] = Type::parint();
+    rb(env, m, ASTString("arg_val"), t, b_arg_val, true);
+    rb(env, m, ASTString("arg_val_weak"), t, b_arg_val_weak, true);
+    t.resize(1);
+    rb(env, m, ASTString("first_duplicate"), t, b_first_duplicate, true);
+    t[0] = Type::parstring(1);
+    rb(env, m, ASTString("first_duplicate"), t, b_first_duplicate, true);
+  }
+  {
+    std::vector<Type> t;
+    rb(env, m, ASTString("mzn_arg_val_index_builds"), t, b_arg_val_index_builds, true);
   }
   {
     std::vector<Type> t(1);

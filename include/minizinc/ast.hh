@@ -962,6 +962,13 @@ public:
   bool flat() const { return _flag1; }
   /// Set whether this array was produced by flattening
   void flat(bool b) { _flag1 = b; }
+  /// Check if every element is an evaluated par value (see isEvaluatedElement), so that the
+  /// array is its own value. This is a property of the element vector, which views and reshaped
+  /// copies of an array share, and it is kept up to date when elements are replaced.
+  bool evaluated() const { return _flag2 ? _u.al->evaluated() : _u.v->evaluated(); }
+  /// Check if \a e is an evaluated par value: a Boolean, integer, float or string literal, an
+  /// evaluated set literal, or absent
+  static bool isEvaluatedElement(const Expression* e);
   /// Return size of underlying array
   unsigned int size() const { return (_flag2 || _u.v->flag()) ? length() : _u.v->size(); }
   /// Return whether array is empty
@@ -970,6 +977,9 @@ public:
   Expression* operator[](unsigned int i) const;
   /// Set element \a i
   void set(unsigned int i, Expression* e) {
+    if (!_flag2 && !isEvaluatedElement(e)) {
+      _u.v->evaluated(false);
+    }
     if (_flag2 || _u.v->flag()) {
       setSlice(i, e);
     } else {

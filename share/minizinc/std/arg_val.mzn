@@ -30,6 +30,56 @@ function opt $$E: arg_val_weak(array [$$E] of $T: xs, $T: value) =
     any: matches = [i | i in index_set(xs) where xs[i] = value];
   } in if length(matches) = 0 then <> else matches[1] endif;
 
+% Builtin versions of arg_val and arg_val_weak for par arrays of strings and integers. They
+% build a hash map from values to indices on first use and reuse it for later calls on the same
+% array, so repeated lookups in one array take constant time.
+
+/** @group globals.math
+	Returns the index of the value \a value in the array \a xs.
+	When breaking ties the least index is returned.
+	Note that this function forces the value \a value to occur in \a xs.
+*/
+function $$E: arg_val(array [$$E] of string: xs, string: value);
+
+/** @group globals.math
+	Returns the index of the value \a value in the array \a xs.
+	When breaking ties the least index is returned.
+	Returns absent when \a value does not occur in \a xs.
+*/
+function opt $$E: arg_val_weak(array [$$E] of string: xs, string: value);
+
+/** @group globals.math
+	Returns the index of the value \a value in the array \a xs.
+	When breaking ties the least index is returned.
+	Note that this function forces the value \a value to occur in \a xs.
+*/
+function $$E: arg_val(array [$$E] of $$F: xs, $$F: value);
+
+/** @group globals.math
+	Returns the index of the value \a value in the array \a xs.
+	When breaking ties the least index is returned.
+	Returns absent when \a value does not occur in \a xs.
+*/
+function opt $$E: arg_val_weak(array [$$E] of $$F: xs, $$F: value);
+
+/** @group globals.math
+	Returns a value that occurs more than once in the array \a xs, or absent
+	if all values in \a xs are distinct. If several values occur more than once,
+	the one whose second occurrence has the least index is returned.
+*/
+function opt string: first_duplicate(array [$$E] of string: xs);
+
+/** @group globals.math
+	Returns a value that occurs more than once in the array \a xs, or absent
+	if all values in \a xs are distinct. If several values occur more than once,
+	the one whose second occurrence has the least index is returned.
+*/
+function opt $$F: first_duplicate(array [$$E] of $$F: xs);
+
+% The number of value-to-index maps built so far by arg_val, arg_val_weak and
+% first_duplicate. Only for testing that the maps are reused.
+function int: mzn_arg_val_index_builds();
+
 /** @group globals.math
 	Returns the index of the value \a value in the array \a xs.
 	When breaking ties the least index is returned.
