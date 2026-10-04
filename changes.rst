@@ -54,6 +54,10 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
+-  Make the output model deterministic for output sections that bind local
+   declarations (such as those created by the visualisation library). The
+   order of these declarations depended on memory addresses, so it could
+   differ between runs.
 -  Fix array slices (such as ``x[i, ..]``) that were never hashed, so that
    common subexpression elimination could not recognise them. A slice is now
    equal to any array with the same index sets and elements, so it can share

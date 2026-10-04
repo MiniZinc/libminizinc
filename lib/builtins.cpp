@@ -2319,17 +2319,27 @@ void output_to_section(EnvI& env, Call* call, bool json) {
   // during output evaluation.
   CopyMap cm;
   Expression* e = copy(env, cm, call->arg(1), false, false, true);
-  std::unordered_set<Expression*> scope;
+  // The declarations to bind in a let around the output expression, in the order in which they
+  // are found (which puts the declarations a definition refers to before it). The order must not
+  // depend on addresses, so that the output model is the same in every run.
+  std::vector<Expression*> scope;
 
   class CollectScope : public EVisitor {
   private:
     EnvI& _env;
     CopyMap& _cm;
-    std::unordered_set<Expression*>& _scope;
+    std::vector<Expression*>& _scope;
+    std::unordered_set<Expression*> _inScope;
     std::unordered_set<Id*> _visited;
 
+    void addToScope(Expression* vd) {
+      if (_inScope.insert(vd).second) {
+        _scope.push_back(vd);
+      }
+    }
+
   public:
-    CollectScope(EnvI& env, CopyMap& cm, std::unordered_set<Expression*>& scope)
+    CollectScope(EnvI& env, CopyMap& cm, std::vector<Expression*>& scope)
         : _env(env), _cm(cm), _scope(scope) {}
     void vId(Id* i) {
       if (_visited.count(i) > 0) {
@@ -2361,7 +2371,7 @@ void output_to_section(EnvI& env, Call* call, bool json) {
           nvd->toplevel(false);
           nvd->type(vd->type());
           i->redirect(nvd->id());
-          _scope.emplace(nvd);
+          addToScope(nvd);
         } else {
           i->redirect(vd_orig->id());
         }
@@ -2371,7 +2381,7 @@ void output_to_section(EnvI& env, Call* call, bool json) {
         }
         vd->flat(nullptr);
         Expression::ann(vd).clear();
-        _scope.emplace(vd);
+        addToScope(vd);
       }
     }
   } _cs(env, cm, scope);
@@ -2379,8 +2389,7 @@ void output_to_section(EnvI& env, Call* call, bool json) {
 
   auto* expr = e;
   if (!scope.empty()) {
-    std::vector<Expression*> scope_vars(scope.begin(), scope.end());
-    expr = new Let(Location().introduce(), scope_vars, e);
+    expr = new Let(Location().introduce(), scope, e);
     Expression::type(expr, Expression::type(e));
   }
   std::vector<Expression*> al_v({expr});
