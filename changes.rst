@@ -54,6 +54,10 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
+-  Fix array slices (such as ``x[i, ..]``) that were never hashed, so that
+   common subexpression elimination could not recognise them. A slice is now
+   equal to any array with the same index sets and elements, so it can share
+   the result of an equal array.
 -  Make warnings raised while parsing (for example, for deprecated syntax)
    respect ``-Werror`` and ``-w``/``--disable-warnings``. Parser warnings were
    printed directly, bypassing all warning handling, and the warning options

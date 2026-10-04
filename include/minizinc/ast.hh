@@ -335,8 +335,8 @@ protected:
   Location _loc;
   /// The annotations
   Annotation _ann;
-  /// The hash value of the expression
-  size_t _hash;
+  /// The hash value of the expression (computed on first use for array views, see hash)
+  mutable size_t _hash;
 
 public:
   /// Identifier of the concrete expression type
@@ -391,6 +391,11 @@ protected:
 
   /// Compute base hash value
   void initHash() { _hash = combineHash(0, _id); }
+  /// Hash value of an array view whose hash has not been computed yet. Creating a view does not
+  /// look at its elements, so its hash is only computed when it is first needed.
+  static const size_t pendingHash = static_cast<size_t>(-1);
+  /// Compute and store the hash of \a e, whose hash is pending
+  static size_t computePendingHash(const Expression* e);
 
   /// Check if \a e0 and \a e1 are equal
   static bool equalInternal(const Expression* e0, const Expression* e1);
@@ -616,6 +621,7 @@ inline size_t Expression::hash(const Expression* e) {
              ? 0
              : (Expression::isUnboxedInt(e)        ? Expression::unboxedIntToIntVal(e).hash()
                 : Expression::isUnboxedFloatVal(e) ? Expression::unboxedFloatToFloatVal(e).hash()
+                : e->_hash == pendingHash          ? computePendingHash(e)
                                                    : e->_hash);
 }
 
@@ -895,6 +901,8 @@ protected:
   ASTIntVec _dims;
   /// Set compressed vector (initial repetitions are removed)
   void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
+  /// Compute the hash value from the index sets and the elements
+  size_t computeHash() const;
   /// Whether this is an array or a tuple
   enum ArrayLitType { AL_ARRAY, AL_TUPLE };
 

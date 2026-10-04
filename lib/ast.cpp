@@ -488,6 +488,7 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
     d[sliceOffset + i * 2 + 1] = slice[i].second;
   }
   _dims = ASTIntVec(d);
+  rehash();
 }
 
 void ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
@@ -554,19 +555,33 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
 }
 
 void ArrayLit::rehash() {
-  initHash();
+  // A view computes its hash when it is first needed, so that creating it stays cheap
+  _hash = _flag2 ? pendingHash : computeHash();
+}
+
+size_t ArrayLit::computeHash() const {
+  // Hash the index sets and the elements, not the representation, so that a view or a
+  // compressed array has the same hash as an equal plain array (see Expression::equal)
   std::hash<int> h;
-  for (int _dim : _dims) {
-    combineHash(h(_dim));
+  size_t r = combineHash(0, _id);
+  r = combineHash(r, h(static_cast<int>(dims())));
+  for (unsigned int i = 0; i < dims(); i++) {
+    r = combineHash(r, h(min(i)));
+    r = combineHash(r, h(max(i)));
   }
-  if (_flag2) {
-    combineHash(Expression::hash(_u.al));
-  } else {
-    for (unsigned int i = _u.v->size(); (i--) != 0U;) {
-      combineHash(h(static_cast<int>(i)));
-      combineHash(Expression::hash((*_u.v)[i]));
-    }
+  for (unsigned int i = size(); (i--) != 0U;) {
+    r = combineHash(r, h(static_cast<int>(i)));
+    r = combineHash(r, Expression::hash((*this)[i]));
   }
+  // Keep the sentinel for pending hashes unambiguous
+  return r == pendingHash ? r - 1 : r;
+}
+
+size_t Expression::computePendingHash(const Expression* e) {
+  if (Expression::isa<ArrayLit>(e)) {
+    e->_hash = Expression::cast<ArrayLit>(e)->computeHash();
+  }
+  return e->_hash;
 }
 
 void ArrayAccess::rehash() {
@@ -2443,11 +2458,13 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
       if (a0->size() != a1->size()) {
         return false;
       }
-      if (a0->_dims.size() != a1->_dims.size()) {
+      // Compare the index sets, not the representation, so that a view equals a plain array with
+      // the same index sets and elements
+      if (a0->dims() != a1->dims()) {
         return false;
       }
-      for (unsigned int i = 0; i < a0->_dims.size(); i++) {
-        if (a0->_dims[i] != a1->_dims[i]) {
+      for (unsigned int i = 0; i < a0->dims(); i++) {
+        if (a0->min(i) != a1->min(i) || a0->max(i) != a1->max(i)) {
           return false;
         }
       }
