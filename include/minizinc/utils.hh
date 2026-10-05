@@ -48,7 +48,7 @@ unsigned long parse_unsigned_long_option(const std::string& value, const std::st
   std::cerr << '\n'                                                                         \
             << __FILE__ << ": " << __LINE__ << " (" << __func__ << "): not " << e1 << ":  " \
             << std::flush;                                                                  \
-  std::cerr << e2 << std::endl
+  std::cerr << e2 << '\n'
 #else
 #define MZN_PRINT_SRCLOC(e1, e2)
 #endif
@@ -81,7 +81,7 @@ inline void check_io_status(bool fOk, const std::string& msg, bool fHard = true)
 #else
     char* errBuf = strerror(errno);
 #endif
-    std::cerr << "\n  " << msg << ":   " << errBuf << "." << std::endl;
+    std::cerr << "\n  " << msg << ":   " << errBuf << ".\n";
     MZN_ASSERT_HARD_MSG(!fHard, msg << ": " << errBuf);
   }
 }
@@ -205,7 +205,7 @@ public:
   unsigned int patch = 0;
   SemanticVersion(unsigned int major, unsigned int minor, unsigned int patch)
       : major{major}, minor{minor}, patch{patch} {};
-  SemanticVersion(std::string version) {
+  SemanticVersion(const std::string& version) {
     auto parseComponent = [](const std::string& component) {
       if (component.empty()) {
         return 0U;

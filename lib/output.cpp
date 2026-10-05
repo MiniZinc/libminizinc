@@ -391,7 +391,7 @@ Call* generate_show(EnvI& env, Expression* e, Expression* w, Expression* p, bool
       // Build multi-level JSON Array string
       auto* comma = new StringLit(Location().introduce(), ", ");
       comma->type(Type::parstring());
-      auto join = [&](Expression* expr, Generator gen) -> Expression* {
+      auto join = [&](Expression* expr, const Generator& gen) -> Expression* {
         Generators generators;
         generators.g.push_back(gen);
         auto* comp = new Comprehension(Location().introduce(), expr, generators, false);
@@ -686,7 +686,8 @@ IntVal output_index_sets(EnvI& env, VarDecl* vd, VarDecl* flat, std::vector<Expr
   return size;
 }
 
-void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, IntVal size1d) {
+void check_rename_var(EnvI& e, VarDecl* vd, const std::vector<Expression*>& dimArgs,
+                      IntVal size1d) {
   auto* flat_copy = e.cmap.find(vd->flat());
   if (flat_copy != nullptr) {
     // Flat has been copied into the output, so use the copy as the ozn parameter
@@ -710,6 +711,7 @@ void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, In
         // Add arrayXd call
         const auto& arrayXdId = e.constants.ids.arrayNd(vd->ti()->type().dim());
         std::vector<Expression*> arrayXdargs;
+        arrayXdargs.reserve(dimArgs.size());
         for (auto* e : dimArgs) {
           arrayXdargs.emplace_back(e);
         }
@@ -746,6 +748,7 @@ void check_rename_var(EnvI& e, VarDecl* vd, std::vector<Expression*> dimArgs, In
       // Add arrayXd call
       const auto& arrayXdId = e.constants.ids.arrayNd(vd->ti()->type().dim());
       std::vector<Expression*> arrayXdargs;
+      arrayXdargs.reserve(dimArgs.size());
       for (auto* e : dimArgs) {
         arrayXdargs.emplace_back(e);
       }

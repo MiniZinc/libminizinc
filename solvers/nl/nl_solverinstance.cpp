@@ -50,7 +50,7 @@ string NLSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
 string NLSolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 
 void NLSolverFactory::printHelp(ostream& os) {
-  os << "MZN-NL plugin options" << std::endl
+  os << "MZN-NL plugin options\n"
      << "  --nl-cmd , --nonlinear-cmd <exe>\n     The backend solver filename.\n"
      << "  --nl-flags <options>, --backend-flags <options>\n"
         "     Specify option to be passed to the NL solver.\n"

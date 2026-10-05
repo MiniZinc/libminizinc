@@ -187,7 +187,7 @@ public:
     } else {
       ss << buf + lineStartPos;
     }
-    ss << std::endl;
+    ss << '\n';
     for (int i = 0; i < firstCol - 1; i++) {
       ss << " ";
     }
@@ -213,7 +213,7 @@ public:
     } else {
       ss << buf + ls;
     }
-    ss << std::endl;
+    ss << '\n';
     for (int i = 0; i < firstCol - 1; i++) {
       ss << " ";
     }
@@ -223,7 +223,7 @@ public:
     return ss.str();
   }
   void printCurrentLine(int firstCol, int lastCol) {
-    err << getCurrentLine(firstCol, lastCol) << std::endl;
+    err << getCurrentLine(firstCol, lastCol) << '\n';
   }
 
   unsigned int fillBuffer(char* lexBuf, unsigned int lexBufSize) {

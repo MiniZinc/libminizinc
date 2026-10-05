@@ -65,44 +65,36 @@ vector<string> MIPosicbcWrapper::getTags() {
 vector<string> MIPosicbcWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
 void MIPosicbcWrapper::Options::printHelp(ostream& os) {
-  os << "COIN-BC MIP wrapper options:"
-     << std::endl
+  os << "COIN-BC MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read OSICBC parameters from file
      //               << "--writeParam <file> write OSICBC parameters to file
      //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
      << "  --cbcArgs, --cbcFlags, --cbc-flags, --backend-flags \"args\"\n"
-        "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"."
-     << std::endl
+        "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\".\n"
      << "  --cbcArg, --cbcFlag, --cbc-flag, --backend-flag \"args\"\n"
-        "    same as above but with a single flag."
-     << std::endl
+        "    same as above but with a single flag.\n"
      //  \"-preprocess off\" recommended in 2.9.6
-     << "  --writeModel <file>" << endl
-     << "    write model to <file> (.mps)" << std::endl
+     << "  --writeModel <file>\n"
+     << "    write model to <file> (.mps)\n"
      << "  -i\n    print intermediate solutions for optimization problems\n"
-        "    (not from FeasPump. Can be slow.)"
-     << std::endl
+        "    (not from FeasPump. Can be slow.)\n"
      << "  -p <N>, --parallel <N>\n    use N threads, default: 1. CBC should be configured with "
-        "--enable-cbc-parallel"
-     << std::endl
+        "--enable-cbc-parallel\n"
      //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-     << "  --solver-time-limit <N>\n    stop search after N milliseconds"
-     << std::endl
+     << "  --solver-time-limit <N>\n    stop search after N milliseconds\n"
      //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
      //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
      //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
      //   << "--tuneParam         instruct OSICBC to tune parameters instead of solving   NOT IMPL"
 
-     << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+     << "  --absGap <n>\n    absolute gap |primal-dual| to stop\n"
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
-        "to use backend's default"
-     << std::endl
-     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8"
-     << std::endl
+        "to use backend's default\n"
+     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8\n"
      //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
-     << std::endl;
+     << '\n';
 }
 
 bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
@@ -168,7 +160,7 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
   std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
   res.reserve(info.parameters_.size());
 
-  for (auto param : info.parameters_) {
+  for (const auto& param : info.parameters_) {
     auto name = param.name();
     if (name == "?" || name == "???" || name == "allCommands" || name == "moreSpecialOptions" ||
         name == "moreTune" || name == "mipOptions" || name == "moreMipOptions" ||
@@ -535,7 +527,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
           if (_ui.pCbui->pOutput->nObjVarIndex >= 0) {
             cerr << "  objVAR: " << _ui.pCbui->pOutput->x[_ui.pCbui->pOutput->nObjVarIndex];
           }
-          cerr << endl;
+          cerr << '\n';
         }
         _ui.pCbui->pOutput->objVal = objVal;
         //         origModel->getObjValue();
@@ -683,7 +675,7 @@ MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus() {
       (fabs(_osi.getObjValue()) < _osi.getInfinity()) {
     s = Status::SAT;
     output.statusName = "Feasible";
-    cout << " getSolverObjValue(as minim) == " << _osi.getObjValue() << endl;
+    cout << " getSolverObjValue(as minim) == " << _osi.getObjValue() << '\n';
   } else {
     s = Status::UNKNOWN;
     output.statusName = "Unknown";
@@ -715,7 +707,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     _rowlb.clear();
     _rowub.clear();
     if (fVerbose) {
-      cerr << " done." << endl;
+      cerr << " done.\n";
     }
     /////////////// Last-minute solver options //////////////////
     //       osi->loadProblem(*matrix,
@@ -757,7 +749,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     //     control.fillValuesInSolver();
     //     CbcModel * pModel = control.model();
     if (fVerbose) {
-      cerr << " Model creation..." << endl;
+      cerr << " Model creation...\n";
     }
 
     // #define MZN_USE_CbcSolver  -- not linked rev2274
@@ -789,6 +781,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     /// WARMSTART
     {
       std::vector<std::pair<std::string, double> > mipstart;
+      mipstart.reserve(_warmstart.size());
       for (const auto& vv : _warmstart) {
         mipstart.emplace_back(colNames[vv.first], vv.second);
       }
@@ -800,7 +793,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 
     class StderrCoinMessageHandler : public CoinMessageHandler {
       int print() override {
-        cerr << messageBuffer_ << endl;
+        cerr << messageBuffer_ << '\n';
         return 0;
       }
       void checkSeverity() override {}
@@ -937,8 +930,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
 #ifdef MZN_USE_CbcSolver
     if (fVerbose)
-      cerr << "  Calling control.solve() with options '" << options->cbcCmdOptions << "'..."
-           << endl;
+      cerr << "  Calling control.solve() with options '" << options->cbcCmdOptions << "'...\n";
     control.solve(options->cbcCmdOptions.c_str(), 1);
 #else
 #define MZN_USE_callCbc1
@@ -948,7 +940,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
       for (const auto& arg : _options->cbcCmdOptions) {
         cerr << " " << arg;
       }
-      cerr << "'..." << endl;
+      cerr << "'...\n";
     }
     CbcMain(static_cast<int>(cbc_argc), cbc_argv.data(), model);
     // callCbc(_options->cbcCmdOptions, model);
@@ -972,7 +964,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     for (const auto& s : argvS) {
       argv.push_back(s.c_str());
     }
-    if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'..." << endl;
+    if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'...\n";
     CbcMain1(argv.size(), argv.data(), model, callBack);
 #endif
 #endif

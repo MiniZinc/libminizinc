@@ -159,6 +159,13 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
 #endif
 }
 
+std::string join_path(const std::string& dir, const std::string& name) {
+  std::string path;
+  path.reserve(dir.size() + 1 + name.size());
+  path.append(dir).append("/").append(name);
+  return path;
+}
+
 std::string dir_name(const std::string& filename) {
 #ifdef _MSC_VER
   size_t pos = filename.find_last_of("\\/");
@@ -263,7 +270,7 @@ std::string find_executable(const std::string& filename, const std::string& base
   }
 
   for (const auto& path : searchDirs) {
-    auto fileWithPath = file_path(path + "/" + filename);
+    auto fileWithPath = file_path(join_path(path, filename));
     for (const auto& suffix : exeSuffixes) {
       if (file_exists(fileWithPath + suffix)) {
         return file_path(fileWithPath + suffix);
@@ -327,7 +334,7 @@ std::string find_library(const std::string& name, const std::string& basePath) {
 
   for (const auto& dir : dirs) {
     for (const auto& leaf : leaves) {
-      const std::string full = is_absolute(leaf) ? leaf : file_path(dir + "/" + leaf);
+      const std::string full = is_absolute(leaf) ? leaf : file_path(join_path(dir, leaf));
       if (file_exists(full)) {
         return file_path(full);
       }

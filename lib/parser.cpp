@@ -251,7 +251,7 @@ std::string ParserState::canonicalFilename(const std::string& f) const {
       }
       continue;
     }
-    std::string fullname = FileUtils::file_path(ip + "/" + f);
+    std::string fullname = FileUtils::file_path(FileUtils::join_path(ip, f));
     if (FileUtils::file_exists(fullname)) {
       return fullname;
     }
@@ -312,6 +312,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
            const std::string& modelStringName, const vector<string>& ip, bool checkGlobalOverrides,
            bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err) {
   vector<string> includePaths;
+  includePaths.reserve(ip.size());
   for (const auto& i : ip) {
     includePaths.push_back(i);
   }
@@ -379,7 +380,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         }
         continue;
       }
-      std::string n = FileUtils::file_path(ip + "/" + libname);
+      std::string n = FileUtils::file_path(FileUtils::join_path(ip, libname));
       if (FileUtils::file_exists(n)) {
         fullname = n;
         break;
@@ -446,7 +447,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       }
       if (found &&
           FileUtils::file_path(FileUtils::dir_name(fullname)) != FileUtils::file_path(workingDir) &&
-          FileUtils::file_exists(workingDir + "/" + basename)) {
+          FileUtils::file_exists(FileUtils::join_path(workingDir, basename))) {
         std::ostringstream w;
         w << "file \"" << basename
           << "\" included from library, but also exists in current working directory.";
@@ -472,7 +473,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           deprecatedName = deprecatedBundle->qualifiedName(key);
           deprecatedFullPath = deprecatedName;
         } else {
-          deprecatedName = includePath + "/" + basename + ".deprecated.mzn";
+          deprecatedName = FileUtils::join_path(includePath, basename) + ".deprecated.mzn";
           if (!FileUtils::file_exists(deprecatedName)) {
             continue;
           }
@@ -502,9 +503,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           // one path. `f` is "<bundle path>/<file>", so the file starts just
           // past the bundle's own path.
           std::cerr << "processing file '" << bundle->path() << "' ["
-                    << (f.c_str() + bundle->path().size() + 1) << "]" << endl;
+                    << (f.c_str() + bundle->path().size() + 1) << "]\n";
         } else {
-          std::cerr << "processing file '" << fullname << "'" << endl;
+          std::cerr << "processing file '" << fullname << "'\n";
         }
       }
       if (bundled != nullptr) {
@@ -550,7 +551,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           throw Error("Cannot open data file '" + f + "'.");
         }
         if (verbose) {
-          std::cerr << "processing data file '" << f << "'" << endl;
+          std::cerr << "processing data file '" << f << "'\n";
         }
         s = FileUtils::read_file_contents(f);
       }

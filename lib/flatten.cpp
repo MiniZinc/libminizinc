@@ -140,7 +140,7 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
     if (!create_explicit_domain_constraints(envi, vd, domain)) {
       std::ostringstream ss;
       ss << "Unable to create domain constraint for reverse mapped variable: " << *vd->id() << " = "
-         << *domain << std::endl;
+         << *domain << '\n';
       throw EvalError(envi, Expression::loc(domain), ss.str());
     }
     vd->ti()->domain(domain);
@@ -153,7 +153,7 @@ void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_co
       return;
     }
     std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = " << *domain
-              << std::endl;
+              << '\n';
   }
   vd->ti()->domain(domain);
   vd->ti()->setComputedDomain(is_computed);
@@ -3090,7 +3090,7 @@ KeepAlive compute_combined_domain(EnvI& env, TypeInst* ti, Expression* cur) {
   return nullptr;
 }
 
-KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
+KeepAlive bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e) {
   assert(e == nullptr || !Expression::isa<VarDecl>(e));
   if (vd == env.constants.varIgnore) {
     return e;
@@ -5332,7 +5332,7 @@ void flatten(Env& e, FlatteningOptions opt) {
              << "}";
         }
       }
-      os << "]}" << std::endl;
+      os << "]}\n";
     } else {
       StatisticsStream ss(e.envi().outstream, opt.encapsulateJSON);
       e.envi().outstream << "% Compilation profile (file,line,milliseconds)\n";
@@ -6195,7 +6195,7 @@ FlatModelStatistics statistics(Env& m) {
 }
 
 ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      std::vector<std::pair<int, int>> dims, unsigned int field) {
+                      const std::vector<std::pair<int, int>>& dims, unsigned int field) {
   assert(GC::locked());
   assert(Expression::type(al).structBT() && Expression::type(al).dim() > 0);
   Type field_ty = (*st)[field - 1];

@@ -52,7 +52,7 @@ void SolverInstanceBase::printSolution() {
   }
   if (nullptr == _pS2Out) {
     getEnv()->evalOutput(std::cout, std::cerr);  // deprecated
-    std::cout << "----------" << std::endl;
+    std::cout << "----------\n" << std::flush;   // solutions are streamed
   } else {
     getSolns2Out()->evalOutput();
   }

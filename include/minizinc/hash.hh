@@ -138,7 +138,8 @@ public:
   public:
     DenseIdMapIterator(typename string_map::iterator smi, typename string_map::iterator smiEnd,
                        typename std::vector<T>::iterator imi,
-                       typename std::vector<T>::iterator imiEnd, std::vector<bool>::iterator ipi)
+                       typename std::vector<T>::iterator imiEnd,
+                       const std::vector<bool>::iterator& ipi)
         : _smi(smi), _smiEnd(smiEnd), _imi(imi), _imiEnd(imiEnd), _ipi(ipi) {
       if (_smi == _smiEnd) {
         while (_imi != _imiEnd && !*_ipi) {
@@ -301,11 +302,11 @@ public:
   void clear() { _m.clear(); }
   /// Take over \a other's contents. Only the map moves: both objects stay
   /// registered with the collector where they are.
-  void swap(KeepAliveMap& other) { _m.swap(other._m); }
+  void swap(KeepAliveMap& other) noexcept { _m.swap(other._m); }
   template <class D>
   void dump() {
     for (auto i = _m.begin(); i != _m.end(); ++i) {
-      std::cerr << D::k(i->first) << ": " << D::d(i->second) << std::endl;
+      std::cerr << D::k(i->first) << ": " << D::d(i->second) << '\n';
     }
   }
   void mark() override {

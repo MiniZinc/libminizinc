@@ -238,7 +238,7 @@ struct InstanceMapItem {
 
   InstanceMapItem(const ASTString baseName0, bool exists0, int instanceId0,
                   std::vector<Type> argTypes0, bool parExists0, std::vector<Type> parTypes0)
-      : baseName(std::move(baseName0)),
+      : baseName(baseName0),
         exists(exists0),
         instanceId(instanceId0),
         argTypes(std::move(argTypes0)),
@@ -935,7 +935,7 @@ void type_demonomorphise_library(Env& e, Model* model) {
     std::string ident(fi->id().c_str());
     ident[0] = '_';
     while (functionIds.find(ASTString(ident)) != functionIds.end()) {
-      ident = "_" + ident;
+      ident.insert(0, "_");
     }
     ASTString new_ident(ident);
     fi->id(new_ident);

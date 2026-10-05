@@ -35,25 +35,25 @@ void Exception::print(std::ostream& os) const {
   if (!std::string(what()).empty()) {
     os << what() << ": ";
   }
-  os << msg() << std::endl;
+  os << msg() << '\n';
 }
 
 void Exception::json(std::ostream& os) const {
   os << "{\"type\": \"error\", \"what\": \"" << Printer::escapeStringLit(std::string(what()))
-     << "\", \"message\": \"" << Printer::escapeStringLit(msg()) << "\"}" << std::endl;
+     << "\", \"message\": \"" << Printer::escapeStringLit(msg()) << "\"}\n";
 }
 
 void InternalError::print(std::ostream& os) const {
-  os << "MiniZinc has encountered an internal error. This is a bug." << std::endl
-     << "Please file a bug report using the MiniZinc bug tracker." << std::endl
-     << "The internal error message was: " << std::endl
-     << "\"" << msg() << "\"" << std::endl;
+  os << "MiniZinc has encountered an internal error. This is a bug.\n"
+     << "Please file a bug report using the MiniZinc bug tracker.\n"
+     << "The internal error message was: \n"
+     << "\"" << msg() << "\"\n";
 }
 
 void BadOption::print(std::ostream& os) const {
-  os << msg() << std::endl;
+  os << msg() << '\n';
   if (!usage().empty()) {
-    os << usage() << std::endl;
+    os << usage() << '\n';
   }
 }
 

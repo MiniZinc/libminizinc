@@ -174,7 +174,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     flatten(*new_env, _fopts);
   } catch (LocationException& e) {
     if (_compflags.verbose) {
-      log << std::endl;
+      log << '\n';
     }
     e.dumpStack(true);
     throw;
@@ -182,11 +182,11 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
 
   if (!_compflags.noMIPdomains) {
     if (_compflags.verbose) {
-      log << "MIP domains ..." << std::endl;
+      log << "MIP domains ...\n";
     }
     mip_domains(*new_env, _compflags.verbose);
     if (_compflags.verbose) {
-      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+      log << " done (" << lasttime.stoptime() << ")\n";
     }
   }
 
@@ -196,7 +196,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     }
     optimize(*new_env, _compflags.chainCompression);
     if (_compflags.verbose) {
-      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+      log << " done (" << lasttime.stoptime() << ")\n";
     }
   }
   if (!new_env->warnings().empty() && _compflags.werror) {
@@ -215,7 +215,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     substitute_fixed_vars(*new_env);
     oldflatzinc(*new_env);
     if (_compflags.verbose) {
-      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+      log << " done (" << lasttime.stoptime() << ")\n";
     }
   } else {
     new_env->flat()->compact();
@@ -223,7 +223,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   }
 
   if (_compflags.verbose) {
-    log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    log << " done (" << lasttime.stoptime() << ")\n";
   }
 
   return new_env;

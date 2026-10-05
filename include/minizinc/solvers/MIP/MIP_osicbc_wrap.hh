@@ -108,7 +108,7 @@ public:
 
   void addPhase1Vars() override {
     if (fVerbose) {
-      std::cerr << "  MIPosicbcWrapper: delaying physical addition of variables..." << std::endl;
+      std::cerr << "  MIPosicbcWrapper: delaying physical addition of variables...\n";
     }
   }
 

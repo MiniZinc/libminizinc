@@ -47,7 +47,7 @@
 
 //   #define MZN_DBGOUT_MIPDOMAINS
 #ifdef MZN_DBGOUT_MIPDOMAINS
-#define DBGOUT_MIPD(s) std::cerr << s << std::endl
+#define DBGOUT_MIPD(s) std::cerr << s << '\n'
 #define DBGOUT_MIPD_FLUSH(s) std::cerr << s << std::flush
 #define DBGOUT_MIPD_SELF(op) op
 #else
@@ -2111,7 +2111,7 @@ private:
       os << TCliqueSorter::LinEqGraph::dCoefMin << "--" << TCliqueSorter::LinEqGraph::dCoefMax
          << " abs coefs";
     }
-    os << std::endl;
+    os << '\n';
   }
 
 };  // namespace MiniZinc

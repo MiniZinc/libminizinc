@@ -108,23 +108,21 @@ std::vector<std::string> MIPHiGHSWrapper::getRequiredFlags(FactoryOptions& facto
 }
 
 void MIPHiGHSWrapper::Options::printHelp(std::ostream& os) {
-  os << "HiGHS MIP wrapper options:" << std::endl
-     << "  --writeModel <file>" << std::endl
-     << "    write model to <file> (.mps)" << std::endl
-     << "  -i" << std::endl
-     << "    print intermediate solutions for optimization problems" << std::endl
-     << "  -p <N>, --parallel <N>\n    use N threads, default: 1." << std::endl
-     << "  -r <N>, --random-seed <N>\n    use random number generator seed N." << std::endl
-     << "  --solver-time-limit <N>\n    stop search after N milliseconds" << std::endl
-     << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+  os << "HiGHS MIP wrapper options:\n"
+     << "  --writeModel <file>\n"
+     << "    write model to <file> (.mps)\n"
+     << "  -i\n"
+     << "    print intermediate solutions for optimization problems\n"
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1.\n"
+     << "  -r <N>, --random-seed <N>\n    use random number generator seed N.\n"
+     << "  --solver-time-limit <N>\n    stop search after N milliseconds\n"
+     << "  --absGap <n>\n    absolute gap |primal-dual| to stop\n"
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set "
         "<0 "
-        "to use backend's default"
-     << std::endl
-     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8" << std::endl
+        "to use backend's default\n"
+     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8\n"
      << "--highs-dll <file>   load the SCIP library from the given file (absolute path or file "
-        "basename), default 'highs'"
-     << std::endl;
+        "basename), default 'highs'\n";
 }
 
 bool MIPHiGHSWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
@@ -292,7 +290,7 @@ bool MIPHiGHSWrapper::addWarmStart(const std::vector<VarId>& vars,
   HighsInt stat = _plugin->Highs_setSparseSolution(_highs, static_cast<HighsInt>(index.size()),
                                                    index.data(), value.data());
   if (stat == kHighsStatusError) {
-    std::cerr << "% warning: HiGHS rejected the warm start" << std::endl;
+    std::cerr << "% warning: HiGHS rejected the warm start\n";
     return false;
   }
   return true;

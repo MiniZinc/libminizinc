@@ -171,39 +171,37 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
 }
 
 void GecodeSolverFactory::printHelp(ostream& os) {
-  os << "Gecode solver plugin options:" << std::endl
-     << "  --allow-unbounded-vars" << std::endl
-     << "    give unbounded variables maximum bounds (this may lead to incorrect behaviour)"
-     << std::endl
-     << "  --only-range-domains" << std::endl
-     << "    only tighten bounds" << std::endl
-     << "  --sac" << std ::endl
-     << "    singleton arc consistency" << std::endl
-     << "  --shave" << std::endl
-     << "    shave domains" << std::endl
-     << "  --pre-passes <n>" << std::endl
-     << "    n passes of sac/shaving, 0 for fixed point" << std::endl
-     << "  --c_d <n>" << std::endl
-     << "    recomputation commit distance" << std::endl
-     << "  --a_d <n>" << std::endl
-     << "    recomputation adaption distance" << std::endl
-     << "  --node <n>" << std::endl
-     << "    node cutoff (0 = none, solution mode)" << std::endl
-     << "  --fail <f>" << std::endl
-     << "    failure cutoff (0 = none, solution mode)" << std::endl
+  os << "Gecode solver plugin options:\n"
+     << "  --allow-unbounded-vars\n"
+     << "    give unbounded variables maximum bounds (this may lead to incorrect behaviour)\n"
+     << "  --only-range-domains\n"
+     << "    only tighten bounds\n"
+     << "  --sac\n"
+     << "    singleton arc consistency\n"
+     << "  --shave\n"
+     << "    shave domains\n"
+     << "  --pre-passes <n>\n"
+     << "    n passes of sac/shaving, 0 for fixed point\n"
+     << "  --c_d <n>\n"
+     << "    recomputation commit distance\n"
+     << "  --a_d <n>\n"
+     << "    recomputation adaption distance\n"
+     << "  --node <n>\n"
+     << "    node cutoff (0 = none, solution mode)\n"
+     << "  --fail <f>\n"
+     << "    failure cutoff (0 = none, solution mode)\n"
 #if GECODE_VERSION_NUMBER >= 600300
-     << "  --restart-limit <n>" << std::endl
-     << "    restart cutoff (0 = none, solution mode)" << std::endl
+     << "  --restart-limit <n>\n"
+     << "    restart cutoff (0 = none, solution mode)\n"
 #endif
-     << "  --time <ms>" << std::endl
-     << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
-     << "  -a, --all-solutions" << std::endl
-     << "    print intermediate solutions" << std::endl
-     << "  -n <sols>" << std::endl
-     << "    number of solutions" << std::endl
-     << "  --backend-flags <options>" << std::endl
-     << "    process the given flags using this solver plugin" << std::endl
-     << std::endl;
+     << "  --time <ms>\n"
+     << "    time (in ms) cutoff (0 = none, solution mode)\n"
+     << "  -a, --all-solutions\n"
+     << "    print intermediate solutions\n"
+     << "  -n <sols>\n"
+     << "    number of solutions\n"
+     << "  --backend-flags <options>\n"
+     << "    process the given flags using this solver plugin\n\n";
 }
 
 class GecodeEngine {
@@ -530,7 +528,7 @@ void GecodeSolverInstance::processFlatZinc() {
           if (al == nullptr) {
             std::stringstream ssm;
             ssm << "GecodeSolverInstance::processFlatZinc: Error: Array without right hand side: "
-                << *vd->id() << std::endl;
+                << *vd->id() << '\n';
             throw InternalError(ssm.str());
           }
           for (unsigned int i = 0; i < al->size(); i++) {
@@ -584,13 +582,11 @@ void GecodeSolverInstance::processFlatZinc() {
                         GecodeVariable(GecodeVariable::INT_TYPE,
                                        static_cast<unsigned int>(currentSpace->iv.size()) - 1));
               std::cerr << "% GecodeSolverInstance::processFlatZinc: Warning: Unbounded variable "
-                        << *vd->id()
-                        << " given maximum integer bounds, this may be incorrect: " << std::endl;
+                        << *vd->id() << " given maximum integer bounds, this may be incorrect: \n";
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: "
-                  << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."
-                  << std::endl;
+                  << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds.\n";
               throw Error(ssm.str());
             }
           }
@@ -613,7 +609,7 @@ void GecodeSolverInstance::processFlatZinc() {
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unsafe value for Gecode: " << il
-                  << std::endl;
+                  << '\n';
               throw Error(ssm.str());
             }
           }
@@ -680,13 +676,11 @@ void GecodeSolverInstance::processFlatZinc() {
               lb = Gecode::Float::Limits::min;
               ub = Gecode::Float::Limits::max;
               std::cerr << "%% GecodeSolverInstance::processFlatZinc: Warning: Unbounded variable "
-                        << *vd->id()
-                        << " given maximum float bounds, this may be incorrect: " << std::endl;
+                        << *vd->id() << " given maximum float bounds, this may be incorrect: \n";
             } else {
               std::stringstream ssm;
               ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: "
-                  << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."
-                  << std::endl;
+                  << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds.\n";
               throw Error(ssm.str());
             }
           }
@@ -735,7 +729,7 @@ void GecodeSolverInstance::processFlatZinc() {
 #endif
       } else {
         std::stringstream ssm;
-        ssm << "Type " << *ti << " is currently not supported by Gecode." << std::endl;
+        ssm << "Type " << *ti << " is currently not supported by Gecode.\n";
         throw InternalError(ssm.str());
       }
     }  // end if it is a variable
@@ -760,7 +754,7 @@ void GecodeSolverInstance::processFlatZinc() {
       if (Expression::type(si->e()).isvar()) {
         GecodeVariable var = resolveVar(id->decl());
         if (currentSpace->optVarIsInt) {
-          IntVar intVar = var.intVar(currentSpace);
+          const IntVar& intVar = var.intVar(currentSpace);
           for (int i = 0; i < currentSpace->iv.size(); i++) {
             if (currentSpace->iv[i].varimp() == intVar.varimp()) {
               currentSpace->optVarIdx = i;
@@ -770,7 +764,7 @@ void GecodeSolverInstance::processFlatZinc() {
           assert(currentSpace->optVarIdx >= 0);
 #ifdef GECODE_HAS_FLOAT_VARS
         } else {
-          FloatVar floatVar = var.floatVar(currentSpace);
+          const FloatVar& floatVar = var.floatVar(currentSpace);
           for (int i = 0; i < currentSpace->fv.size(); i++) {
             if (currentSpace->fv[i].varimp() == floatVar.varimp()) {
               currentSpace->optVarIdx = i;
@@ -852,7 +846,7 @@ public:
       return (int)val;
     }
     std::stringstream ssm;
-    ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int." << std::endl;
+    ssm << "GecodeRangeIter::min: Error: " << val << " outside 32-bit int.\n";
     throw InternalError(ssm.str());
   }
   int max() const {
@@ -861,7 +855,7 @@ public:
       return (int)val;
     }
     std::stringstream ssm;
-    ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int." << std::endl;
+    ssm << "GecodeRangeIter::max: Error: " << val << " outside 32-bit int.\n";
     throw InternalError(ssm.str());
   }
   int width() const { return static_cast<int>(isr.width().toInt()); }
@@ -909,7 +903,7 @@ Gecode::IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int off
       // ia[i+offset] = currentSpace->iv[*(int*)resolveVar(getVarDecl(e))];
       GecodeSolver::Variable var = resolveVar(getVarDecl(e));
       assert(var.isint());
-      Gecode::IntVar v = var.intVar(currentSpace);
+      const Gecode::IntVar& v = var.intVar(currentSpace);
       ia[i + offset] = v;
     } else {
       long long int value = IntLit::v(Expression::cast<IntLit>(e)).toInt();
@@ -918,8 +912,7 @@ Gecode::IntVarArgs GecodeSolverInstance::arg2intvarargs(Expression* arg, int off
         ia[i + offset] = iv;
       } else {
         std::stringstream ssm;
-        ssm << "GecodeSolverInstance::arg2intvarargs Error: " << value << " outside 32-bit int."
-            << std::endl;
+        ssm << "GecodeSolverInstance::arg2intvarargs Error: " << value << " outside 32-bit int.\n";
         throw InternalError(ssm.str());
       }
     }
@@ -1348,7 +1341,7 @@ Gecode::Search::Cutoff* create_cutoff(EnvI& envi, const Annotation& ann, std::os
     }
     if (seenRestartAnn) {
       err << "Warning, ignored restart annotation: " << *e
-          << " (a restart strategy has already been specified)" << std::endl;
+          << " (a restart strategy has already been specified)\n";
       delete c;
       continue;
     }
@@ -1483,7 +1476,7 @@ void GecodeSolverInstance::processSolution(bool last_sol) {
         std::cerr << "% GecodeSolverInstance: ";
         int r = cs->reason(stat, engineOptions);
         if ((r & Driver::CombinedStop::SR_INT) != 0) {
-          std::cerr << "user interrupt " << std::endl;
+          std::cerr << "user interrupt \n";
         } else {
           if ((r & Driver::CombinedStop::SR_NODE) != 0) {
             _statusReason = SolverInstance::SR_LIMIT;
@@ -1497,7 +1490,7 @@ void GecodeSolverInstance::processSolution(bool last_sol) {
             _statusReason = SolverInstance::SR_LIMIT;
             std::cerr << "time ";
           }
-          std::cerr << "limit reached" << std::endl << std::endl;
+          std::cerr << "limit reached\n\n";
         }
         if (_nFoundSolutions > 0) {
           _status = SolverInstance::SAT;
@@ -1785,7 +1778,7 @@ bool GecodeSolverInstance::presolve(Model* originalModel) {
 }
 
 void GecodeSolverInstance::setSearchStrategyFromAnnotation(
-    std::vector<Expression*> flatAnn, std::vector<bool>& iv_searched,
+    const std::vector<Expression*>& flatAnn, std::vector<bool>& iv_searched,
     std::vector<bool>& bv_searched,
 #ifdef GECODE_HAS_SET_VARS
     std::vector<bool>& sv_searched,
@@ -1802,11 +1795,11 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
     TieBreak<FloatVarBranch>& def_float_varsel, FloatValBranch& def_float_valsel,
 #endif
     Rnd& rnd, double decay, bool ignoreUnknown, std::ostream& err) {
-  for (auto& i : flatAnn) {
+  for (const auto& i : flatAnn) {
     if (Expression::isa<Call>(i) && Expression::cast<Call>(i)->id() == "gecode_search") {
       // Call* c = flatAnn[i]->cast<Call>();
       // branchWithPlugin(c->args);
-      std::cerr << "WARNING: Not supporting search annotation \"gecode_search\" yet." << std::endl;
+      std::cerr << "WARNING: Not supporting search annotation \"gecode_search\" yet.\n";
       return;
     }
     if (Expression::isa<Call>(i) && Expression::cast<Call>(i)->id() == "int_search") {
@@ -1814,7 +1807,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       ArrayLit* vars = arg2arraylit(call->arg(0));
       if (vars->empty()) {  // empty array
         std::cerr << "WARNING: trying to branch on empty array in search annotation: " << *call
-                  << std::endl;
+                  << '\n';
         continue;
       }
       int k = static_cast<int>(vars->size());
@@ -1942,7 +1935,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // branchInfo.add(bh,r0,r1,names);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: " << *i << std::endl;
+        err << "Warning, ignored search annotation: " << *i << '\n';
       }
 #endif
     } else if (Expression::isa<Call>(i) &&
@@ -1954,7 +1947,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       def_set_valsel = ann2svalsel(Expression::cast<Id>(call->arg(1))->str(), r0, r0, rnd);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: " << *i << std::endl;
+        err << "Warning, ignored search annotation: " << *i << '\n';
       }
 #endif
     } else if (Expression::isa<Call>(i) &&
@@ -1966,7 +1959,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       def_float_valsel = ann2fvalsel(Expression::cast<Id>(call->arg(1))->str(), r0, r0);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: float_default_search" << std::endl;
+        err << "Warning, ignored search annotation: float_default_search\n";
       }
 #endif
     } else if (Expression::isa<Call>(i) && Expression::cast<Call>(i)->id() == "float_search") {
@@ -2002,13 +1995,13 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // branchInfo.add(bh,r0,r1,names);
 #else
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: float_search" << std::endl;
+        err << "Warning, ignored search annotation: float_search\n";
       }
 #endif
     } else if (!is_restart_annotation(i)) {
       // Restart annotations are not branchers, they are handled in prepareEngine
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: " << *i << std::endl;
+        err << "Warning, ignored search annotation: " << *i << '\n';
       }
     }
   }  // end for all annotations
@@ -2314,7 +2307,7 @@ TieBreak<IntVarBranch> GecodeSolverInstance::ann2ivarsel(const ASTString s, Rnd&
   if (s == "action_size_max") {
     return TieBreak<IntVarBranch>(INT_VAR_ACTION_SIZE_MAX(decay));
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   return TieBreak<IntVarBranch>(INT_VAR_NONE());
 }
 
@@ -2357,19 +2350,19 @@ Gecode::IntValBranch GecodeSolverInstance::ann2ivalsel(const ASTString s, std::s
   }
   if (s == "indomain_middle") {
     std::cerr << "Warning, replacing unsupported annotation "
-              << "indomain_middle with indomain_median" << std::endl;
+              << "indomain_middle with indomain_median\n";
     r0 = "=";
     r1 = "!=";
     return INT_VAL_MED();
   }
   if (s == "indomain_interval") {
     std::cerr << "Warning, replacing unsupported annotation "
-              << "indomain_interval with indomain_split" << std::endl;
+              << "indomain_interval with indomain_split\n";
     r0 = "<=";
     r1 = ">";
     return INT_VAL_SPLIT_MIN();
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   r0 = "=";
   r1 = "!=";
   return INT_VAL_MIN();
@@ -2399,7 +2392,7 @@ TieBreak<BoolVarBranch> GecodeSolverInstance::ann2bvarsel(const ASTString s, Rnd
   if ((s == "action_max") || (s == "action_size_max")) {
     return TieBreak<BoolVarBranch>(BOOL_VAR_ACTION_MAX(decay));
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   return TieBreak<BoolVarBranch>(BOOL_VAR_NONE());
 }
 
@@ -2442,14 +2435,14 @@ BoolValBranch GecodeSolverInstance::ann2bvalsel(const ASTString s, std::string& 
   }
   if (s == "indomain_middle") {
     std::cerr << "Warning, replacing unsupported annotation "
-              << "indomain_middle with indomain_median" << std::endl;
+              << "indomain_middle with indomain_median\n";
     r0 = "=";
     r1 = "!=";
     return BOOL_VAL_MIN();
   }
   if (s == "indomain_interval") {
     std::cerr << "Warning, replacing unsupported annotation "
-              << "indomain_interval with indomain_split" << std::endl;
+              << "indomain_interval with indomain_split\n";
     r0 = "<=";
     r1 = ">";
     return BOOL_VAL_MIN();
@@ -2487,7 +2480,7 @@ IntAssign GecodeSolverInstance::ann2asnivalsel(const ASTString s, Rnd& rnd) {
   if (s == "indomain_random") {
     return INT_ASSIGN_RND(rnd);
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   return INT_ASSIGN_MIN();
 }
 
@@ -2535,7 +2528,7 @@ SetVarBranch GecodeSolverInstance::ann2svarsel(const ASTString s, Rnd& rnd, doub
   if (s == "random") {
     return SET_VAR_RND(rnd);
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   return SET_VAR_NONE();
 }
 
@@ -2562,7 +2555,7 @@ SetValBranch GecodeSolverInstance::ann2svalsel(const ASTString s, std::string& r
     r0 = "not in";
     return SET_VAL_MAX_EXC();
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   r0 = "in";
   r1 = "not in";
   return SET_VAL_MIN_INC();
@@ -2620,7 +2613,7 @@ TieBreak<FloatVarBranch> GecodeSolverInstance::ann2fvarsel(const ASTString s, Rn
   if (s == "action_size_max") {
     return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTION_SIZE_MAX(decay));
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   return TieBreak<FloatVarBranch>(FLOAT_VAR_NONE());
 }
 
@@ -2636,7 +2629,7 @@ FloatValBranch GecodeSolverInstance::ann2fvalsel(const ASTString s, std::string&
     r0 = ">";
     return FLOAT_VAL_SPLIT_MAX();
   }
-  std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+  std::cerr << "Warning, ignored search annotation: " << s << '\n';
   r0 = "<=";
   r1 = ">";
   return FLOAT_VAL_SPLIT_MIN();

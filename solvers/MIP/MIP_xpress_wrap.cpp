@@ -48,7 +48,7 @@ static void XPRS_CC xpress_message_callback(XPRSprob prob, void* context, const 
   if (msg != nullptr && msgtype > 0) {
     std::ostream& out = (msgtype == 1) ? std::cout : std::cerr;
     out.write(msg, len);
-    out << std::endl;  // Always write newline after each message
+    out << '\n';  // Always write newline after each message
   }
 }
 
@@ -204,7 +204,7 @@ void MIPxpressWrapper::checkDLL() {
       if (_options->verbose) {
         char message[512];
         _plugin->XPRSgetlicerrmsg(message, 512);
-        std::cerr << message << std::endl;
+        std::cerr << message << '\n';
       }
       return;
     }
@@ -637,7 +637,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
                                                   "version",
                                                   "worklimit"};
     std::vector<MiniZinc::SolverConfig::ExtraFlag> res;
-    for (auto param : all_params) {
+    for (const auto& param : all_params) {
       int n;
       int t;
       int rc = p._plugin->XPRSgetcontrolinfo(prb, param.c_str(), &n, &t);
@@ -697,27 +697,24 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
 }
 
 void MIPxpressWrapper::Options::printHelp(ostream& os) {
-  os << "XPRESS MIP wrapper options:" << std::endl
-     << "--msgLevel <n>       print solver output, default: 0" << std::endl
-     << "--logFile <file>     log file" << std::endl
+  os << "XPRESS MIP wrapper options:\n"
+     << "--msgLevel <n>       print solver output, default: 0\n"
+     << "--logFile <file>     log file\n"
      << "--solver-time-limit <N>        stop search after N milliseconds wall time, if negative, "
-        "it will only stop if at least one solution was found"
-     << std::endl
-     << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
-     << "--writeModel <file>  write model to <file>" << std::endl
+        "it will only stop if at least one solution was found\n"
+     << "-n <N>, --numSolutions <N>   stop search after N solutions\n"
+     << "--writeModel <file>  write model to <file>\n"
      << "--writeModelFormat [lp|mps] the file format of the written model(lp "
-        "or mps), default: lp"
-     << std::endl
-     << "--absGap <d>         absolute gap |primal-dual| to stop, default: " << 0 << std::endl
+        "or mps), default: lp\n"
+     << "--absGap <d>         absolute gap |primal-dual| to stop, default: " << 0 << '\n'
      << "--relGap <d>         relative gap |primal-dual|/<solver-dep> to stop, "
         "default: "
-     << 0.0001 << std::endl
-     << "-i                   print intermediate solution, default: false" << std::endl
-     << "-r <N>, --seed <N>, --random-seed <N>   random seed, integer" << std::endl
-     << "-p <N>, --parallel <N>   use N threads" << std::endl
-     << "--xpress-dll <file>      Xpress DLL file (xprs.dll/libxprs.so/libxprs.dylib)" << std::endl
-     << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
-     << std::endl;
+     << 0.0001 << '\n'
+     << "-i                   print intermediate solution, default: false\n"
+     << "-r <N>, --seed <N>, --random-seed <N>   random seed, integer\n"
+     << "-p <N>, --parallel <N>   use N threads\n"
+     << "--xpress-dll <file>      Xpress DLL file (xprs.dll/libxprs.so/libxprs.dylib)\n"
+     << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)\n\n";
 }
 
 bool MIPxpressWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
@@ -953,8 +950,7 @@ static void XPRS_CC user_cut_round_callback(XPRSprob prob, void* cbdata, int ifx
     rc = data->plugin->XPRSaddmanagedcuts(prob, 1, 1, &rowtype, &cd.rhs, cutStart,
                                           cd.rmatind.data(), cd.rmatval.data());
     if (rc != 0) {
-      std::cerr << "  MIPxpressWrapper: failed to add user cut (error code: " << rc << ")"
-                << std::endl;
+      std::cerr << "  MIPxpressWrapper: failed to add user cut (error code: " << rc << ")\n";
     }
   }
 }
@@ -1271,8 +1267,7 @@ void MIPxpressWrapper::setUserCutCallback() {
     // when unavailable because a missing lazy row changes the feasible region and would
     // silently produce a wrong answer.
     std::cerr << "  MIPxpressWrapper: user cut callback requested but the required Xpress "
-                 "functions are not available in this version; continuing without user cuts."
-              << std::endl;
+                 "functions are not available in this version; continuing without user cuts.\n";
     return;
   }
 

@@ -101,14 +101,19 @@ vector<string> gurobi_dlls() {
       dlls.push_back("gurobi" + majorVersion);
       lastMajorVersion = majorVersion;
     }
+    // The library path for this version, from the parts around the version numbers
+    auto libPath = [&](const char* prefix, const char* middle, const char* suffix) {
+      std::string path(prefix);
+      path.append(version).append(middle).append(majorVersion).append(suffix);
+      return path;
+    };
 #ifdef _WIN32
-    dlls.push_back("C:\\gurobi" + version + "\\win64\\bin\\gurobi" + majorVersion + ".dll");
+    dlls.push_back(libPath("C:\\gurobi", "\\win64\\bin\\gurobi", ".dll"));
 #elif __APPLE__
-    dlls.push_back("/Library/gurobi" + version + "/mac64/lib/libgurobi" + majorVersion + ".dylib");
-    dlls.push_back("/Library/gurobi" + version + "/macos_universal2/lib/libgurobi" + majorVersion +
-                   ".dylib");
+    dlls.push_back(libPath("/Library/gurobi", "/mac64/lib/libgurobi", ".dylib"));
+    dlls.push_back(libPath("/Library/gurobi", "/macos_universal2/lib/libgurobi", ".dylib"));
 #else
-    dlls.push_back("/opt/gurobi" + version + "/linux64/lib/libgurobi" + majorVersion + ".so");
+    dlls.push_back(libPath("/opt/gurobi", "/linux64/lib/libgurobi", ".so"));
 #endif
   }
 
@@ -116,72 +121,56 @@ vector<string> gurobi_dlls() {
 }
 
 void MIPGurobiWrapper::Options::printHelp(ostream& os) {
-  os << "GUROBI MIP wrapper options:"
-     << std::endl
+  os << "GUROBI MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read GUROBI parameters from file
      //               << "--writeParam <file> write GUROBI parameters to file
      //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
-     << "  -f\n    free search (default)" << std::endl
+     << "  -f\n    free search (default)\n"
      << "  --fixed-search\n    fixed search (approximation of the model's one by branching "
-        "priorities)"
-     << std::endl
+        "priorities)\n"
      << "  --uniform-search\n    'more fixed' search (all variables in the search anns get "
-        "priority 1)"
-     << std::endl
+        "priority 1)\n"
      << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, "
-        "balanced)"
-     << std::endl
-     << "  -i\n    print intermediate solutions for optimization problems" << std::endl
-     << "  -p <N>, --parallel <N>\n    use N threads, default: 1."
-     << std::endl
+        "balanced)\n"
+     << "  -i\n    print intermediate solutions for optimization problems\n"
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1.\n"
      //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
      << "  --solver-time-limit <N>, --solver-time\n"
-        "    stop search after N milliseconds wall time"
-     << std::endl
+        "    stop search after N milliseconds wall time\n"
      << "  --solver-time-limit-feas <N>, --solver-tlf\n"
-        "    stop search after N milliseconds wall time after the first feasible solution"
-     << std::endl
+        "    stop search after N milliseconds wall time after the first feasible solution\n"
      << "  -n <N>, --num-solutions <N>\n"
-        "    stop search after N solutions"
-     << std::endl
+        "    stop search after N solutions\n"
      << "  -r <N>, --random-seed <N>\n"
-        "    random seed, integer"
-     << std::endl
+        "    random seed, integer\n"
      << "  --workmem <N>, --nodefilestart <N>\n"
-        "    maximal RAM for node tree used before writing to node file, GB, default: 0.5"
-     << std::endl
+        "    maximal RAM for node tree used before writing to node file, GB, default: 0.5\n"
      << "  --nodefiledir <path>\n"
-        "    nodefile directory"
-     << std::endl
-     << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
-     << "  --readParam <file>\n     read GUROBI parameters from file" << std::endl
-     << "  --writeParam <file>\n    write GUROBI parameters to file" << std::endl
+        "    nodefile directory\n"
+     << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)\n"
+     << "  --readParam <file>\n     read GUROBI parameters from file\n"
+     << "  --writeParam <file>\n    write GUROBI parameters to file\n"
      << "  --readConcurrentParam <fileN>\n"
         "    read GUROBI parameters from file. Several such commands provide the"
-        "    parameter files for concurrent solves (applied after all other settings)"
-     << std::endl
+        "    parameter files for concurrent solves (applied after all other settings)\n"
      //   << "  --tuneParam         instruct GUROBI to tune parameters instead of solving   NOT
      //   IMPL"
 
-     << "\n  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+     << "\n  --absGap <n>\n    absolute gap |primal-dual| to stop\n"
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
-        "to use backend's default"
-     << std::endl
-     << "  --feasTol <n>\n   primal feasibility tolerance. Default 1e-8" << std::endl
+        "to use backend's default\n"
+     << "  --feasTol <n>\n   primal feasibility tolerance. Default 1e-8\n"
      << "  --intTol <n>\n    integrality tolerance for a variable. Gurobi recommends at least "
-        "feasTol. Default 1e-8"
-     << std::endl
+        "feasTol. Default 1e-8\n"
      //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
      << "  --nonConvex <n>\n    non-convexity. -1: solver default, 0: none, 1: if presolved, 2: "
-        "global. Default value 2."
-     << std::endl
+        "global. Default value 2.\n"
 
      << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, "
         "when using plugin. Default range tried: "
-     << gurobi_dlls().front() << " .. " << gurobi_dlls().back() << std::endl
-     << std::endl;
+     << gurobi_dlls().front() << " .. " << gurobi_dlls().back() << "\n\n";
 }
 
 bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
@@ -247,7 +236,7 @@ void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
     if (fTerm) {
       throw MiniZinc::Error(msgAll);
     }
-    cerr << msgAll << "\nGurobi error code: " << _error << endl;
+    cerr << msgAll << "\nGurobi error code: " << _error << '\n';
   }
 }
 
@@ -717,7 +706,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     /// Before printing
     if ((info->cutcbfn != nullptr) && ((info->cutMask & MIPWrapper::MaskConsType_Lazy) != 0)) {
       MIPWrapper::CutInput cutInput;
-      cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback " << endl;
+      cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback \n";
       info->cutcbfn(*info->pOutput, cutInput, info->psi, true);
       for (auto& cd : cutInput) {
         //         assert( cd.mask & MIPWrapper::MaskConsType_Lazy );
@@ -726,7 +715,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+            cerr << "  GRB_wrapper: failed to add lazy cut. \n";
           } else {
             newincumbent = -1;
           }
@@ -787,7 +776,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add user cut. " << endl;
+            cerr << "  GRB_wrapper: failed to add user cut. \n";
           }
         }
         if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {
@@ -795,7 +784,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+            cerr << "  GRB_wrapper: failed to add lazy cut. \n";
           }
         }
       }
@@ -842,7 +831,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   if (!nLazyIdx.empty()) {
     assert(nLazyIdx.size() == nLazyValue.size());
     if (fVerbose) {
-      cerr << "  MIPGurobiWrapper: marking " << nLazyIdx.size() << " lazy cuts." << endl;
+      cerr << "  MIPGurobiWrapper: marking " << nLazyIdx.size() << " lazy cuts.\n";
     }
     _error = dll_GRBsetintattrlist(_model, "Lazy", static_cast<int>(nLazyIdx.size()),
                                    nLazyIdx.data(), nLazyValue.data());
@@ -945,12 +934,10 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
           dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_NONCONVEX, _options->nonConvex);
       wrapAssert(_error == 0, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
     } else {
-      std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi"
-                << std::endl;
+      std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi\n";
     }
 #else
-    std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi"
-              << std::endl;
+    std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi\n";
 #endif
   }
 
@@ -970,7 +957,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
       if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
         // For user cuts, needs to keep some info after presolve
         if (fVerbose) {
-          cerr << "  MIPGurobiWrapper: user cut callback enabled, setting PreCrush=1" << endl;
+          cerr << "  MIPGurobiWrapper: user cut callback enabled, setting PreCrush=1\n";
         }
         _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_PRECRUSH, 1);
         wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
@@ -978,8 +965,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
       if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
         // For lazy cuts, Gurobi disables some presolves
         if (fVerbose) {
-          cerr << "  MIPGurobiWrapper: lazy cut callback enabled, setting LazyConstraints=1"
-               << endl;
+          cerr << "  MIPGurobiWrapper: lazy cut callback enabled, setting LazyConstraints=1\n";
         }
         _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
         wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);

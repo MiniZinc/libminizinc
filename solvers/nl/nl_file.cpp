@@ -205,7 +205,7 @@ void NLFile::addVarDeclInteger(const string& name, const IntSetVal* isv, bool to
     double ub = static_cast<double>(isv->max(0).toInt());
     bound = NLBound::makeBounded(lb, ub);
   } else {
-    should_not_happen("Range: switch on mzn_opt_only_range_domains" << endl);
+    should_not_happen("Range: switch on mzn_opt_only_range_domains\n");
   }
   // Create the variable and update the NLFile
   NLVar v = NLVar(name, true, toReport, bound);
@@ -225,7 +225,7 @@ void NLFile::addVarDeclFloat(const string& name, const FloatSetVal* fsv, bool to
     double ub = fsv->max(0).toDouble();
     bound = NLBound::makeBounded(lb, ub);
   } else {
-    should_not_happen("Range: switch on mzn_opt_only_range_domains" << std::endl);
+    should_not_happen("Range: switch on mzn_opt_only_range_domains\n");
   }
   // Create the variable and update the NLFile
   NLVar v = NLVar(name, false, toReport, bound);
@@ -1492,27 +1492,27 @@ unsigned int NLFile::bvCount() const { return static_cast<unsigned int>(vname_bv
 ostream& NLFile::printToStream(ostream& os) const {
   // Print the header
   NLHeader::printToStream(os, *this);
-  os << endl;
+  os << '\n';
 
   // Print the unique segments about the variables
   if (varCount() > 1) {
     // Print the 'k' segment Maybe to adjust with the presence of 'J' segments
     os << "k" << (varCount() - 1)
-       << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
+       << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns.\n";
     unsigned int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
     for (unsigned int i = 0; i < varCount() - 1; ++i) {
       string name = vnames[i];
       acc += variables.at(name).jacobianCount;
-      os << acc << "   # " << name << endl;
+      os << acc << "   # " << name << '\n';
     }
 
     // Print the 'b' segment
-    os << "b   # Bounds on variables (" << varCount() << ")" << endl;
+    os << "b   # Bounds on variables (" << varCount() << ")\n";
     for (const auto& n : vnames) {
       NLVar v = variables.at(n);
       v.bound.printToStream(os, n);
-      os << endl;
+      os << '\n';
     }
   }
 
@@ -1521,11 +1521,11 @@ ostream& NLFile::printToStream(ostream& os) const {
     // Create the 'r' range segment per constraint
     // For now, it is NOT clear if the network constraint should appear in the range constraint or
     // not. To be determine if later implemented.
-    os << "r   # Bounds on algebraic constraint bodies (" << cnames.size() << ")" << endl;
+    os << "r   # Bounds on algebraic constraint bodies (" << cnames.size() << ")\n";
     for (const auto& n : cnames) {
       NLAlgCons c = constraints.at(n);
       c.range.printToStream(os, n);
-      os << endl;
+      os << '\n';
     }
   }
 

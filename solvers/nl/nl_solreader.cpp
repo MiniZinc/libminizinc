@@ -130,17 +130,17 @@ bool NLSolns2Out::feedRawDataChunk(const char* data) {
     while (getline(ss, to)) {
       if (ss.eof()) {
         if (_inLine) {  // Must complete a line, and the line is not over yet
-          getLog() << to << endl;
+          getLog() << to << '\n';
         } else {  // Start an incomple line
           getLog() << "% " << to;
           _inLine = true;
         }
       } else {
         if (_inLine) {  // Must complete a line, and the line is over.
-          getLog() << to << endl;
+          getLog() << to << '\n';
           _inLine = false;
         } else {  // Full line
-          getLog() << "% " << to << endl;
+          getLog() << "% " << to << '\n';
         }
       }
     }
@@ -154,19 +154,19 @@ void NLSolns2Out::parseSolution(const string& filename) {
 
   switch (sol.status) {
     case NL_Solver_Status::PARSE_ERROR: {
-      DEBUG_MSG("NL_Solver_Status: PARSE ERROR" << endl);
+      DEBUG_MSG("NL_Solver_Status: PARSE ERROR\n");
       _out->feedRawDataChunk(_out->opt.errorMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNKNOWN: {
-      DEBUG_MSG("NL_Solver_Status: UNKNOWN" << endl);
+      DEBUG_MSG("NL_Solver_Status: UNKNOWN\n");
       _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::SOLVED: {
-      DEBUG_MSG("NL_Solver_Status: SOLVED" << endl);
+      DEBUG_MSG("NL_Solver_Status: SOLVED\n");
 
       stringstream sb;
       // sb << std::hexfloat;  // Use hexadecimal format for FP
@@ -238,31 +238,31 @@ void NLSolns2Out::parseSolution(const string& filename) {
     }
 
     case NL_Solver_Status::UNCERTAIN: {
-      DEBUG_MSG("NL_Solver_Status: UNCERTAIN" << endl);
+      DEBUG_MSG("NL_Solver_Status: UNCERTAIN\n");
       _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INFEASIBLE: {
-      DEBUG_MSG("NL_Solver_Status: INFEASIBLE" << endl);
+      DEBUG_MSG("NL_Solver_Status: INFEASIBLE\n");
       _out->feedRawDataChunk(_out->opt.unsatisfiableMsgDef);
       break;
     }
 
     case NL_Solver_Status::UNBOUNDED: {
-      DEBUG_MSG("NL_Solver_Status: UNBOUNDED" << endl);
+      DEBUG_MSG("NL_Solver_Status: UNBOUNDED\n");
       _out->feedRawDataChunk(_out->opt.unboundedMsgDef);
       break;
     }
 
     case NL_Solver_Status::LIMIT: {
-      DEBUG_MSG("NL_Solver_Status: LIMIT" << endl);
+      DEBUG_MSG("NL_Solver_Status: LIMIT\n");
       _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }
 
     case NL_Solver_Status::INTERRUPTED: {
-      DEBUG_MSG("NL_Solver_Status: INTERRUPTED" << endl);
+      DEBUG_MSG("NL_Solver_Status: INTERRUPTED\n");
       _out->feedRawDataChunk(_out->opt.unknownMsgDef);
       break;
     }

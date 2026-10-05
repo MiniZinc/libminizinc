@@ -53,11 +53,11 @@ public:
 
     if (expression == nullptr) {
       outputStream << "Something should not have happen in file '" << file << "' line " << line
-                   << ". Message:" << std::endl;
+                   << ". Message:\n";
       if (!message->empty()) {
-        outputStream << *message << std::endl;
+        outputStream << *message << '\n';
       } else {
-        outputStream << "No message provided..." << std::endl;
+        outputStream << "No message provided...\n";
       }
     } else {
       std::string expressionString = expression;
@@ -66,9 +66,9 @@ public:
       } else {
         outputStream << "Assertion '" << expression << "'";
       }
-      outputStream << " failed in file '" << file << "' line " << line << std::endl;
+      outputStream << " failed in file '" << file << "' line " << line << '\n';
     }
-    outputStream << "Note: the NL component is still in development!" << std::endl;
+    outputStream << "Note: the NL component is still in development!\n";
     report = std::make_shared<const std::string>(outputStream.str());
   }
 
@@ -94,7 +94,7 @@ public:
 #ifndef NDEBUG
 #define DEBUG_MSG(STR)                                                                   \
   do {                                                                                   \
-    std::cerr << "%[NL DEBUG] " << STR << endl; /* NOLINT(bugprone-macro-parentheses) */ \
+    std::cerr << "%[NL DEBUG] " << STR << '\n'; /* NOLINT(bugprone-macro-parentheses) */ \
   } while (false)
 #define assert(EXPRESSION)                                     \
   do {                                                         \

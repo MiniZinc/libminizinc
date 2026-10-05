@@ -224,7 +224,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf) {
     _log
         //     << "  ---------------------------------------------------------------------------\n"
         << "      % SOLVING PHASE\n"
-        << sf->getDescription(_siOpt) << endl;
+        << sf->getDescription(_siOpt) << '\n';
   }
 }
 
@@ -232,7 +232,7 @@ void MznSolver::addSolverInterface() {
   GCLock lock;
   if (_sf == nullptr) {
     if (get_global_solver_registry()->getSolverFactories().empty()) {
-      _log << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
+      _log << " MznSolver: NO SOLVER FACTORIES LINKED.\n";
       assert(0);
     }
     _sf = get_global_solver_registry()->getSolverFactories().back();
@@ -245,56 +245,53 @@ void MznSolver::printUsage(std::ostream& os) {
   if (ifMzn2Fzn()) {
     os << "MiniZinc to FlatZinc converter.\n"
        << "Usage: " << _executableName
-       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]\n";
   } else if (ifSolns2out()) {
     os << "Solutions to output translator.\n"
-       << "Usage: " << _executableName << "  [<options>] <model>.ozn" << std::endl;
+       << "Usage: " << _executableName << "  [<options>] <model>.ozn\n";
   } else {
     os << "MiniZinc driver.\n"
        << "Usage: " << _executableName
-       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn"
-       << std::endl;
+       << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn\n";
   }
 }
 
 void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
   printUsage(os);
-  os << "General options:" << std::endl
-     << "  --help, -h\n    Print this help message." << std::endl
-     << "  --version\n    Print version information." << std::endl
-     << "  --solvers\n    Print list of available solvers." << std::endl
-     << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)."
-     << std::endl
+  os << "General options:\n"
+     << "  --help, -h\n    Print this help message.\n"
+     << "  --version\n    Print version information.\n"
+     << "  --solvers\n    Print list of available solvers.\n"
+     << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and "
+        "solving).\n"
      << "  --solver <solver id>, --solver <solver config file>.msc, --solver default\n    Select "
-        "solver to use, or explicitly specify using the default solver."
-     << std::endl
-     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
+        "solver to use, or explicitly specify using the default solver.\n"
+     << "  --help <solver id>\n    Print help for a particular solver.\n"
      << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log "
         "to "
-        "stdout."
-     << std::endl
-     << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
-     << "  -s, --statistics\n    Print statistics." << std::endl
-     << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
-     << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
-     << "  --config-dirs\n    Output configuration directories." << std::endl
-     << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl
-     << "  --json-stream\n    Print output as newline-delimited JSON message objects." << std::endl;
+        "stdout.\n"
+     << "  --verbose-compilation\n    Print progress/log statements for compilation.\n"
+     << "  -s, --statistics\n    Print statistics.\n"
+     << "  --compiler-statistics\n    Print statistics for compilation.\n"
+     << "  -c, --compile\n    Compile only (do not run solver).\n"
+     << "  --config-dirs\n    Output configuration directories.\n"
+     << "  --param-file <file>\n    Load parameters from the given JSON file.\n"
+     << "  --json-stream\n    Print output as newline-delimited JSON message objects.\n";
 
   if (selectedSolver.empty()) {
     _flt.printHelp(os);
-    os << endl;
+    os << '\n';
     if (!ifMzn2Fzn()) {
       Solns2Out::printHelp(os);
-      os << endl;
+      os << '\n';
     }
-    os << "Available solvers (get help using --help <solver id>):" << endl;
+    os << "Available solvers (get help using --help <solver id>):\n";
     std::vector<std::string> solvers = _solverConfigs.solvers();
     if (solvers.empty()) {
       os << "  none.\n";
     }
     for (auto& solver : solvers) {
-      os << "  " << solver << endl;
+      os << "  " << solver << '\n';
     }
   } else {
     const SolverConfig& sc = _solverConfigs.config(selectedSolver);
@@ -319,7 +316,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
     for (auto it = get_global_solver_registry()->getSolverFactories().rbegin();
          it != get_global_solver_registry()->getSolverFactories().rend(); ++it) {
       if ((*it)->getId() == solverId) {
-        os << endl;
+        os << '\n';
         (*it)->printHelp(_os);
         if (!sc.executable().empty() && !sc.extraFlags().empty()) {
           os << "Extra solver flags (use with ";
@@ -335,16 +332,16 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
               os << "--nl-flags";
               break;
           }
-          os << ")" << endl;
+          os << ")\n";
           for (const SolverConfig::ExtraFlag& ef : sc.extraFlags()) {
-            os << "  " << ef.flag << endl << "    " << ef.description << endl;
+            os << "  " << ef.flag << '\n' << "    " << ef.description << '\n';
           }
         }
         found = true;
       }
     }
     if (!found) {
-      os << "No help found for solver " << selectedSolver << endl;
+      os << "No help found for solver " << selectedSolver << '\n';
     }
   }
 }
@@ -544,11 +541,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         _os << "  none.\n";
       }
       for (auto& solver : solvers) {
-        _os << "  " << solver << endl;
+        _os << "  " << solver << '\n';
       }
       _os << "Search path for solver configurations:\n";
       for (const string& p : _solverConfigs.solverConfigsPath()) {
-        _os << "  " << p << endl;
+        _os << "  " << p << '\n';
       }
       return OPTION_FINISH;
     }
@@ -784,7 +781,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               if (!success) {
                 std::stringstream ss;
                 ss << "Solver backend " << solverId << " does not recognise option "
-                   << additionalArgs_s[i] << "." << endl;
+                   << additionalArgs_s[i] << ".\n";
                 throw BadOption(ss.str());
               }
             }
@@ -858,7 +855,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               if (!success) {
                 std::stringstream ss;
                 ss << "Solver backend " << solverId << " does not recognise option "
-                   << additionalArgs[i] << "." << endl;
+                   << additionalArgs[i] << ".\n";
                 throw BadOption(ss.str());
               }
             }
@@ -904,7 +901,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
     if (_sf == nullptr) {
       std::stringstream ss;
-      ss << "Solver " << solver << " not found." << endl;
+      ss << "Solver " << solver << " not found.\n";
       throw BadOption(ss.str());
     }
 
@@ -959,7 +956,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       // Processed by Solns2Out
     } else {
       std::stringstream ss;
-      ss << _executableName << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
+      ss << _executableName << ": Unrecognized option or bad format `" << argv[i] << "'\n";
       throw BadOption(ss.str());
     }
   }
@@ -1147,8 +1144,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
           _sf->processOption(_siOpt, i, a_flag);
         } else {
           // Solver does not support -a
-          _log << "WARNING: Solver does not support all solutions for satisfaction problems."
-               << endl;
+          _log << "WARNING: Solver does not support all solutions for satisfaction problems.\n";
         }
       }
       if (!is_sat_problem && _flagIntermediate) {

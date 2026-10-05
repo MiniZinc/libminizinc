@@ -169,7 +169,7 @@ void PathFilePrinter::print(Item* item) {
       }
 
       // Path
-      _os << np.second << std::endl;
+      _os << np.second << '\n';
     }
   } else if (auto* ci = item->dynamicCast<ConstraintI>()) {
     StringLit* sl = nullptr;
@@ -190,7 +190,7 @@ void PathFilePrinter::print(Item* item) {
     } else {
       _os << "";
     }
-    _os << std::endl;
+    _os << '\n';
     _constraintIndex++;
   }
 }

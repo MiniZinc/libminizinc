@@ -37,7 +37,7 @@ void Warning::json(std::ostream& os, bool werror) const {
     _stack->json(os);
     os << ", ";
   }
-  os << "\"message\": \"" << Printer::escapeStringLit(_msg) << "\"}" << std::endl;
+  os << "\"message\": \"" << Printer::escapeStringLit(_msg) << "\"}\n";
 }
 
 }  // namespace MiniZinc

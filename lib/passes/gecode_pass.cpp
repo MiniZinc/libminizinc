@@ -22,7 +22,7 @@ Env* GecodePass::run(Env* env, std::ostream& log) {
     gecode.processFlatZinc();
     gecode.presolve(env->flat());
   } catch (const InternalError& e) {
-    std::cerr << "Warning during presolve: " << e.msg() << std::endl;
+    std::cerr << "Warning during presolve: " << e.msg() << '\n';
   }
   return env;
 }

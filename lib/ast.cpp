@@ -1547,7 +1547,7 @@ std::string detail_type_mismatch(const EnvI& env, Type a, Type b, bool strictEnu
   if (a.dim() > 0) {
     Type ae = env.getTransparentType(a.elemType(env));
     Type be = env.getTransparentType(b.elemType(env));
-    const auto nested = detail_type_mismatch(env, ae, be, strictEnums, p + "[]");
+    auto nested = detail_type_mismatch(env, ae, be, strictEnums, p + "[]");
     if (!nested.empty()) {
       return nested;
     }
@@ -1614,8 +1614,8 @@ std::string detail_type_mismatch(const EnvI& env, Type a, Type b, bool strictEnu
       return p + " has different tuple arity";
     }
     for (unsigned int i = 0; i < ta->size(); ++i) {
-      const auto nested = detail_type_mismatch(env, (*ta)[i], (*tb)[i], strictEnums,
-                                               p + "." + std::to_string(i + 1));
+      auto nested = detail_type_mismatch(env, (*ta)[i], (*tb)[i], strictEnums,
+                                         p + "." + std::to_string(i + 1));
       if (!nested.empty()) {
         return nested;
       }
@@ -1636,12 +1636,13 @@ std::string detail_type_mismatch(const EnvI& env, Type a, Type b, bool strictEnu
       const auto fa = ra->fieldName(i);
       const auto fb = rb->fieldName(i);
       if (fa != fb) {
-        return p + " has different field names: `" + fa + "` vs `" + fb + "`";
+        std::ostringstream oss;
+        oss << p << " has different field names: `" << fa << "` vs `" << fb << "`";
+        return oss.str();
       }
       std::ostringstream nestedPath;
       nestedPath << p << "." << fa;
-      const auto nested =
-          detail_type_mismatch(env, (*ra)[i], (*rb)[i], strictEnums, nestedPath.str());
+      auto nested = detail_type_mismatch(env, (*ra)[i], (*rb)[i], strictEnums, nestedPath.str());
       if (!nested.empty()) {
         return nested;
       }

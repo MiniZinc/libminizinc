@@ -171,7 +171,7 @@ bool Type::isVarifiable(const EnvI& env) const {
   return !contains(env, [](Type t) { return t.dim() != 0 || !t.isVarifiableBase(); });
 }
 
-bool Type::contains(const EnvI& env, std::function<bool(const Type)> p) const {
+bool Type::contains(const EnvI& env, const std::function<bool(const Type)>& p) const {
   if (p(*this)) {
     return true;
   }

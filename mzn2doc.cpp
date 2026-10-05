@@ -60,8 +60,8 @@ int main(int argc, char** argv) {
       }
       if (string(argv[i]) == string("--version")) {
         std::cout << "MiniZinc documentation generator, version " << MZN_VERSION_MAJOR << "."
-                  << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-        std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61" << std::endl;
+                  << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << '\n';
+        std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61\n";
         std::exit(EXIT_SUCCESS);
       }
       if (beginswith(string(argv[i]), "-I")) {
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
       } else {
         std::string input_file(argv[i]);
         if (input_file.length() <= 4) {
-          std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
+          std::cerr << "Error: cannot handle file " << input_file << ".\n";
           goto error;
         }
         size_t last_dot = input_file.find_last_of('.');
@@ -146,20 +146,20 @@ int main(int argc, char** argv) {
           if (filename.empty()) {
             filename = input_file;
           } else {
-            std::cerr << "Error: Multiple .mzn files given." << std::endl;
+            std::cerr << "Error: Multiple .mzn files given.\n";
             goto error;
           }
         } else if (extension == ".dzn" || extension == ".json") {
-          std::cerr << "Error: cannot generate documentation for data files." << std::endl;
+          std::cerr << "Error: cannot generate documentation for data files.\n";
         } else {
-          std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
+          std::cerr << "Error: cannot handle file extension " << extension << ".\n";
           goto error;
         }
       }
     }
 
     if (filename.empty()) {
-      std::cerr << "Error: no model file given." << std::endl;
+      std::cerr << "Error: no model file given.\n";
       goto error;
     }
 
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
 
       std::stringstream errstream;
       if (flag_verbose) {
-        std::cerr << "Parsing '" << filename << "'" << std::endl;
+        std::cerr << "Parsing '" << filename << "'\n";
       }
       std::vector<std::string> filenames;
       filenames.push_back(filename);
@@ -228,7 +228,7 @@ int main(int argc, char** argv) {
         try {
           env.model(m);
           if (flag_verbose) {
-            std::cerr << "Done parsing." << std::endl;
+            std::cerr << "Done parsing.\n";
           }
           if (flag_verbose) {
             std::cerr << "Typechecking ...";
@@ -238,15 +238,15 @@ int main(int argc, char** argv) {
           if (!typeErrors.empty()) {
             for (auto& typeError : typeErrors) {
               if (flag_verbose) {
-                std::cerr << std::endl;
+                std::cerr << '\n';
               }
-              std::cerr << typeError.loc() << ":" << std::endl;
-              std::cerr << typeError.what() << ": " << typeError.msg() << std::endl;
+              std::cerr << typeError.loc() << ":\n";
+              std::cerr << typeError.what() << ": " << typeError.msg() << '\n';
             }
             exit(EXIT_FAILURE);
           }
           if (flag_verbose) {
-            std::cerr << " done" << std::endl;
+            std::cerr << " done\n";
           }
           std::string basename = output_base;
           std::string basedir;
@@ -277,21 +277,21 @@ int main(int argc, char** argv) {
           }
         } catch (LocationException& e) {
           if (flag_verbose) {
-            std::cerr << std::endl;
+            std::cerr << '\n';
           }
-          std::cerr << e.loc() << ":" << std::endl;
-          std::cerr << e.what() << ": " << e.msg() << std::endl;
+          std::cerr << e.loc() << ":\n";
+          std::cerr << e.what() << ": " << e.msg() << '\n';
           exit(EXIT_FAILURE);
         } catch (Exception& e) {
           if (flag_verbose) {
-            std::cerr << std::endl;
+            std::cerr << '\n';
           }
-          std::cerr << e.what() << ": " << e.msg() << std::endl;
+          std::cerr << e.what() << ": " << e.msg() << '\n';
           exit(EXIT_FAILURE);
         }
       } else {
         if (flag_verbose) {
-          std::cerr << std::endl;
+          std::cerr << '\n';
         }
         std::copy(istreambuf_iterator<char>(errstream), istreambuf_iterator<char>(),
                   ostreambuf_iterator<char>(std::cerr));
@@ -300,14 +300,14 @@ int main(int argc, char** argv) {
     }
 
     if (flag_verbose) {
-      std::cerr << "Done." << std::endl;
+      std::cerr << "Done.\n";
     }
     return 0;
   } catch (Exception& e) {
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
+    std::cerr << e.what() << ": " << e.msg() << '\n';
     exit(EXIT_FAILURE);
   } catch (...) {
-    std::cerr << "  UNHANDLED EXCEPTION." << std::endl;
+    std::cerr << "  UNHANDLED EXCEPTION.\n";
     exit(EXIT_FAILURE);
   }
 
@@ -316,26 +316,21 @@ error:
   executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
   std::cerr
       << "Usage: " << executable_name
-      << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
-      << std::endl
-      << "Options:" << std::endl
-      << "  --help, -h\n    Print this help message" << std::endl
-      << "  --version\n    Print version information" << std::endl
-      << "  --include-stdlib\n    Include the standard libraries in the output" << std::endl
-      << "  -v, --verbose\n    Print progress statements" << std::endl
-      << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-      << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>."
-      << std::endl
-      << "  --single-page\n    Print entire documentation on a single HTML page." << std::endl
-      << "  --no-index\n       Do not generate an index of all symbols." << std::endl
-      << "  --rst-output\n       Generate ReStructuredText rather than HTML." << std::endl
+      << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]\n\n"
+      << "Options:\n"
+      << "  --help, -h\n    Print this help message\n"
+      << "  --version\n    Print version information\n"
+      << "  --include-stdlib\n    Include the standard libraries in the output\n"
+      << "  -v, --verbose\n    Print progress statements\n"
+      << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory\n"
+      << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>.\n"
+      << "  --single-page\n    Print entire documentation on a single HTML page.\n"
+      << "  --no-index\n       Do not generate an index of all symbols.\n"
+      << "  --rst-output\n       Generate ReStructuredText rather than HTML.\n"
       << "  --html-header, --html-footer, --rst-header, --rst-footer\n       Header/footer files "
-         "to include in output."
-      << std::endl
-      << std::endl
-      << "Output options:" << std::endl
-      << std::endl
-      << "  --output-base <name>\n    Base name for output files" << std::endl;
+         "to include in output.\n\n"
+      << "Output options:\n\n"
+      << "  --output-base <name>\n    Base name for output files\n";
 
   exit(EXIT_FAILURE);
 }
