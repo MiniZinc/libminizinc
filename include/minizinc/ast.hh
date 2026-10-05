@@ -1720,7 +1720,13 @@ public:
  */
 class Item : public ASTNode {
 private:
-  Type _tUnused;  // required to enforce same layout as Expression
+  /// Creation order. In the place of Expression::_type: a VarDeclI is its VarDecl (see
+  /// VarDeclI::a), so for a VarDeclI this field is the type of the VarDecl.
+  uint32_t _serial;
+  static_assert(sizeof(Type) == sizeof(uint32_t), "Item::_serial must replace a Type");
+  /// The serial number for the next item
+  static uint32_t nextSerial();
+
 protected:
   /// Location of the item
   Location _loc;
@@ -1740,10 +1746,19 @@ public:
   ItemId iid() const { return static_cast<ItemId>(_id); }
 
   const Location& loc() const { return _loc; }
+  /// Creation order of the item: a deterministic order, unlike addresses, which depend on how the
+  /// allocator reuses memory (not for a VarDeclI, see _serial)
+  uint32_t serial() const {
+    assert(iid() != II_VD);
+    return _serial;
+  }
 
 protected:
   /// Constructor
-  Item(Location loc, const ItemId& iid) : ASTNode(iid), _loc(std::move(loc)) { _flag1 = false; }
+  Item(Location loc, const ItemId& iid)
+      : ASTNode(iid), _serial(nextSerial()), _loc(std::move(loc)) {
+    _flag1 = false;
+  }
 
 public:
   /// Test if item is of type \a T

@@ -1837,6 +1837,12 @@ Type type_from_tmap(EnvI& env, TypeInst* ti,
   return ret;
 }
 
+uint32_t Item::nextSerial() {
+  // Per thread, like the rest of the node state (an Env and its nodes stay on one thread)
+  static thread_local uint32_t serial = 0;
+  return serial++;
+}
+
 Type FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, Expression* call,
                       bool strictEnums) {
   return return_type(env, this, ta, call, strictEnums);

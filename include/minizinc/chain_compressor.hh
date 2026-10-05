@@ -31,8 +31,20 @@ protected:
   Model& _m;
   std::vector<VarDecl*>& _deletedVarDecls;
 
-  std::multimap<VarDecl*, Item*> _items;
-  typedef std::multimap<VarDecl*, Item*>::iterator iterator;
+  /// Orders variables by name: compress() visits the items in this order, so ordering them by
+  /// address would make the order of the compressed constraints depend on the allocator (the
+  /// address only breaks ties between equal names, which the flat model does not have)
+  struct VarDeclLess {
+    bool operator()(const VarDecl* v0, const VarDecl* v1) const {
+      if (v0 == nullptr || v1 == nullptr) {
+        return v0 == nullptr && v1 != nullptr;  // (count and find accept a null variable)
+      }
+      int c = Expression::compare(v0->id(), v1->id());
+      return c != 0 ? c < 0 : v0 < v1;
+    }
+  };
+  std::multimap<VarDecl*, Item*, VarDeclLess> _items;
+  typedef std::multimap<VarDecl*, Item*, VarDeclLess>::iterator iterator;
 
   void storeItem(VarDecl* v, Item* i) { _items.emplace(v, i); }
 

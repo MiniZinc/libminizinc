@@ -20,7 +20,12 @@ namespace MiniZinc {
 
 class VarOccurrences {
 public:
-  typedef std::set<Item*> Items;
+  /// Orders items deterministically (the order in which the optimiser visits the items of a
+  /// variable must not depend on addresses): variables by name, other items by creation
+  struct ItemLess {
+    bool operator()(Item* i0, Item* i1) const;
+  };
+  typedef std::set<Item*, ItemLess> Items;
   DenseIdMap<Items> itemMap;
   DenseIdMap<unsigned int> idx;
 

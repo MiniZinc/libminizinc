@@ -27,6 +27,20 @@
 
 namespace MiniZinc {
 
+bool VarOccurrences::ItemLess::operator()(Item* i0, Item* i1) const {
+  auto* vdi0 = i0->dynamicCast<VarDeclI>();
+  auto* vdi1 = i1->dynamicCast<VarDeclI>();
+  if ((vdi0 == nullptr) != (vdi1 == nullptr)) {
+    return vdi0 != nullptr;
+  }
+  if (vdi0 == nullptr) {
+    return i0->serial() < i1->serial();
+  }
+  // The address only breaks ties between equal names, which the flat model does not have
+  int c = Expression::compare(vdi0->e()->id(), vdi1->e()->id());
+  return c != 0 ? c < 0 : i0 < i1;
+}
+
 void VarOccurrences::addIndex(VarDeclI* i, unsigned int idx_i) { idx.insert(i->e()->id(), idx_i); }
 void VarOccurrences::addIndex(VarDecl* e, unsigned int idx_i) {
   assert(find(e) == -1);
