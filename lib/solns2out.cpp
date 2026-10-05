@@ -25,26 +25,22 @@ using namespace std;
 using namespace MiniZinc;
 
 void Solns2Out::printHelp(ostream& os) {
-  os << "Solution output options:" << std::endl
-     << "  --ozn-file <file>\n    Read output specification from ozn file." << std::endl
-     << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
+  os << "Solution output options:\n"
+     << "  --ozn-file <file>\n    Read output specification from ozn file.\n"
+     << "  -o <file>, --output-to-file <file>\n    Filename for generated output.\n"
      << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines "
-        "in the FlatZinc solution stream."
-     << std::endl
+        "in the FlatZinc solution stream.\n"
      << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string "
         "printed after each solution (as a separate line).\n    The default is to use the same as "
-        "FlatZinc, \"----------\"."
-     << std::endl
+        "FlatZinc, \"----------\".\n"
      << "  --soln-comma <s>, --solution-comma <s>\n    Specify the string used to separate "
-        "solutions.\n    The default is the empty string."
-     << std::endl
+        "solutions.\n    The default is the empty string.\n"
      << "  --unsat-msg (--unsatisfiable-msg), --unbounded-msg, --unsatorunbnd-msg,\n"
         "        --unknown-msg, --error-msg, --search-complete-msg <msg>\n"
         "    Specify solution status messages. The defaults:\n"
         "    \"=====UNSATISFIABLE=====\", \"=====UNSATorUNBOUNDED=====\", "
         "\"=====UNBOUNDED=====\",\n"
-        "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively."
-     << std::endl
+        "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively.\n"
      << "  --non-unique\n    Allow duplicate solutions.\n"
      << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and "
         "sort).\n"
@@ -55,11 +51,9 @@ void Solns2Out::printHelp(ostream& os) {
      // Unclear how to exit then:
      //   << "  --number-output <n>\n    Maximal number of different solutions printed." <<
      //   std::endl
-     << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream."
-     << std::endl
-     << "  --output-time\n    Print timing information in the FlatZinc solution stream."
-     << std::endl
-     << "  --no-flush-output\n    Don't flush output stream after every line." << std::endl;
+     << "  --no-output-comments\n    Do not print comments in the FlatZinc solution stream.\n"
+     << "  --output-time\n    Print timing information in the FlatZinc solution stream.\n"
+     << "  --no-flush-output\n    Don't flush output stream after every line.\n";
 }
 
 bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
@@ -114,7 +108,7 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
                            &opt.flagOutputRaw)) {  // NOLINT: Allow repeated empty if
     // Parsed by reference
   } else if (opt.flagStandaloneSolns2Out) {
-    std::string oznfile(argv[i]);
+    const std::string& oznfile(argv[i]);
     if (oznfile.length() <= 4) {
       return false;
     }
@@ -417,9 +411,9 @@ void Solns2Out::checkSolution(std::ostream& oss) const {
       e.print(oss);
     }
   } catch (const exception& e) {
-    oss << e.what() << std::endl;
+    oss << e.what() << '\n';
   } catch (...) {
-    oss << "  UNKNOWN EXCEPTION." << std::endl;
+    oss << "  UNKNOWN EXCEPTION.\n";
   }
 
 #else
@@ -448,19 +442,19 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
   try {
     slv.run(opt.checkerArgs, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
-    oss << e.loc() << ":" << std::endl;
-    oss << e.what() << ": " << e.msg() << std::endl;
+    oss << e.loc() << ":\n";
+    oss << e.what() << ": " << e.msg() << '\n';
   } catch (const Exception& e) {
     std::string what = e.what();
-    oss << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    oss << what << (what.empty() ? "" : ": ") << e.msg() << '\n';
   } catch (const exception& e) {
-    oss << e.what() << std::endl;
+    oss << e.what() << '\n';
   } catch (...) {
-    oss << "  UNKNOWN EXCEPTION." << std::endl;
+    oss << "  UNKNOWN EXCEPTION.\n";
   }
 
 #else
-  oss << "% statistics checking not supported (need built-in Gecode)" << std::endl;
+  oss << "% statistics checking not supported (need built-in Gecode)\n";
 #endif
 }
 
@@ -654,7 +648,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     string line;
     getline(solstream, line);
     if (!_linePart.empty()) {
-      line = _linePart + line;
+      line.insert(0, _linePart);
       _linePart.clear();
     }
     if (solstream.eof()) {  // wait next chunk
@@ -812,8 +806,8 @@ bool Solns2OutInteractive::feedRawDataChunk(const char* data) {
   while (solstream.good()) {
     std::string line;
     std::getline(solstream, line);
-    line = _linePart + line;  // prepend any carried-over partial line
-    if (solstream.eof()) {    // incomplete line: carry it over to the next chunk
+    line.insert(0, _linePart);  // prepend any carried-over partial line
+    if (solstream.eof()) {      // incomplete line: carry it over to the next chunk
       _linePart = line;
       if (!_inSolution) {
         std::string remainder = _linePart.substr(_echoed);

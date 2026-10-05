@@ -2204,7 +2204,7 @@ Expression* b_trace_exp(EnvI& env, Call* call) {
     env.outstream << "\"firstColumn\": " << Expression::loc(call).firstColumn() << ", ";
     env.outstream << "\"lastLine\": " << Expression::loc(call).lastLine() << ", ";
     env.outstream << "\"lastColumn\": " << Expression::loc(call).lastColumn();
-    env.outstream << "}}}" << std::endl;
+    env.outstream << "}}}\n";
   } else {
     static std::string prevLoc;
     std::string loc = Expression::loc(call).toString();
@@ -2244,7 +2244,7 @@ Expression* b_trace_stdout(EnvI& env, Call* call) {
   }
   if (env.fopts.encapsulateJSON) {
     env.outstream << "{\"type\": \"trace\", \"section\": \"default\", \"message\": \""
-                  << Printer::escapeStringLit(eval_string(env, msg_e)) << "\"}" << std::endl;
+                  << Printer::escapeStringLit(eval_string(env, msg_e)) << "\"}\n";
   } else {
     env.outstream << eval_string(env, msg_e);
   }
@@ -2277,7 +2277,7 @@ bool b_trace_to_section(EnvI& env, Call* call) {
     } else {
       env.outstream << "\"" << Printer::escapeStringLit(msg) << "\"";
     }
-    env.outstream << "}" << std::endl;
+    env.outstream << "}\n";
   } else if (env.outputSectionEnabled(ASTString(section_s))) {
     auto msg = eval_string(env, Expression::type(call->arg(1)).cv()
                                     ? flat_cv_exp(env, Ctx(), call->arg(1))()
@@ -3064,13 +3064,13 @@ std::string b_file_path(EnvI& /*env*/, Call* call) {
 }
 
 std::string b_resolve_blackbox_source(EnvI& env, Call* call) {
-  const std::string name = eval_string(env, call->arg(0));
+  std::string name = eval_string(env, call->arg(0));
   const bool isLib = eval_bool(env, call->arg(1));
   // Resolve relative to the file containing the (source-annotation) call.
   const std::string baseDir = FileUtils::dir_name(std::string(
       Expression::loc(call).filename().c_str(), Expression::loc(call).filename().size()));
-  const std::string resolved = isLib ? FileUtils::find_library(name, baseDir)
-                                     : FileUtils::find_executable(name, baseDir, {baseDir});
+  std::string resolved = isLib ? FileUtils::find_library(name, baseDir)
+                               : FileUtils::find_executable(name, baseDir, {baseDir});
   if (!resolved.empty()) {
     return resolved;
   }
@@ -3600,7 +3600,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
   if (al->dims() != 1) {
     std::stringstream ssm;
     ssm << "expecting 1-dimensional array of weights for discrete distribution instead of: " << *al
-        << std::endl;
+        << '\n';
     throw EvalError(env, Expression::loc(al), ssm.str());
   }
   std::vector<long long int> weights(al->size());

@@ -321,7 +321,7 @@ public:
   /// Return true if this type is varifiable (non-array, and every nested type is varifiable)
   bool isVarifiable(const EnvI& env) const;
   /// Return true if the predicate holds for this type or any nested type for structs
-  bool contains(const EnvI& env, std::function<bool(const Type)> p) const;
+  bool contains(const EnvI& env, const std::function<bool(const Type)>& p) const;
 
   /// A helper function that returns the Type for a element of te current array Type
   /// NOTE: generally this is the same type with `_dim = 0`, but when typeId is set, the correct

@@ -670,7 +670,7 @@ void GC::Heap::sweep() {
     } else {
       std::cerr << (stat.second.total);
     }
-    std::cerr << std::endl;
+    std::cerr << '\n';
   }
 #endif
 }

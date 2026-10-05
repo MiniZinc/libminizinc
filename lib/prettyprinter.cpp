@@ -959,7 +959,7 @@ public:
         }
       } break;
     }
-    _os << ";" << std::endl;
+    _os << ";\n";
   }
 };
 
@@ -2720,7 +2720,7 @@ void debugprint(const MiniZinc::Expression* e) { std::cerr << *e << "\n"; }
 void debugprint(const MiniZinc::Expression* e, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
   p.print(e);
-  std::cerr << std::endl;
+  std::cerr << '\n';
 }
 void debugprint(const MiniZinc::KeepAlive& e) { debugprint(e()); }
 void debugprint(const MiniZinc::KeepAlive& e, MiniZinc::EnvI& env) { debugprint(e(), env); }
@@ -2728,7 +2728,7 @@ void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
 void debugprint(const MiniZinc::Item* i, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
   p.print(i);
-  std::cerr << std::endl;
+  std::cerr << '\n';
 }
 void debugprint(const MiniZinc::Model* m) {
   MiniZinc::Printer p(std::cerr, 0);
@@ -2738,14 +2738,14 @@ void debugprint(const MiniZinc::Model* m, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
   p.print(m);
 }
-void debugprint(const MiniZinc::Location& loc) { std::cerr << loc << std::endl; }
+void debugprint(const MiniZinc::Location& loc) { std::cerr << loc << '\n'; }
 void debugprint(const MiniZinc::Location& loc, const MiniZinc::EnvI& /*env*/) { debugprint(loc); }
-void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << std::endl; }
+void debugprint(const MiniZinc::Type& t) { std::cerr << t.simpleToString() << '\n'; }
 void debugprint(const MiniZinc::Type& t, const MiniZinc::EnvI& env) {
-  std::cerr << t.toString(env) << std::endl;
+  std::cerr << t.toString(env) << '\n';
 }
-void debugprint(const MiniZinc::IntSetVal* isv) { std::cerr << *isv << std::endl; }
-void debugprint(const MiniZinc::FloatSetVal* fsv) { std::cerr << *fsv << std::endl; }
+void debugprint(const MiniZinc::IntSetVal* isv) { std::cerr << *isv << '\n'; }
+void debugprint(const MiniZinc::FloatSetVal* fsv) { std::cerr << *fsv << '\n'; }
 
 template <class T>
 void debugprintvec(const std::vector<T>& x) {
@@ -2779,11 +2779,11 @@ void debugprint(const std::vector<MiniZinc::Type>& x) {
   for (size_t i = 0; i < x.size(); ++i) {
     std::cerr << x[i].simpleToString() << (i < x.size() - 1 ? ", " : "");
   }
-  std::cerr << std::endl;
+  std::cerr << '\n';
 }
 void debugprint(const std::vector<MiniZinc::Type>& x, MiniZinc::EnvI& env) {
   for (size_t i = 0; i < x.size(); ++i) {
     std::cerr << x[i].toString(env) << (i < x.size() - 1 ? ", " : "");
   }
-  std::cerr << std::endl;
+  std::cerr << '\n';
 }

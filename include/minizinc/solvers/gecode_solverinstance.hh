@@ -338,7 +338,7 @@ protected:
                        bool ignoreUnknown, std::ostream& err);
   void prepareEngine();
   void setSearchStrategyFromAnnotation(
-      std::vector<Expression*> flatAnn, std::vector<bool>& iv_searched,
+      const std::vector<Expression*>& flatAnn, std::vector<bool>& iv_searched,
       std::vector<bool>& bv_searched,
 #ifdef GECODE_HAS_SET_VARS
       std::vector<bool>& sv_searched,

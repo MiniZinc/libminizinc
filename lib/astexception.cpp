@@ -22,7 +22,7 @@ void SyntaxError::print(std::ostream& os) const {
   if (!_currentLine->empty()) {
     os << *_currentLine << "\n";
   }
-  os << "Error: " << msg() << std::endl;
+  os << "Error: " << msg() << '\n';
 }
 
 void SyntaxError::json(std::ostream& os) const {
@@ -41,7 +41,7 @@ void SyntaxError::json(std::ostream& os) const {
     }
     os << "], ";
   }
-  os << "\"message\": \"" << Printer::escapeStringLit(msg()) << "\"}" << std::endl;
+  os << "\"message\": \"" << Printer::escapeStringLit(msg()) << "\"}\n";
 }
 
 void CyclicIncludeError::print(std::ostream& os) const {
@@ -89,7 +89,7 @@ void LocationException::json(std::ostream& os) const {
     os << ", \"stack\": ";
     _stack->json(os);
   }
-  os << "}" << std::endl;
+  os << "}\n";
 }
 
 ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg)

@@ -414,7 +414,7 @@ ostream& NLToken::printToStream(ostream& os, const NLFile& nl_file) const {
     }
 
     case Kind::MOP: {
-      os << "o" << moc << " # " << getName(moc) << " " << argCount << endl;
+      os << "o" << moc << " # " << getName(moc) << " " << argCount << '\n';
       os << argCount;
       break;
     }
@@ -447,22 +447,22 @@ ostream& NLAlgCons::printToStream(ostream& os, const NLFile& nl_file) const {
   int idx = nl_file.constraintIndexes.at(name);
 
   // Print the 'C' segment: if no expression graph, print "n0".
-  os << "C" << idx << "   # Non linear part of " << name << endl;
+  os << "C" << idx << "   # Non linear part of " << name << '\n';
   if (expressionGraph.empty()) {
-    os << "n0   # No non linear part coded as the value '0'" << endl;
+    os << "n0   # No non linear part coded as the value '0'\n";
   } else {
     for (const auto& t : expressionGraph) {
       t.printToStream(os, nl_file);
-      os << endl;
+      os << '\n';
     }
   }
 
   // Print the 'J' segment if present.
   if (!jacobian.empty()) {
-    os << "J" << idx << " " << jacobian.size() << "   # Linear part of " << name << endl;
+    os << "J" << idx << " " << jacobian.size() << "   # Linear part of " << name << '\n';
     for (const auto& vn_coef : jacobian) {
       os << nl_file.variableIndexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
-         << vn_coef.first << endl;
+         << vn_coef.first << '\n';
     }
   }
 
@@ -473,10 +473,10 @@ ostream& NLAlgCons::printToStream(ostream& os, const NLFile& nl_file) const {
 
 /** Printing. */
 ostream& NLLogicalCons::printToStream(ostream& os, const NLFile& nl_file) const {
-  os << "L" << index << "   # Logical constraint " << name << endl;
+  os << "L" << index << "   # Logical constraint " << name << '\n';
   for (const auto& t : expressionGraph) {
     t.printToStream(os, nl_file);
-    os << endl;
+    os << '\n';
   }
 
   return os;
@@ -491,7 +491,7 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
   // 1st line:
   // 'g': file will be in text format
   // other numbers: as given in the doc (no other explanation...)
-  os << "g3 1 1 0" << endl;
+  os << "g3 1 1 0\n";
 
   // 2nd line:
   os << nl_file.variables.size() << " "  // Total number of variables
@@ -502,13 +502,12 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
      << nl_file.algConsEqCount << " "             // Number of algebraic eq constraints
      << nl_file.logicalConstraints.size() << " "  // Number of logical constraints
      << "# Total nb of:  variables,  algebraic constraints,  objectives,  ranges,  eqs,  logical "
-        "constraints"
-     << endl;
+        "constraints\n";
 
   // 3rd line: Nonlinear and complementary information
   os << nl_file.cnames_nl_general.size() << " "        // Non linear constraints
      << (nl_file.objective.isLinear() ? 0 : 1) << " "  // Non linear objective
-     << "# Nb of nonlinear constraints,  nonlinar objectives." << endl;
+     << "# Nb of nonlinear constraints,  nonlinar objectives.\n";
   /* This was found in the online source of the ASL parser, but is not produce in our ampl tests.
    * If needed, should be put on the same line
   << nb_complementarity_linear_conditions << " "
@@ -517,27 +516,26 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
   << nb_complemented_vars_non_zero_lowerbound << " "
   << "Nb of complementary: linear & nonlinear conditions, double inequalities, vars with non-0 lower
   bound."
-  << endl;
+  << '\n';
   */
 
   // 4th line: Network constraints
   os << nl_file.cnames_nl_network.size() << " "   // Number of nonlinear network constraints
      << nl_file.cnames_lin_network.size() << " "  // Number of linear network constraints
-     << "# Nb of network constraints: nonlinear,  linear." << endl;
+     << "# Nb of network constraints: nonlinear,  linear.\n";
 
   // 5th line: nonlinear variables:
   os << nl_file.lvcCount() << " "  // Nb of nonlinear vars in constraints
      << nl_file.lvoCount() << " "  // Nb of nonlinear vars in objectives
      << nl_file.lvbCount() << " "  // Nb of nonlinear vars in both
-     << "# Nb of non linear vars in:  constraints,  objectives,  both." << endl;
+     << "# Nb of non linear vars in:  constraints,  objectives,  both.\n";
 
   // 6th line:
   os << nl_file.wvCount() << " "  // Nb of linear network vars
      << "0" << " "                // Nb of functions. Not Implemented
      << "0 1 "
      << "# Nb of: linear network vars,  functions. Floating point arithmetic mode (TEXT == 0). "
-        "Flag: if 1, add .sol suffixe."
-     << endl;
+        "Flag: if 1, add .sol suffixe.\n";
 
   // 7th line: discrete variables
   os << nl_file.bvCount() << " "    // Nb of linear binary vars
@@ -546,17 +544,17 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
      << nl_file.lvciCount() << " "  // Nb of nonlinear integer vars in constraints only
      << nl_file.lvoiCount() << " "  // Nb of nonlinear integer vars in objectives only
      << "# Nb of linear vars: binary, integer (non binary). "
-     << "Nb of nonlinear integer vars in: both,  constraints only,  objectives only." << endl;
+     << "Nb of nonlinear integer vars in: both,  constraints only,  objectives only.\n";
 
   // 8th line: non zeros
   os << nl_file.jacobianCount() << " "            // Nb of nonzero in jacobian
      << nl_file.objective.gradientCount() << " "  // Nb of nonzero in gradient
-     << "# Nb of non zeros in: jacobian, objective gradients." << endl;
+     << "# Nb of non zeros in: jacobian, objective gradients.\n";
 
   // 9th line: name length. Our tests always produce 0...
   os << "0" << " "  // Max constraint name length (??)
      << "0" << " "  // Max var name length (??)
-     << "# Longest name among: contraints' name, vars' name." << endl;
+     << "# Longest name among: contraints' name, vars' name.\n";
 
   // 10th line: common expressions. Not enough infor for now...
   os << "0" << " "  // Nb common exprs in both
@@ -595,23 +593,23 @@ bool NLObjective::isOptimisation() const { return minmax >= MINIMIZE; }
 ostream& NLObjective::printToStream(ostream& os, const NLFile& nl_file) const {
   if (minmax != UNDEF) {
     if (minmax == SATISFY) {
-      os << "O0 0   # Satisfy objectif implemented as 'minimize 0'" << endl;
-      os << "n0" << endl;
+      os << "O0 0   # Satisfy objectif implemented as 'minimize 0'\n";
+      os << "n0\n";
     } else {
-      os << "O0 " << minmax << "   # Objectif (0: minimize, 1: maximize)" << endl;
+      os << "O0 " << minmax << "   # Objectif (0: minimize, 1: maximize)\n";
       if (expressionGraph.empty()) {
-        os << "n0  # No expression graph" << endl;
+        os << "n0  # No expression graph\n";
       } else {
         for (const auto& tok : expressionGraph) {
-          tok.printToStream(os, nl_file) << endl;
+          tok.printToStream(os, nl_file) << '\n';
         }
       }
       // Print gradient
       if (!gradient.empty()) {
-        os << "G0 " << gradient.size() << "   # Objective Linear part" << endl;
+        os << "G0 " << gradient.size() << "   # Objective Linear part\n";
         for (const auto& vn_coef : gradient) {
           os << nl_file.variableIndexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
-             << vn_coef.first << endl;
+             << vn_coef.first << '\n';
         }
       }
     }

@@ -54,7 +54,7 @@ string FZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
 string FZNSolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
 
 void FZNSolverFactory::printHelp(ostream& os) {
-  os << "MZN-FZN plugin options:" << std::endl
+  os << "MZN-FZN plugin options:\n"
      << "  --fzn-cmd , --flatzinc-cmd <exe>\n     the backend solver filename.\n"
      << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to "
         "the solver.\n"
@@ -297,7 +297,7 @@ SolverInstance::Status FZNSolverInstance::solve() {
     for (int i = 1; i < cmd_line.size(); ++i) {
       cerr << "" << cmd_line[i] << " ";
     }
-    cerr << std::endl;
+    cerr << '\n';
   }
 
   bool sigint = opt.fznSigint;

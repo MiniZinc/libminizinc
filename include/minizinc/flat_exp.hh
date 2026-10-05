@@ -20,7 +20,7 @@ bool isfalse(EnvI& env, Expression* e);
 Expression* create_dummy_value(EnvI& env, const Type& t);
 TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd);
 
-KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
+KeepAlive bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e);
 KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
 
 void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarDecl* toAnnotate);

@@ -191,7 +191,7 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       } else if (opt_type_full == "float") {
         opt_def = "0.0";
       }
-      size_t split = opt_type_full.find(":");
+      size_t split = opt_type_full.find(':');
       std::string opt_type = opt_type_full.substr(0, split);
       SolverConfig::ExtraFlag::FlagType flag_type;
       if (opt_type == "bool") {
@@ -206,7 +206,7 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       if (split != std::string::npos) {
         opt_type_full = opt_type_full.substr(split + 1);
         while (!opt_type_full.empty()) {
-          split = opt_type_full.find(":");
+          split = opt_type_full.find(':');
           opt_range.push_back(opt_type_full.substr(0, split));
           opt_type_full = split == std::string::npos ? "" : opt_type_full.substr(split + 1);
         }
@@ -379,7 +379,7 @@ SolverConfig SolverConfig::load(const string& filename) {
             std::vector<std::string> loaded = get_string_list(ai);
             std::vector<std::string> tags;
             std::copy_if(loaded.begin(), loaded.end(), std::back_inserter(tags),
-                         [](std::string s) { return s != "default"; });
+                         [](const std::string& s) { return s != "default"; });
             sc._tags = tags;
           } else if (ai->id() == "stdFlags") {
             sc._stdFlags = get_string_list(ai);
@@ -731,7 +731,7 @@ void SolverConfigs::populate(std::ostream& log) {
     std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
     for (auto& configFile : configFiles) {
       try {
-        SolverConfig sc = SolverConfig::load(cur_path + "/" + configFile);
+        SolverConfig sc = SolverConfig::load(FileUtils::join_path(cur_path, configFile));
         addConfig(sc);
       } catch (ConfigException& e) {
         log << "Warning: error loading solver configuration from file " << cur_path << "/"

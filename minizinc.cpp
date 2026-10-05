@@ -42,50 +42,50 @@ int run(const std::string& exe, const std::vector<std::string>& args, bool jsonS
     } catch (const SignalRaised& e) {
       // Interrupted, just terminate
       if (slv.getFlagVerbose()) {
-        std::cerr << std::endl << "Interrupted." << std::endl;
+        std::cerr << "\nInterrupted.\n";
         std::cerr << "   Done (";
-        std::cerr << "overall time " << startTime.stoptime() << ")." << std::endl;
+        std::cerr << "overall time " << startTime.stoptime() << ").\n";
       }
       // Re-raise signal
       e.raise();
       return static_cast<int>(!fSuccess);
     } catch (const InternalError& e) {
       if (slv.getFlagVerbose()) {
-        std::cerr << std::endl;
+        std::cerr << '\n';
       }
-      std::cerr << "MiniZinc has encountered an internal error. This is a bug." << std::endl;
-      std::cerr << "Please file a bug report using the MiniZinc bug tracker." << std::endl;
-      std::cerr << "The internal error message was: " << std::endl;
-      std::cerr << "\"" << e.msg() << "\"" << std::endl;
+      std::cerr << "MiniZinc has encountered an internal error. This is a bug.\n";
+      std::cerr << "Please file a bug report using the MiniZinc bug tracker.\n";
+      std::cerr << "The internal error message was: \n";
+      std::cerr << "\"" << e.msg() << "\"\n";
     } catch (const Exception& e) {
       if (jsonStream || slv.flagEncapsulateJSON) {
         e.json(std::cout);
       } else {
         if (slv.getFlagVerbose()) {
-          std::cerr << std::endl;
+          std::cerr << '\n';
         }
         e.print(std::cerr);
       }
     } catch (const std::exception& e) {
       if (slv.getFlagVerbose()) {
-        std::cerr << std::endl;
+        std::cerr << '\n';
       }
-      std::cerr << e.what() << std::endl;
+      std::cerr << e.what() << '\n';
     } catch (...) {
       if (slv.getFlagVerbose()) {
-        std::cerr << std::endl;
+        std::cerr << '\n';
       }
-      std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
+      std::cerr << "  UNKNOWN EXCEPTION.\n";
     }
 
     if (slv.getFlagVerbose()) {
       std::cerr << "   Done (";
-      std::cerr << "overall time " << startTime.stoptime() << ")." << std::endl;
+      std::cerr << "overall time " << startTime.stoptime() << ").\n";
     }
     return static_cast<int>(!fSuccess);
   } catch (const Exception& e) {
     std::string what = e.what();
-    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << '\n';
     std::exit(EXIT_FAILURE);
   }
 }

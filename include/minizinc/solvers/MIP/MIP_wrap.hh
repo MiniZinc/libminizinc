@@ -246,7 +246,7 @@ public:
                 colNames.data());
     }
     if (fVerbose) {
-      std::cerr << " done." << std::endl;
+      std::cerr << " done.\n";
     }
     fPhase1Over = true;  // SCIP needs after adding
   }

@@ -40,142 +40,112 @@ void Flattener::printVersion(ostream& os) {
   if (!std::string(MZN_BUILD_REF).empty()) {
     os << ", build " << MZN_BUILD_REF;
   }
-  os << std::endl;
+  os << '\n';
   os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
-     << " Monash University, NICTA, Data61" << std::endl;
+     << " Monash University, NICTA, Data61\n";
 }
 
 void Flattener::printHelp(ostream& os) const {
-  os << std::endl
-     << "Flattener input options:" << std::endl
+  os << '\n'
+     << "Flattener input options:\n"
      << "  --instance-check-only\n    Check the model instance (including data) for errors, but "
         "do "
-        "not\n    convert to FlatZinc."
-     << std::endl
+        "not\n    convert to FlatZinc.\n"
      << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but "
         "do "
-        "not\n    convert to FlatZinc."
-     << std::endl
-     << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
-     << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
-     << "  --debug\n    Evaluate debugging intrinsics ending with _dbg." << std::endl
-     << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
-     << "  --no-chain-compression\n    Do not simplify chains of implication constraints."
-     << std::endl
-     << "  -m <file>, --model <file>\n    File named <file> is the model." << std::endl
-     << "  -d <file>, --data <file>\n    File named <file> contains data used by the model."
-     << std::endl
+        "not\n    convert to FlatZinc.\n"
+     << "  --model-interface-only\n    Only extract parameters and output variables.\n"
+     << "  --model-types-only\n    Only output variable (enum) type information.\n"
+     << "  --debug\n    Evaluate debugging intrinsics ending with _dbg.\n"
+     << "  --no-optimize\n    Do not optimize the FlatZinc\n"
+     << "  --no-chain-compression\n    Do not simplify chains of implication constraints.\n"
+     << "  -m <file>, --model <file>\n    File named <file> is the model.\n"
+     << "  -d <file>, --data <file>\n    File named <file> contains data used by the model.\n"
      << "  --checker <file>, --solution-checker <file>\n    File named <file> contains the "
-        "solution checker model."
-     << std::endl
-     << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model."
-     << std::endl
-     << "  --cmdline-json-data <data>\n    Include the given JSON data in the model." << std::endl
-     << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
+        "solution checker model.\n"
+     << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model.\n"
+     << "  --cmdline-json-data <data>\n    Include the given JSON data in the model.\n"
+     << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory\n"
      << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included "
         "globals "
         "in <stdlib>/<dir>, or <dir> when given a absolute or relative path. <dir> may also be "
         "a library bundle (.lib.mzn). Can be given multiple times to search several libraries "
-        "in order; replaces the library of the selected solver."
-     << std::endl
+        "in order; replaces the library of the selected solver.\n"
      << "  -, --input-from-stdin\n    Read problem from standard input. Combine with "
-        "--input-is-flatzinc when passing FlatZinc code."
-     << std::endl
-     << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>."
-     << std::endl
-     << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
+        "--input-is-flatzinc when passing FlatZinc code.\n"
+     << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>.\n"
+     << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification\n"
      << "  --MIPDMaxIntvEE <n>\n    MIPD: max integer domain subinterval length to enforce "
         "equality encoding, default "
-     << _optMIPDmaxIntvEE << std::endl
+     << _optMIPDmaxIntvEE << '\n'
      << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to "
         "enforce equality encoding, default "
-     << _optMIPDmaxDensEE << ", either condition triggers" << std::endl
+     << _optMIPDmaxDensEE << ", either condition triggers\n"
      << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced "
         "by "
-        "inequalities"
-     << std::endl
+        "inequalities\n"
      << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable "
         "(e.g. "
-        "in dzn)"
-     << std::endl
+        "in dzn)\n"
      << "  --no-half-reifications\n    Only use fully reified constraints, even when a half "
-        "reified constraint is defined."
-     << std::endl
-     << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model"
-     << std::endl
-     << std::endl
-     << "Flattener two-pass options:" << std::endl
-     << "  --two-pass\n    Flatten twice to make better flattening decisions for the target"
-     << std::endl
+        "reified constraint is defined.\n"
+     << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model\n\n"
+     << "Flattener two-pass options:\n"
+     << "  --two-pass\n    Flatten twice to make better flattening decisions for the target\n"
 #ifdef HAS_GECODE
-     << "  --use-gecode\n    Perform root-node-propagation with Gecode (adds --two-pass)"
-     << std::endl
-     << "  --shave\n    Probe bounds of all variables at the root node (adds --use-gecode)"
-     << std::endl
-     << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)"
-     << std::endl
+     << "  --use-gecode\n    Perform root-node-propagation with Gecode (adds --two-pass)\n"
+     << "  --shave\n    Probe bounds of all variables at the root node (adds --use-gecode)\n"
+     << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)\n"
      << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = "
-        "default)"
-     << std::endl
+        "default)\n"
 #endif
-     << "  -O<n>\n    Two-pass optimisation levels:" << std::endl
-     << "    -O0:    Disable optimize (--no-optimize)  -O1:    Single pass (default)" << std::endl
+     << "  -O<n>\n    Two-pass optimisation levels:\n"
+     << "    -O0:    Disable optimize (--no-optimize)  -O1:    Single pass (default)\n"
      << "    -O2:    Same as: --two-pass"
 #ifdef HAS_GECODE
-     << "               -O3:    Same as: --use-gecode" << std::endl
-     << "    -O4:    Same as: --shave                  -O5:    Same as: --sac" << std::endl
+     << "               -O3:    Same as: --use-gecode\n"
+     << "    -O4:    Same as: --shave                  -O5:    Same as: --sac\n"
 #else
-     << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
+     << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]\n"
 #endif
      << "  -g\n    Debug mode: Forces -O0 and records all domain changes as constraints instead "
         "of "
-        "applying them"
-     << std::endl
-     << std::endl;
-  os << "Flattener output options:" << std::endl
-     << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
-     << "  --output-base <name>\n    Base name for output files" << std::endl
+        "applying them\n\n";
+  os << "Flattener output options:\n"
+     << "  --no-output-ozn, -O-\n    Do not output ozn file\n"
+     << "  --output-base <name>\n    Base name for output files\n"
      << (_fOutputByDefault
              ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
              : "  --fzn <file>, --output-fzn-to-file <file>\n")
-     << "    Filename for generated FlatZinc output" << std::endl
+     << "    Filename for generated FlatZinc output\n"
      << "  --fzn-format <fzn|json>\n    Whether the FlatZinc generated for the user is formatted "
         "traditionally or as JSON.\n    (Does not affect the FlatZinc directly passed to the "
-        "solver.)"
-     << std::endl
+        "solver.)\n"
      << "  --ozn, --output-ozn-to-file <file>\n    Filename for model output specification "
         "(--ozn- "
-        "for none)"
-     << std::endl
-     << "  --keep-paths\n    Don't remove path annotations from FlatZinc" << std::endl
-     << "  --output-paths\n    Output a symbol table (.paths file)" << std::endl
-     << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>"
-     << std::endl
-     << "  --output-detailed-timing\n    Output detailed profiling information of compilation time"
-     << std::endl
+        "for none)\n"
+     << "  --keep-paths\n    Don't remove path annotations from FlatZinc\n"
+     << "  --output-paths\n    Output a symbol table (.paths file)\n"
+     << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>\n"
+     << "  --output-detailed-timing\n    Output detailed profiling information of compilation "
+        "time\n"
      << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard "
-        "output"
-     << std::endl
-     << "  --output-ozn-to-stdout\n    Print model output specification to standard output"
-     << std::endl
-     << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
+        "output\n"
+     << "  --output-ozn-to-stdout\n    Print model output specification to standard output\n"
+     << "  --output-paths-to-stdout\n    Output symbol table to standard output\n"
      << "  --output-mode <item|dzn|json|checker>\n    Create output according to output item "
-        "(default), or output compatible\n    with dzn or json format, or for solution checking"
-     << std::endl
-     << "  --output-objective\n    Print value of objective function in dzn or json output"
-     << std::endl
-     << "  --output-output-item\n    Print the output item as a string in the dzn or json output"
-     << std::endl
-     << "  --only-sections <section_1,...section_n>" << std::endl
-     << "    Enable only the given comma-separated output sections." << std::endl
-     << "  --not-sections <section_1,...section_n>" << std::endl
-     << "    Disable the given comma-separated output sections." << std::endl
-     << "  -Werror\n    Turn warnings into errors" << std::endl
+        "(default), or output compatible\n    with dzn or json format, or for solution checking\n"
+     << "  --output-objective\n    Print value of objective function in dzn or json output\n"
+     << "  --output-output-item\n    Print the output item as a string in the dzn or json output\n"
+     << "  --only-sections <section_1,...section_n>\n"
+     << "    Enable only the given comma-separated output sections.\n"
+     << "  --not-sections <section_1,...section_n>\n"
+     << "    Disable the given comma-separated output sections.\n"
+     << "  -Werror\n    Turn warnings into errors\n"
      << "  --warn-non-authoritative-names\n    Warn when a library's parameter names diverge "
         "from the canonical (body-less builtin) names for their overload family. Off by "
-        "default; intended for solver-library implementers."
-     << std::endl
-     << "  -w --disable-warnings\n    Supress all warnings" << std::endl;
+        "default; intended for solver-library implementers.\n"
+     << "  -w --disable-warnings\n    Supress all warnings\n";
 }
 
 std::string Flattener::libraryIncludePath(const std::string& name) const {
@@ -202,8 +172,8 @@ std::string Flattener::resolveGlobalsDir(const std::string& g,
   auto as_include_path = [](const std::string& p) {
     return LibraryBundle::exists(p) ? p : p + "/";
   };
-  const std::string share = as_include_path(FileUtils::file_path(_stdLibDir + "/" + g));
-  const std::string rel = as_include_path(FileUtils::file_path(g, workingDir));
+  std::string share = as_include_path(FileUtils::file_path(_stdLibDir + "/" + g));
+  std::string rel = as_include_path(FileUtils::file_path(g, workingDir));
   auto exists = [](const std::string& p) {
     return FileUtils::directory_exists(p) || LibraryBundle::exists(p);
   };
@@ -420,8 +390,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
         break;
       }
       default: {
-        _log << "% Error: Unsupported optimisation level, cannot process -O" << intBuffer << "."
-             << std::endl;
+        _log << "% Error: Unsupported optimisation level, cannot process -O" << intBuffer << ".\n";
         return false;
       }
     }
@@ -452,7 +421,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _flags.modelCheckOnly = true;
       _filenames.push_back(FileUtils::file_path(buffer, workingDir));
     } else {
-      _log << "Error: solution checker model must have extension .mzc.mzn" << std::endl;
+      _log << "Error: solution checker model must have extension .mzc.mzn\n";
       return false;
     }
   } else if (cop.getOption("-m --model", &buffer)) {
@@ -472,7 +441,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _filenames.push_back(FileUtils::file_path(buffer, workingDir));
       return true;
     }
-    _log << "Error: model must have extension .mzn (or .fzn)" << std::endl;
+    _log << "Error: model must have extension .mzn (or .fzn)\n";
     return false;
   } else if (cop.getOption("--checker --solution-checker", &buffer)) {
     if (buffer.length() <= 4) {
@@ -480,12 +449,12 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     }
     if (buffer.substr(buffer.length() - 4, string::npos) != ".mzc" &&
         (buffer.length() <= 8 || buffer.substr(buffer.length() - 8, string::npos) != ".mzc.mzn")) {
-      _log << "Error: solution must have extension .mzc or .mzc.mzn" << std::endl;
+      _log << "Error: solution must have extension .mzc or .mzc.mzn\n";
       return false;
     }
     _flagSolutionCheckModel = FileUtils::file_path(buffer, workingDir);
   } else {
-    std::string input_file(argv[i]);
+    const std::string& input_file(argv[i]);
     if (input_file.length() <= 4) {
       return false;
     }
@@ -510,7 +479,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       _datafiles.push_back(input_file);
     } else {
       if (_fOutputByDefault) {
-        _log << "Error: cannot handle file extension " << extension << "." << std::endl;
+        _log << "Error: cannot handle file extension " << extension << ".\n";
       }
       return false;
     }
@@ -620,14 +589,12 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
   if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputFzn) ||
       _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputFzn)) {
-    _log << "  WARNING: fzn filename '" << _flagOutputFzn << "' matches an input file, ignoring."
-         << endl;
+    _log << "  WARNING: fzn filename '" << _flagOutputFzn << "' matches an input file, ignoring.\n";
     _flagOutputFzn = "";
   }
   if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputOzn) ||
       _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputOzn)) {
-    _log << "  WARNING: ozn filename '" << _flagOutputOzn << "' matches an input file, ignoring."
-         << endl;
+    _log << "  WARNING: ozn filename '" << _flagOutputOzn << "' matches an input file, ignoring.\n";
     _flagOutputOzn = "";
   }
 
@@ -666,7 +633,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     if (!_flags.compileSolutionCheckModel && !_flagSolutionCheckModel.empty()) {
       // Extract variables to check from solution check model
       if (_flags.verbose) {
-        _log << "Parsing solution checker model " << _flagSolutionCheckModel << " ..." << endl;
+        _log << "Parsing solution checker model " << _flagSolutionCheckModel << " ...\n";
       }
       bool isCompressedChecker =
           _flagSolutionCheckModel.size() >= 4 &&
@@ -675,7 +642,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       Model* smm = parse(*env, smm_model, _datafiles, "", "", _includePaths, false, _isFlatzinc,
                          _flags.ignoreStdlib, false, _flags.verbose, errstream);
       if (_flags.verbose) {
-        _log << " done parsing (" << _starttime.stoptime() << ")" << std::endl;
+        _log << " done parsing (" << _starttime.stoptime() << ")\n";
       }
       if (smm != nullptr) {
         _log << errstream.str();
@@ -787,7 +754,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       for (const auto& sFln : _datafiles) {
         _log << ", '" << sFln << '\'';
       }
-      _log << " ..." << std::endl;
+      _log << " ...\n";
     }
     errstream.str("");
     m = parse(*env, _filenames, _datafiles, modelText, modelName.empty() ? "stdin" : modelName,
@@ -802,7 +769,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     env->model(m);
     if (_flags.typecheck) {
       if (_flags.verbose) {
-        _log << " done parsing (" << _starttime.stoptime() << ")" << std::endl;
+        _log << " done parsing (" << _starttime.stoptime() << ")\n";
       }
 
       if (_flags.instanceCheckOnly || _flags.modelCheckOnly || _flags.modelInterfaceOnly ||
@@ -928,7 +895,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           env = out_env;
           if (_flags.verbose) {
             _log << " done (" << _starttime.stoptime() << ")," << " max stack depth "
-                 << env->maxCallStack() << std::endl;
+                 << env->maxCallStack() << '\n';
           }
         }
 
@@ -1092,18 +1059,18 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
         if (_flags.outputPathsStdout) {
           if (_flags.verbose) {
-            _log << "Printing Paths to stdout ..." << std::endl;
+            _log << "Printing Paths to stdout ...\n";
           }
           PathFilePrinter pfp(_os, env->envi());
           if (_flags.encapsulateJSON) {
             _os << "{\"type\": \"paths\", \"paths\": ";
             pfp.json(env->flat());
-            _os << "}" << std::endl;
+            _os << "}\n";
           } else {
             pfp.print(env->flat());
           }
           if (_flags.verbose) {
-            _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+            _log << " done (" << _starttime.stoptime() << ")\n";
           }
         } else if (!_flagOutputPaths.empty()) {
           if (_flags.verbose) {
@@ -1116,7 +1083,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           check_io_status(ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (_flags.verbose) {
-            _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+            _log << " done (" << _starttime.stoptime() << ")\n";
           }
         }
 
@@ -1147,7 +1114,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
         if (_flags.outputFznStdout) {
           if (_flags.verbose) {
-            _log << "Printing FlatZinc to stdout ..." << std::endl;
+            _log << "Printing FlatZinc to stdout ...\n";
           }
           switch (_flags.fznFormat) {
             case FlattenerFlags::FF_FZN: {
@@ -1160,7 +1127,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             } break;
           }
           if (_flags.verbose) {
-            _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+            _log << " done (" << _starttime.stoptime() << ")\n";
           }
         } else if (!_flagOutputFzn.empty()) {
           if (_flags.verbose) {
@@ -1171,13 +1138,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           switch (_flags.fznFormat) {
             case FlattenerFlags::FF_FZN: {
               ofs << "% Generated by MiniZinc " << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR
-                  << "." << MZN_VERSION_PATCH << std::endl;
+                  << "." << MZN_VERSION_PATCH << '\n';
               ofs << "% Solver library: ";
               for (size_t gi = 0; gi < _globalsDirs.size(); gi++) {
                 ofs << (gi > 0 ? ", " : "") << _globalsDirs[gi];
               }
-              ofs << std::endl;
-              ofs << "% Command line invocation: " << _cmdlineStr << std::endl << std::endl;
+              ofs << '\n';
+              ofs << "% Command line invocation: " << _cmdlineStr << "\n\n";
               Printer p(ofs, 0, true, &env->envi());
               p.print(env->flat());
             } break;
@@ -1189,13 +1156,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           check_io_status(ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (_flags.verbose) {
-            _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+            _log << " done (" << _starttime.stoptime() << ")\n";
           }
         }
         if (!_flags.noOutputOzn) {
           if (_flags.outputOznStdout) {
             if (_flags.verbose) {
-              _log << "Printing .ozn to stdout ..." << std::endl;
+              _log << "Printing .ozn to stdout ...\n";
             }
             Printer p(_os, 0, true, &env->envi());
             std::unique_ptr<Model> ozn;
@@ -1206,7 +1173,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             type_demonomorphise_library(*env, ozn.get());
             p.print(ozn.get());
             if (_flags.verbose) {
-              _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+              _log << " done (" << _starttime.stoptime() << ")\n";
             }
           } else if (!_flagOutputOzn.empty()) {
             if (_flags.verbose) {
@@ -1225,7 +1192,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             check_io_status(ofs.good(), " I/O error: cannot write ozn output file. ");
             ofs.close();
             if (_flags.verbose) {
-              _log << " done (" << _starttime.stoptime() << ")" << std::endl;
+              _log << " done (" << _starttime.stoptime() << ")\n";
             }
           }
         }
@@ -1267,7 +1234,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     } else {
       _log << "Maximum memory " << mem / mb << " Mbytes";
     }
-    _log << "." << std::endl;
+    _log << ".\n";
   }
 }
 

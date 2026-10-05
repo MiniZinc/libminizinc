@@ -39,7 +39,7 @@ public:
   FloatSetVal* find(FloatSetVal* e);
   FloatSetVal* findOrig(FloatSetVal* e);
   template <class T>
-  void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
+  void insert(const ASTExprVec<T>& e0, const ASTExprVec<T>& e1) {
     assert(e0.empty() == e1.empty());
     if (!e0.empty()) {
       _nodeMap.insert(e0.vec(), e1.vec());
@@ -47,7 +47,7 @@ public:
     }
   }
   template <class T>
-  ASTExprVecO<T*>* find(ASTExprVec<T> e) {
+  ASTExprVecO<T*>* find(const ASTExprVec<T>& e) {
     if (e.empty()) {
       return nullptr;
     }

@@ -142,8 +142,7 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
     for (int i = 0; i < env.callDepth; ++i) {
       std::cerr << "──";
     }
-    std::cerr << *e << " ::" << *env.ctxToAnn(Expression::type(e).isbool() ? ctx.b : ctx.i)
-              << std::endl;
+    std::cerr << *e << " ::" << *env.ctxToAnn(Expression::type(e).isbool() ? ctx.b : ctx.i) << '\n';
     env.callDepth++;
 
     EE ee = flattener_dispatch[dispatch](env, ctx, e, r, b);

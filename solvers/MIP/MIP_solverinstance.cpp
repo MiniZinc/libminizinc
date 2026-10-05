@@ -122,11 +122,11 @@ void XBZCutGen::print(ostream& os) {
   for (int i : varX) {
     os << i << ' ';
   }
-  os << endl;
+  os << '\n';
   for (int i : varB) {
     os << i << ' ';
   }
-  os << endl;
+  os << '\n';
 }
 
 std::string SECCutGen::validate() const {

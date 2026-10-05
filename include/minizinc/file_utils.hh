@@ -48,6 +48,8 @@ std::string find_library(const std::string& name, const std::string& basePath = 
 /// Return full path to file. If \a basePath is not empty, resolve
 /// relative paths with respect to \a basePath.
 std::string file_path(const std::string& filename, const std::string& basePath = std::string());
+/// Return \a name appended to \a dir, separated by a slash
+std::string join_path(const std::string& dir, const std::string& name);
 /// Return directory name containing \a filename
 std::string dir_name(const std::string& filename);
 /// Return base name of \a filename (without dir_name)

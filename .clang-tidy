@@ -13,6 +13,8 @@ Checks: '-*,
   modernize-use-nullptr,
   modernize-use-override,
   performance-*,
+  -performance-enum-size,
+  -performance-no-int-to-ptr,
   readability-*,
   -readability-use-anyofallof,
   -readability-magic-numbers,
@@ -27,6 +29,9 @@ Checks: '-*,
 '
 # magic-numbers: Allow the usage of direct number literals in expressions
 # congitive-complexity: Do not check function complexity (TODO?)
+# enum-size: Smaller enum base types would change struct layouts and make enums print as
+#   characters, for little gain (the hot enums are stored in bit fields)
+# no-int-to-ptr: The AST deliberately tags pointers (unboxed values, tagged declarations)
 WarningsAsErrors:  '*'
 HeaderFilterRegex: 'include/minizinc/[A-Za-z].*'
 FormatStyle: file

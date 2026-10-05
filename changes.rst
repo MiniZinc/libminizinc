@@ -51,6 +51,7 @@ Changes:
    (including arrays of strings, sets and optional values) each time they are
    passed to a function, which made repeated calls on large arrays take time
    linear in the size of the array.
+-  Make the codebase pass more clang-tidy checks.
 
 Bug fixes:
 ^^^^^^^^^^

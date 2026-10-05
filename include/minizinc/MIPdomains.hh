@@ -22,11 +22,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#define MZN_MIPD_assert_soft(c, e)                                                                \
-  do {                                                                                            \
-    static int nn = 0;                                                                            \
-    if (!(c))                                     /* NOLINT(readability-simplify-boolean-expr) */ \
-      if (++nn <= 1) std::cerr << e << std::endl; /* NOLINT(bugprone-macro-parentheses) */        \
+#define MZN_MIPD_assert_soft(c, e)                                                           \
+  do {                                                                                       \
+    static int nn = 0;                                                                       \
+    if (!(c))                                /* NOLINT(readability-simplify-boolean-expr) */ \
+      if (++nn <= 1) std::cerr << e << '\n'; /* NOLINT(bugprone-macro-parentheses) */        \
   } while (0)
 #define MZN_MIPD_assert_hard(c) MZN_ASSERT_HARD(c)
 #define MZN_MIPD_assert_hard_msg(c, e) MZN_ASSERT_HARD_MSG(c, e)

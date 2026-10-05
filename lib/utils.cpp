@@ -189,7 +189,7 @@ void OverflowHandler::install() {
   // Reserve enough stack for the SEH filter and diagnostic handler to run reliably.
   ULONG stackGuarantee = 64 * 1024;
   if (SetThreadStackGuarantee(&stackGuarantee) == 0) {
-    std::cerr << "WARNING: Cannot reserve stack for the stack overflow handler." << std::endl;
+    std::cerr << "WARNING: Cannot reserve stack for the stack overflow handler.\n";
   }
   _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo());
 }
@@ -329,7 +329,7 @@ void OverflowHandler::install(const char** argv) {
     }
   }
   _ofi.reset();
-  std::cerr << "WARNING: Cannot initialise stack overflow handler." << std::endl;
+  std::cerr << "WARNING: Cannot initialise stack overflow handler.\n";
 }
 
 void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }

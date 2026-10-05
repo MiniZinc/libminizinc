@@ -207,36 +207,29 @@ vector<string> MIPScipWrapper::getTags() { return {"mip", "float", "api"}; }
 vector<string> MIPScipWrapper::getStdFlags() { return {"-i", "-p", "-s"}; }
 
 void MIPScipWrapper::Options::printHelp(ostream& os) {
-  os << "SCIP  MIP wrapper options:"
-     << std::endl
+  os << "SCIP  MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read SCIP parameters from file
      //               << "--writeParam <file> write SCIP parameters to file
      //               << "--tuneParam         instruct SCIP to tune parameters instead of solving
-     << "--writeModel <file> write model to <file> (.lp, .mps, ...?)" << std::endl
-     << "-i                  print intermediate solutions for optimization problems" << std::endl
-     << "-p <N>, --parallel <N>\n    use N threads, default: 1"
-     << std::endl
+     << "--writeModel <file> write model to <file> (.lp, .mps, ...?)\n"
+     << "-i                  print intermediate solutions for optimization problems\n"
+     << "-p <N>, --parallel <N>\n    use N threads, default: 1\n"
      //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-     << "--solver-time-limit <N>       stop search after N milliseconds" << std::endl
-     << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
-     << "--readParam <file>  read SCIP parameters from file" << std::endl
-     << "--writeParam <file> write SCIP parameters to file"
-     << std::endl
+     << "--solver-time-limit <N>       stop search after N milliseconds\n"
+     << "--workmem <N>       maximal amount of RAM used, MB\n"
+     << "--readParam <file>  read SCIP parameters from file\n"
+     << "--writeParam <file> write SCIP parameters to file\n"
      //   << "--tuneParam         instruct SCIP to tune parameters instead of solving   NOT IMPL"
 
-     << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+     << "--absGap <n>        absolute gap |primal-dual| to stop\n"
      << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set "
         "<0 "
-        "to use backend's default"
-     << std::endl
-     << "--intTol <n>        integrality tolerance for a variable. Default 1e-8"
-     << std::endl
+        "to use backend's default\n"
+     << "--intTol <n>        integrality tolerance for a variable. Default 1e-8\n"
      //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
      << "--scip-dll <file>   load the SCIP library from the given file (absolute path or file "
-        "basename), default 'scip'"
-     << std::endl
-     << std::endl;
+        "basename), default 'scip'\n\n";
 }
 
 static inline bool beginswith(const string& s, const string& t) {
@@ -284,9 +277,9 @@ void MIPScipWrapper::SCIP_PLUGIN_CALL(SCIP_RETCODE retcode, const string& msg, b
     /* write error back trace */
     _plugin->SCIPprintError(retcode);
     string msgAll = ("  MIPScipWrapper runtime error, see output:  " + msg);
-    cerr << msgAll << endl;
+    cerr << msgAll << '\n';
     if (fTerm) {
-      cerr << "TERMINATING." << endl;
+      cerr << "TERMINATING.\n";
       throw runtime_error(msgAll);
     }
   }
@@ -815,7 +808,7 @@ bool MIPScipWrapper::addWarmStart(const std::vector<VarId>& vars, const std::vec
   SCIP_PLUGIN_CALL(_plugin->SCIPaddSolFree(_scip, &sol, &stored),
                    "SCIP Error: unable to add warm start solution");
   if (stored == 0) {
-    std::cerr << "% warning: SCIP rejected the warm start" << std::endl;
+    std::cerr << "% warning: SCIP rejected the warm start\n";
     return false;
   }
   return true;

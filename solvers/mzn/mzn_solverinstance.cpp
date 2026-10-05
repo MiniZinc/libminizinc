@@ -49,7 +49,7 @@ string MZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
 string MZNSolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
 
 void MZNSolverFactory::printHelp(ostream& os) {
-  os << "MZN-MZN plugin options:" << std::endl
+  os << "MZN-MZN plugin options:\n"
      << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
      << "  --mzn-flags <options>, --minizinc-flags <options>, --backend-flags <options>\n"
         "     Specify option to be passed to the MiniZinc interpreter.\n"
@@ -121,7 +121,7 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
         return true;
       }
     }
-    std::string input_file(argv[i]);
+    const std::string& input_file(argv[i]);
     if (input_file.length() <= 4) {
       return false;
     }
@@ -166,7 +166,7 @@ SolverInstance::Status MZNSolverInstance::solve() {
     for (int i = 1; i < cmd_line.size(); ++i) {
       _log << "" << cmd_line[i] << " ";
     }
-    _log << std::endl;
+    _log << '\n';
   }
   int timelimit = 0;
   if (opt.solverTimeLimitMilliseconds != 0) {

@@ -516,50 +516,41 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
 }
 
 void MIPCplexWrapper::Options::printHelp(ostream& os) {
-  os << "IBM ILOG CPLEX  MIP wrapper options:"
-     << std::endl
+  os << "IBM ILOG CPLEX  MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read CPLEX parameters from file
      //               << "--writeParam <file> write CPLEX parameters to file
      //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
      << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, "
-        "balanced)"
-     << std::endl
-     << "  -i\n    print intermediate solutions for optimization problems" << std::endl
-     << "  -p <N>, --parallel <N>\n    use N threads, default: 1"
-     << std::endl
+        "balanced)\n"
+     << "  -i\n    print intermediate solutions for optimization problems\n"
+     << "  -p <N>, --parallel <N>\n    use N threads, default: 1\n"
      //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-     << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
+     << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time\n"
      << "  -n <N>, --num-solutions <N>\n"
-        "    stop search after N solutions"
-     << std::endl
+        "    stop search after N solutions\n"
      << "  -r <N>, --random-seed <N>\n"
-        "    random seed, integer"
-     << std::endl
+        "    random seed, integer\n"
      << "  --workmem <N>, --nodefilestart <N>\n"
-        "    maximal RAM for working memory used before writing to node file, GB, default: 0.5"
-     << std::endl
+        "    maximal RAM for working memory used before writing to node file, GB, default: 0.5\n"
      << "  --nodefiledir <path>\n"
-        "    nodefile directory"
-     << std::endl
-     << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
-     << "  --readParam <file>\n    read CPLEX parameters from file" << std::endl
-     << "  --writeParam <file>\n    write CPLEX parameters to file"
-     << std::endl
+        "    nodefile directory\n"
+     << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)\n"
+     << "  --readParam <file>\n    read CPLEX parameters from file\n"
+     << "  --writeParam <file>\n    write CPLEX parameters to file\n"
      //   << "  --tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
 
-     << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+     << "  --absGap <n>\n    absolute gap |primal-dual| to stop\n"
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
-        "to use backend's default"
-     << std::endl
-     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8" << std::endl
+        "to use backend's default\n"
+     << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8\n"
      << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex1280, "
         "when using plugin. Default range tried: "
      << cplex_dlls().front() << " .. " << cplex_dlls().back()
-     << std::endl
+     << '\n'
      //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
-     << std::endl;
+     << '\n';
 }
 
 bool MIPCplexWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
@@ -611,7 +602,7 @@ void MIPCplexWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
     if (fTerm) {
       throw MiniZinc::Error(msgAll);
     }
-    cerr << msgAll << endl;
+    cerr << msgAll << '\n';
   }
 }
 
@@ -1196,7 +1187,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
       // For user cuts, needs to keep some info after presolve
       if (fVerbose) {
-        cerr << "  MIPCplexWrapper: user cut callback enabled, setting params" << endl;
+        cerr << "  MIPCplexWrapper: user cut callback enabled, setting params\n";
       }
       CUTINFO usercutinfo;  // THREADS?  TODO
       usercutinfo.info = &cbui;
@@ -1220,7 +1211,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     }
     if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
       if (fVerbose) {
-        cerr << "  MIPCplexWrapper: lazy cut callback enabled, setting params" << endl;
+        cerr << "  MIPCplexWrapper: lazy cut callback enabled, setting params\n";
       }
       CUTINFO lazyconinfo;
       lazyconinfo.info = &cbui;

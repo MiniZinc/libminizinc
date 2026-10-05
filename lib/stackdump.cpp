@@ -41,8 +41,8 @@ void StackDump::print(std::ostream& os) const {
   if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].first)) {
     Expression* e = _stack[0].first;
     if (!Expression::loc(e).isIntroduced()) {
-      os << Expression::loc(e).toString() << std::endl;
-      os << "  in variable declaration " << *e << std::endl;
+      os << Expression::loc(e).toString() << '\n';
+      os << "  in variable declaration " << *e << '\n';
     }
     return;
   }
@@ -59,7 +59,7 @@ void StackDump::print(std::ostream& os) const {
     }
     auto newloc_l = static_cast<long long int>(Expression::loc(e).firstLine());
     if (newloc_f != curloc_f || newloc_l != curloc_l) {
-      os << Expression::loc(e).toString() << std::endl;
+      os << Expression::loc(e).toString() << '\n';
       curloc_f = newloc_f;
       curloc_l = newloc_l;
     }
@@ -70,19 +70,19 @@ void StackDump::print(std::ostream& os) const {
     }
     switch (Expression::eid(e)) {
       case Expression::E_INTLIT:
-        os << "integer literal" << std::endl;
+        os << "integer literal\n";
         break;
       case Expression::E_FLOATLIT:
-        os << "float literal" << std::endl;
+        os << "float literal\n";
         break;
       case Expression::E_SETLIT:
-        os << "set literal" << std::endl;
+        os << "set literal\n";
         break;
       case Expression::E_BOOLLIT:
-        os << "bool literal" << std::endl;
+        os << "bool literal\n";
         break;
       case Expression::E_STRINGLIT:
-        os << "string literal" << std::endl;
+        os << "string literal\n";
         break;
       case Expression::E_ID:
         if (isCompIter) {
@@ -91,25 +91,25 @@ void StackDump::print(std::ostream& os) const {
             os << *e << " = "
                << show_with_type(*_env, Expression::cast<Id>(e)->decl()->e(), Expression::type(e),
                                  false)
-               << std::endl;
+               << '\n';
           } else {
-            os << *e << " = <expression>" << std::endl;
+            os << *e << " = <expression>\n";
           }
         } else {
-          os << "identifier" << *e << std::endl;
+          os << "identifier" << *e << '\n';
         }
         break;
       case Expression::E_ANON:
-        os << "anonymous variable" << std::endl;
+        os << "anonymous variable\n";
         break;
       case Expression::E_ARRAYLIT:
-        os << "array literal" << std::endl;
+        os << "array literal\n";
         break;
       case Expression::E_ARRAYACCESS:
-        os << "array access" << std::endl;
+        os << "array access\n";
         break;
       case Expression::E_FIELDACCESS:
-        os << "field access" << std::endl;
+        os << "field access\n";
         break;
       case Expression::E_COMP: {
         const Comprehension* cmp = Expression::cast<Comprehension>(e);
@@ -118,40 +118,36 @@ void StackDump::print(std::ostream& os) const {
         } else {
           os << "array ";
         }
-        os << "comprehension expression" << std::endl;
+        os << "comprehension expression\n";
       } break;
       case Expression::E_ITE:
-        os << "if-then-else expression" << std::endl;
+        os << "if-then-else expression\n";
         break;
       case Expression::E_BINOP:
-        os << "binary " << Expression::cast<BinOp>(e)->opToString() << " operator expression"
-           << std::endl;
+        os << "binary " << Expression::cast<BinOp>(e)->opToString() << " operator expression\n";
         break;
       case Expression::E_UNOP:
-        os << "unary " << Expression::cast<UnOp>(e)->opToString() << " operator expression"
-           << std::endl;
+        os << "unary " << Expression::cast<UnOp>(e)->opToString() << " operator expression\n";
         break;
       case Expression::E_CALL:
-        os << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'"
-           << std::endl;
+        os << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'\n";
         break;
       case Expression::E_VARDECL: {
         GCLock lock;
-        os << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'"
-           << std::endl;
+        os << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'\n";
       } break;
       case Expression::E_LET:
-        os << "let expression" << std::endl;
+        os << "let expression\n";
         break;
       case Expression::E_TI:
-        os << "type-inst expression" << std::endl;
+        os << "type-inst expression\n";
         break;
       case Expression::E_TIID:
-        os << "type identifier" << std::endl;
+        os << "type identifier\n";
         break;
       default:
         assert(false);
-        os << "unknown expression (internal error)" << std::endl;
+        os << "unknown expression (internal error)\n";
         break;
     }
   }

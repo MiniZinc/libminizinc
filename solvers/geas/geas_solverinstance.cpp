@@ -337,7 +337,7 @@ void GeasSolverInstance::processFlatZinc() {
             }
           } else {
             std::cerr << "WARNING Geas: ignoring warm start annotation of invalid type: " << *ann
-                      << std::endl;
+                      << '\n';
             continue;
           }
           _solver.data->branchers.push(geas::warmstart_brancher(ws));
@@ -360,7 +360,7 @@ void GeasSolverInstance::processFlatZinc() {
             pids[i] = bv[i].pid;
           }
         } else {
-          std::cerr << "WARNING Geas: ignoring unknown search annotation: " << *ann << std::endl;
+          std::cerr << "WARNING Geas: ignoring unknown search annotation: " << *ann << '\n';
           continue;
         }
         ASTString select_str = call->arg(1)->cast<Id>()->str();
@@ -374,7 +374,7 @@ void GeasSolverInstance::processFlatZinc() {
           select = geas::Var_Smallest;
         } else {
           std::cerr << "WARNING Geas: unknown variable selection '" << select_str
-                    << "', using default value First Fail." << std::endl;
+                    << "', using default value First Fail.\n";
         }
         ASTString choice_str = call->arg(2)->cast<Id>()->str();
         if (choice_str == "indomain_max") {
@@ -385,7 +385,7 @@ void GeasSolverInstance::processFlatZinc() {
           choice = geas::Val_Split;
         } else {
           std::cerr << "WARNING Geas: unknown value selection '" << choice_str
-                    << "', using Indomain Min." << std::endl;
+                    << "', using Indomain Min.\n";
         }
 
         geas::brancher* b = geas::basic_brancher(select, choice, pids);
@@ -767,14 +767,12 @@ bool GeasSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
 }
 
 void GeasSolverFactory::printHelp(std::ostream& os) {
-  os << "Geas solver plugin options:" << std::endl
-     << "  --conflicts <int>" << std::endl
-     << "    Limit the maximum number of conflicts to be used during solving." << std::endl
-     << "  --obj-probe <int>" << std::endl
+  os << "Geas solver plugin options:\n"
+     << "  --conflicts <int>\n"
+     << "    Limit the maximum number of conflicts to be used during solving.\n"
+     << "  --obj-probe <int>\n"
      << "    Number of conflicts to use to probe for better solutions after a new solution is "
-        "found."
-     << std::endl
-     << std::endl;
+        "found.\n\n";
 }
 
 void register_geas_solver() { static GeasSolverFactory _geas_solverfactory; }
