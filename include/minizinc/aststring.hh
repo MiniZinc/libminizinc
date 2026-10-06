@@ -11,21 +11,88 @@
 
 #pragma once
 
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <algorithm>
 #include <cstring>
 #include <functional>
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 namespace MiniZinc {
 
-class ASTStringData;
+struct CStringHash {
+public:
+  // FIXME: This is not an amazing hash function
+  size_t operator()(const std::pair<const char*, size_t>& s) const {
+    size_t result = 0;
+    const size_t prime = 31;
+    for (size_t i = 0; i < s.second; ++i) {
+      result = s.first[i] + (result * prime);
+    }
+    return result;
+  }
+};
+struct CStringEquals {
+public:
+  bool operator()(const std::pair<const char*, size_t>& s0,
+                  const std::pair<const char*, size_t>& s1) const {
+    return s0.second == s1.second && (strncmp(s0.first, s1.first, s0.second) == 0);
+  }
+};
 
 /**
- * \brief Handle for an interned garbage collected string
+ * \brief Interned string
+ *
+ * Equal strings share one object, so two strings are equal if their pointers are equal. The
+ * object is reference counted like every other node (see class RC): it leaves the interning map
+ * and is freed when its count reaches 0. Use it through ASTString, which holds the reference.
+ */
+class ASTStringData : public ASTChunk {
+protected:
+  /// Interning Hash Map
+  using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash,
+                                      CStringEquals>;
+  static Interner& interner();
+  /// Constructor
+  ASTStringData(const std::string& s);
+
+public:
+  /// The interned string for \a s (not counted: the caller takes a reference, see ASTString)
+  static ASTStringData* a(const std::string& s);
+  /// Remove the string \a n, which is being destroyed, from the interning map
+  static void unintern(ASTNode* n);
+  /// Return underlying C-style string
+  // NOLINTNEXTLINE(readability-identifier-naming)
+  const char* c_str() const { return _data + sizeof(size_t); }
+  /// Return size of string
+  size_t size() const {
+    return static_cast<unsigned int>(_size) - static_cast<unsigned int>(sizeof(size_t)) - 1;
+  }
+  /// Access character at position \a i
+  char operator[](unsigned int i) {
+    assert(i < size());
+    return _data[sizeof(size_t) + i];
+  }
+  /// Return hash value of string
+  size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
+};
+
+/**
+ * \brief Reference counted handle for an interned string
+ *
+ * An ASTString owns one reference to its ASTStringData: a copy counts the string, and the
+ * destructor releases it. The string is freed when its last handle and its last node are gone.
+ * A default constructed handle is the empty string (a null pointer, which all members accept).
+ *
+ * - Pass a `const ASTString&` to avoid a count update.
+ * - A pointer from aststr() is borrowed: it is valid only while a handle or a node holds the
+ *   string.
+ * - A node holds its strings as ASTString members. The destructor of a node never runs, so
+ *   RC::release gives those references back.
+ * - The strings in Constants are immortal: they are never freed and never counted.
  */
 class ASTString {
 protected:
@@ -36,21 +103,27 @@ public:
   /// Default constructor
   ASTString() = default;
   /// Constructor
-  explicit ASTString(const std::string& s);
+  explicit ASTString(const std::string& s) : _s(ASTStringData::a(s)) { RC::incPlain(_s); }
   /// Constructor
-  ASTString(ASTStringData* s) : _s(s) {};
+  explicit ASTString(ASTStringData* s) : _s(s) { RC::incPlain(_s); }
   /// Copy constructor
-  ASTString(const ASTString& s) = default;
+  ASTString(const ASTString& s) : _s(s._s) { RC::incPlain(_s); }
+  /// Move constructor
+  ASTString(ASTString&& s) noexcept : _s(s._s) { s._s = nullptr; }
+  /// Destructor
+  ~ASTString() { RC::decPlain(_s); }
   /// Assignment operator
-  ASTString& operator=(const ASTString& s) = default;
-
+  ASTString& operator=(ASTString s) noexcept {
+    std::swap(_s, s._s);
+    return *this;
+  }
   /// Size of the string
   size_t size() const;
   /// Whether string is empty
   bool empty() const;
   /// Underlying C string object
   const char* c_str() const;  // NOLINT(readability-identifier-naming)
-  /// Underlying string implementation
+  /// Underlying string implementation (borrowed: valid while this handle or a node holds it)
   ASTStringData* aststr() const { return _s; }
 
   /// Return if string \a s0 is equal to \a s1
@@ -96,9 +169,6 @@ public:
 
   /// Compute hash value of string
   size_t hash() const;
-
-  /// Mark string during garbage collection
-  void mark() const;
 };
 
 /**
@@ -133,79 +203,10 @@ public:
 
 namespace MiniZinc {
 
-struct CStringHash {
-public:
-  // FIXME: This is not an amazing hash function
-  size_t operator()(const std::pair<const char*, size_t>& s) const {
-    size_t result = 0;
-    const size_t prime = 31;
-    for (size_t i = 0; i < s.second; ++i) {
-      result = s.first[i] + (result * prime);
-    }
-    return result;
-  }
-};
-struct CStringEquals {
-public:
-  bool operator()(const std::pair<const char*, size_t>& s0,
-                  const std::pair<const char*, size_t>& s1) const {
-    return s0.second == s1.second && (strncmp(s0.first, s1.first, s0.second) == 0);
-  }
-};
-
-/**
- * \brief Garbage collected interned string
- */
-class ASTStringData : public ASTChunk {
-  friend class GC::Heap;
-
-protected:
-  /// Interning Hash Map
-  using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash,
-                                      CStringEquals>;
-  static Interner& interner();
-  /// Constructor
-  ASTStringData(const std::string& s);
-
-public:
-  /// Allocate and initialise as \a s
-  static ASTStringData* a(const std::string& s);
-  /// Return underlying C-style string
-  // NOLINTNEXTLINE(readability-identifier-naming)
-  const char* c_str() const { return _data + sizeof(size_t); }
-  /// Return size of string
-  size_t size() const {
-    return static_cast<unsigned int>(_size) - static_cast<unsigned int>(sizeof(size_t)) - 1;
-  }
-  /// Access character at position \a i
-  char operator[](unsigned int i) {
-    assert(i < size());
-    return _data[sizeof(size_t) + i];
-  }
-  /// Return hash value of string
-  size_t hash() const { return reinterpret_cast<const size_t*>(_data)[0]; }
-  /// Mark for garbage collection
-  void mark() const { _gcMark = 1; }
-
-protected:
-  /// GC Destructor
-  void destroy() const {
-    assert(interner().find({this->c_str(), this->size()}) != interner().end());
-    interner().erase({this->c_str(), this->size()});
-  };
-};
-
-inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
-
 inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
 inline bool ASTString::empty() const { return _s == nullptr; }
 // NOLINTNEXTLINE(readability-identifier-naming)
 inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
-inline void ASTString::mark() const {
-  if (_s != nullptr) {
-    _s->mark();
-  }
-}
 
 inline bool operator==(const ASTString& s0, const ASTString& s1) { return s0._s == s1._s; }
 inline bool operator!=(const ASTString& s0, const ASTString& s1) { return s0._s != s1._s; }

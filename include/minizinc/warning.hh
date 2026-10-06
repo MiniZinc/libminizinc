@@ -12,34 +12,27 @@
 #pragma once
 
 #include <minizinc/ast.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/stackdump.hh>
 
 #include <exception>
 #include <memory>
 
 namespace MiniZinc {
-class Warning : public GCMarker {
+class Warning {
 protected:
   Location _loc;
   std::string _msg;
   std::unique_ptr<StackDump> _stack;
 
-  void mark() override {
-    _loc.mark();
-    if (_stack != nullptr) {
-      _stack->mark();
-    }
-  }
-
 public:
   /// Create a warning that does not have a stack dump
   Warning(std::string msg) : _msg(std::move(msg)) {}
   /// Create a warning with a location
-  Warning(const Location& loc, std::string msg) : _loc(loc), _msg(std::move(msg)) {}
+  Warning(Location loc, std::string msg) : _loc(std::move(loc)), _msg(std::move(msg)) {}
   /// Create a warning with a stack dump and location
-  Warning(EnvI& env, const Location& loc, std::string msg)
-      : _loc(loc), _msg(std::move(msg)), _stack(new StackDump(env)) {}
+  Warning(EnvI& env, Location loc, std::string msg)
+      : _loc(std::move(loc)), _msg(std::move(msg)), _stack(new StackDump(env)) {}
 
   /// Access the warning message
   const std::string& msg() const { return _msg; }
@@ -51,7 +44,7 @@ public:
   /// Print JSON stream formatted warning/error message
   void json(std::ostream& os, bool werror) const;
 
-  ~Warning() override {}
+  virtual ~Warning() {}
 };
 
 }  // namespace MiniZinc

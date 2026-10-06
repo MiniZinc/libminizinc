@@ -81,7 +81,7 @@ public:
   void resetSolver() override;
 
 protected:
-  static Expression* getSolutionValue(Id* id);
+  static Ref<Expression> getSolutionValue(Id* id);
 };
 
 class FZNSolverFactory : public SolverFactory {

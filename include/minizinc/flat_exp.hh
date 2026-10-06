@@ -17,25 +17,25 @@ namespace MiniZinc {
 void add_path_annotation(EnvI& env, Expression* e);
 bool istrue(EnvI& env, Expression* e);
 bool isfalse(EnvI& env, Expression* e);
-Expression* create_dummy_value(EnvI& env, const Type& t);
-TypeInst* eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd);
+Ref<Expression> create_dummy_value(EnvI& env, const Type& t);
+Ref<TypeInst> eval_typeinst(EnvI& env, const Ctx& ctx, VarDecl* vd);
 
-KeepAlive bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e);
-KeepAlive conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
+Ref<Expression> bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e);
+Ref<Expression> conj(EnvI& env, VarDecl* b, const Ctx& ctx, const std::vector<EE>& e);
 
 void flatten_vardecl_annotations(EnvI& env, VarDecl* origVd, VarDeclI* vdi, VarDecl* toAnnotate);
 
-VarDecl* new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
-                     Expression* rhs, bool flattenAnnotations = true);
+Ref<VarDecl> new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, VarDecl* origVd,
+                         Expression* rhs, bool flattenAnnotations = true);
 
-KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
+Ref<Expression> flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 
 void make_defined_var(EnvI& env, VarDecl* vd, Call* c);
 void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg = false);
 /// Create a domain constraint that enforces that `expr` falls within `dom`
 ///
 /// This function might return nullptr if no constraint is required
-Expression* mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom);
+Ref<Expression> mk_domain_constraint(EnvI& env, Expression* expr, Expression* dom);
 
 class CallArgItem {
 public:

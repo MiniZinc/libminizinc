@@ -220,7 +220,7 @@ public:
   std::vector<VarDecl*> varsWithOutput;
   /// declaration map for processing and printing output
   // typedef std::pair<VarDecl*,Expression*> DE;
-  // ASTStringMap<DE>::t _declmap;
+  // std::unordered_map<ASTString, DE>::t _declmap;
   /// TODO: we can probably get rid of this
   std::unordered_map<VarDecl*, std::vector<Expression*>*> arrayMap;
   /// The solver engine
@@ -242,7 +242,7 @@ public:
   void printStatistics() override;
 
   void processSolution(bool last_sol = false);
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
 
   Gecode::Space* getGecodeModel();
 
@@ -274,7 +274,7 @@ public:
                                     const Gecode::IntSet& od = Gecode::IntSet::empty);
 #endif
   /// convert \a arg to an ArrayLit (throws InternalError if not possible)
-  ArrayLit* arg2arraylit(Expression* arg);
+  Ref<ArrayLit> arg2arraylit(Expression* arg);
   /// Check if \a b is array of Booleans (or has a single integer)
   bool isBoolArray(ArrayLit* a, int& singleInt);
 #ifdef GECODE_HAS_FLOAT_VARS
@@ -290,31 +290,31 @@ public:
   static MZ_IntConLevel ann2icl(const Annotation& ann);
 
   /// convert the annotation \a s int variable selection to the respective Gecode var selection
-  static Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(const ASTString& s, Gecode::Rnd& rnd,
                                                             double decay);
   /// convert the annotation \a s int value selection to the respective Gecode val selection
-  static Gecode::IntValBranch ann2ivalsel(ASTString s, std::string& r0, std::string& r1,
+  static Gecode::IntValBranch ann2ivalsel(const ASTString& s, std::string& r0, std::string& r1,
                                           Gecode::Rnd& rnd);
   /// convert assign value selection
-  static Gecode::IntAssign ann2asnivalsel(ASTString s, Gecode::Rnd& rnd);
+  static Gecode::IntAssign ann2asnivalsel(const ASTString& s, Gecode::Rnd& rnd);
 
-  static Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(const ASTString& s, Gecode::Rnd& rnd,
                                                              double decay);
   /// convert the annotation \a s int value selection to the respectbve Gecode val selection
-  static Gecode::BoolValBranch ann2bvalsel(ASTString s, std::string& r0, std::string& r1,
+  static Gecode::BoolValBranch ann2bvalsel(const ASTString& s, std::string& r0, std::string& r1,
                                            Gecode::Rnd& rnd);
   /// convert assign value selection
-  static Gecode::BoolAssign ann2asnbvalsel(ASTString s, Gecode::Rnd& rnd);
+  static Gecode::BoolAssign ann2asnbvalsel(const ASTString& s, Gecode::Rnd& rnd);
 
 #ifdef GECODE_HAS_SET_VARS
-  static Gecode::SetVarBranch ann2svarsel(ASTString s, Gecode::Rnd& rnd, double decay);
-  static Gecode::SetValBranch ann2svalsel(ASTString s, std::string& r0, std::string& r1,
+  static Gecode::SetVarBranch ann2svarsel(const ASTString& s, Gecode::Rnd& rnd, double decay);
+  static Gecode::SetValBranch ann2svalsel(const ASTString& s, std::string& r0, std::string& r1,
                                           Gecode::Rnd& rnd);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-  static Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(ASTString s, Gecode::Rnd& rnd,
+  static Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(const ASTString& s, Gecode::Rnd& rnd,
                                                               double decay);
-  static Gecode::FloatValBranch ann2fvalsel(ASTString s, std::string& r0, std::string& r1);
+  static Gecode::FloatValBranch ann2fvalsel(const ASTString& s, std::string& r0, std::string& r1);
 #endif
   /// Returns the VarDecl of \a expr and throws an InternalError if not possible
   VarDecl* getVarDecl(Expression* expr);

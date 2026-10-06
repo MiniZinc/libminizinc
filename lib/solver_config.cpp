@@ -33,8 +33,7 @@ void json_coerce_assignments_2d(JSONParser& jp, Model* m, const std::vector<std:
       std::string ident(ai->id().c_str(), ai->id().size());
       if (std::find(names.begin(), names.end(), ident) != names.end()) {
         if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
-          GCLock lock;
-          auto* ti = new TypeInst(Location().introduce(), Type::mkAny(2));
+          auto ti = make<TypeInst>(Location().introduce(), Type::mkAny(2));
           ai->e(jp.coerceArray(ti, al));
         }
       }
@@ -266,7 +265,6 @@ SolverConfig SolverConfig::load(const string& filename) {
       JSONParser jp(confenv.envi());
       try {
         m.reset(new Model);
-        GCLock lock;
         jp.parse(m.get(), filename, false);
         json_coerce_assignments_2d(jp, m.get(), {"extraFlags"});
       } catch (JSONError& e) {
@@ -435,7 +433,6 @@ std::string json_string_or_list(const std::vector<std::string>& v) {
 }  // namespace
 
 std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
-  GCLock lock;
   std::ostringstream oss;
   auto def_id = configs.defaultSolver("");
   oss << "{\n";
@@ -630,7 +627,6 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
         if (!JSONParser::fileIsJSON(cf)) {
           throw ConfigException(cf + "is not a JSON file.");
         }
-        GCLock lock;
         JSONParser jp(userconfenv.envi());
         Model m;
         jp.parse(&m, cf, false);

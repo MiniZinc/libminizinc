@@ -17,9 +17,9 @@
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/values.hh>
 
@@ -31,15 +31,14 @@ namespace MiniZinc {
 void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
                       const std::string& callId) {
   struct ToCheck {
-    Expression* accessor;
-    Expression* e;
+    Ref<Expression> accessor;
+    Ref<Expression> e;
     TypeInst* ti;
-    ToCheck(Expression* _accessor, Expression* _e, TypeInst* _ti)
-        : accessor(_accessor), e(_e), ti(_ti) {}
+    ToCheck(Ref<Expression> _accessor, Ref<Expression> _e, TypeInst* _ti)
+        : accessor(std::move(_accessor)), e(std::move(_e)), ti(_ti) {}
   };
-  bool hasName = vd->id()->idn() == -1 && !vd->id()->str().empty();
+  bool hasName = vd->id()->idn() == -1 && !vd->id()->v().empty();
   std::vector<ToCheck> todo({{hasName ? vd->id() : nullptr, rhs, vd->ti()}});
-  GCLock lock;
 
   // Firstly just walks through checking domains, then if we encounter an error,
   // starts again recording what accessors are needed to generate the error message.
@@ -51,10 +50,10 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
       continue;
     }
     if (Expression::type(it.e).dim() > 0) {
-      ArrayLit* al = eval_array_lit(env, it.e);
+      Ref<ArrayLit> al = eval_array_lit(env, it.e);
       unsigned int enumId = it.ti->type().typeId();
       for (unsigned int i = 0; i < al->size(); i++) {
-        Expression* access = nullptr;
+        Ref<Expression> access;
         if (hadError) {
           std::vector<int> indexes(al->dims());
           int remDim = static_cast<int>(i);
@@ -62,14 +61,14 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
             indexes[j] = (remDim % (al->max(j) - al->min(j) + 1)) + al->min(j);
             remDim = remDim / (al->max(j) - al->min(j) + 1);
           }
-          std::vector<Expression*> indexes_s(indexes.size());
+          std::vector<Ref<Expression>> indexes_s(indexes.size());
           if (enumId != 0) {
             const auto& enumIds = env.getArrayEnum(enumId);
             for (unsigned int j = 0; j < indexes.size(); j++) {
               std::ostringstream index_oss;
               if (enumIds[j] != 0) {
                 auto name = env.enumToString(enumIds[j], indexes[j]);
-                indexes_s[j] = new Id(Location().introduce(), name, nullptr);
+                indexes_s[j] = make<Id>(Location().introduce(), name, nullptr);
               } else {
                 indexes_s[j] = IntLit::a(indexes[j]);
               }
@@ -79,33 +78,33 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
               indexes_s[j] = IntLit::a(indexes[j]);
             }
           }
-          access = new ArrayAccess(Location().introduce(), it.accessor, indexes_s);
+          access = make<ArrayAccess>(Location().introduce(), it.accessor, indexes_s);
         }
         todo.emplace_back(access, (*al)[i], it.ti);
       }
     } else if (Expression::type(it.e).istuple()) {
       auto* domains = Expression::cast<ArrayLit>(it.ti->domain());
-      auto* al = eval_array_lit(env, it.e);
+      auto al = eval_array_lit(env, it.e);
       for (unsigned int i = 0; i < al->size(); i++) {
-        auto* access = hadError
-                           ? new FieldAccess(Location().introduce(), it.accessor, IntLit::a(i + 1))
-                           : nullptr;
+        auto access = hadError
+                          ? make<FieldAccess>(Location().introduce(), it.accessor, IntLit::a(i + 1))
+                          : nullptr;
         todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
     } else if (Expression::type(it.e).isrecord()) {
       RecordType* rt = env.getRecordType(Expression::type(it.e));
       auto* domains = Expression::cast<ArrayLit>(it.ti->domain());
-      auto* al = eval_array_lit(env, it.e);
+      auto al = eval_array_lit(env, it.e);
       for (unsigned int i = 0; i < al->size(); i++) {
-        Expression* access = nullptr;
+        Ref<Expression> access;
         if (hadError) {
-          auto* field = new Id(Location().introduce(), rt->fieldName(i), nullptr);
-          access = new FieldAccess(Location().introduce(), it.accessor, field);
+          auto field = make<Id>(Location().introduce(), rt->fieldName(i), nullptr);
+          access = make<FieldAccess>(Location().introduce(), it.accessor, field);
         }
         todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
     } else if (Expression::type(it.e) == Type::parint()) {
-      IntSetVal* isv = eval_intset(env, it.ti->domain());
+      Ref<IntSetVal> isv = eval_intset(env, it.ti->domain());
       IntVal v = eval_int(env, it.e);
       if (!isv->contains(v)) {
         if (it.accessor != nullptr) {
@@ -123,13 +122,13 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
         }
         hadError = true;
         todo.clear();
-        Id* ident =
-            hasName ? vd->id()
-                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        Ref<Id> ident =
+            hasName ? Ref<Id>(vd->id())
+                    : make<Id>(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
     } else if (Expression::type(it.e) == Type::parfloat()) {
-      FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, it.ti->domain());
       FloatVal v = eval_float(env, it.e);
       if (!fsv->contains(v)) {
         if (it.accessor != nullptr) {
@@ -146,15 +145,15 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
         }
         hadError = true;
         todo.clear();
-        Id* ident =
-            hasName ? vd->id()
-                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        Ref<Id> ident =
+            hasName ? Ref<Id>(vd->id())
+                    : make<Id>(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
     } else if (Expression::type(it.e) == Type::parsetint()) {
-      IntSetVal* isv = eval_intset(env, it.ti->domain());
+      Ref<IntSetVal> isv = eval_intset(env, it.ti->domain());
       IntSetRanges ir(isv);
-      IntSetVal* rsv = eval_intset(env, it.e);
+      Ref<IntSetVal> rsv = eval_intset(env, it.e);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir)) {
         if (it.accessor != nullptr) {
@@ -172,15 +171,15 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
         }
         hadError = true;
         todo.clear();
-        Id* ident =
-            hasName ? vd->id()
-                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        Ref<Id> ident =
+            hasName ? Ref<Id>(vd->id())
+                    : make<Id>(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
     } else if (Expression::type(it.e) == Type::parsetfloat()) {
-      FloatSetVal* fsv = eval_floatset(env, it.ti->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, it.ti->domain());
       FloatSetRanges fr(fsv);
-      FloatSetVal* rsv = eval_floatset(env, it.e);
+      Ref<FloatSetVal> rsv = eval_floatset(env, it.e);
       FloatSetRanges rr(rsv);
       if (!Ranges::subset(rr, fr)) {
         if (it.accessor != nullptr) {
@@ -197,9 +196,9 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
         }
         hadError = true;
         todo.clear();
-        Id* ident =
-            hasName ? vd->id()
-                    : new Id(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
+        Ref<Id> ident =
+            hasName ? Ref<Id>(vd->id())
+                    : make<Id>(Location().introduce(), env.constants.ids.unnamedArgument, nullptr);
         todo.emplace_back(ident, rhs, vd->ti());
       }
     }
@@ -232,11 +231,11 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
     todo.pop_back();
 
     if (Expression::type(entry.first).dim() > 0) {
-      auto* al = eval_array_lit(env, entry.first);
+      auto al = eval_array_lit(env, entry.first);
       for (unsigned int i = 0; i < entry.second->ranges().size(); i++) {
         if ((entry.second->ranges()[i]->domain() != nullptr) &&
             !Expression::isa<TIId>(entry.second->ranges()[i]->domain())) {
-          IntSetVal* isv = eval_intset(env, entry.second->ranges()[i]->domain());
+          Ref<IntSetVal> isv = eval_intset(env, entry.second->ranges()[i]->domain());
           if (index_set_violation(isv, al->min(i), al->max(i))) {
             throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                        "function result violates function type-inst");
@@ -254,8 +253,8 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
     }
 
     if (Expression::type(entry.first).structBT()) {
-      auto* domains = eval_array_lit(env, entry.second->domain());
-      auto* al = eval_array_lit(env, entry.first);
+      auto domains = eval_array_lit(env, entry.second->domain());
+      auto al = eval_array_lit(env, entry.first);
       for (unsigned int i = 0; i < al->size(); i++) {
         todo.emplace_back((*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
@@ -263,32 +262,32 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
     }
 
     if (Expression::type(entry.first) == Type::parint()) {
-      IntSetVal* isv = eval_intset(env, entry.second->domain());
+      Ref<IntSetVal> isv = eval_intset(env, entry.second->domain());
       IntVal v = eval_int(env, entry.first);
       if (!isv->contains(v)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
     } else if (Expression::type(entry.first) == Type::parfloat()) {
-      FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, entry.second->domain());
       FloatVal v = eval_float(env, entry.first);
       if (!fsv->contains(v)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
     } else if (Expression::type(entry.first) == Type::parsetint()) {
-      IntSetVal* isv = eval_intset(env, entry.second->domain());
+      Ref<IntSetVal> isv = eval_intset(env, entry.second->domain());
       IntSetRanges ir(isv);
-      IntSetVal* rsv = eval_intset(env, entry.first);
+      Ref<IntSetVal> rsv = eval_intset(env, entry.first);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
     } else if (Expression::type(entry.first) == Type::parsetfloat()) {
-      FloatSetVal* fsv = eval_floatset(env, entry.second->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, entry.second->domain());
       FloatSetRanges fr(fsv);
-      FloatSetVal* rsv = eval_floatset(env, entry.first);
+      Ref<FloatSetVal> rsv = eval_floatset(env, entry.first);
       FloatSetRanges rr(rsv);
       if (!Ranges::subset(rr, fr)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
@@ -298,7 +297,7 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
   }
 }
 
-ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
+Ref<ArrayLit> eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
   RecordType* fields1 = env.getRecordType(lhs->type());
   RecordType* fields2 = env.getRecordType(rhs->type());
   RecordFieldSort cmp;
@@ -332,7 +331,7 @@ ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs) {
   }
   assert(r + l == all_fields.size());
 
-  ArrayLit* ret = ArrayLit::constructTuple(Location().introduce(), all_fields);
+  Ref<ArrayLit> ret = ArrayLit::constructTuple(Location().introduce(), all_fields);
   return ret;
 }
 
@@ -343,7 +342,6 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
     throw InternalError("unexpected absent literal");
   }
   if (!id->decl()) {
-    GCLock lock;
     throw EvalError(env, Expression::loc(e), "undeclared identifier", id->str());
   }
   VarDecl* vd = id->decl();
@@ -351,13 +349,12 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
     vd = vd->flat();
   }
   if (!vd->e()) {
-    GCLock lock;
     throw EvalError(env, Expression::loc(vd), "cannot evaluate expression", id->str());
   }
   typename E::Val r = E::e(env, vd->e());
   if (!vd->evaluated() &&
       (vd->toplevel() || (!Expression::isa<Id>(vd->e()) && vd->type().dim() > 0))) {
-    Expression* ne = E::exp(r);
+    Ref<Expression> ne = E::exp(r);
     vd->e(ne);
     vd->evaluated(true);
   }
@@ -365,15 +362,14 @@ typename E::Val eval_id(EnvI& env, Expression* e) {
 }
 
 bool EvalBase::evalBoolCV(EnvI& env, Expression* e) {
-  GCLock lock;
   if (Expression::type(e).cv()) {
-    return eval_bool(env, flat_cv_exp(env, Ctx(), e)());
+    Ref<Expression> flat_e = flat_cv_exp(env, Ctx(), e);
+    return eval_bool(env, flat_e);
   }
   return eval_bool(env, e);
 };
 
-KeepAlive EvalBase::flattenCV(EnvI& env, Expression* e) {
-  GCLock lock;
+Ref<Expression> EvalBase::flattenCV(EnvI& env, Expression* e) {
   Ctx ctx;
   ctx.i = C_MIX;
   ctx.b = (Expression::type(e).bt() == Type::BT_BOOL) ? C_MIX : C_ROOT;
@@ -383,20 +379,20 @@ KeepAlive EvalBase::flattenCV(EnvI& env, Expression* e) {
 
 class EvalIntLit : public EvalBase {
 public:
-  typedef IntLit* Val;
-  typedef Expression* ArrayVal;
-  static IntLit* e(EnvI& env, Expression* e) { return IntLit::a(eval_int(env, e)); }
-  static Expression* exp(IntLit* e) { return e; }
+  typedef Ref<IntLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<IntLit> e(EnvI& env, Expression* e) { return IntLit::a(eval_int(env, e)); }
+  static Ref<Expression> exp(IntLit* e) { return e; }
 };
 class EvalIntVal : public EvalBase {
 public:
   typedef IntVal Val;
   typedef IntVal ArrayVal;
   static IntVal e(EnvI& env, Expression* e) { return eval_int(env, e); }
-  static Expression* exp(IntVal e) { return IntLit::a(e); }
+  static Ref<Expression> exp(IntVal e) { return IntLit::a(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
     if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
-      IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+      Ref<IntSetVal> isv = eval_intset(env, fi->ti()->domain());
       if (!isv->contains(v)) {
         std::ostringstream oss;
         oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is "
@@ -412,10 +408,10 @@ public:
   typedef FloatVal Val;
   typedef FloatVal ArrayVal;
   static FloatVal e(EnvI& env, Expression* e) { return eval_float(env, e); }
-  static Expression* exp(FloatVal e) { return FloatLit::a(e); }
+  static Ref<Expression> exp(FloatVal e) { return FloatLit::a(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
     if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
-      FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, fi->ti()->domain());
       if (!fsv->contains(v)) {
         std::ostringstream oss;
         oss << "result of function `" << demonomorphise_identifier(fi->id()) << "' is " << v
@@ -427,62 +423,66 @@ public:
 };
 class EvalFloatLit : public EvalBase {
 public:
-  typedef FloatLit* Val;
-  typedef Expression* ArrayVal;
-  static FloatLit* e(EnvI& env, Expression* e) { return FloatLit::a(eval_float(env, e)); }
-  static Expression* exp(Expression* e) { return e; }
+  typedef Ref<FloatLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<FloatLit> e(EnvI& env, Expression* e) { return FloatLit::a(eval_float(env, e)); }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalString : public EvalBase {
 public:
   typedef std::string Val;
   typedef std::string ArrayVal;
   static std::string e(EnvI& env, Expression* e) { return eval_string(env, e); }
-  static Expression* exp(const std::string& e) { return new StringLit(Location(), e); }
+  static Ref<Expression> exp(const std::string& e) { return make<StringLit>(Location(), e); }
   static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {}
 };
 class EvalStringLit : public EvalBase {
 public:
-  typedef StringLit* Val;
-  typedef Expression* ArrayVal;
-  static StringLit* e(EnvI& env, Expression* e) {
-    return new StringLit(Location(), eval_string(env, e));
+  typedef Ref<StringLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<StringLit> e(EnvI& env, Expression* e) {
+    return make<StringLit>(Location(), eval_string(env, e));
   }
-  static Expression* exp(Expression* e) { return e; }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalBoolLit : public EvalBase {
 public:
-  typedef BoolLit* Val;
-  typedef Expression* ArrayVal;
-  static BoolLit* e(EnvI& env, Expression* e) { return env.constants.boollit(eval_bool(env, e)); }
-  static Expression* exp(Expression* e) { return e; }
+  typedef Ref<BoolLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<BoolLit> e(EnvI& env, Expression* e) {
+    return env.constants.boollit(eval_bool(env, e));
+  }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalBoolVal : public EvalBase {
 public:
   typedef bool Val;
   static bool e(EnvI& env, Expression* e) { return eval_bool(env, e); }
-  static Expression* exp(bool e) { return Constants::constants().boollit(e); }
+  static Ref<Expression> exp(bool e) { return Constants::constants().boollit(e); }
   static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
 };
 class EvalArrayLit : public EvalBase {
 public:
-  typedef ArrayLit* Val;
-  typedef Expression* ArrayVal;
-  static ArrayLit* e(EnvI& env, Expression* e) { return eval_array_lit(env, e); }
-  static Expression* exp(Expression* e) { return e; }
+  typedef Ref<ArrayLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<ArrayLit> e(EnvI& env, Expression* e) { return eval_array_lit(env, e); }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalArrayLitCopy : public EvalBase {
 public:
-  typedef ArrayLit* Val;
-  typedef Expression* ArrayVal;
-  static ArrayLit* e(EnvI& env, Expression* e) {
-    return Expression::cast<ArrayLit>(copy(env, eval_array_lit(env, e), true));
+  typedef Ref<ArrayLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<ArrayLit> e(EnvI& env, Expression* e) {
+    Ref<ArrayLit> al = eval_array_lit(env, e);
+    auto c = copy(env, al, true);
+    return Expression::cast<ArrayLit>(c);
   }
-  static Expression* exp(Expression* e) { return e; }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+  static Ref<Expression> exp(Expression* e) { return e; }
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {
     for (unsigned int i = 0; i < fi->ti()->ranges().size(); i++) {
       if ((fi->ti()->ranges()[i]->domain() != nullptr) &&
           !Expression::isa<TIId>(fi->ti()->ranges()[i]->domain())) {
-        IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
+        Ref<IntSetVal> isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
         if (index_set_violation(isv, v->min(i), v->max(i))) {
           std::ostringstream oss;
           oss << "array index set " << (i + 1) << " of function result violates function type-inst";
@@ -494,11 +494,11 @@ public:
         fi->ti()->type().ti() == Type::TI_PAR) {
       Type base_t = fi->ti()->type();
       if (base_t.bt() == Type::BT_INT) {
-        IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+        Ref<IntSetVal> isv = eval_intset(env, fi->ti()->domain());
         auto enumId = Expression::type(fi->ti()->domain()).typeId();
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
-            auto* v_i = (*v)[i];
+            Ref<Expression> v_i = (*v)[i];
             if (Expression::type(v_i).isOpt()) {
               v_i = eval_par(env, v_i);
               if (v_i == env.constants.absent) {
@@ -517,14 +517,14 @@ public:
           }
         } else {
           for (unsigned int i = 0; i < v->size(); i++) {
-            auto* v_i = (*v)[i];
+            Ref<Expression> v_i = (*v)[i];
             if (Expression::type(v_i).isOpt()) {
               v_i = eval_par(env, v_i);
               if (v_i == env.constants.absent) {
                 continue;
               }
             }
-            IntSetVal* iv = eval_intset(env, v_i);
+            Ref<IntSetVal> iv = eval_intset(env, v_i);
             IntSetRanges isv_r(isv);
             IntSetRanges v_r(iv);
             if (!Ranges::subset(v_r, isv_r)) {
@@ -538,10 +538,10 @@ public:
           }
         }
       } else if (base_t.bt() == Type::BT_FLOAT) {
-        FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+        Ref<FloatSetVal> fsv = eval_floatset(env, fi->ti()->domain());
         if (base_t.st() == Type::ST_PLAIN) {
           for (unsigned int i = 0; i < v->size(); i++) {
-            auto* v_i = (*v)[i];
+            Ref<Expression> v_i = (*v)[i];
             if (Expression::type(v_i).isOpt()) {
               v_i = eval_par(env, v_i);
               if (v_i == env.constants.absent) {
@@ -559,7 +559,7 @@ public:
           }
         } else {
           for (unsigned int i = 0; i < v->size(); i++) {
-            FloatSetVal* fv = eval_floatset(env, (*v)[i]);
+            Ref<FloatSetVal> fv = eval_floatset(env, (*v)[i]);
             FloatSetRanges fsv_r(fsv);
             FloatSetRanges v_r(fv);
             if (!Ranges::subset(v_r, fsv_r)) {
@@ -579,13 +579,13 @@ public:
 };
 class EvalIntSet : public EvalBase {
 public:
-  typedef IntSetVal* Val;
-  static IntSetVal* e(EnvI& env, Expression* e) { return eval_intset(env, e); }
-  static Expression* exp(IntSetVal* e) { return new SetLit(Location(), e); }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+  typedef Ref<IntSetVal> Val;
+  static Ref<IntSetVal> e(EnvI& env, Expression* e) { return eval_intset(env, e); }
+  static Ref<Expression> exp(IntSetVal* e) { return make<SetLit>(Location(), e); }
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {
     if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
       auto enumId = Expression::type(fi->ti()->domain()).typeId();
-      IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+      Ref<IntSetVal> isv = eval_intset(env, fi->ti()->domain());
       IntSetRanges isv_r(isv);
       IntSetRanges v_r(v);
       if (!Ranges::subset(v_r, isv_r)) {
@@ -600,12 +600,12 @@ public:
 };
 class EvalFloatSet : public EvalBase {
 public:
-  typedef FloatSetVal* Val;
-  static FloatSetVal* e(EnvI& env, Expression* e) { return eval_floatset(env, e); }
-  static Expression* exp(FloatSetVal* e) { return new SetLit(Location(), e); }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+  typedef Ref<FloatSetVal> Val;
+  static Ref<FloatSetVal> e(EnvI& env, Expression* e) { return eval_floatset(env, e); }
+  static Ref<Expression> exp(FloatSetVal* e) { return make<SetLit>(Location(), e); }
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {
     if ((fi->ti()->domain() != nullptr) && !Expression::isa<TIId>(fi->ti()->domain())) {
-      FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, fi->ti()->domain());
       FloatSetRanges fsv_r(fsv);
       FloatSetRanges v_r(v);
       if (!Ranges::subset(v_r, fsv_r)) {
@@ -619,49 +619,49 @@ public:
 };
 class EvalBoolSet : public EvalBase {
 public:
-  typedef IntSetVal* Val;
-  static IntSetVal* e(EnvI& env, Expression* e) { return eval_boolset(env, e); }
-  static Expression* exp(IntSetVal* e) {
-    auto* sl = new SetLit(Location(), e);
+  typedef Ref<IntSetVal> Val;
+  static Ref<IntSetVal> e(EnvI& env, Expression* e) { return eval_boolset(env, e); }
+  static Ref<Expression> exp(IntSetVal* e) {
+    auto sl = make<SetLit>(Location(), e);
     sl->type(Type::parsetbool());
     return sl;
   }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {}
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {}
 };
 class EvalSetLit : public EvalBase {
 public:
-  typedef SetLit* Val;
-  typedef Expression* ArrayVal;
-  static SetLit* e(EnvI& env, Expression* e) { return eval_set_lit(env, e); }
-  static Expression* exp(Expression* e) { return e; }
+  typedef Ref<SetLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<SetLit> e(EnvI& env, Expression* e) { return eval_set_lit(env, e); }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalFloatSetLit : public EvalBase {
 public:
-  typedef SetLit* Val;
-  typedef Expression* ArrayVal;
-  static SetLit* e(EnvI& env, Expression* e) {
-    return new SetLit(Expression::loc(e), eval_floatset(env, e));
+  typedef Ref<SetLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<SetLit> e(EnvI& env, Expression* e) {
+    return make<SetLit>(Expression::loc(e), eval_floatset(env, e));
   }
-  static Expression* exp(Expression* e) { return e; }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalBoolSetLit : public EvalBase {
 public:
-  typedef SetLit* Val;
-  typedef Expression* ArrayVal;
-  static SetLit* e(EnvI& env, Expression* e) {
-    auto* sl = new SetLit(Expression::loc(e), eval_boolset(env, e));
+  typedef Ref<SetLit> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<SetLit> e(EnvI& env, Expression* e) {
+    auto sl = make<SetLit>(Expression::loc(e), eval_boolset(env, e));
     sl->type(Type::parsetbool());
     return sl;
   }
-  static Expression* exp(Expression* e) { return e; }
+  static Ref<Expression> exp(Expression* e) { return e; }
 };
 class EvalPar : public EvalBase {
 public:
-  typedef Expression* Val;
-  typedef Expression* ArrayVal;
-  static Expression* e(EnvI& env, Expression* e) { return eval_par(env, e); }
-  static Expression* exp(Expression* e) { return e; }
-  static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+  typedef Ref<Expression> Val;
+  typedef Ref<Expression> ArrayVal;
+  static Ref<Expression> e(EnvI& env, Expression* e) { return eval_par(env, e); }
+  static Ref<Expression> exp(Expression* e) { return e; }
+  static void checkRetVal(EnvI& env, const Val& v, FunctionI* fi) {
     if (fi->ti()->type().structBT()) {
       check_struct_retval(env, v, fi);
     }
@@ -671,43 +671,42 @@ public:
 template <class CallClass>
 class EvalCallCleanup {
 private:
-  CallClass* _call;
-  std::vector<Expression*> _previousParameters;
-  KeepAlive _previousCapture;
+  /// The function whose parameters are bound
+  Ref<FunctionI> _decl;
+  std::vector<Ref<Expression>> _previousParameters;
+  Ref<Expression> _previousCapture;
 
 public:
   EvalCallCleanup(EnvI& env, CallClass* call)
-      : _call(call), _previousParameters(call->decl()->paramCount()) {
-    for (unsigned int i = 0; i < call->decl()->paramCount(); i++) {
-      _previousParameters[i] = call->decl()->param(i)->e();
+      : _decl(call->decl()), _previousParameters(call->decl()->paramCount()) {
+    for (unsigned int i = 0; i < _decl->paramCount(); i++) {
+      _previousParameters[i] = _decl->param(i)->e();
     }
-    if (call->decl()->capturedAnnotationsVar() != nullptr) {
-      _previousCapture = call->decl()->capturedAnnotationsVar()->e();
-      GCLock lock;
-      call->decl()->capturedAnnotationsVar()->flat(call->decl()->capturedAnnotationsVar());
-      call->decl()->capturedAnnotationsVar()->e(env.createAnnotationArray(C_MIX));
+    Ref<VarDecl> cav = _decl->capturedAnnotationsVar();
+    if (cav != nullptr) {
+      _previousCapture = cav->e();
+      cav->flat(cav);
+      cav->e(env.createAnnotationArray(C_MIX));
     }
   }
   // NOLINTNEXTLINE(bugprone-exception-escape)
   ~EvalCallCleanup() {
-    for (unsigned int i = 0; i < _call->decl()->paramCount(); i++) {
-      VarDecl* vd = _call->decl()->param(i);
+    for (unsigned int i = 0; i < _decl->paramCount(); i++) {
+      VarDecl* vd = _decl->param(i);
       vd->e(_previousParameters[i]);
       vd->flat(vd->e() == nullptr ? nullptr : vd);
     }
-    if (_call->decl()->capturedAnnotationsVar() != nullptr) {
-      _call->decl()->capturedAnnotationsVar()->e(_previousCapture());
-      _call->decl()->capturedAnnotationsVar()->flat(_call->decl()->capturedAnnotationsVar()->e() !=
-                                                            nullptr
-                                                        ? _call->decl()->capturedAnnotationsVar()
-                                                        : nullptr);
+    Ref<VarDecl> cav = _decl->capturedAnnotationsVar();
+    if (cav != nullptr) {
+      cav->e(_previousCapture);
+      cav->flat(cav->e() != nullptr ? cav.get() : nullptr);
     }
   }
 };
 
 template <class Eval, class CallClass = Call>
 typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
-  std::vector<Expression*> params(ce->decl()->paramCount());
+  std::vector<Ref<Expression>> params(ce->decl()->paramCount());
   for (unsigned int i = 0; i < ce->decl()->paramCount(); i++) {
     params[i] = eval_par(env, ce->arg(i));
   }
@@ -727,10 +726,10 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   return ret;
 }
 
-Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
+Ref<Expression> eval_fieldaccess(EnvI& env, FieldAccess* fa) {
   assert(Expression::type(fa->v()).istuple() ||
          Expression::type(fa->v()).isrecord());  // TODO: Support for Records
-  Expression* v = fa->v();
+  Ref<Expression> v = fa->v();
   if (Expression::type(v).isOpt()) {
     // A field of an absent struct is itself absent
     v = eval_par(env, v);
@@ -738,7 +737,8 @@ Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
       return env.constants.absent;
     }
   }
-  auto* al = Expression::dynamicCast<ArrayLit>(eval_array_lit(env, v));
+  Ref<ArrayLit> alr = eval_array_lit(env, v);
+  auto* al = Expression::dynamicCast<ArrayLit>(alr);
   if (al == nullptr) {
     throw EvalError(env, Expression::loc(fa), "Internal error: could not evaluate structural type");
   }
@@ -750,37 +750,37 @@ Expression* eval_fieldaccess(EnvI& env, FieldAccess* fa) {
   return (*al)[static_cast<unsigned int>(i.toInt()) - 1];
 }
 
-ArrayLit* eval_array_comp(EnvI& env, Comprehension* e) {
-  ArrayLit* ret;
+Ref<ArrayLit> eval_array_comp(EnvI& env, Comprehension* e) {
+  Ref<ArrayLit> ret;
   bool plainParNonAbsent = e->type().ti() == Type::TI_PAR && e->type().st() == Type::ST_PLAIN &&
                            e->type().ot() == Type::OT_PRESENT;
   if (plainParNonAbsent && e->type().bt() == Type::BT_INT) {
     auto a = eval_comp<EvalIntLit>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_BOOL) {
     auto a = eval_comp<EvalBoolLit>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_FLOAT) {
     auto a = eval_comp<EvalFloatLit>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   } else if (e->type().st() == Type::ST_SET && !e->type().isOpt()) {
     // (opt sets may contain <>, so they are evaluated by EvalPar below)
     auto a = eval_comp<EvalSetLit>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   } else if (plainParNonAbsent && e->type().bt() == Type::BT_STRING) {
     auto a = eval_comp<EvalStringLit>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   } else {
     auto a = eval_comp<EvalPar>(env, e);
-    ret = new ArrayLit(Expression::loc(e), a.a, a.dims);
+    ret = make<ArrayLit>(Expression::loc(e), a.a, a.dims);
   }
   ret->type(e->type());
   return ret;
 }
 
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e);
+Ref<Expression> eval_arrayaccess(EnvI& env, ArrayAccess* e);
 
-ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
+Ref<ArrayLit> eval_array_lit(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   switch (Expression::eid(e)) {
     case Expression::E_INTLIT:
@@ -801,12 +801,13 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       if (!Expression::type(e).structBT()) {
         throw EvalError(env, Expression::loc(e), "arrays of arrays not supported");
       }
-      GCLock lock;
-      return eval_array_lit(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+      Ref<Expression> aa = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+      return eval_array_lit(env, aa);
     }
     case Expression::E_FIELDACCESS: {
       auto* fa = Expression::cast<FieldAccess>(e);
-      return eval_array_lit(env, eval_fieldaccess(env, fa));
+      Ref<Expression> fae = eval_fieldaccess(env, fa);
+      return eval_array_lit(env, fae);
     }
     case Expression::E_COMP:
       return eval_array_comp(env, Expression::cast<Comprehension>(e));
@@ -825,10 +826,10 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         return eval_call<EvalArrayLitCopy, BinOp>(env, bo);
       }
       if (bo->op() == BOT_PLUSPLUS) {
-        ArrayLit* al0 = eval_array_lit(env, bo->lhs());
-        ArrayLit* al1 = eval_array_lit(env, bo->rhs());
+        Ref<ArrayLit> al0 = eval_array_lit(env, bo->lhs());
+        Ref<ArrayLit> al1 = eval_array_lit(env, bo->rhs());
         if (bo->type().isrecord()) {
-          ArrayLit* rec = eval_record_merge(env, al0, al1);
+          Ref<ArrayLit> rec = eval_record_merge(env, al0, al1);
           rec->type(bo->type());
           return rec;
         }
@@ -839,8 +840,8 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
-        auto* ret = bo->type().istuple() ? ArrayLit::constructTuple(Expression::loc(e), v)
-                                         : new ArrayLit(Expression::loc(e), v);
+        auto ret = bo->type().istuple() ? ArrayLit::constructTuple(Expression::loc(e), v)
+                                        : make<ArrayLit>(Expression::loc(e), v);
         ret->flat(al0->flat() && al1->flat());
         Type t = Expression::type(e);
         if (t.bt() == Type::BT_TOP && t.dim() != 0) {
@@ -874,7 +875,8 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       }
 
       if (ce->decl()->builtins.e != nullptr) {
-        return eval_array_lit(env, ce->decl()->builtins.e(env, ce));
+        Ref<Expression> be = ce->decl()->builtins.e(env, ce);
+        return eval_array_lit(env, be);
       }
 
       if (ce->decl()->e() == nullptr) {
@@ -906,8 +908,9 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
           }
         }
       }
-      ArrayLit* l_in = eval_array_lit(env, l->in());
-      auto* ret = Expression::cast<ArrayLit>(copy(env, l_in, true));
+      Ref<ArrayLit> l_in = eval_array_lit(env, l->in());
+      auto c = copy(env, l_in, true);
+      Ref<ArrayLit> ret = Expression::cast<ArrayLit>(c);
       ret->flat(l_in->flat());
       return ret;
     }
@@ -956,9 +959,9 @@ std::string ArrayAccessSucess::errorMessage(EnvI& env, Expression* e) const {
   return oss.str();
 }
 
-Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
+Ref<Expression> ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
   if (t.dim() != 0) {
-    auto* al = new ArrayLit(Location(), std::vector<Expression*>());
+    auto al = make<ArrayLit>(Location(), std::vector<Expression*>());
     al->type(t);
     return al;
   }
@@ -972,41 +975,41 @@ Expression* ArrayAccessSucess::dummyLiteral(EnvI& env, Type t) const {
     return FloatLit::a(0.0);
   }
   if (t.st() == Type::ST_SET || t.isbot()) {
-    auto* ret = new SetLit(Location(), std::vector<Expression*>());
+    auto ret = make<SetLit>(Location(), std::vector<Expression*>());
     ret->type(t);
     return ret;
   }
   if (t.isstring()) {
-    return new StringLit(Location(), "");
+    return make<StringLit>(Location(), "");
   }
   if (t.structBT()) {
     auto* tt = env.getStructType(t);
     if (tt->size() == 2 && (*tt)[1].isunknown()) {
       // Nested array
-      std::vector<Expression*> fields({dummyLiteral(env, (*tt)[0])});
-      auto* al = ArrayLit::constructTuple(Location(), fields);
+      std::vector<Ref<Expression>> fields({dummyLiteral(env, (*tt)[0])});
+      auto al = ArrayLit::constructTuple(Location(), raw(fields));
       al->type(t);
       return al;
     }
-    std::vector<Expression*> fields;
+    std::vector<Ref<Expression>> fields;
     fields.reserve(tt->size());
     for (unsigned int i = 0; i < tt->size(); i++) {
       fields.push_back(dummyLiteral(env, (*tt)[i]));
     }
-    auto* al = ArrayLit::constructTuple(Location(), fields);
+    auto al = ArrayLit::constructTuple(Location(), raw(fields));
     al->type(t);
     return al;
   }
   throw InternalError("unexpected type in array access expression");
 }
 
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
-  ArrayLit* al = eval_array_lit(env, e->v());
+Ref<Expression> eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success) {
+  Ref<ArrayLit> al = eval_array_lit(env, e->v());
   std::vector<IntVal> indices(e->idx().size());
   bool allAbsent = true;
   bool anyAbsent = false;
   for (unsigned int i = 0; i < e->idx().size(); i++) {
-    auto* idx = eval_par(env, e->idx()[i]);
+    auto idx = eval_par(env, e->idx()[i]);
     if (idx == env.constants.absent) {
       anyAbsent = true;
       indices[i] = al->min(i);
@@ -1018,23 +1021,23 @@ Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& succe
   if (allAbsent) {
     return env.constants.absent;
   }
-  auto* result = eval_arrayaccess(env, al, indices, success);
-  return anyAbsent ? env.constants.absent : result;
+  auto result = eval_arrayaccess(env, al, indices, success);
+  return anyAbsent ? Ref<Expression>(env.constants.absent) : result;
 }
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e) {
+Ref<Expression> eval_arrayaccess(EnvI& env, ArrayAccess* e) {
   ArrayAccessSucess success;
-  Expression* ret = eval_arrayaccess(env, e, success);
+  Ref<Expression> ret = eval_arrayaccess(env, e, success);
   if (success()) {
     return ret;
   }
   throw ResultUndefinedError(env, Expression::loc(e), success.errorMessage(env, e->v()));
 }
 
-SetLit* eval_set_lit(EnvI& env, Expression* e) {
+Ref<SetLit> eval_set_lit(EnvI& env, Expression* e) {
   switch (Expression::type(e).bt()) {
     case Type::BT_INT:
     case Type::BT_BOT: {
-      auto* sl = new SetLit(Expression::loc(e), eval_intset(env, e));
+      auto sl = make<SetLit>(Expression::loc(e), eval_intset(env, e));
       if (Expression::type(e).typeId() != 0) {
         Type t = sl->type();
         t.typeId(Expression::type(e).typeId());
@@ -1043,18 +1046,18 @@ SetLit* eval_set_lit(EnvI& env, Expression* e) {
       return sl;
     }
     case Type::BT_BOOL: {
-      auto* sl = new SetLit(Expression::loc(e), eval_boolset(env, e));
+      auto sl = make<SetLit>(Expression::loc(e), eval_boolset(env, e));
       sl->type(Type::parsetbool());
       return sl;
     }
     case Type::BT_FLOAT:
-      return new SetLit(Expression::loc(e), eval_floatset(env, e));
+      return make<SetLit>(Expression::loc(e), eval_floatset(env, e));
     default:
       throw InternalError("invalid set literal type");
   }
 }
 
-IntSetVal* eval_intset(EnvI& env, Expression* e) {
+Ref<IntSetVal> eval_intset(EnvI& env, Expression* e) {
   if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
     if (sl->isv() != nullptr) {
       return sl->isv();
@@ -1066,7 +1069,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       auto* sl = Expression::cast<SetLit>(e);
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
-        Expression* vi = eval_par(env, sl->v()[i]);
+        Ref<Expression> vi = eval_par(env, sl->v()[i]);
         if (vi != env.constants.absent) {
           vals.push_back(eval_int(env, vi));
         }
@@ -1097,15 +1100,15 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       return IntSetVal::a(a.a);
     }
     case Expression::E_ID: {
-      GCLock lock;
       return eval_id<EvalSetLit>(env, e)->isv();
     } break;
     case Expression::E_ARRAYACCESS: {
-      GCLock lock;
-      return eval_intset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+      auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+      return eval_intset(env, ev);
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_intset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+      auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+      return eval_intset(env, ev);
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
@@ -1121,11 +1124,11 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalIntSet, BinOp>(env, bo);
       }
-      Expression* lhs = eval_par(env, bo->lhs());
-      Expression* rhs = eval_par(env, bo->rhs());
+      Ref<Expression> lhs = eval_par(env, bo->lhs());
+      Ref<Expression> rhs = eval_par(env, bo->rhs());
       if (Expression::type(lhs).isIntSet() && Expression::type(rhs).isIntSet()) {
-        IntSetVal* v0 = eval_intset(env, lhs);
-        IntSetVal* v1 = eval_intset(env, rhs);
+        Ref<IntSetVal> v0 = eval_intset(env, lhs);
+        Ref<IntSetVal> v1 = eval_intset(env, rhs);
         IntSetRanges ir0(v0);
         IntSetRanges ir1(v1);
         switch (bo->op()) {
@@ -1180,7 +1183,8 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       }
 
       if (ce->decl()->builtins.e != nullptr) {
-        return eval_intset(env, ce->decl()->builtins.e(env, ce));
+        auto ev = ce->decl()->builtins.e(env, ce);
+        return eval_intset(env, ev);
       }
 
       if (ce->decl()->e() == nullptr) {
@@ -1209,7 +1213,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
           }
         }
       }
-      IntSetVal* ret = eval_intset(env, l->in());
+      Ref<IntSetVal> ret = eval_intset(env, l->in());
       return ret;
     } break;
     default:
@@ -1218,7 +1222,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
   return nullptr;
 }
 
-FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
+Ref<FloatSetVal> eval_floatset(EnvI& env, Expression* e) {
   if (auto* sl = Expression::dynamicCast<SetLit>(e)) {
     if (sl->fsv() != nullptr) {
       return sl->fsv();
@@ -1234,7 +1238,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       auto* sl = Expression::cast<SetLit>(e);
       std::vector<FloatVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
-        Expression* vi = eval_par(env, sl->v()[i]);
+        Ref<Expression> vi = eval_par(env, sl->v()[i]);
         if (vi != env.constants.absent) {
           vals.push_back(eval_float(env, vi));
         }
@@ -1265,15 +1269,16 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       return FloatSetVal::a(a.a);
     }
     case Expression::E_ID: {
-      GCLock lock;
-      return eval_floatset(env, eval_id<EvalFloatSetLit>(env, e));
+      auto ev = eval_id<EvalFloatSetLit>(env, e);
+      return eval_floatset(env, ev);
     } break;
     case Expression::E_ARRAYACCESS: {
-      GCLock lock;
-      return eval_floatset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+      auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+      return eval_floatset(env, ev);
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_floatset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+      auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+      return eval_floatset(env, ev);
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
@@ -1289,11 +1294,11 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalFloatSet, BinOp>(env, bo);
       }
-      Expression* lhs = eval_par(env, bo->lhs());
-      Expression* rhs = eval_par(env, bo->rhs());
+      Ref<Expression> lhs = eval_par(env, bo->lhs());
+      Ref<Expression> rhs = eval_par(env, bo->rhs());
       if (Expression::type(lhs).isFloatSet() && Expression::type(rhs).isFloatSet()) {
-        FloatSetVal* v0 = eval_floatset(env, lhs);
-        FloatSetVal* v1 = eval_floatset(env, rhs);
+        Ref<FloatSetVal> v0 = eval_floatset(env, lhs);
+        Ref<FloatSetVal> v1 = eval_floatset(env, rhs);
         FloatSetRanges fr0(v0);
         FloatSetRanges fr1(v1);
         switch (bo->op()) {
@@ -1345,7 +1350,8 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       }
 
       if (ce->decl()->builtins.e != nullptr) {
-        return eval_floatset(env, ce->decl()->builtins.e(env, ce));
+        auto ev = ce->decl()->builtins.e(env, ce);
+        return eval_floatset(env, ev);
       }
 
       if (ce->decl()->builtins.fs != nullptr) {
@@ -1378,7 +1384,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
           }
         }
       }
-      FloatSetVal* ret = eval_floatset(env, l->in());
+      Ref<FloatSetVal> ret = eval_floatset(env, l->in());
       return ret;
     } break;
     default:
@@ -1408,15 +1414,15 @@ bool eval_bool(EnvI& env, Expression* e) {
         throw EvalError(env, Expression::loc(e), "not a bool expression");
         break;
       case Expression::E_ID: {
-        GCLock lock;
         return eval_id<EvalBoolLit>(env, e)->v();
       } break;
       case Expression::E_ARRAYACCESS: {
-        GCLock lock;
-        return eval_bool(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+        auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+        return eval_bool(env, ev);
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_bool(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+        auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+        return eval_bool(env, ev);
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
@@ -1429,11 +1435,11 @@ bool eval_bool(EnvI& env, Expression* e) {
       } break;
       case Expression::E_BINOP: {
         auto* bo = Expression::cast<BinOp>(e);
-        Expression* lhs = bo->lhs();
+        Ref<Expression> lhs = bo->lhs();
         if (Expression::type(lhs).bt() == Type::BT_TOP || Expression::type(lhs).isbot()) {
           lhs = eval_par(env, lhs);
         }
-        Expression* rhs = bo->rhs();
+        Ref<Expression> rhs = bo->rhs();
         if (Expression::type(rhs).bt() == Type::BT_TOP || Expression::type(rhs).isbot()) {
           rhs = eval_par(env, rhs);
         }
@@ -1530,8 +1536,7 @@ bool eval_bool(EnvI& env, Expression* e) {
         } else if (Expression::type(lhs).isint() && Expression::type(rhs).isIntSet()) {
           try {
             IntVal v0 = eval_int(env, lhs);
-            GCLock lock;
-            IntSetVal* v1 = eval_intset(env, rhs);
+            Ref<IntSetVal> v1 = eval_intset(env, rhs);
             switch (bo->op()) {
               case BOT_IN:
                 return v1->contains(v0);
@@ -1545,8 +1550,7 @@ bool eval_bool(EnvI& env, Expression* e) {
         } else if (Expression::type(lhs).isfloat() && Expression::type(rhs).isFloatSet()) {
           try {
             FloatVal v0 = eval_float(env, lhs);
-            GCLock lock;
-            FloatSetVal* v1 = eval_floatset(env, rhs);
+            Ref<FloatSetVal> v1 = eval_floatset(env, rhs);
             switch (bo->op()) {
               case BOT_IN:
                 return v1->contains(v0);
@@ -1561,9 +1565,8 @@ bool eval_bool(EnvI& env, Expression* e) {
                    (Expression::type(lhs).bt() == Type::BT_FLOAT ||
                     Expression::type(rhs).bt() == Type::BT_FLOAT)) {
           try {
-            GCLock lock;
-            FloatSetVal* v0 = eval_floatset(env, lhs);
-            FloatSetVal* v1 = eval_floatset(env, rhs);
+            Ref<FloatSetVal> v0 = eval_floatset(env, lhs);
+            Ref<FloatSetVal> v1 = eval_floatset(env, rhs);
             FloatSetRanges ir0(v0);
             FloatSetRanges ir1(v1);
             switch (bo->op()) {
@@ -1592,9 +1595,8 @@ bool eval_bool(EnvI& env, Expression* e) {
           }
         } else if (Expression::type(lhs).isSet() && Expression::type(rhs).isSet()) {
           try {
-            GCLock lock;
-            IntSetVal* v0 = eval_intset(env, lhs);
-            IntSetVal* v1 = eval_intset(env, rhs);
+            Ref<IntSetVal> v0 = eval_intset(env, lhs);
+            Ref<IntSetVal> v1 = eval_intset(env, rhs);
             IntSetRanges ir0(v0);
             IntSetRanges ir1(v1);
             switch (bo->op()) {
@@ -1623,7 +1625,6 @@ bool eval_bool(EnvI& env, Expression* e) {
           }
         } else if (Expression::type(lhs).isstring() && Expression::type(rhs).isstring()) {
           try {
-            GCLock lock;
             std::string s0 = eval_string(env, lhs);
             std::string s1 = eval_string(env, rhs);
             switch (bo->op()) {
@@ -1655,8 +1656,9 @@ bool eval_bool(EnvI& env, Expression* e) {
           try {
             auto struct_equal = [&](ArrayLit* structA, ArrayLit* structB) {
               for (unsigned int i = 0; i < structA->size(); ++i) {
-                if (!Expression::equal(eval_par(env, (*structA)[i]),
-                                       eval_par(env, (*structB)[i]))) {
+                auto a = eval_par(env, (*structA)[i]);
+                auto b = eval_par(env, (*structB)[i]);
+                if (!Expression::equal(a, b)) {
                   return false;
                 }
               }
@@ -1664,22 +1666,21 @@ bool eval_bool(EnvI& env, Expression* e) {
             };
             auto struct_less = [&](ArrayLit* structA, ArrayLit* structB, bool allow_equal) {
               for (unsigned int i = 0; i < structA->size(); ++i) {
-                Expression* parA = eval_par(env, (*structA)[i]);
-                Expression* parB = eval_par(env, (*structB)[i]);
+                Ref<Expression> parA = eval_par(env, (*structA)[i]);
+                Ref<Expression> parB = eval_par(env, (*structB)[i]);
                 if (!Expression::equal(parA, parB)) {
-                  KeepAlive binop;
+                  Ref<Expression> binop;
                   {
-                    GCLock lock;
-                    binop = new BinOp(Location().introduce(), parA, BOT_LE, parB);
-                    Expression::type(binop(), Type::parbool());
+                    binop = make<BinOp>(Location().introduce(), parA, BOT_LE, parB);
+                    Expression::type(binop, Type::parbool());
                   }
-                  return eval_bool(env, binop());
+                  return eval_bool(env, binop);
                 }
               }
               return allow_equal;
             };
-            ArrayLit* struct0 = eval_array_lit(env, lhs);
-            ArrayLit* struct1 = eval_array_lit(env, rhs);
+            Ref<ArrayLit> struct0 = eval_array_lit(env, lhs);
+            Ref<ArrayLit> struct1 = eval_array_lit(env, rhs);
             switch (bo->op()) {
               case BOT_EQ:
                 return struct_equal(struct0, struct1);
@@ -1696,7 +1697,8 @@ bool eval_bool(EnvI& env, Expression* e) {
               case BOT_IN: {
                 // Note: tup1 is an array of tuples
                 for (unsigned int i = 0; i < struct1->size(); ++i) {
-                  if (struct_equal(struct0, eval_array_lit(env, (*struct1)[0]))) {
+                  auto s1 = eval_array_lit(env, (*struct1)[0]);
+                  if (struct_equal(struct0, s1)) {
                     return true;
                   }
                 }
@@ -1712,13 +1714,15 @@ bool eval_bool(EnvI& env, Expression* e) {
         } else if (bo->op() == BOT_EQ && Expression::type(lhs).dim() > 0 &&
                    Expression::type(rhs).dim() > 0) {
           try {
-            ArrayLit* al0 = eval_array_lit(env, lhs);
-            ArrayLit* al1 = eval_array_lit(env, rhs);
+            Ref<ArrayLit> al0 = eval_array_lit(env, lhs);
+            Ref<ArrayLit> al1 = eval_array_lit(env, rhs);
             if (al0->size() != al1->size()) {
               return false;
             }
             for (unsigned int i = 0; i < al0->size(); i++) {
-              if (!Expression::equal(eval_par(env, (*al0)[i]), eval_par(env, (*al1)[i]))) {
+              auto a = eval_par(env, (*al0)[i]);
+              auto b = eval_par(env, (*al1)[i]);
+              if (!Expression::equal(a, b)) {
                 return false;
               }
             }
@@ -1765,7 +1769,8 @@ bool eval_bool(EnvI& env, Expression* e) {
                                      ce->id() == env.constants.ids.trace_dbg)) {
               return true;
             }
-            return eval_bool(env, ce->decl()->builtins.e(env, ce));
+            auto ev = ce->decl()->builtins.e(env, ce);
+            return eval_bool(env, ev);
           }
 
           if (ce->decl()->e() == nullptr) {
@@ -1827,7 +1832,7 @@ bool eval_bool(EnvI& env, Expression* e) {
   return false;
 }
 
-IntSetVal* eval_boolset(EnvI& env, Expression* e) {
+Ref<IntSetVal> eval_boolset(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   switch (Expression::eid(e)) {
     case Expression::E_SETLIT: {
@@ -1837,7 +1842,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       }
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
-        Expression* vi = eval_par(env, sl->v()[i]);
+        Ref<Expression> vi = eval_par(env, sl->v()[i]);
         if (vi != env.constants.absent) {
           vals.push_back(eval_int(env, vi));
         }
@@ -1868,15 +1873,15 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       return IntSetVal::a(a.a);
     }
     case Expression::E_ID: {
-      GCLock lock;
       return eval_id<EvalBoolSetLit>(env, e)->isv();
     } break;
     case Expression::E_ARRAYACCESS: {
-      GCLock lock;
-      return eval_boolset(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+      auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+      return eval_boolset(env, ev);
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_boolset(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+      auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+      return eval_boolset(env, ev);
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
@@ -1892,11 +1897,11 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       if ((bo->decl() != nullptr) && (bo->decl()->e() != nullptr)) {
         return eval_call<EvalBoolSet, BinOp>(env, bo);
       }
-      Expression* lhs = eval_par(env, bo->lhs());
-      Expression* rhs = eval_par(env, bo->rhs());
+      Ref<Expression> lhs = eval_par(env, bo->lhs());
+      Ref<Expression> rhs = eval_par(env, bo->rhs());
       if (Expression::type(lhs).isIntSet() && Expression::type(rhs).isIntSet()) {
-        IntSetVal* v0 = eval_boolset(env, lhs);
-        IntSetVal* v1 = eval_boolset(env, rhs);
+        Ref<IntSetVal> v0 = eval_boolset(env, lhs);
+        Ref<IntSetVal> v1 = eval_boolset(env, rhs);
         IntSetRanges ir0(v0);
         IntSetRanges ir1(v1);
         switch (bo->op()) {
@@ -1953,7 +1958,8 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       }
 
       if (ce->decl()->builtins.e != nullptr) {
-        return eval_boolset(env, ce->decl()->builtins.e(env, ce));
+        auto ev = ce->decl()->builtins.e(env, ce);
+        return eval_boolset(env, ev);
       }
 
       if (ce->decl()->e() == nullptr) {
@@ -1982,7 +1988,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
           }
         }
       }
-      IntSetVal* ret = eval_boolset(env, l->in());
+      Ref<IntSetVal> ret = eval_boolset(env, l->in());
       return ret;
     } break;
     default:
@@ -2014,15 +2020,16 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         throw EvalError(env, Expression::loc(e), "not an integer expression");
         break;
       case Expression::E_ID: {
-        GCLock lock;
-        return IntLit::v(eval_id<EvalIntLit>(env, e));
+        auto il = eval_id<EvalIntLit>(env, e);
+        return IntLit::v(il);
       } break;
       case Expression::E_ARRAYACCESS: {
-        GCLock lock;
-        return eval_int(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+        auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+        return eval_int(env, ev);
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_int(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+        auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+        return eval_int(env, ev);
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
@@ -2092,7 +2099,8 @@ IntVal eval_int_internal(EnvI& env, Expression* e) {
         }
 
         if (ce->decl()->builtins.e != nullptr) {
-          return eval_int(env, ce->decl()->builtins.e(env, ce));
+          auto ev = ce->decl()->builtins.e(env, ce);
+          return eval_int(env, ev);
         }
 
         if (ce->decl()->e() == nullptr) {
@@ -2160,15 +2168,16 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         throw EvalError(env, Expression::loc(e), "not a float expression");
         break;
       case Expression::E_ID: {
-        GCLock lock;
-        return FloatLit::v(eval_id<EvalFloatLit>(env, e));
+        auto fl = eval_id<EvalFloatLit>(env, e);
+        return FloatLit::v(fl);
       } break;
       case Expression::E_ARRAYACCESS: {
-        GCLock lock;
-        return eval_float(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+        auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+        return eval_float(env, ev);
       } break;
       case Expression::E_FIELDACCESS: {
-        return eval_float(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+        auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+        return eval_float(env, ev);
       } break;
       case Expression::E_ITE: {
         ITE* ite = Expression::cast<ITE>(e);
@@ -2229,7 +2238,8 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         }
 
         if (ce->decl()->builtins.e != nullptr) {
-          return eval_float(env, ce->decl()->builtins.e(env, ce));
+          auto ev = ce->decl()->builtins.e(env, ce);
+          return eval_float(env, ev);
         }
 
         if (ce->decl()->e() == nullptr) {
@@ -2291,16 +2301,16 @@ std::string eval_string(EnvI& env, Expression* e) {
       throw EvalError(env, Expression::loc(e), "not a string expression");
       break;
     case Expression::E_ID: {
-      GCLock lock;
       ASTString str = eval_id<EvalStringLit>(env, e)->v();
       return std::string(str.c_str(), str.size());
     } break;
     case Expression::E_ARRAYACCESS: {
-      GCLock lock;
-      return eval_string(env, eval_arrayaccess(env, Expression::cast<ArrayAccess>(e)));
+      auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));
+      return eval_string(env, ev);
     } break;
     case Expression::E_FIELDACCESS: {
-      return eval_string(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+      auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+      return eval_string(env, ev);
     } break;
     case Expression::E_ITE: {
       ITE* ite = Expression::cast<ITE>(e);
@@ -2342,7 +2352,8 @@ std::string eval_string(EnvI& env, Expression* e) {
         return ce->decl()->builtins.str(env, ce);
       }
       if (ce->decl()->builtins.e != nullptr) {
-        return eval_string(env, ce->decl()->builtins.e(env, ce));
+        auto ev = ce->decl()->builtins.e(env, ce);
+        return eval_string(env, ev);
       }
 
       if (ce->decl()->e() == nullptr) {
@@ -2380,7 +2391,7 @@ std::string eval_string(EnvI& env, Expression* e) {
   return "";
 }
 
-Expression* eval_par(EnvI& env, Expression* e) {
+Ref<Expression> eval_par(EnvI& env, Expression* e) {
   if (e == nullptr) {
     return nullptr;
   }
@@ -2395,13 +2406,13 @@ Expression* eval_par(EnvI& env, Expression* e) {
       }
       // fall through
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = eval_array_lit(env, e);
+      Ref<ArrayLit> al = eval_array_lit(env, e);
       if (al->evaluated() && (!al->type().isbot() || al->empty())) {
         // The array is its own value. (A non-empty array of type bot is copied below, which
         // fixes its type.)
         return al;
       }
-      std::vector<Expression*> args(al->size());
+      std::vector<Ref<Expression>> args(al->size());
       bool allFlat = true;
       // Tuple/record literals can mix par and var fields. A var field cannot
       // (and need not) be evaluated to a par value, so it is kept as-is.
@@ -2423,16 +2434,16 @@ Expression* eval_par(EnvI& env, Expression* e) {
       if (allFlat) {
         return al;
       }
-      ArrayLit* ret = nullptr;
+      Ref<ArrayLit> ret;
       if (al->isTuple()) {
-        ret = ArrayLit::constructTuple(Expression::loc(al), args);
+        ret = ArrayLit::constructTuple(Expression::loc(al), raw(args));
       } else {
         std::vector<std::pair<int, int>> dims(al->dims());
         for (unsigned int i = al->dims(); (i--) != 0U;) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ret = new ArrayLit(Expression::loc(al), args, dims);
+        ret = make<ArrayLit>(Expression::loc(al), args, dims);
       }
       Type t = al->type();
       if (t.isbot() && !ret->empty()) {
@@ -2450,13 +2461,13 @@ Expression* eval_par(EnvI& env, Expression* e) {
       auto* t = Expression::cast<TypeInst>(e);
       ASTExprVec<TypeInst> r;
       if (!t->ranges().empty()) {
-        std::vector<TypeInst*> rv(t->ranges().size());
+        std::vector<Ref<TypeInst>> rv(t->ranges().size());
         for (unsigned int i = t->ranges().size(); (i--) != 0U;) {
-          rv[i] = static_cast<TypeInst*>(eval_par(env, t->ranges()[i]));
+          rv[i] = eval_par(env, t->ranges()[i]).cast<TypeInst>();
         }
-        r = ASTExprVec<TypeInst>(rv);
+        r = ASTExprVec<TypeInst>(raw(rv));
       }
-      return new TypeInst(Location(), t->type(), r, eval_par(env, t->domain()));
+      return make<TypeInst>(Location(), t->type(), r, eval_par(env, t->domain()));
     }
     case Expression::E_ID: {
       if (e == env.constants.absent) {
@@ -2482,7 +2493,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           }
         } else if (id->decl()->ti()->type().isfloat()) {
           if (id->decl()->ti()->domain() != nullptr) {
-            FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
+            Ref<FloatSetVal> fsv = eval_floatset(env, id->decl()->ti()->domain());
             if (!fsv->empty() && fsv->min() == fsv->max()) {
               return FloatLit::a(fsv->min());
             }
@@ -2498,14 +2509,14 @@ Expression* eval_par(EnvI& env, Expression* e) {
       return e;
     default: {
       if (Expression::type(e).dim() != 0) {
-        ArrayLit* al = eval_array_lit(env, e);
+        Ref<ArrayLit> al = eval_array_lit(env, e);
         if (al->evaluated() &&
             ((al->type().bt() != Type::BT_BOT && al->type().bt() != Type::BT_TOP) || al->empty())) {
           // The array is its own value. (A non-empty array of type bot or top is copied below,
           // which fixes its type.)
           return al;
         }
-        std::vector<Expression*> args(al->size());
+        std::vector<Ref<Expression>> args(al->size());
         for (unsigned int i = al->size(); (i--) != 0U;) {
           args[i] = eval_par(env, (*al)[i]);
         }
@@ -2514,7 +2525,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        auto* ret = new ArrayLit(Expression::loc(al), args, dims);
+        auto ret = make<ArrayLit>(Expression::loc(al), args, dims);
         Type t = al->type();
         if ((t.bt() == Type::BT_BOT || t.bt() == Type::BT_TOP) && !ret->empty()) {
           t.bt(Expression::type((*ret)[0]).bt());
@@ -2552,12 +2563,13 @@ Expression* eval_par(EnvI& env, Expression* e) {
                 return eval_par(env, ite->thenExpr(i));
               }
             } else {
-              std::vector<Expression*> e_ifthen(static_cast<size_t>(ite->size()) * 2);
+              std::vector<Ref<Expression>> e_ifthen(static_cast<size_t>(ite->size()) * 2);
               for (unsigned int i = 0; i < ite->size(); i++) {
                 e_ifthen[2 * static_cast<size_t>(i)] = eval_par(env, ite->ifExpr(i));
                 e_ifthen[2 * static_cast<size_t>(i) + 1] = eval_par(env, ite->thenExpr(i));
               }
-              ITE* n_ite = new ITE(Expression::loc(ite), e_ifthen, eval_par(env, ite->elseExpr()));
+              Ref<ITE> n_ite =
+                  make<ITE>(Expression::loc(ite), e_ifthen, eval_par(env, ite->elseExpr()));
               n_ite->type(ite->type());
               return n_ite;
             }
@@ -2568,7 +2580,8 @@ Expression* eval_par(EnvI& env, Expression* e) {
           Call* c = Expression::cast<Call>(e);
           if (c->decl() != nullptr) {
             if (c->decl()->builtins.e != nullptr) {
-              return eval_par(env, c->decl()->builtins.e(env, c));
+              auto ev = c->decl()->builtins.e(env, c);
+              return eval_par(env, ev);
             }
             if (c->decl()->e() == nullptr) {
               if (c->id() == env.constants.ids.deopt &&
@@ -2580,7 +2593,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
               return eval_call<EvalPar>(env, c);
             }
           }
-          std::vector<Expression*> args(c->argCount());
+          std::vector<Ref<Expression>> args(c->argCount());
           for (unsigned int i = 0; i < args.size(); i++) {
             if (Expression::type(c->arg(i)).isPar()) {
               args[i] = eval_par(env, c->arg(i));
@@ -2588,7 +2601,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
               args[i] = c->arg(i);
             }
           }
-          Call* nc = Call::a(Expression::loc(c), c->id(), args);
+          Ref<Call> nc = Call::a(Expression::loc(c), c->id(), args);
           nc->type(c->type());
           return nc;
         }
@@ -2598,8 +2611,8 @@ Expression* eval_par(EnvI& env, Expression* e) {
             CallStackItem csi(env, bo);
             return eval_call<EvalPar, BinOp>(env, bo);
           }
-          auto* nbo = new BinOp(Expression::loc(e), eval_par(env, bo->lhs()), bo->op(),
-                                eval_par(env, bo->rhs()));
+          auto nbo = make<BinOp>(Expression::loc(e), eval_par(env, bo->lhs()), bo->op(),
+                                 eval_par(env, bo->rhs()));
           nbo->type(bo->type());
           if (nbo->op() == BOT_PLUSPLUS && nbo->type().structBT()) {
             assert(Expression::type(nbo->lhs()).structBT() &&
@@ -2616,7 +2629,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
             CallStackItem csi(env, uo);
             return eval_call<EvalPar, UnOp>(env, uo);
           }
-          UnOp* nuo = new UnOp(Expression::loc(e), uo->op(), eval_par(env, uo->e()));
+          Ref<UnOp> nuo = make<UnOp>(Expression::loc(e), uo->op(), eval_par(env, uo->e()));
           nuo->type(uo->type());
           return nuo;
         }
@@ -2624,19 +2637,21 @@ Expression* eval_par(EnvI& env, Expression* e) {
           auto* aa = Expression::cast<ArrayAccess>(e);
           for (unsigned int i = 0; i < aa->idx().size(); i++) {
             if (!Expression::type(aa->idx()[i]).isPar()) {
-              std::vector<Expression*> idx(aa->idx().size());
+              std::vector<Ref<Expression>> idx(aa->idx().size());
               for (unsigned int j = 0; j < aa->idx().size(); j++) {
                 idx[j] = eval_par(env, aa->idx()[j]);
               }
-              auto* aa_new = new ArrayAccess(Expression::loc(e), eval_par(env, aa->v()), idx);
+              auto aa_new = make<ArrayAccess>(Expression::loc(e), eval_par(env, aa->v()), idx);
               aa_new->type(aa->type());
               return aa_new;
             }
           }
-          return eval_par(env, eval_arrayaccess(env, aa));
+          auto ev = eval_arrayaccess(env, aa);
+          return eval_par(env, ev);
         }
         case Expression::E_FIELDACCESS: {
-          return eval_par(env, eval_fieldaccess(env, Expression::cast<FieldAccess>(e)));
+          auto ev = eval_fieldaccess(env, Expression::cast<FieldAccess>(e));
+          return eval_par(env, ev);
         } break;
         case Expression::E_LET: {
           Let* l = Expression::cast<Let>(e);
@@ -2657,7 +2672,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
               }
             }
           }
-          Expression* ret = eval_par(env, l->in());
+          Ref<Expression> ret = eval_par(env, l->in());
           return ret;
         }
         default:
@@ -2685,7 +2700,7 @@ public:
       return false;
     }
     if (Expression::type(e).isPar() && !Expression::type(e).cv()) {
-      Expression* exp = eval_par(env, e);
+      Ref<Expression> exp = eval_par(env, e);
       if (Expression::type(e).isbool() && exp != env.constants.absent) {
         auto* b = Expression::cast<BoolLit>(exp);
         IntVal i = b->v() ? IntVal(1) : IntVal(0);
@@ -2769,13 +2784,12 @@ public:
       vd = vd->flat();
     }
     if (vd->ti()->domain() != nullptr) {
-      GCLock lock;
       if (vd->type().isbool()) {
         bool b = eval_bool(env, vd->ti()->domain());
         IntVal i = b ? IntVal(1) : IntVal(0);
         bounds.emplace_back(i, i);
       } else {
-        IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+        Ref<IntSetVal> isv = eval_intset(env, vd->ti()->domain());
         if (isv->empty()) {
           valid = false;
           bounds.emplace_back(0, 0);
@@ -2816,7 +2830,7 @@ public:
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
-        Expression* e = eval_arrayaccess(env, aa, success);
+        Ref<Expression> e = eval_arrayaccess(env, aa, success);
         if (success()) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run(e);
@@ -2824,8 +2838,7 @@ public:
         }
       }
       if (id->decl()->ti()->domain() != nullptr) {
-        GCLock lock;
-        IntSetVal* isv = eval_intset(env, id->decl()->ti()->domain());
+        Ref<IntSetVal> isv = eval_intset(env, id->decl()->ti()->domain());
         if (!isv->empty()) {
           bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
           return;
@@ -2944,7 +2957,7 @@ public:
   void vCall(Call* c) {
     if (c->id() == env.constants.ids.lin_exp || c->id() == env.constants.ids.sum) {
       bool le = c->id() == env.constants.ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
+      Ref<ArrayLit> coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
       if (Expression::type(c->arg(le ? 1 : 0)).isOpt()) {
         valid = false;
         bounds.emplace_back(0, 0);
@@ -3014,7 +3027,7 @@ public:
       }
       bounds.emplace_back(lb, ub);
     } else if (c->id() == env.constants.ids.card) {
-      if (IntSetVal* isv = compute_intset_bounds(env, c->arg(0))) {
+      if (Ref<IntSetVal> isv = compute_intset_bounds(env, c->arg(0))) {
         IntSetRanges isr(isv);
         bounds.emplace_back(0, Ranges::cardinality(isr));
       } else {
@@ -3074,7 +3087,7 @@ public:
           bounds.pop_back();
         }
       }
-      IntSetVal* isv = eval_intset(env, c->decl()->ti()->domain());
+      Ref<IntSetVal> isv = eval_intset(env, c->decl()->ti()->domain());
       if (isv->empty()) {
         bounds.emplace_back(1, 0);
       } else {
@@ -3157,7 +3170,7 @@ public:
       return false;
     }
     if (Expression::type(e).isPar()) {
-      Expression* exp = eval_par(env, e);
+      Ref<Expression> exp = eval_par(env, e);
       if (exp == env.constants.absent) {
         valid = false;
       } else if (Expression::type(e).isfloat()) {
@@ -3231,8 +3244,7 @@ public:
       vd = vd->flat();
     }
     if (vd->ti()->domain() != nullptr) {
-      GCLock lock;
-      FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, vd->ti()->domain());
       if (fsv->empty()) {
         valid = false;
         bounds.emplace_back(0, 0);
@@ -3269,7 +3281,7 @@ public:
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
-        Expression* e = eval_arrayaccess(env, aa, success);
+        Ref<Expression> e = eval_arrayaccess(env, aa, success);
         if (success()) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
           cbi.run(e);
@@ -3277,7 +3289,7 @@ public:
         }
       }
       if (id->decl()->ti()->domain() != nullptr) {
-        FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
+        Ref<FloatSetVal> fsv = eval_floatset(env, id->decl()->ti()->domain());
         if (fsv->empty()) {
           bounds.emplace_back(1, 0);
         } else {
@@ -3403,7 +3415,7 @@ public:
   void vCall(Call* c) {
     if (c->id() == env.constants.ids.lin_exp || c->id() == env.constants.ids.sum) {
       bool le = c->id() == env.constants.ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
+      Ref<ArrayLit> coeff = le ? eval_array_lit(env, c->arg(0)) : nullptr;
       if (le) {
         bounds.pop_back();  // remove constant (third arg) from stack
       }
@@ -3534,7 +3546,7 @@ public:
           bounds.pop_back();
         }
       }
-      FloatSetVal* fsv = eval_floatset(env, c->decl()->ti()->domain());
+      Ref<FloatSetVal> fsv = eval_floatset(env, c->decl()->ti()->domain());
       if (fsv->empty()) {
         bounds.emplace_back(1, 0);
       } else {
@@ -3590,7 +3602,7 @@ FloatBounds compute_float_bounds(EnvI& env, Expression* e) {
 
 class ComputeIntSetBounds : public EVisitor {
 public:
-  std::vector<IntSetVal*> bounds;
+  std::vector<Ref<IntSetVal>> bounds;
   bool valid;
   EnvI& env;
   ComputeIntSetBounds(EnvI& env0) : valid(true), env(env0) {}
@@ -3614,8 +3626,7 @@ public:
     }
     if (Expression::type(e).isPar()) {
       if (Expression::type(e).isOpt()) {
-        GCLock lock;
-        Expression* v = eval_par(env, e);
+        Ref<Expression> v = eval_par(env, e);
         bounds.push_back(v == env.constants.absent ? IntSetVal::a() : eval_intset(env, v));
       } else {
         bounds.push_back(eval_intset(env, e));
@@ -3629,13 +3640,13 @@ public:
     assert(sl->type().isvar());
     assert(sl->isv() == nullptr);
 
-    IntSetVal* isv = IntSetVal::a();
+    Ref<IntSetVal> isv = IntSetVal::a();
     for (unsigned int i = 0; i < sl->v().size(); i++) {
       IntSetRanges i0(isv);
       IntBounds ib = compute_int_bounds(env, sl->v()[i]);
       if (!ib.valid || !ib.l.isFinite() || !ib.u.isFinite()) {
         valid = false;
-        bounds.push_back(nullptr);
+        bounds.emplace_back(nullptr);
         return;
       }
       Ranges::Const<IntVal> cr(ib.l, ib.u);
@@ -3655,14 +3666,14 @@ public:
         cbi.run(id->decl()->e());
       } else {
         valid = false;
-        bounds.push_back(nullptr);
+        bounds.emplace_back(nullptr);
       }
     }
   }
   /// Visit anonymous variable
   void vAnonVar(const AnonVar* /*v*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit array access
   void vArrayAccess(ArrayAccess* aa) {
@@ -3679,7 +3690,7 @@ public:
       }
       if (parAccess && (id->decl()->e() != nullptr)) {
         ArrayAccessSucess success;
-        Expression* e = eval_arrayaccess(env, aa, success);
+        Ref<Expression> e = eval_arrayaccess(env, aa, success);
         if (success()) {
           BottomUpIterator<ComputeIntSetBounds> cbi(*this);
           cbi.run(e);
@@ -3692,17 +3703,17 @@ public:
       }
     }
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit array comprehension
   void vComprehension(const Comprehension* /*c*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit if-then-else
   void vITE(const ITE* /*ite*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit binary operator
   void vBinOp(const BinOp* bo) {
@@ -3712,9 +3723,9 @@ public:
       valid = valid && lb.valid && ub.valid;
       bounds.push_back(IntSetVal::a(lb.l, ub.u));
     } else {
-      IntSetVal* b1 = bounds.back();
+      Ref<IntSetVal> b1 = bounds.back();
       bounds.pop_back();
-      IntSetVal* b0 = bounds.back();
+      Ref<IntSetVal> b0 = bounds.back();
       bounds.pop_back();
       switch (bo->op()) {
         case BOT_SYMDIFF:
@@ -3753,30 +3764,30 @@ public:
         case BOT_XOR:
         case BOT_DOTDOT:
           valid = false;
-          bounds.push_back(nullptr);
+          bounds.emplace_back(nullptr);
       }
     }
   }
   /// Visit unary operator
   void vUnOp(const UnOp* /*uo*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit call
   void vCall(Call* c) {
     if (valid &&
         (c->id() == env.constants.ids.set_.intersect || c->id() == env.constants.ids.set_.union_ ||
          c->id() == env.constants.ids.set_.symdiff)) {
-      IntSetVal* b0 = bounds.back();
+      Ref<IntSetVal> b0 = bounds.back();
       bounds.pop_back();
-      IntSetVal* b1 = bounds.back();
+      Ref<IntSetVal> b1 = bounds.back();
       bounds.pop_back();
       IntSetRanges b0r(b0);
       IntSetRanges b1r(b1);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(b0r, b1r);
       bounds.push_back(IntSetVal::ai(u));
     } else if (valid && c->id() == env.constants.ids.set_.diff) {
-      IntSetVal* b0 = bounds.back();
+      Ref<IntSetVal> b0 = bounds.back();
       bounds.pop_back();
       bounds.pop_back();  // don't need bounds of right hand side
       bounds.push_back(b0);
@@ -3788,41 +3799,41 @@ public:
           bounds.pop_back();
         }
       }
-      IntSetVal* fsv = eval_intset(env, c->decl()->ti()->domain());
+      Ref<IntSetVal> fsv = eval_intset(env, c->decl()->ti()->domain());
       bounds.push_back(fsv);
     } else {
       valid = false;
-      bounds.push_back(nullptr);
+      bounds.emplace_back(nullptr);
     }
   }
   /// Visit let
   void vLet(const Let* /*l*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit variable declaration
   void vVarDecl(const VarDecl* /*vd*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit annotation
   void vAnnotation(const Annotation* /*e*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit type inst
   void vTypeInst(const TypeInst* /*e*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
   /// Visit TIId
   void vTIId(const TIId* /*e*/) {
     valid = false;
-    bounds.push_back(nullptr);
+    bounds.emplace_back(nullptr);
   }
 };
 
-IntSetVal* compute_intset_bounds(EnvI& env, Expression* e) {
+Ref<IntSetVal> compute_intset_bounds(EnvI& env, Expression* e) {
   try {
     ComputeIntSetBounds cb(env);
     BottomUpIterator<ComputeIntSetBounds> cbi(cb);
@@ -3924,7 +3935,6 @@ void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd) {
             "::mzn_evaluate_once ignored, par conditions that contain variables are not supported");
         return;
       }
-      GCLock lock;
       bool cond = eval_bool(env, ite->ifExpr(0));
       if (cond) {
         decl->e(ite->thenExpr(0));
@@ -3951,7 +3961,6 @@ void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd) {
                        "::mzn_evaluate_once ignored, lets with constraints are not supported");
         return;
       }
-      GCLock lock;
       auto* vd = Expression::cast<VarDecl>(let->let()[0]);
       vd->e(eval_par(env, vd->e()));
       check_par_declaration(env, vd);

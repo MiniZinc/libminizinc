@@ -25,11 +25,24 @@ StackDump::StackDump(EnvI& env) : _env(&env) {
       // Stop at the inner-most ID
       // TODO: Is this actually necessary?
       if (_stack.empty()) {
-        _stack.emplace_back(it->e, isCompIter);
+        _stack.push_back({it->e, isCompIter, nullptr});
       }
       break;
     }
-    _stack.emplace_back(it->e, isCompIter);
+    Expression* value = nullptr;
+    if (isCompIter && Expression::isa<Id>(it->e)) {
+      value = Expression::cast<Id>(it->e)->decl()->e();
+    }
+    _stack.push_back({it->e, isCompIter, value});
+  }
+}
+
+void StackDump::printBinding(std::ostream& os, Expression* e, Expression* value) const {
+  os << *e << " = ";
+  if (value != nullptr && Expression::type(value).isPar()) {
+    os << show_with_type(*_env, value, Expression::type(e), false);
+  } else {
+    os << "<expression>";
   }
 }
 
@@ -38,8 +51,8 @@ void StackDump::print(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].first)) {
-    Expression* e = _stack[0].first;
+  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].e)) {
+    Expression* e = _stack[0].e;
     if (!Expression::loc(e).isIntroduced()) {
       os << Expression::loc(e).toString() << '\n';
       os << "  in variable declaration " << *e << '\n';
@@ -51,8 +64,8 @@ void StackDump::print(std::ostream& os) const {
   long long int curloc_l = -1;
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    Expression* e = it->first;
-    bool isCompIter = it->second;
+    Expression* e = it->e;
+    bool isCompIter = it->isCompIter;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;
@@ -86,15 +99,8 @@ void StackDump::print(std::ostream& os) const {
         break;
       case Expression::E_ID:
         if (isCompIter) {
-          if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
-              Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
-            os << *e << " = "
-               << show_with_type(*_env, Expression::cast<Id>(e)->decl()->e(), Expression::type(e),
-                                 false)
-               << '\n';
-          } else {
-            os << *e << " = <expression>\n";
-          }
+          printBinding(os, e, it->value);
+          os << '\n';
         } else {
           os << "identifier" << *e << '\n';
         }
@@ -133,7 +139,6 @@ void StackDump::print(std::ostream& os) const {
         os << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'\n";
         break;
       case Expression::E_VARDECL: {
-        GCLock lock;
         os << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'\n";
       } break;
       case Expression::E_LET:
@@ -159,9 +164,9 @@ void StackDump::json(std::ostream& os) const {
     return;
   }
 
-  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].first)) {
+  if (_stack.size() == 1 && Expression::isa<Id>(_stack[0].e)) {
     os << "[";
-    Expression* e = _stack[0].first;
+    Expression* e = _stack[0].e;
     if (!Expression::loc(e).isIntroduced()) {
       os << "{\"location\": " << Expression::loc(e).toJSON()
          << ", \"isCompIter\": false, \"description\": \"variable declaration\"}";
@@ -177,8 +182,8 @@ void StackDump::json(std::ostream& os) const {
   os << "[";
 
   for (auto it = _stack.rbegin(); it != _stack.rend(); it++) {
-    Expression* e = it->first;
-    bool isCompIter = it->second;
+    Expression* e = it->e;
+    bool isCompIter = it->isCompIter;
     ASTString newloc_f = Expression::loc(e).filename();
     if (Expression::loc(e).isIntroduced()) {
       continue;
@@ -209,14 +214,7 @@ void StackDump::json(std::ostream& os) const {
         break;
       case Expression::E_ID:
         if (isCompIter) {
-          if ((Expression::cast<Id>(e)->decl()->e() != nullptr) &&
-              Expression::type(Expression::cast<Id>(e)->decl()->e()).isPar()) {
-            ss << *e << " = "
-               << show_with_type(*_env, Expression::cast<Id>(e)->decl()->e(), Expression::type(e),
-                                 false);
-          } else {
-            ss << *e << " = <expression>";
-          }
+          printBinding(ss, e, it->value);
         } else {
           ss << "identifier" << *e;
         }
@@ -252,7 +250,6 @@ void StackDump::json(std::ostream& os) const {
         ss << "call '" << demonomorphise_identifier(Expression::cast<Call>(e)->id()) << "'";
         break;
       case Expression::E_VARDECL: {
-        GCLock lock;
         ss << "variable declaration for '" << Expression::cast<VarDecl>(e)->id()->str() << "'";
       } break;
       case Expression::E_LET:

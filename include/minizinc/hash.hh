@@ -264,32 +264,39 @@ public:
   }
 };
 
-/// Hash class for KeepAlive objects
+/// Hash class for Ref<Expression> objects
 struct KAHash {
   size_t operator()(const Expression* e) const { return Expression::hash(e); }
 };
 
-/// Equality test for KeepAlive objects
+/// Equality test for Ref<Expression> objects
 struct KAEq {
   bool operator()(const Expression* e0, const Expression* e1) const {
     return Expression::equal(e0, e1);
   }
 };
 
-/// Hash map from KeepAlive to \a T
+/// Hash map from Ref<Expression> to \a T
 template <class T>
-class KeepAliveMap : public GCMarker {
+class KeepAliveMap {
 protected:
   /// The underlying map implementation
   std::unordered_map<Expression*, T, KAHash, KAEq> _m;
 
 public:
+  KeepAliveMap() = default;
+  KeepAliveMap(const KeepAliveMap&) = delete;
+  KeepAliveMap& operator=(const KeepAliveMap&) = delete;
+  /// The map holds a strong reference to each key
+  ~KeepAliveMap() { clear(); }
   /// Iterator type
   typedef typename std::unordered_map<Expression*, T, KAHash, KAEq>::iterator iterator;
   /// Insert mapping from \a e to \a t
   void insert(Expression* e, const T& t) {
     assert(e != nullptr);
-    _m.insert(std::pair<Expression*, T>(e, t));
+    if (_m.insert(std::pair<Expression*, T>(e, t)).second) {
+      RC::inc(e);
+    }
   }
   /// Find \a e in map
   iterator find(Expression* e) { return _m.find(e); }
@@ -298,20 +305,26 @@ public:
   /// End of iterator
   iterator end() { return _m.end(); }
   /// Remove binding of \a e from map
-  void remove(Expression* e) { _m.erase(e); }
-  void clear() { _m.clear(); }
-  /// Take over \a other's contents. Only the map moves: both objects stay
-  /// registered with the collector where they are.
+  void remove(Expression* e) {
+    auto it = _m.find(e);
+    if (it != _m.end()) {
+      Expression* key = it->first;
+      _m.erase(it);
+      RC::dec(key);
+    }
+  }
+  void clear() {
+    for (auto& it : _m) {
+      RC::dec(it.first);
+    }
+    _m.clear();
+  }
+  /// Take over \a other's contents (with the references to their keys)
   void swap(KeepAliveMap& other) noexcept { _m.swap(other._m); }
   template <class D>
   void dump() {
     for (auto i = _m.begin(); i != _m.end(); ++i) {
       std::cerr << D::k(i->first) << ": " << D::d(i->second) << '\n';
-    }
-  }
-  void mark() override {
-    for (auto& it : _m) {
-      Expression::mark(it.first);
     }
   }
 };
@@ -339,10 +352,10 @@ protected:
   std::unordered_set<Expression*, ExpressionHash, ExpressionEq> _s;
 
 public:
-  /// Insert \a e
-  void insert(Expression* e) {
+  /// Insert \a e (returns false if an equal expression is already in the set)
+  bool insert(Expression* e) {
     assert(e != nullptr);
-    _s.insert(e);
+    return _s.insert(e).second;
   }
   /// Find \a e in map
   ExpressionSetIter find(Expression* e) { return _s.find(e); }

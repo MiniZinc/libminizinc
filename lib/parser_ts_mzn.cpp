@@ -1242,6 +1242,9 @@ private:
   const char* _buf;
   /// Where top-level items go.
   Model* _items;
+  /// Owns the nodes of the current item: the reductions pass nodes as raw pointers until a parent
+  /// node or the model owns them, and nodes of a failed parse are freed with the %Lowerer
+  NodeOwner _owned;
   bool _rejectedModelItem = false;
 
   /// Spliced children awaiting their parent, in source order.
@@ -1457,7 +1460,7 @@ void* Lowerer::lower(const Node& n) {
         error(*f, "invalid tuple field index");
         return nullptr;
       }
-      return new FieldAccess(loc(n), v, IntLit::a(idx));
+      return _owned.keep(make<FieldAccess>(loc(n), v, _owned.keep(IntLit::a(idx))));
     }
     case K::RecordAccess: {
       Expression* v = expr(child(n, F::Record));
@@ -1466,7 +1469,8 @@ void* Lowerer::lower(const Node& n) {
       if (v == nullptr || field.empty()) {
         return nullptr;
       }
-      return new FieldAccess(loc(n), v, new Id(loc(*f), field, nullptr));
+      return _owned.keep(
+          make<FieldAccess>(loc(n), v, _owned.keep(make<Id>(loc(*f), field, nullptr))));
     }
     case K::ArrayComprehension:
       return comprehension(n, false);
@@ -1499,7 +1503,7 @@ void Lowerer::noteDataCall(Call* c) {
       return;
     }
   }
-  _pp.dataFileCalls.push_back(c);
+  _pp.dataFileCalls.emplace_back(c);
 }
 
 void* Lowerer::topLevelItem(const Node& n) {
@@ -1546,9 +1550,8 @@ void Lowerer::addItem(Item* it) {
   _nonStringArrays.clear();
   if (it != nullptr) {
     _items->addItem(it);
-    GC::unlock();
-    GC::lock();
   }
+  _owned.clear();
 }
 
 void Lowerer::addDocComment(Item* it, const std::string& doc, const Child& c) {
@@ -1556,8 +1559,8 @@ void Lowerer::addDocComment(Item* it, const std::string& doc, const Child& c) {
     return;
   }
   std::vector<Expression*> args(1);
-  args[0] = new StringLit(loc(c), doc);
-  Call* call = Call::a(Location(loc(c)), Constants::constants().ann.doc_comment, args);
+  args[0] = _owned.keep(make<StringLit>(loc(c), doc));
+  Call* call = _owned.keep(Call::a(Location(loc(c)), Constants::constants().ann.doc_comment, args));
   Expression::type(call, Type::ann());
   if (auto* fi = Item::dynamicCast<FunctionI>(it)) {
     fi->ann().add(call);
@@ -1588,7 +1591,7 @@ Item* Lowerer::includeItem(const Node& n) {
   const ASTString& v = Expression::cast<StringLit>(static_cast<Expression*>(fileNode->value))->v();
   std::string file(v.c_str(), v.size());
   std::string canonicalName = _pp.canonicalFilename(file);
-  auto* ii = new IncludeI(loc(n), ASTString(file));
+  auto* ii = _owned.keep(make<IncludeI>(loc(n), ASTString(file)));
   auto seen = _pp.seenModels.find(canonicalName);
   if (seen == _pp.seenModels.end()) {
     auto* im = new Model;
@@ -1630,9 +1633,10 @@ Item* Lowerer::constraintItem(const Node& n) {
     if (name == nullptr) {
       return nullptr;
     }
-    Expression::ann(e).add(Call::a(loc(*annNodes[0]), ASTString("mzn_constraint_name"), {name}));
+    Expression::ann(e).add(
+        _owned.keep(Call::a(loc(*annNodes[0]), ASTString("mzn_constraint_name"), {name})));
   }
-  return new ConstraintI(loc(n), e);
+  return _owned.keep(make<ConstraintI>(loc(n), e));
 }
 
 Item* Lowerer::goalItem(const Node& n) {
@@ -1640,13 +1644,14 @@ Item* Lowerer::goalItem(const Node& n) {
   std::string what = strategy == nullptr ? "satisfy" : text(*strategy);
   SolveI* si;
   if (what == "satisfy") {
-    si = SolveI::sat(loc(n));
+    si = _owned.keep(SolveI::sat(loc(n)));
   } else {
     Expression* obj = expr(child(n, F::Objective));
     if (obj == nullptr) {
       return nullptr;
     }
-    si = what == "minimize" ? SolveI::min(loc(n), obj) : SolveI::max(loc(n), obj);
+    si = what == "minimize" ? _owned.keep(SolveI::min(loc(n), obj))
+                            : _owned.keep(SolveI::max(loc(n), obj));
   }
   si->ann().add(annotations(n));
   return si;
@@ -1658,7 +1663,7 @@ Item* Lowerer::assignItem(const Node& n) {
   if (name.empty() || e == nullptr) {
     return nullptr;
   }
-  return new AssignI(loc(n), name, e);
+  return _owned.keep(make<AssignI>(loc(n), name, e));
 }
 
 Item* Lowerer::declarationItem(const Node& n) {
@@ -1679,7 +1684,8 @@ Item* Lowerer::declarationItem(const Node& n) {
     declLoc = ParserLocation(ASTString(_pp.filename), declLoc.firstLine(), declLoc.firstColumn(),
                              end.lastLine(), end.lastColumn());
   }
-  auto* vd = new VarDecl(declLoc, ti, new Id(loc(*nameNode), name, nullptr));
+  auto* vd =
+      _owned.keep(make<VarDecl>(declLoc, ti, _owned.keep(make<Id>(loc(*nameNode), name, nullptr))));
   add_annotations(vd, anns);
   if (def != nullptr) {
     Expression* e = expr(def);
@@ -1698,7 +1704,7 @@ Item* Lowerer::outputItem(const Node& n) {
   if (e == nullptr) {
     return nullptr;
   }
-  auto* oi = new OutputI(loc(n), e);
+  auto* oi = _owned.keep(make<OutputI>(loc(n), e));
   // `output :: <section> <expr>`; the grammar admits only the forms that
   // cannot swallow the expression that follows.
   const Child* section = child(n, F::Annotation);
@@ -1707,7 +1713,7 @@ Item* Lowerer::outputItem(const Node& n) {
     if (sec == nullptr) {
       return nullptr;
     }
-    oi->ann().add(Call::a(loc(n), ASTString("mzn_output_section"), {sec}));
+    oi->ann().add(_owned.keep(Call::a(loc(n), ASTString("mzn_output_section"), {sec})));
   }
   return oi;
 }
@@ -1734,8 +1740,8 @@ VarDecl* Lowerer::annParameter(const Node& n) {
   if (name.empty()) {
     return nullptr;
   }
-  auto* ti = new TypeInst(loc(n), Type::ann(1));
-  auto* vd = new VarDecl(loc(n), ti, new Id(loc(*ap), name, nullptr));
+  auto* ti = _owned.keep(make<TypeInst>(loc(n), Type::ann(1)));
+  auto* vd = _owned.keep(make<VarDecl>(loc(n), ti, _owned.keep(make<Id>(loc(*ap), name, nullptr))));
   vd->toplevel(false);
   return vd;
 }
@@ -1762,7 +1768,7 @@ Item* Lowerer::operationItem(const Node& n) {
   if (isPredicate) {
     const Child* type = child(n, F::Type);
     std::string what = type == nullptr ? "" : text(*type);
-    ti = new TypeInst(loc(n), what == "test" ? Type::parbool() : Type::varbool());
+    ti = _owned.keep(make<TypeInst>(loc(n), what == "test" ? Type::parbool() : Type::varbool()));
   } else {
     ti = typeInst(child(n, F::Type));
     if (ti == nullptr) {
@@ -1789,7 +1795,8 @@ Item* Lowerer::operationItem(const Node& n) {
       return nullptr;
     }
   }
-  auto* fi = new FunctionI(loc(n), name, ti, params, body, _pp.isSTDLib, annParam != nullptr);
+  auto* fi = _owned.keep(
+      make<FunctionI>(loc(n), name, ti, params, body, _pp.isSTDLib, annParam != nullptr));
   fi->ann().add(annotations(n));
   return fi;
 }
@@ -1799,7 +1806,7 @@ Item* Lowerer::annotationItem(const Node& n) {
   if (name.empty()) {
     return nullptr;
   }
-  auto* ti = new TypeInst(loc(n), Type::ann());
+  auto* ti = _owned.keep(make<TypeInst>(loc(n), Type::ann()));
   bool ok = true;
   std::vector<VarDecl*> params;
   const Child* paramsNode = child(n, F::Parameters);
@@ -1811,7 +1818,7 @@ Item* Lowerer::annotationItem(const Node& n) {
   }
   const Child* bodyNode = child(n, F::Body);
   if (bodyNode == nullptr && params.empty()) {
-    return VarDeclI::a(loc(n), new VarDecl(loc(n), ti, name));
+    return VarDeclI::a(loc(n), _owned.keep(make<VarDecl>(loc(n), ti, name)));
   }
   Expression* body = nullptr;
   if (bodyNode != nullptr) {
@@ -1820,7 +1827,7 @@ Item* Lowerer::annotationItem(const Node& n) {
       return nullptr;
     }
   }
-  return new FunctionI(loc(n), name, ti, params, body, _pp.isSTDLib);
+  return _owned.keep(make<FunctionI>(loc(n), name, ti, params, body, _pp.isSTDLib));
 }
 
 Item* Lowerer::typeAliasItem(const Node& n) {
@@ -1829,7 +1836,7 @@ Item* Lowerer::typeAliasItem(const Node& n) {
   if (name.empty() || ti == nullptr) {
     return nullptr;
   }
-  auto* vd = new VarDecl(loc(n), nullptr, name, ti);
+  auto* vd = _owned.keep(make<VarDecl>(loc(n), nullptr, name, ti));
   add_annotations(vd, annotations(n));
   return VarDeclI::a(loc(n), vd);
 }
@@ -1841,9 +1848,9 @@ Expression* Lowerer::enumerationMembers(const Node& n) {
     if (id.empty()) {
       return nullptr;
     }
-    ids.push_back(new Id(loc(*m), id, nullptr));
+    ids.push_back(_owned.keep(make<Id>(loc(*m), id, nullptr)));
   }
-  return new SetLit(loc(n), ids);
+  return _owned.keep(make<SetLit>(loc(n), ids));
 }
 
 Expression* Lowerer::anonymousEnumeration(const Node& n) {
@@ -1855,7 +1862,7 @@ Expression* Lowerer::anonymousEnumeration(const Node& n) {
     }
     args.push_back(e);
   }
-  return Call::a(loc(n), Constants::constants().ids.anon_enum_set, args);
+  return _owned.keep(Call::a(loc(n), Constants::constants().ids.anon_enum_set, args));
 }
 
 Expression* Lowerer::enumerationConstructor(const Node& n) {
@@ -1871,7 +1878,7 @@ Expression* Lowerer::enumerationConstructor(const Node& n) {
     }
     args.push_back(e);
   }
-  return Call::a(loc(n), cname, args);
+  return _owned.keep(Call::a(loc(n), cname, args));
 }
 
 Item* Lowerer::enumerationItem(const Node& n) {
@@ -1879,7 +1886,7 @@ Item* Lowerer::enumerationItem(const Node& n) {
   if (name.empty()) {
     return nullptr;
   }
-  auto* ti = new TypeInst(loc(n), Type::parsetint());
+  auto* ti = _owned.keep(make<TypeInst>(loc(n), Type::parsetint()));
   ti->setIsEnum(true);
   std::vector<Expression*> cases;
   bool stringMembers = false;
@@ -1897,7 +1904,7 @@ Item* Lowerer::enumerationItem(const Node& n) {
           return nullptr;
         }
       }
-      e = Call::a(loc(*c), Constants::constants().ids.anonEnumFromStrings, {e});
+      e = _owned.keep(Call::a(loc(*c), Constants::constants().ids.anonEnumFromStrings, {e}));
       stringMembers = true;
     }
     cases.push_back(e);
@@ -1908,15 +1915,16 @@ Item* Lowerer::enumerationItem(const Node& n) {
   }
   VarDecl* vd;
   if (cases.empty()) {
-    vd = new VarDecl(loc(n), ti, name);
+    vd = _owned.keep(make<VarDecl>(loc(n), ti, name));
   } else {
     Expression* e;
     if (cases.size() == 1) {
       e = cases[0];
     } else {
-      e = Call::a(loc(n), ASTString("enumFromConstructors"), {new ArrayLit(loc(n), cases)});
+      e = _owned.keep(Call::a(loc(n), ASTString("enumFromConstructors"),
+                              {_owned.keep(make<ArrayLit>(loc(n), cases))}));
     }
-    vd = new VarDecl(loc(n), ti, name, e);
+    vd = _owned.keep(make<VarDecl>(loc(n), ti, name, e));
   }
   add_annotations(vd, annotations(n));
   return VarDeclI::a(loc(n), vd);
@@ -1940,7 +1948,7 @@ Expression* Lowerer::expr(const Child* c) {
     case K::Identifier:
     case K::QuotedIdentifier: {
       ASTString id = identifier(c);
-      return id.empty() ? nullptr : new Id(loc(*c), id, nullptr);
+      return id.empty() ? nullptr : _owned.keep(make<Id>(loc(*c), id, nullptr));
     }
     case K::IntegerLiteral:
       return intLiteral(*c, false);
@@ -1949,11 +1957,11 @@ Expression* Lowerer::expr(const Child* c) {
     case K::BooleanLiteral:
       return Constants::constants().boollit(_buf[c->startByte] == 't');
     case K::Infinity:
-      return IntLit::a(IntVal::infinity());
+      return _owned.keep(IntLit::a(IntVal::infinity()));
     case K::Absent:
       return Constants::constants().absent;
     case K::Anonymous:
-      return new AnonVar(loc(*c));
+      return _owned.keep(make<AnonVar>(loc(*c)));
     case K::InversedIdentifier: {
       // `f^-1` on its own is `f` to the power -1; as a call target it names the
       // inverse function (handled in callExpr).
@@ -1961,7 +1969,8 @@ Expression* Lowerer::expr(const Child* c) {
       if (id.empty()) {
         return nullptr;
       }
-      return new BinOp(loc(*c), new Id(loc(*c), id, nullptr), BOT_POW, IntLit::a(-1));
+      return _owned.keep(make<BinOp>(loc(*c), _owned.keep(make<Id>(loc(*c), id, nullptr)), BOT_POW,
+                                     _owned.keep(IntLit::a(-1))));
     }
     case K::TypeBase:
     case K::ConcatenatedDomain:
@@ -1998,7 +2007,7 @@ Expression* Lowerer::infixExpr(const Node& n) {
       error(*opNode, "syntax error, empty operator name");
       return nullptr;
     }
-    return Call::a(loc(n), ASTString(name), {lhs, rhs});
+    return _owned.keep(Call::a(loc(n), ASTString(name), {lhs, rhs}));
   }
   const OpEntry* e = _s.infixOp(opNode->symbol);
   if (e == nullptr) {
@@ -2006,13 +2015,14 @@ Expression* Lowerer::infixExpr(const Node& n) {
     return nullptr;
   }
   if (e->call != nullptr) {
-    return Call::a(loc(n), ASTString(e->call), {lhs, rhs});
+    return _owned.keep(Call::a(loc(n), ASTString(e->call), {lhs, rhs}));
   }
   if (e->bot == BOT_DOTDOT && Expression::isa<IntLit>(lhs) && Expression::isa<IntLit>(rhs)) {
-    return new SetLit(loc(n), IntSetVal::a(IntLit::v(Expression::cast<IntLit>(lhs)),
-                                           IntLit::v(Expression::cast<IntLit>(rhs))));
+    return _owned.keep(
+        make<SetLit>(loc(n), _owned.keep(IntSetVal::a(IntLit::v(Expression::cast<IntLit>(lhs)),
+                                                      IntLit::v(Expression::cast<IntLit>(rhs))))));
   }
-  return new BinOp(loc(n), lhs, e->bot, rhs);
+  return _owned.keep(make<BinOp>(loc(n), lhs, e->bot, rhs));
 }
 
 Expression* Lowerer::prefixExpr(const Node& n) {
@@ -2024,11 +2034,11 @@ Expression* Lowerer::prefixExpr(const Node& n) {
   std::string op = text(*opNode);
   if (const char* call = open_range_call(op, false)) {
     Expression* e = expr(operand);
-    return e == nullptr ? nullptr : Call::a(loc(n), ASTString(call), {e});
+    return e == nullptr ? nullptr : _owned.keep(Call::a(loc(n), ASTString(call), {e}));
   }
   if (op == "not" || op == "¬") {
     Expression* e = expr(operand);
-    return e == nullptr ? nullptr : new UnOp(loc(n), UOT_NOT, e);
+    return e == nullptr ? nullptr : _owned.keep(make<UnOp>(loc(n), UOT_NOT, e));
   }
   // Fold the sign into the literal, so that -9223372036854775808 is
   // representable, as the bison lexer's MZN_MAX_NEGATIVE_INTEGER_LITERAL is.
@@ -2046,15 +2056,15 @@ Expression* Lowerer::prefixExpr(const Node& n) {
     if (Expression::isa<IntLit>(e) || Expression::isa<FloatLit>(e)) {
       return e;
     }
-    return new UnOp(loc(n), UOT_PLUS, e);
+    return _owned.keep(make<UnOp>(loc(n), UOT_PLUS, e));
   }
   if (Expression::isa<IntLit>(e)) {
-    return IntLit::a(-IntLit::v(Expression::cast<IntLit>(e)));
+    return _owned.keep(IntLit::a(-IntLit::v(Expression::cast<IntLit>(e))));
   }
   if (Expression::isa<FloatLit>(e)) {
-    return FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>(e)));
+    return _owned.keep(FloatLit::a(-FloatLit::v(Expression::cast<FloatLit>(e))));
   }
-  return new UnOp(loc(n), UOT_MINUS, e);
+  return _owned.keep(make<UnOp>(loc(n), UOT_MINUS, e));
 }
 
 Expression* Lowerer::postfixExpr(const Node& n) {
@@ -2068,10 +2078,10 @@ Expression* Lowerer::postfixExpr(const Node& n) {
     if (e == Constants::constants().absent) {
       return e;  // `<>^-1` is `<>`, as in the bison grammar
     }
-    return new BinOp(loc(n), e, BOT_POW, IntLit::a(-1));
+    return _owned.keep(make<BinOp>(loc(n), e, BOT_POW, _owned.keep(IntLit::a(-1))));
   }
   if (const char* call = open_range_call(op, true)) {
-    return Call::a(loc(n), ASTString(call), {e});
+    return _owned.keep(Call::a(loc(n), ASTString(call), {e}));
   }
   error(*opNode, "internal: unhandled postfix operator '" + op + "'");
   return nullptr;
@@ -2105,7 +2115,8 @@ Expression* Lowerer::argOrParam(const Node& n) {
   if (value == nullptr) {
     return nullptr;
   }
-  return new VarDecl(loc(n), new TypeInst(loc(n), Type()), id->v(), value);
+  return _owned.keep(
+      make<VarDecl>(loc(n), _owned.keep(make<TypeInst>(loc(n), Type())), id->v(), value));
 }
 
 std::vector<Expression*> Lowerer::callArguments(const Node& n, bool& ok) {
@@ -2147,11 +2158,11 @@ Expression* Lowerer::callExpr(const Node& n) {
     return nullptr;
   }
   if (kind(*fn) == K::Anonymous) {
-    return Call::a(loc(n), Constants::constants().ids.anon_enum_set, args);
+    return _owned.keep(Call::a(loc(n), Constants::constants().ids.anon_enum_set, args));
   }
   if (kind(*fn) == K::InversedIdentifier) {
     ASTString name = calleeName(fn);
-    return name.empty() ? nullptr : Call::a(loc(n), name, args);
+    return name.empty() ? nullptr : _owned.keep(Call::a(loc(n), name, args));
   }
   if (kind(*fn) == K::QuotedIdentifier) {
     std::string t = text(*fn);
@@ -2162,7 +2173,7 @@ Expression* Lowerer::callExpr(const Node& n) {
           error(n, "syntax error, unary operator with two arguments");
           return nullptr;
         }
-        return new UnOp(loc(n), UOT_NOT, args[0]);
+        return _owned.keep(make<UnOp>(loc(n), UOT_NOT, args[0]));
       }
       if (args.size() != 2) {
         error(n, "syntax error, binary operator with unary argument list");
@@ -2171,14 +2182,15 @@ Expression* Lowerer::callExpr(const Node& n) {
       auto bot = static_cast<BinOpType>(q->bot);
       if (bot == BOT_DOTDOT && Expression::isa<IntLit>(args[0]) &&
           Expression::isa<IntLit>(args[1])) {
-        return new SetLit(loc(n), IntSetVal::a(IntLit::v(Expression::cast<IntLit>(args[0])),
-                                               IntLit::v(Expression::cast<IntLit>(args[1]))));
+        return _owned.keep(make<SetLit>(
+            loc(n), _owned.keep(IntSetVal::a(IntLit::v(Expression::cast<IntLit>(args[0])),
+                                             IntLit::v(Expression::cast<IntLit>(args[1]))))));
       }
-      return new BinOp(loc(n), args[0], bot, args[1]);
+      return _owned.keep(make<BinOp>(loc(n), args[0], bot, args[1]));
     }
     // `'..<'`, `'<..'` and `'<..<'` stay calls, with either one or two operands
     ASTString id = identifier(fn);
-    return id.empty() ? nullptr : Call::a(loc(n), id, args);
+    return id.empty() ? nullptr : _owned.keep(Call::a(loc(n), id, args));
   }
   if (kind(*fn) != K::Identifier) {
     error(*fn, "invalid function name in call");
@@ -2189,7 +2201,7 @@ Expression* Lowerer::callExpr(const Node& n) {
     error(*fn, "syntax error, `" + name + "' is a reserved keyword");
     return nullptr;
   }
-  return Call::a(loc(n), ASTString(name), args);
+  return _owned.keep(Call::a(loc(n), ASTString(name), args));
 }
 
 Expression* Lowerer::generatorCallExpr(const Node& n) {
@@ -2202,7 +2214,7 @@ Expression* Lowerer::generatorCallExpr(const Node& n) {
   if (tmpl == nullptr || fn == nullptr) {
     return nullptr;
   }
-  auto* comp = new Comprehension(loc(n), tmpl, gens, false);
+  auto* comp = _owned.keep(make<Comprehension>(loc(n), tmpl, gens, false));
   K k = kind(*fn);
   if (k != K::InversedIdentifier && k != K::Identifier && k != K::QuotedIdentifier) {
     error(*fn, "illegal expression in generator call");
@@ -2212,7 +2224,7 @@ Expression* Lowerer::generatorCallExpr(const Node& n) {
   if (name.empty()) {
     return nullptr;
   }
-  return Call::a(loc(n), name, {comp});
+  return _owned.keep(Call::a(loc(n), name, {comp}));
 }
 
 Expression* Lowerer::indexedAccess(const Node& n) {
@@ -2226,9 +2238,11 @@ Expression* Lowerer::indexedAccess(const Node& n) {
     if (_s.isToken(i->symbol) && kind(*i) == K::Unknown) {
       std::string op = text(*i);
       if (op == "..") {
-        idx.push_back(new SetLit(loc(*i), IntSetVal::a(-IntVal::infinity(), IntVal::infinity())));
+        idx.push_back(_owned.keep(make<SetLit>(
+            loc(*i), _owned.keep(IntSetVal::a(-IntVal::infinity(), IntVal::infinity())))));
       } else {
-        idx.push_back(Call::a(loc(*i), ASTString("'" + op + "'"), std::vector<Expression*>()));
+        idx.push_back(
+            _owned.keep(Call::a(loc(*i), ASTString("'" + op + "'"), std::vector<Expression*>())));
       }
       continue;
     }
@@ -2238,7 +2252,7 @@ Expression* Lowerer::indexedAccess(const Node& n) {
     }
     idx.push_back(e);
   }
-  return new ArrayAccess(loc(n), v, idx);
+  return _owned.keep(make<ArrayAccess>(loc(n), v, idx));
 }
 
 Expression* Lowerer::setLiteral(const Node& n) {
@@ -2253,7 +2267,7 @@ Expression* Lowerer::setLiteral(const Node& n) {
     }
     members.push_back(e);
   }
-  return new SetLit(loc(n), members);
+  return _owned.keep(make<SetLit>(loc(n), members));
 }
 
 Expression* Lowerer::arrayLiteral(const Node& n) {
@@ -2293,7 +2307,7 @@ Expression* Lowerer::arrayLiteral(const Node& n) {
     values.push_back(v);
   }
   if (indices.empty()) {
-    return new ArrayLit(loc(n), values);
+    return _owned.keep(make<ArrayLit>(loc(n), values));
   }
   // A tuple index means a multi-dimensional index set
   const auto* tuple = Expression::dynamicCast<ArrayLit>(indices[0]);
@@ -2304,8 +2318,9 @@ Expression* Lowerer::arrayLiteral(const Node& n) {
         return nullptr;
       }
     }
-    return Call::a(loc(n), "arrayNd",
-                   {new ArrayLit(loc(n), indices), new ArrayLit(loc(n), values)});
+    return _owned.keep(Call::a(loc(n), "arrayNd",
+                               {_owned.keep(make<ArrayLit>(loc(n), indices)),
+                                _owned.keep(make<ArrayLit>(loc(n), values))}));
   }
   if (indices.size() != values.size()) {
     error(n, "syntax error, non-uniform indexed array literal");
@@ -2324,10 +2339,10 @@ Expression* Lowerer::arrayLiteral(const Node& n) {
   }
   std::vector<Expression*> arrayNdArgs(dims.size());
   for (unsigned int i = 0; i < dims.size(); i++) {
-    arrayNdArgs[i] = new ArrayLit(loc(n), dims[i]);
+    arrayNdArgs[i] = _owned.keep(make<ArrayLit>(loc(n), dims[i]));
   }
-  arrayNdArgs.push_back(new ArrayLit(loc(n), values));
-  return Call::a(loc(n), "arrayNd", arrayNdArgs);
+  arrayNdArgs.push_back(_owned.keep(make<ArrayLit>(loc(n), values)));
+  return _owned.keep(Call::a(loc(n), "arrayNd", arrayNdArgs));
 }
 
 Expression* Lowerer::arrayLiteral2d(const Node& n) {
@@ -2377,7 +2392,7 @@ Expression* Lowerer::arrayLiteral2d(const Node& n) {
     return nullptr;
   }
   if (columnHeader.empty() && rowHeader.empty()) {
-    return new ArrayLit(loc(n), rows);
+    return _owned.keep(make<ArrayLit>(loc(n), rows));
   }
   std::vector<Expression*> flat;
   for (auto& row : rows) {
@@ -2389,18 +2404,19 @@ Expression* Lowerer::arrayLiteral2d(const Node& n) {
     auto nRows = columnHeader.empty() ? 0 : flat.size() / columnHeader.size();
     rowHeader.resize(nRows);
     for (unsigned int i = 0; i < nRows; i++) {
-      rowHeader[i] = IntLit::a(i + 1);
+      rowHeader[i] = _owned.keep(IntLit::a(i + 1));
     }
   } else if (columnHeader.empty()) {
     auto nCols = rowHeader.empty() ? 0 : flat.size() / rowHeader.size();
     columnHeader.resize(nCols);
     for (unsigned int i = 0; i < nCols; i++) {
-      columnHeader[i] = IntLit::a(i + 1);
+      columnHeader[i] = _owned.keep(IntLit::a(i + 1));
     }
   }
-  return Call::a(loc(n), "array2d",
-                 {new ArrayLit(loc(n), rowHeader), new ArrayLit(loc(n), columnHeader),
-                  new ArrayLit(loc(n), flat)});
+  return _owned.keep(Call::a(loc(n), "array2d",
+                             {_owned.keep(make<ArrayLit>(loc(n), rowHeader)),
+                              _owned.keep(make<ArrayLit>(loc(n), columnHeader)),
+                              _owned.keep(make<ArrayLit>(loc(n), flat))}));
 }
 
 Expression* Lowerer::arrayLiteral3d(const Node& n) {
@@ -2440,7 +2456,7 @@ Expression* Lowerer::arrayLiteral3d(const Node& n) {
       }
     }
   }
-  return new ArrayLit(loc(n), flat, dims);
+  return _owned.keep(make<ArrayLit>(loc(n), flat, dims));
 }
 
 Expression* Lowerer::tupleLiteral(const Node& n) {
@@ -2452,7 +2468,7 @@ Expression* Lowerer::tupleLiteral(const Node& n) {
     }
     members.push_back(e);
   }
-  return ArrayLit::constructTuple(loc(n), members);
+  return _owned.keep(ArrayLit::constructTuple(loc(n), members));
 }
 
 Expression* Lowerer::recordLiteral(const Node& n) {
@@ -2464,13 +2480,14 @@ Expression* Lowerer::recordLiteral(const Node& n) {
     if (name.empty() || value == nullptr) {
       return nullptr;
     }
-    fields.push_back(new VarDecl(loc(m), new TypeInst(loc(m), Type()), name, value));
+    fields.push_back(_owned.keep(
+        make<VarDecl>(loc(m), _owned.keep(make<TypeInst>(loc(m), Type())), name, value)));
   }
   if (fields.empty()) {
     error(n, "syntax error, empty record literal");
     return nullptr;
   }
-  ArrayLit* al = ArrayLit::constructTuple(loc(n), fields);
+  ArrayLit* al = _owned.keep(ArrayLit::constructTuple(loc(n), fields));
   Expression::type(al, Type::record());
   return al;
 }
@@ -2489,7 +2506,7 @@ bool Lowerer::generators(const Node& n, Generators& gens, bool idLocations) {
         return false;
       }
       if (idLocations) {
-        std::vector<Id*> ids{new Id(loc(*nameNode), name, nullptr)};
+        std::vector<Id*> ids{_owned.keep(make<Id>(loc(*nameNode), name, nullptr))};
         gens.g.emplace_back(ids, nullptr, value);
       } else {
         std::vector<std::string> ids{std::string(name.c_str(), name.size())};
@@ -2516,7 +2533,7 @@ bool Lowerer::generators(const Node& n, Generators& gens, bool idLocations) {
       }
       ids.emplace_back(name.c_str(), name.size());
       if (idLocations) {
-        idExprs.push_back(new Id(loc(*nameNode), name, nullptr));
+        idExprs.push_back(_owned.keep(make<Id>(loc(*nameNode), name, nullptr)));
       }
     }
     Expression* collection = expr(child(g, F::Collection));
@@ -2564,13 +2581,13 @@ Expression* Lowerer::comprehension(const Node& n, bool isSet) {
       tv.push_back(idx);
     }
     tv.push_back(tmpl);
-    auto* t = ArrayLit::constructTuple(loc(n), tv);
+    auto* t = _owned.keep(ArrayLit::constructTuple(loc(n), tv));
     Type ty = Type::tuple();
     ty.typeId(Type::COMP_INDEX);
     t->type(ty);
     tmpl = t;
   }
-  return new Comprehension(loc(n), tmpl, gens, isSet);
+  return _owned.keep(make<Comprehension>(loc(n), tmpl, gens, isSet));
 }
 
 Expression* Lowerer::iteExpr(const Node& n) {
@@ -2598,7 +2615,7 @@ Expression* Lowerer::iteExpr(const Node& n) {
       return nullptr;
     }
   }
-  return new ITE(loc(n), ifThen, elseE);
+  return _owned.keep(make<ITE>(loc(n), ifThen, elseE));
 }
 
 Expression* Lowerer::letExpr(const Node& n) {
@@ -2625,7 +2642,7 @@ Expression* Lowerer::letExpr(const Node& n) {
   if (lets.empty()) {
     return in;
   }
-  return new Let(loc(n), lets, in);
+  return _owned.keep(make<Let>(loc(n), lets, in));
 }
 
 Expression* Lowerer::intLiteral(const Child& c, bool negated) {
@@ -2641,7 +2658,7 @@ Expression* Lowerer::intLiteral(const Child& c, bool negated) {
   } else if (len > 2 && b[0] == '0' && b[1] == 'b') {
     ok = based_to_intval(b + 2, e, 2, v);
   } else if (negated && len == 19 && memcmp(b, "9223372036854775808", 19) == 0) {
-    return IntLit::a(IntVal(-9223372036854775807LL - 1));
+    return _owned.keep(IntLit::a(IntVal(-9223372036854775807LL - 1)));
   } else {
     ok = decimal_to_intval(b, e, v);
   }
@@ -2649,7 +2666,7 @@ Expression* Lowerer::intLiteral(const Child& c, bool negated) {
     error(c, "invalid integer literal");
     return nullptr;
   }
-  return IntLit::a(negated ? -v : v);
+  return _owned.keep(IntLit::a(negated ? -v : v));
 }
 
 Expression* Lowerer::floatLiteral(const Child& c, bool negated) {
@@ -2680,7 +2697,7 @@ Expression* Lowerer::floatLiteral(const Child& c, bool negated) {
     error(c, "invalid float literal");
     return nullptr;
   }
-  return FloatLit::a(negated ? -v : v);
+  return _owned.keep(FloatLit::a(negated ? -v : v));
 }
 
 bool Lowerer::appendStringPiece(const Child& c, std::string& out) {
@@ -2777,7 +2794,7 @@ Expression* Lowerer::stringLiteral(const Node& n) {
       return nullptr;
     }
   }
-  return new StringLit(loc(n), s);
+  return _owned.keep(make<StringLit>(loc(n), s));
 }
 
 Expression* Lowerer::stringInterpolation(const Node& n) {
@@ -2824,12 +2841,12 @@ Expression* Lowerer::stringInterpolation(const Node& n) {
   if (norm.empty() || !norm.back().isString) {
     norm.push_back({true, {}, nullptr});
   }
-  Expression* result = new StringLit(l, norm.back().s);
+  Expression* result = _owned.keep(make<StringLit>(l, norm.back().s));
   for (size_t i = norm.size() - 1; i > 0; i--) {
     Part& p = norm[i - 1];
-    Expression* lhs = p.isString ? static_cast<Expression*>(new StringLit(l, p.s))
-                                 : Call::a(l, ASTString("format"), {p.e});
-    result = new BinOp(l, lhs, BOT_PLUSPLUS, result);
+    Expression* lhs = p.isString ? static_cast<Expression*>(_owned.keep(make<StringLit>(l, p.s)))
+                                 : _owned.keep(Call::a(l, ASTString("format"), {p.e}));
+    result = _owned.keep(make<BinOp>(l, lhs, BOT_PLUSPLUS, result));
   }
   return result;
 }
@@ -2895,7 +2912,7 @@ Expression* Lowerer::typeAsExpr(const Child* c) {
     if (lhs == nullptr || rhs == nullptr) {
       return nullptr;
     }
-    return new BinOp(loc(*c), lhs, BOT_PLUSPLUS, rhs);
+    return _owned.keep(make<BinOp>(loc(*c), lhs, BOT_PLUSPLUS, rhs));
   }
   if (k != K::TypeBase && k != K::ConcatenatedDomain) {
     error(*c, "expected an expression, found a type");
@@ -2939,11 +2956,13 @@ TypeInst* Lowerer::typeInst(const Child* c) {
       if (inner == nullptr) {
         return nullptr;
       }
-      TypeInst* ti = inner->isarray() ? new TypeInst(loc(*c), Type::tuple(), inner) : inner;
+      TypeInst* ti =
+          inner->isarray() ? _owned.keep(make<TypeInst>(loc(*c), Type::tuple(), inner)) : inner;
       std::vector<TypeInst*> ranges(1);
-      ranges[0] =
-          new TypeInst(loc(*c), Type(),
-                       new BinOp(loc(*c), IntLit::a(1), BOT_DOTDOT, IntLit::a(IntVal::infinity())));
+      ranges[0] = _owned.keep(
+          make<TypeInst>(loc(*c), Type(),
+                         _owned.keep(make<BinOp>(loc(*c), _owned.keep(IntLit::a(1)), BOT_DOTDOT,
+                                                 _owned.keep(IntLit::a(IntVal::infinity()))))));
       ti->setRanges(ranges);
       return ti;
     }
@@ -2962,8 +2981,8 @@ TypeInst* Lowerer::typeInst(const Child* c) {
         if (e == nullptr) {
           return nullptr;
         }
-        ArrayLit* marker = ArrayLit::constructTuple(loc(n), {e, inner});
-        auto* ti = new TypeInst(loc(n), tt, marker);
+        ArrayLit* marker = _owned.keep(ArrayLit::constructTuple(loc(n), {e, inner}));
+        auto* ti = _owned.keep(make<TypeInst>(loc(n), tt, marker));
         ti->setIsEnum(inner->isEnum());
         return ti;
       }
@@ -2982,7 +3001,8 @@ TypeInst* Lowerer::typeInst(const Child* c) {
       }
       Type tt = Type::tuple();
       applyVarParOpt(n, tt);
-      return new TypeInst(loc(n), tt, ArrayLit::constructTuple(loc(n), fields));
+      return _owned.keep(
+          make<TypeInst>(loc(n), tt, _owned.keep(ArrayLit::constructTuple(loc(n), fields))));
     }
     case K::RecordType: {
       Node n = node(*c);
@@ -2994,13 +3014,14 @@ TypeInst* Lowerer::typeInst(const Child* c) {
         if (fti == nullptr || fname.empty()) {
           return nullptr;
         }
-        auto* field = new VarDecl(loc(f), fti, fname);
+        auto* field = _owned.keep(make<VarDecl>(loc(f), fti, fname));
         field->toplevel(false);
         fields.push_back(field);
       }
       Type tt = Type::record();
       applyVarParOpt(n, tt);
-      return new TypeInst(loc(n), tt, ArrayLit::constructTuple(loc(n), fields));
+      return _owned.keep(
+          make<TypeInst>(loc(n), tt, _owned.keep(ArrayLit::constructTuple(loc(n), fields))));
     }
     case K::TypeConcatenation: {
       Node n = node(*c);
@@ -3013,14 +3034,14 @@ TypeInst* Lowerer::typeInst(const Child* c) {
       // becomes its domain (as in the bison grammar).
       Type tt = Expression::type(lhs);
       tt.dim(0);
-      auto* inner = new TypeInst(loc(n), tt, lhs->domain());
-      auto* bop = new BinOp(loc(n), inner, BOT_PLUSPLUS, rhs);
+      auto* inner = _owned.keep(make<TypeInst>(loc(n), tt, lhs->domain()));
+      auto* bop = _owned.keep(make<BinOp>(loc(n), inner, BOT_PLUSPLUS, rhs));
       bop->type(tt);
       lhs->domain(bop);
       return lhs;
     }
     case K::AnyType:
-      return new TypeInst(loc(*c), Type::mkAny());
+      return _owned.keep(make<TypeInst>(loc(*c), Type::mkAny()));
     case K::OperationType:
       return static_cast<TypeInst*>(futureFeature(*c, "function types"));
     default:
@@ -3049,7 +3070,8 @@ TypeInst* Lowerer::typeBase(const Node& n) {
   }
   if (has(n, F::Any)) {
     // `any $X`; the lexer strips a single leading `$`
-    return new TypeInst(loc(n), Type::mkAny(), new TIId(loc(*domain), text(*domain).substr(1)));
+    return _owned.keep(make<TypeInst>(
+        loc(n), Type::mkAny(), _owned.keep(make<TIId>(loc(*domain), text(*domain).substr(1)))));
   }
   TypeInst* ti;
   switch (kind(*domain)) {
@@ -3067,16 +3089,18 @@ TypeInst* Lowerer::typeBase(const Node& n) {
       } else {
         ty = Type::ann();
       }
-      ti = new TypeInst(loc(n), ty);
+      ti = _owned.keep(make<TypeInst>(loc(n), ty));
       break;
     }
     case K::TypeInstId:
       // `$X`; the lexer strips a single leading `$`
-      ti = new TypeInst(loc(n), Type::top(), new TIId(loc(*domain), text(*domain).substr(1)));
+      ti = _owned.keep(make<TypeInst>(
+          loc(n), Type::top(), _owned.keep(make<TIId>(loc(*domain), text(*domain).substr(1)))));
       break;
     case K::TypeInstEnumId:
       // `$$E`; likewise, so the name keeps one `$`
-      ti = new TypeInst(loc(n), Type::parint(), new TIId(loc(*domain), text(*domain).substr(1)));
+      ti = _owned.keep(make<TypeInst>(
+          loc(n), Type::parint(), _owned.keep(make<TIId>(loc(*domain), text(*domain).substr(1)))));
       break;
     case K::NewType:
       return static_cast<TypeInst*>(futureFeature(*domain, "object types"));
@@ -3085,7 +3109,7 @@ TypeInst* Lowerer::typeBase(const Node& n) {
       if (d == nullptr) {
         return nullptr;
       }
-      ti = new TypeInst(loc(n), Type(), d);
+      ti = _owned.keep(make<TypeInst>(loc(n), Type(), d));
       break;
     }
   }
@@ -3108,10 +3132,10 @@ TypeInst* Lowerer::arrayTypeInst(const Node& n) {
       if (name.empty() || set == nullptr) {
         return nullptr;
       }
-      auto* binder = new Id(loc(*nameNode), name, nullptr);
-      auto* rangeTi = new TypeInst(loc(*typeNode), Type(), set);
-      ArrayLit* marker = ArrayLit::constructTuple(loc(d), {rangeTi, binder});
-      ranges.push_back(new TypeInst(loc(d), Type(), marker));
+      auto* binder = _owned.keep(make<Id>(loc(*nameNode), name, nullptr));
+      auto* rangeTi = _owned.keep(make<TypeInst>(loc(*typeNode), Type(), set));
+      ArrayLit* marker = _owned.keep(ArrayLit::constructTuple(loc(d), {rangeTi, binder}));
+      ranges.push_back(_owned.keep(make<TypeInst>(loc(d), Type(), marker)));
       continue;
     }
     TypeInst* ti = typeInst(typeNode);
@@ -3124,7 +3148,8 @@ TypeInst* Lowerer::arrayTypeInst(const Node& n) {
   if (inner == nullptr) {
     return nullptr;
   }
-  TypeInst* ti = inner->isarray() ? new TypeInst(loc(n), Type::tuple(), inner) : inner;
+  TypeInst* ti =
+      inner->isarray() ? _owned.keep(make<TypeInst>(loc(n), Type::tuple(), inner)) : inner;
   ti->setRanges(ranges);
   return ti;
 }
@@ -3140,7 +3165,7 @@ VarDecl* Lowerer::parameter(const Node& n) {
   const Child* nameNode = child(n, F::Name);
   if (nameNode == nullptr) {
     // An unnamed parameter, as in `predicate p(int)`
-    auto* anon = new VarDecl(loc(n), ti, ASTString());
+    auto* anon = _owned.keep(make<VarDecl>(loc(n), ti, ASTString()));
     anon->toplevel(false);
     return anon;
   }
@@ -3148,7 +3173,8 @@ VarDecl* Lowerer::parameter(const Node& n) {
   if (!patternName(nameNode, name)) {
     return nullptr;
   }
-  auto* vd = new VarDecl(loc(n), ti, new Id(loc(*nameNode), name, nullptr));
+  auto* vd =
+      _owned.keep(make<VarDecl>(loc(n), ti, _owned.keep(make<Id>(loc(*nameNode), name, nullptr))));
   vd->toplevel(false);
   add_annotations(vd, annotations(n));
   const Child* def = child(n, F::Default);

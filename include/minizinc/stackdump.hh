@@ -20,8 +20,6 @@ namespace MiniZinc {
 class EnvI;
 class Expression;
 
-// IMPORTANT: StackDump currently depends on the warning/error keeping the expression in _stack
-// alive from their marking member function.
 class StackDump {
 public:
   StackDump(EnvI& env);
@@ -30,15 +28,18 @@ public:
   void json(std::ostream& os) const;
   bool empty() const { return _stack.empty(); }
 
-  void mark() {
-    for (auto pair : _stack) {
-      Expression::mark(pair.first);
-    }
-  }
-
 private:
+  struct Item {
+    Ref<Expression> e;
+    bool isCompIter;
+    /// The value of a comprehension variable when the dump was taken: the trail restores the
+    /// variable while the exception unwinds, before the dump is printed
+    Ref<Expression> value;
+  };
   EnvI* _env;
-  std::vector<std::pair<Expression*, bool>> _stack;
+  std::vector<Item> _stack;
+  /// Print the binding of comprehension variable \a e to \a value
+  void printBinding(std::ostream& os, Expression* e, Expression* value) const;
 };
 
 }  // namespace MiniZinc

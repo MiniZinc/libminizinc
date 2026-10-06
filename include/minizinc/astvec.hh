@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <vector>
 
@@ -49,8 +49,8 @@ public:
   int* begin();
   /// Iterator end
   int* end();
-  /// Mark as alive for garbage collection
-  void mark() const;
+  /// Return vector object
+  ASTIntVecO* vec() const { return _v; }
 };
 
 template <class>
@@ -82,10 +82,32 @@ public:
   unsigned int size() const;
   /// Whether vector is empty
   bool empty() const;
+  /// Element of a vector: reads like a T*, and counts the pointer that is assigned to it
+  class Element {
+    ASTExprVecO<T*>* _v;
+    unsigned int _i;
+
+  public:
+    Element(ASTExprVecO<T*>* v, unsigned int i) : _v(v), _i(i) {}
+    operator T*() const { return (*_v)[_i]; }
+    T* operator->() const { return (*_v)[_i]; }
+    Element& operator=(Arg<T> e) {
+      _v->set(_i, e);
+      return *this;
+    }
+    Element& operator=(const Element& e) {
+      if (&e != this) {
+        *this = static_cast<T*>(e);
+      }
+      return *this;
+    }
+  };
   /// Element access
-  T*& operator[](unsigned int i);
+  Element operator[](unsigned int i) &;
   /// Element access
-  T* operator[](unsigned int i) const;
+  T* operator[](unsigned int i) const&;
+  /// Element access (of a temporary handle)
+  T* operator[](unsigned int i) && { return (*_v)[i]; }
   /// Iterator begin
   T** begin();
   /// Iterator end
@@ -93,11 +115,9 @@ public:
 
   /// Return vector object
   ASTExprVecO<T*>* vec() const;
-  /// Mark as alive for garbage collection
-  void mark() const;
 };
 
-/// Garbage collected integer vector
+/// Reference-counted integer vector
 class ASTIntVecO : public ASTChunk {
 protected:
   /// Constructor
@@ -124,11 +144,9 @@ public:
   int* begin() { return reinterpret_cast<int*>(_data); }
   /// Iterator end
   int* end() { return begin() + size(); }
-  /// Mark as alive for garbage collection
-  void mark() const { _gcMark = 1; }
 };
 
-/// Garbage collected vector of expressions
+/// Reference-counted vector of expressions
 template <class T>
 class ASTExprVecO : public ASTVec {
 protected:
@@ -148,12 +166,12 @@ public:
     assert(i < static_cast<int>(size()));
     return reinterpret_cast<T>(_data[i]);
   }
+  /// Store \a e as element \a i
+  void set(unsigned int i, T e) { RC::set((*this)[i], e); }
   /// Iterator begin
   T* begin() { return reinterpret_cast<T*>(_data); }
   /// Iterator end
   T* end() { return begin() + size(); }
-  /// Mark as alive for garbage collection
-  void mark() const { _gcMark = 1; }
   /// Check if flag is set
   bool flag() const { return _flag1; }
   /// Set flag
@@ -171,6 +189,7 @@ ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
   _flag2 = false;
   for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     (*this)[i] = v[i];
+    RC::inc(v[i]);  // (counted here: one pass over the elements)
   }
 }
 template <class T>
@@ -194,11 +213,6 @@ inline int& ASTIntVec::operator[](unsigned int i) { return (*_v)[i]; }
 inline int ASTIntVec::operator[](unsigned int i) const { return (*_v)[i]; }
 inline int* ASTIntVec::begin() { return _v != nullptr ? _v->begin() : nullptr; }
 inline int* ASTIntVec::end() { return _v != nullptr ? _v->end() : nullptr; }
-inline void ASTIntVec::mark() const {
-  if (_v != nullptr) {
-    _v->mark();
-  }
-}
 
 template <class T>
 ASTExprVec<T>::ASTExprVec(const std::vector<T*>& v) : _v(ASTExprVecO<T*>::a(v)) {}
@@ -219,11 +233,11 @@ inline bool ASTExprVec<T>::empty() const {
   return _v == nullptr || _v->empty();
 }
 template <class T>
-inline T*& ASTExprVec<T>::operator[](unsigned int i) {
-  return (*_v)[i];
+inline typename ASTExprVec<T>::Element ASTExprVec<T>::operator[](unsigned int i) & {
+  return Element(_v, i);
 }
 template <class T>
-inline T* ASTExprVec<T>::operator[](unsigned int i) const {
+inline T* ASTExprVec<T>::operator[](unsigned int i) const& {
   return (*_v)[i];
 }
 template <class T>
@@ -237,12 +251,6 @@ inline T** ASTExprVec<T>::end() {
 template <class T>
 inline ASTExprVecO<T*>* ASTExprVec<T>::vec() const {
   return _v;
-}
-template <class T>
-inline void ASTExprVec<T>::mark() const {
-  if (_v) {
-    _v->mark();
-  }
 }
 
 }  // namespace MiniZinc

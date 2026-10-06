@@ -39,7 +39,6 @@ class ParserLocation;
 #define YYLTYPE_IS_TRIVIAL 0
 
 #include <minizinc/astexception.hh>
-#include <minizinc/astmap.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/library_bundle.hh>
 #include <minizinc/model.hh>
@@ -89,7 +88,7 @@ public:
   ParserState(const std::string& f, const std::string& b, EnvI& env0, std::ostream& err0,
               const std::vector<std::string>& includePaths0, std::vector<ParseWorkItem>& files0,
               std::map<std::string, Model*>& seenModels0, LibraryBundleCache& bundles0,
-              MiniZinc::Model* model0, std::vector<Call*>& dataFileCalls0, bool isDatafile0,
+              MiniZinc::Model* model0, std::vector<Ref<Call>>& dataFileCalls0, bool isDatafile0,
               bool isFlatZinc0, bool isSTDLib0, bool parseDocComments0,
               unsigned int lineOffset0 = 0)
       : filename(f.c_str()),
@@ -150,7 +149,10 @@ public:
   LibraryBundleCache& bundles;
   MiniZinc::Model* model;
   /// Where calls found in a data file are recorded for the type checker
-  std::vector<Call*>& dataFileCalls;
+  std::vector<Ref<Call>>& dataFileCalls;
+  /// Owns the nodes of the current item: the value stack of the parser holds raw pointers until a
+  /// parent node or the model owns them, and nodes of a failed parse are freed with it
+  NodeOwner owned;
 
   bool isDatafile;
   bool isFlatZinc;

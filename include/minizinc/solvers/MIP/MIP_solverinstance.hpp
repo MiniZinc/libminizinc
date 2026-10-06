@@ -105,7 +105,7 @@ MIPSolver::Variable MIPSolverinstance<MIPWrapper>::exprToVar(Expression* arg) {
 
 template <class MIPWrapper>
 void MIPSolverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<VarId>& vars) {
-  ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
+  Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), arg);
   vars.clear();
   vars.reserve(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -141,7 +141,7 @@ double MIPSolverinstance<MIPWrapper>::exprToConst(Expression* e) {
 
 template <class MIPWrapper>
 void MIPSolverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<double>& vals) {
-  ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
+  Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), arg);
   vals.clear();
   vals.reserve(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
@@ -248,10 +248,10 @@ void MIPSolverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation
 
         /// Process coefs & vars together to eliminate literals (problem with Gurobi's
         /// updatemodel()'s)
-        ArrayLit* alC = eval_array_lit(_env.envi(), c->arg(1));
+        Ref<ArrayLit> alC = eval_array_lit(_env.envi(), c->arg(1));
         MZN_ASSERT_HARD_MSG(nullptr != alC, "ERROR: warm_start needs 2 array args");
         coefs.reserve(alC->size());
-        ArrayLit* alV = eval_array_lit(_env.envi(), c->arg(0));
+        Ref<ArrayLit> alV = eval_array_lit(_env.envi(), c->arg(0));
         MZN_ASSERT_HARD_MSG(nullptr != alV, "ERROR: warm_start needs 2 array args");
         vars.reserve(alV->size());
         for (unsigned int i = 0; i < alV->size() && i < alC->size(); i++) {
@@ -370,7 +370,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
         ub = -lb;
       }
 
-      //       IntSetVal* dom = eval_intset(env,vdi->e()->ti()->domain());
+      //       Ref<IntSetVal> dom = eval_intset(env,vdi->e()->ti()->domain());
       //       if (dom->size() > 1)
       //         throw runtime_error("MIPSolverinstance: domains with holes ! supported, use
       //         --MIPdomains");
@@ -465,7 +465,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
 }  // processFlatZinc
 
 template <class MIPWrapper>
-Expression* MIPSolverinstance<MIPWrapper>::getSolutionValue(Id* id) {
+Ref<Expression> MIPSolverinstance<MIPWrapper>::getSolutionValue(Id* id) {
   id = id->decl()->id();
 
   if (id->type().isvar()) {
@@ -477,7 +477,7 @@ Expression* MIPSolverinstance<MIPWrapper>::getSolutionValue(Id* id) {
       case Type::BT_FLOAT:
         return FloatLit::a(val);
       case Type::BT_BOOL:
-        return new BoolLit(Location(), round_to_longlong(val) != 0);
+        return make<BoolLit>(Location(), round_to_longlong(val) != 0);
       default:
         return nullptr;
     }
@@ -628,16 +628,6 @@ SolverInstance::Status MIPSolverinstance<MIPWrapper>::solve() {
     if (!_cutGenerators.empty()) {  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(handle_cut_callback<MIPWrapper>, this);
     }
-    ////////////// clean up envi /////////////////
-    {
-      /// Removing for now - need access to output variables  TODO
-      //       cleanupForNonincrementalSolving();
-      if (GC::locked() && _mipWrapper->fVerbose) {
-        std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory.\n";
-      }
-      // GCLock lock;
-      GC::trigger();
-    }
     getMIPWrapper()->solve();
     //   printStatistics(cout, 1);   MznSolver does this (if it wants)
     sw = getMIPWrapper()->getStatus();
@@ -731,7 +721,7 @@ template <class MIPWrapper>
 void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinConType lt) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
   Env& _env = gi.env();
-  //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
+  //     Ref<ArrayLit> al = eval_array_lit(_env.envi(), args[0]);
   //     int nvars = al->v().size();
   std::vector<double> coefs;
   //     gi.exprToArray(args[0], coefs);
@@ -752,9 +742,9 @@ void p_lin(SolverInstanceBase& si, const Call* call, typename MIPWrapper::LinCon
   }
 
   /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
-  ArrayLit* alC = eval_array_lit(_env.envi(), call->arg(0));
+  Ref<ArrayLit> alC = eval_array_lit(_env.envi(), call->arg(0));
   coefs.reserve(alC->size());
-  ArrayLit* alV = eval_array_lit(_env.envi(), call->arg(1));
+  Ref<ArrayLit> alV = eval_array_lit(_env.envi(), call->arg(1));
   vars.reserve(alV->size());
   for (unsigned int i = 0; i < alV->size(); i++) {
     const double dCoef = gi.exprToConst((*alC)[i]);
@@ -1123,7 +1113,6 @@ void p_times(SolverInstanceBase& si, const Call* call) {
 
 template <class MIPWrapper>
 void MIPSolverinstance<MIPWrapper>::registerConstraints() {
-  GCLock lock;
   _constraintRegistry.add("int2float", SCIPConstraints::p_eq<MIPWrapper>);
   _constraintRegistry.add("bool_eq",
                           SCIPConstraints::p_eq<MIPWrapper>);  // for inconsistency reported in fzn

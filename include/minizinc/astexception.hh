@@ -13,7 +13,7 @@
 
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/model.hh>
 #include <minizinc/stackdump.hh>
 
@@ -22,15 +22,9 @@
 
 namespace MiniZinc {
 
-class CyclicIncludeError : public Exception, public GCMarker {
+class CyclicIncludeError : public Exception {
 protected:
   std::shared_ptr<const std::vector<ASTString>> _cycle;
-
-  void mark() override {
-    for (auto s : *_cycle) {
-      s.mark();
-    }
-  }
 
 public:
   CyclicIncludeError(std::vector<ASTString> cycle)
@@ -42,20 +36,15 @@ public:
   void json(std::ostream& os) const override;
 };
 
-class LocationException : public Exception, public GCMarker {
+class LocationException : public Exception {
 protected:
   std::shared_ptr<StackDump> _stack;
   Location _loc;
   bool _dumpStack = false;
 
-  void mark() override {
-    _loc.mark();
-    _stack->mark();
-  }
-
 public:
-  LocationException(const Location& loc, const std::string& msg);
-  LocationException(EnvI& env, const Location& loc, const std::string& msg);
+  LocationException(Location loc, const std::string& msg);
+  LocationException(EnvI& env, Location loc, const std::string& msg);
   ~LocationException() throw() override {}
   const Location& loc() const { return _loc; }
 
@@ -70,13 +59,6 @@ class SyntaxError : public LocationException {
 protected:
   std::shared_ptr<const std::string> _currentLine;
   std::shared_ptr<const std::vector<ASTString>> _includeStack;
-
-  void mark() override {
-    LocationException::mark();
-    for (auto s : *_includeStack) {
-      s.mark();
-    }
-  }
 
 public:
   SyntaxError(const Location& loc, const std::string& msg)

@@ -12,7 +12,6 @@
 #pragma once
 
 #include <minizinc/ast.hh>
-#include <minizinc/astmap.hh>
 #include <minizinc/aststring.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/eval_par.hh>
@@ -20,11 +19,13 @@
 #include <minizinc/optimize.hh>
 #include <minizinc/warning.hh>
 
+#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <cmath>
 #include <memory>
 #include <random>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -37,9 +38,9 @@ namespace MiniZinc {
 class EE {
 public:
   /// The result value
-  KeepAlive r;
+  Ref<Expression> r;
   /// Boolean expression representing whether result is defined
-  KeepAlive b;
+  Ref<Expression> b;
   /// Constructor
   explicit EE(Expression* r0 = nullptr, Expression* b0 = nullptr) : r(r0), b(b0) {}
 };
@@ -128,7 +129,7 @@ struct VarPathStore {
   unsigned int maxPathDepth;
 
   struct PathVar {
-    KeepAlive decl;
+    Ref<Expression> decl;
     unsigned int passNumber;
   };
   // Store mapping from path to (VarDecl, pass_no) tuples
@@ -138,7 +139,7 @@ struct VarPathStore {
 
   PathMap pathMap;
   ReversePathMap reversePathMap;
-  ASTStringSet filenameSet;
+  std::unordered_set<ASTString> filenameSet;
   /// Shared with the other passes' environments: paths compare by pointer, so
   /// every pass must intern into the same store.
   std::shared_ptr<PathStore> paths;
@@ -146,7 +147,7 @@ struct VarPathStore {
   VarPathStore();
   PathMap& getPathMap() { return pathMap; }
   ReversePathMap& getReversePathMap() { return reversePathMap; }
-  ASTStringSet& getFilenameSet() { return filenameSet; }
+  std::unordered_set<ASTString>& getFilenameSet() { return filenameSet; }
   PathStore& getPaths() { return *paths; }
 };
 
@@ -173,14 +174,14 @@ public:
   std::string prevTraceLoc() const { return _prevTraceLoc; }
 };
 
-class OutputSectionStore : public GCMarker {
+class OutputSectionStore {
 public:
   struct OutputSection {
     ASTString section;
-    Expression* e;
+    Ref<Expression> e;
     bool json;
     OutputSection(ASTString section0, Expression* e0, bool json0 = false)
-        : section(section0), e(e0), json(json0) {}
+        : section(std::move(section0)), e(e0), json(json0) {}
   };
 
 private:
@@ -190,9 +191,9 @@ public:
   typedef OutputSections::iterator iterator;
   typedef OutputSections::const_iterator const_iterator;
 
-  void add(EnvI& env, ASTString section, Expression* e, bool json);
+  void add(EnvI& env, const ASTString& section, Expression* e, bool json);
   bool empty() const { return _sections.empty(); };
-  bool contains(ASTString section) const { return _idx.count(section) > 0; }
+  bool contains(const ASTString& section) const { return _idx.count(section) > 0; }
   bool noUserDefined() const { return _blank; };
 
   iterator begin() { return _sections.begin(); }
@@ -206,12 +207,6 @@ private:
   bool _blank = true;
 
 protected:
-  void mark() override {
-    for (auto& it : *this) {
-      it.section.mark();
-      Expression::mark(it.e);
-    }
-  }
 };
 
 class StructType {
@@ -371,14 +366,19 @@ class EnvI {
   friend class TypeInst;
   template <bool ignoreVarDecl>
   friend class Typer;
-  friend KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Location& loc_default,
-                                const Type& funarg_t);
+  friend Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e,
+                                      const Location& loc_default, const Type& funarg_t);
   friend Type type_from_tmap(EnvI& env, TypeInst* ti,
-                             const ASTStringMap<std::pair<Type, bool>>& tmap);
+                             const std::unordered_map<ASTString, std::pair<Type, bool>>& tmap);
 
 public:
   Model* model;
   Model* originalModel;
+  /// The functions and variables of models that are already deleted that can hold themselves
+  /// (see Env::~Env)
+  std::vector<Weak<ASTNode>> cycleCandidates;
+  /// Add the candidates of \a models (null entries are skipped) to cycleCandidates
+  void gatherCycleCandidates(std::initializer_list<Model*> models);
   Model* output;
   VarOccurrences varOccurrences;
   VarOccurrences outputVarOccurrences;
@@ -397,26 +397,21 @@ public:
 
   VarOccurrences outputFlatVarOccurrences;
   CopyMap cmap;
-  IdMap<KeepAlive> reverseMappers;
+  IdMap<Ref<Expression>> reverseMappers;
+  /// CSE result: weak, so an entry does not keep a removed result alive (see cseMapFind)
   struct WW {
-    Expression* r;
-    Expression* b;
-    WW(Expression* r0, Expression* b0) : r(r0), b(b0) {}
-  };
-  class CSEMap : public KeepAliveMap<WW> {
-  public:
-    void fixWeakRefs() override {
-      std::vector<Expression*> toRemove;
-      for (auto& it : _m) {
-        if (!Expression::hasMark(it.second.r) || !Expression::hasMark(it.second.b)) {
-          toRemove.push_back(it.first);
-        }
+    Weak<Expression> r;
+    Weak<Expression> b;
+    WW(Expression* r0, Expression* b0) : r(canonical(r0)), b(canonical(b0)) {}
+    /// A variable's own Id lives as long as the variable; a copy of the Id may not
+    static Expression* canonical(Expression* e) {
+      if (e != nullptr && Expression::isa<Id>(e) && Expression::cast<Id>(e)->decl() != nullptr) {
+        return Expression::cast<Id>(e)->decl()->id();
       }
-      for (auto* e : toRemove) {
-        _m.erase(e);
-      }
+      return e;
     }
   };
+  using CSEMap = KeepAliveMap<WW>;
   bool ignorePartial;
   bool ignoreUnknownIds;
   struct CallStackEntry {
@@ -460,13 +455,13 @@ public:
   /// solver implementers can audit their libraries.
   bool warnNonAuthoritativeNames;
   FlatteningOptions fopts;
-  ASTStringMap<Item*> reverseEnum;
+  std::unordered_map<ASTString, Item*> reverseEnum;
   /// Calls a data file makes that are not data-reshaping builtins. Checked once
   /// `reverseEnum` is complete, because a data file may use an enum constructor
-  /// before the assignment that introduces it. Kept alive by the model.
-  std::vector<Call*> dataFileCalls;
-  std::vector<KeepAlive> checkVars;
-  std::vector<KeepAlive> outputVars;
+  /// before the assignment that introduces it. Owned here, because type checking may replace them.
+  std::vector<Ref<Call>> dataFileCalls;
+  std::vector<Ref<Expression>> checkVars;
+  std::vector<Ref<Expression>> outputVars;
   OutputSectionStore outputSections;
   std::unordered_map<std::string, int> keyCounters;
   // Maps each FlatZinc variable name originating from an `assume` argument (or the objective)
@@ -474,7 +469,7 @@ public:
   // original assumption expression, a synthesised indexed access (e.g. `asmp(x)[1]`) when the
   // elements are not individually recoverable, or the objective expression. Rendered into the
   // output model only when `assumptionsUsed` is set (i.e. the model contains an `assume`).
-  ManagedASTStringMap<Expression*> assumptionExprs;
+  std::unordered_map<ASTString, Ref<Expression>> assumptionExprs;
   bool assumptionsUsed = false;
 
   // General multipass information
@@ -492,15 +487,44 @@ public:
     /// The first position whose value occurs at an earlier position, or -1 if there is none
     long long int duplicate = -1;
   };
-  /// Map from arrays to their indexes that does not keep the arrays alive: an entry is removed
-  /// when its array is collected.
-  class ArgValIndexMap : public KeepAliveMap<std::shared_ptr<const ArgValIndex>> {
+  /// Map from arrays to their indexes that does not keep the arrays alive. The entry of a
+  /// destroyed array is removed when a lookup finds it, and all such entries are removed when
+  /// the map has doubled in size.
+  class ArgValIndexMap {
+  private:
+    struct Entry {
+      Weak<ArrayLit> al;
+      std::shared_ptr<const ArgValIndex> index;
+    };
+    /// Entries by the hash of their array (which cannot be computed for a destroyed array)
+    std::unordered_multimap<size_t, Entry> _m;
+    size_t _purgeSize = 16;
+
   public:
-    void mark() override {}
-    void fixWeakRefs() override {
-      for (auto it = _m.begin(); it != _m.end();) {
-        it = Expression::hasMark(it->first) ? std::next(it) : _m.erase(it);
+    /// The index of an array that equals \a al, or nullptr
+    std::shared_ptr<const ArgValIndex> find(ArrayLit* al) {
+      auto range = _m.equal_range(Expression::hash(al));
+      for (auto it = range.first; it != range.second;) {
+        ArrayLit* key = it->second.al.get();
+        if (key == nullptr) {
+          it = _m.erase(it);
+        } else if (Expression::equal(key, al)) {
+          return it->second.index;
+        } else {
+          ++it;
+        }
       }
+      return nullptr;
+    }
+    /// Add \a index for \a al, which must not be in the map
+    void insert(ArrayLit* al, std::shared_ptr<const ArgValIndex> index) {
+      if (_m.size() >= _purgeSize) {
+        for (auto it = _m.begin(); it != _m.end();) {
+          it = it->second.al.get() == nullptr ? _m.erase(it) : std::next(it);
+        }
+        _purgeSize = std::max<size_t>(16, 2 * _m.size());
+      }
+      _m.emplace(Expression::hash(al), Entry{al, std::move(index)});
     }
   };
   /// The indexes of the arrays seen so far. Arrays are compared structurally, so a copy of an
@@ -515,7 +539,7 @@ protected:
   Model* _flat;
   bool _failed;
   long long int _ids;
-  ASTStringMap<ASTString> _reifyMap;
+  std::unordered_map<ASTString, ASTString> _reifyMap;
   typedef std::unordered_map<VarDeclI*, unsigned int> EnumMap;
   EnumMap _enumMap;
   std::vector<VarDeclI*> _enumVarDecls;
@@ -642,7 +666,7 @@ public:
                     bool strictEnums = false);
   /// Returns a record type that merges the fields to two record types
   /// WARNING: This method throws an error when two fields have the same name.
-  Type mergeRecord(Type record1, Type record2, Location loc);
+  Type mergeRecord(Type record1, Type record2, const Location& loc);
   /// Returns a tuple type of `tuple1 ++ tuple2'
   Type concatTuple(Type tuple1, Type tuple2);
   /// Get the type t, but remove surrounding transparent tuple if necessary
@@ -654,7 +678,7 @@ public:
   bool isSubtype(const Type& t1, const Type& t2, bool strictEnum) const;
   bool hasReverseMapper(Id* ident) { return reverseMappers.find(ident) != reverseMappers.end(); }
 
-  void flatAddItem(Item* i);
+  void flatAddItem(Arg<Item> i);
   void flatRemoveItem(ConstraintI* i);
   void flatRemoveItem(VarDeclI* i);
   void flatRemoveExpr(Expression* e, Item* i);
@@ -665,7 +689,7 @@ public:
 
   void voAddExp(VarDecl* vd);
   void annotateFromCallStack(Expression* e);
-  ArrayLit* createAnnotationArray(const BCtx& ctx);
+  Ref<ArrayLit> createAnnotationArray(const BCtx& ctx);
   void fail(const std::string& msg = std::string(), const Location& loc = Location());
   bool failed() const;
   Model* flat();
@@ -684,7 +708,7 @@ public:
   void collectVarDecls(bool b);
 
   void copyPathMapsAndState(EnvI& env);
-  /// Drop state no later pass reads, so the GC can reclaim it while they run.
+  /// Drop state no later pass reads, so that it is freed while they run.
   void releasePassState();
   /// deprecated, use Solns2Out
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);
@@ -702,7 +726,7 @@ public:
     }
   }
 
-  bool outputSectionEnabled(ASTString section) const;
+  bool outputSectionEnabled(const ASTString& section) const;
 
   std::string show(Expression* e);
   std::string show(const IntVal& iv, unsigned int enumId);
@@ -724,19 +748,17 @@ EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
               bool doNotFollowChains);
 
-ArrayLit* field_slice(EnvI& env, StructType* st, ArrayLit* al,
-                      const std::vector<std::pair<int, int>>& dims, unsigned int field);
-std::vector<Expression*> field_slices(EnvI& env, Expression* arrExpr);
+Ref<ArrayLit> field_slice(EnvI& env, StructType* st, ArrayLit* al,
+                          const std::vector<std::pair<int, int>>& dims, unsigned int field);
+std::vector<Ref<Expression>> field_slices(EnvI& env, Expression* arrExpr);
 
 class CmpExpIdx {
 public:
-  std::vector<KeepAlive>& x;
-  CmpExpIdx(std::vector<KeepAlive>& x0) : x(x0) {}
+  std::vector<Ref<Expression>>& x;
+  CmpExpIdx(std::vector<Ref<Expression>>& x0) : x(x0) {}
   bool operator()(int i, int j) const {
-    const long long int i_idn =
-        Expression::isa<Id>(x[i]()) ? Expression::cast<Id>(x[i]())->idn() : -1;
-    const long long int j_idn =
-        Expression::isa<Id>(x[j]()) ? Expression::cast<Id>(x[j]())->idn() : -1;
+    const long long int i_idn = Expression::isa<Id>(x[i]) ? Expression::cast<Id>(x[i])->idn() : -1;
+    const long long int j_idn = Expression::isa<Id>(x[j]) ? Expression::cast<Id>(x[j])->idn() : -1;
     const bool i_is_valid_id = i_idn != -1;
     const bool j_is_valid_id = j_idn != -1;
     if (i_is_valid_id != j_is_valid_id) {
@@ -745,7 +767,7 @@ public:
     if (i_is_valid_id && j_is_valid_id) {
       return i_idn < j_idn;
     }
-    return Expression::compare(x[i](), x[j]()) < 0;
+    return Expression::compare(x[i], x[j]) < 0;
   }
 };
 
@@ -756,7 +778,9 @@ struct RecordFieldSort {
   bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
     return operator()(a.first, b.first);
   }
-  bool operator()(ASTString a, ASTString b) const { return std::strcmp(a.c_str(), b.c_str()) < 0; }
+  bool operator()(const ASTString& a, const ASTString& b) const {
+    return std::strcmp(a.c_str(), b.c_str()) < 0;
+  }
 };
 
 template <class Lit>
@@ -807,44 +831,44 @@ public:
   static bool finite(const IntBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const IntVal& v) { return v.isFinite(); }
   static Bounds computeBounds(EnvI& env, Expression* e) { return compute_int_bounds(env, e); }
-  typedef IntSetVal* Domain;
+  typedef Ref<IntSetVal> Domain;
   static Domain evalDomain(EnvI& env, Expression* e) { return eval_intset(env, e); }
-  static Expression* newDomain(Val v) {
-    return new SetLit(Location().introduce(), IntSetVal::a(v, v));
+  static Ref<Expression> newDomain(Val v) {
+    return make<SetLit>(Location().introduce(), IntSetVal::a(v, v));
   }
-  static Expression* newDomain(Val v0, Val v1) {
-    return new SetLit(Location().introduce(), IntSetVal::a(v0, v1));
+  static Ref<Expression> newDomain(Val v0, Val v1) {
+    return make<SetLit>(Location().introduce(), IntSetVal::a(v0, v1));
   }
-  static Expression* newDomain(Domain d) { return new SetLit(Location().introduce(), d); }
-  static bool domainContains(Domain dom, Val v) { return dom->contains(v); }
-  static bool domainEquals(Domain dom, Val v) {
+  static Ref<Expression> newDomain(Domain d) { return make<SetLit>(Location().introduce(), d); }
+  static bool domainContains(const Domain& dom, Val v) { return dom->contains(v); }
+  static bool domainEquals(const Domain& dom, Val v) {
     return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
   }
-  static bool domainEquals(Domain dom1, Domain dom2) {
+  static bool domainEquals(const Domain& dom1, const Domain& dom2) {
     IntSetRanges d1(dom1);
     IntSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
-  static bool domainSubset(Domain dom1, Domain dom2) {
+  static bool domainSubset(const Domain& dom1, const Domain& dom2) {
     IntSetRanges d1(dom1);
     IntSetRanges d2(dom2);
     return Ranges::subset(d1, d2);
   }
-  static bool domainDisjoint(Domain dom1, Domain dom2) {
+  static bool domainDisjoint(const Domain& dom1, const Domain& dom2) {
     IntSetRanges d1(dom1);
     IntSetRanges d2(dom2);
     return Ranges::disjoint(d1, d2);
   }
-  static bool domainTighter(Domain dom, Bounds b) {
+  static bool domainTighter(const Domain& dom, Bounds b) {
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
-  static bool domainIntersects(Domain dom, Val v0, Val v1) {
+  static bool domainIntersects(const Domain& dom, Val v0, Val v1) {
     return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domainEmpty(Domain dom) { return dom->empty(); }
-  static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
+  static bool domainEmpty(const Domain& dom) { return dom->empty(); }
+  static Domain limitDomain(BinOpType bot, const Domain& dom, Val v) {
     IntSetRanges dr(dom);
-    IntSetVal* ndomain;
+    Domain ndomain;
     switch (bot) {
       case BOT_LE:
         v -= 1;
@@ -873,13 +897,13 @@ public:
     }
     return ndomain;
   }
-  static Domain intersectDomain(Domain dom, Val v0, Val v1) {
+  static Domain intersectDomain(const Domain& dom, Val v0, Val v1) {
     IntSetRanges dr(dom);
     Ranges::Const<IntVal> c(v0, v1);
     Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> inter(dr, c);
     return IntSetVal::ai(inter);
   }
-  static Domain intersectDomain(Domain dom0, Domain dom1) {
+  static Domain intersectDomain(const Domain& dom0, const Domain& dom1) {
     IntSetRanges dr0(dom0);
     IntSetRanges dr1(dom1);
     Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(dr0, dr1);
@@ -893,7 +917,7 @@ public:
     return static_cast<long long int>(
         std::ceil(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
   }
-  static IntLit* newLit(Val v) { return IntLit::a(v); }
+  static Ref<IntLit> newLit(Val v) { return IntLit::a(v); }
   static IntVal v(const IntLit* il) { return IntLit::v(il); }
 };
 template <>
@@ -941,45 +965,45 @@ public:
   static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
   static bool finite(const FloatVal& v) { return v.isFinite(); }
   static Bounds computeBounds(EnvI& env, Expression* e) { return compute_float_bounds(env, e); }
-  typedef FloatSetVal* Domain;
+  typedef Ref<FloatSetVal> Domain;
   static Domain evalDomain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
 
-  static Expression* newDomain(Val v) {
-    return new SetLit(Location().introduce(), FloatSetVal::a(v, v));
+  static Ref<Expression> newDomain(Val v) {
+    return make<SetLit>(Location().introduce(), FloatSetVal::a(v, v));
   }
-  static Expression* newDomain(Val v0, Val v1) {
-    return new SetLit(Location().introduce(), FloatSetVal::a(v0, v1));
+  static Ref<Expression> newDomain(Val v0, Val v1) {
+    return make<SetLit>(Location().introduce(), FloatSetVal::a(v0, v1));
   }
-  static Expression* newDomain(Domain d) { return new SetLit(Location().introduce(), d); }
-  static bool domainContains(Domain dom, Val v) { return dom->contains(v); }
-  static bool domainEquals(Domain dom, Val v) {
+  static Ref<Expression> newDomain(Domain d) { return make<SetLit>(Location().introduce(), d); }
+  static bool domainContains(const Domain& dom, Val v) { return dom->contains(v); }
+  static bool domainEquals(const Domain& dom, Val v) {
     return dom->size() == 1 && dom->min(0) == v && dom->max(0) == v;
   }
 
-  static bool domainTighter(Domain dom, Bounds b) {
+  static bool domainTighter(const Domain& dom, Bounds b) {
     return !b.valid || dom->min() > b.l || dom->max() < b.u;
   }
-  static bool domainIntersects(Domain dom, Val v0, Val v1) {
+  static bool domainIntersects(const Domain& dom, Val v0, Val v1) {
     return (v0 > v1) || (!dom->empty() && dom->min(0) <= v1 && v0 <= dom->max(dom->size() - 1));
   }
-  static bool domainEmpty(Domain dom) { return dom->empty(); }
+  static bool domainEmpty(const Domain& dom) { return dom->empty(); }
 
-  static bool domainEquals(Domain dom1, Domain dom2) {
+  static bool domainEquals(const Domain& dom1, const Domain& dom2) {
     FloatSetRanges d1(dom1);
     FloatSetRanges d2(dom2);
     return Ranges::equal(d1, d2);
   }
-  static bool domainSubset(Domain dom1, Domain dom2) {
+  static bool domainSubset(const Domain& dom1, const Domain& dom2) {
     FloatSetRanges d1(dom1);
     FloatSetRanges d2(dom2);
     return Ranges::subset(d1, d2);
   }
-  static bool domainDisjoint(Domain dom1, Domain dom2) {
+  static bool domainDisjoint(const Domain& dom1, const Domain& dom2) {
     FloatSetRanges d1(dom1);
     FloatSetRanges d2(dom2);
     return Ranges::disjoint(d1, d2);
   }
-  static Domain intersectDomain(Domain dom, Val v0, Val v1) {
+  static Domain intersectDomain(const Domain& dom, Val v0, Val v1) {
     if (dom != nullptr) {
       FloatSetRanges dr(dom);
       Ranges::Const<FloatVal> c(v0, v1);
@@ -1002,9 +1026,9 @@ public:
     return FloatSetVal::ai(inter);
   }
 
-  static Domain limitDomain(BinOpType bot, Domain dom, Val v) {
+  static Domain limitDomain(BinOpType bot, const Domain& dom, Val v) {
     FloatSetRanges dr(dom);
-    FloatSetVal* ndomain;
+    Domain ndomain;
     switch (bot) {
       case BOT_LE:
         return nullptr;
@@ -1033,17 +1057,17 @@ public:
   }
   static Val floorDiv(Val v0, Val v1) { return v0 / v1; }
   static Val ceilDiv(Val v0, Val v1) { return v0 / v1; }
-  static FloatLit* newLit(Val v) { return FloatLit::a(v); }
+  static Ref<FloatLit> newLit(Val v) { return FloatLit::a(v); }
   static FloatVal v(const FloatLit* fl) { return FloatLit::v(fl); }
 };
 
 template <class Lit>
-void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<KeepAlive>& x,
+void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<Ref<Expression>>& x,
                   typename LinearTraits<Lit>::Val& d) {
   std::vector<int> idx(c.size());
   for (auto i = static_cast<int>(idx.size()); i--;) {
     idx[i] = i;
-    Expression* e = follow_id_to_decl(x[i]());
+    Expression* e = follow_id_to_decl(x[i]);
     if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
       if (vd->e() && Expression::isa<Lit>(vd->e())) {
         x[i] = vd->e();
@@ -1057,7 +1081,7 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
   std::sort(idx.begin(), idx.end(), CmpExpIdx(x));
   unsigned int ci = 0;
   for (; ci < x.size(); ci++) {
-    if (Lit* il = Expression::dynamicCast<Lit>(x[idx[ci]]())) {
+    if (Lit* il = Expression::dynamicCast<Lit>(x[idx[ci]])) {
       d += c[idx[ci]] * LinearTraits<Lit>::v(il);
       c[idx[ci]] = 0;
     } else {
@@ -1065,10 +1089,10 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<K
     }
   }
   for (unsigned int i = ci + 1; i < x.size(); i++) {
-    if (Expression::equal(x[idx[i]](), x[idx[ci]]())) {
+    if (Expression::equal(x[idx[i]], x[idx[ci]])) {
       c[idx[ci]] += c[idx[i]];
       c[idx[i]] = 0;
-    } else if (Lit* il = Expression::dynamicCast<Lit>(x[idx[i]]())) {
+    } else if (Lit* il = Expression::dynamicCast<Lit>(x[idx[i]])) {
       d += c[idx[i]] * LinearTraits<Lit>::v(il);
       c[idx[i]] = 0;
     } else {

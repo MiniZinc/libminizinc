@@ -201,7 +201,6 @@ void PathFilePrinter::json(Model* m) {
   _os << "[";
   bool first = true;
   for (Item* item : *m) {
-    GCLock lock;
     if (auto* vdi = item->dynamicCast<VarDeclI>()) {
       Id* id = vdi->e()->id();
       NamePair np = _betternames[id];

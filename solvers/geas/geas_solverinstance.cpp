@@ -27,8 +27,6 @@ void GeasSolverInstance::registerConstraint(const std::string& name, poster p) {
 }
 
 void GeasSolverInstance::registerConstraints() {
-  GCLock lock;
-
   /* Integer Comparison Constraints */
   registerConstraint("int_eq", GeasConstraints::p_int_eq);
   registerConstraint("int_ne", GeasConstraints::p_int_ne);
@@ -244,7 +242,7 @@ void GeasSolverInstance::processFlatZinc() {
         if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
           if (domain != nullptr) {
-            IntSetVal* isv = eval_intset(env().envi(), domain);
+            Ref<IntSetVal> isv = eval_intset(env().envi(), domain);
             assert(!isv->empty());
             auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(isv->min().toInt()),
                                           static_cast<geas::intvar::val_t>(isv->max().toInt()));
@@ -316,8 +314,8 @@ void GeasSolverInstance::processFlatZinc() {
       if (ann->isa<Call>()) {
         Call* call = ann->cast<Call>();
         if (call->id() == "warm_start") {
-          auto* vars = eval_array_lit(env().envi(), call->arg(0));
-          auto* vals = eval_array_lit(env().envi(), call->arg(1));
+          auto vars = eval_array_lit(env().envi(), call->arg(0));
+          auto vals = eval_array_lit(env().envi(), call->arg(1));
           assert(vars->size() == vals->size());
           vec<geas::patom_t> ws(static_cast<int>(vars->size()));
 
@@ -405,8 +403,8 @@ bool GeasSolverInstance::addSolutionNoGood() {
   geas::model solution = _solver.get_model();
   vec<geas::clause_elt> clause;
   for (auto& var : _varsWithOutput) {
-    if (Expression::dynamicCast<Call>(get_annotation(
-            var->ann(), Constants::constants().ann.output_array.aststr())) != nullptr) {
+    if (Expression::dynamicCast<Call>(
+            get_annotation(var->ann(), Constants::constants().ann.output_array)) != nullptr) {
       if (auto* al = var->e()->dynamicCast<ArrayLit>()) {
         for (int j = 0; j < al->size(); j++) {
           if (Id* id = (*al)[j]->dynamicCast<Id>()) {
@@ -560,7 +558,7 @@ SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
   return status;
 }
 
-Expression* GeasSolverInstance::getSolutionValue(Id* id) {
+Ref<Expression> GeasSolverInstance::getSolutionValue(Id* id) {
   id = id->decl()->id();
   if (id->type().isvar()) {
     GeasVariable& var = resolveVar(id->decl()->id());
@@ -595,7 +593,7 @@ GeasTypes::Variable& GeasSolverInstance::resolveVar(Expression* e) {
   if (auto* aa = e->dynamicCast<ArrayAccess>()) {
     auto* ad = aa->v()->cast<Id>()->decl();
     auto idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
-    auto* al = eval_array_lit(_env.envi(), ad->e());
+    auto al = eval_array_lit(_env.envi(), ad->e());
     return _variableMap.get((*al)[idx]->cast<Id>());
   }
   std::stringstream ssm;

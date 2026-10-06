@@ -65,7 +65,6 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
   if (vdi == _s.back().m.end()) {
     _s.back().m.insert(vd->id(), vd);
   } else if (vd->id()->idn() >= -1) {
-    GCLock lock;
     std::ostringstream ss;
     ss << "identifier `" << vd->id()->str() << "' already defined";
     throw TypeError(env, Expression::loc(vd), ss.str());
@@ -163,9 +162,7 @@ public:
 // (mapping enum identifiers to strings, and mapping between different enums)
 void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems,
                         IdMap<bool>& needToString,
-                        std::vector<KeepAlive>& enumConstructorSetTypes) {
-  GCLock lock;
-
+                        std::vector<Ref<Expression>>& enumConstructorSetTypes) {
   Id* ident = vd->id();
 
   if (vd->e() == nullptr) {
@@ -175,40 +172,40 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     // is happy.
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
-    auto* ti_aa = new TypeInst(Location().introduce(), tx);
-    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
+    auto ti_aa = make<TypeInst>(Location().introduce(), tx);
+    auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.genId());
     vd_aa->toplevel(false);
 
-    auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
+    auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.genId());
     vd_ab->toplevel(false);
 
-    auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
+    auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
     vd_aj->toplevel(false);
 
-    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi = new FunctionI(Location().introduce(),
-                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, nullptr);
+    auto fi = make<FunctionI>(Location().introduce(),
+                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                              fi_params, nullptr);
     enumItems->addItem(fi);
 
     return;
   }
 
   std::vector<Expression*> stack = {vd->e()};
-  std::vector<Expression*> parts;
+  std::vector<Ref<Expression>> parts;
   while (!stack.empty()) {
     Expression* vde = stack.back();
     stack.pop_back();
     Call* c = Expression::dynamicCast<Call>(vde);
     auto* al = Expression::dynamicCast<ArrayLit>(vde);
     if (Expression::isa<SetLit>(vde)) {
-      parts.push_back(vde);
+      parts.emplace_back(vde);
     } else if ((al != nullptr) || ((c != nullptr) && c->id() == env.constants.ids.anon_enum &&
                                    c->argCount() == 1 && Expression::isa<ArrayLit>(c->arg(0)))) {
       if (c != nullptr) {
@@ -224,7 +221,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           throw TypeError(env, Expression::loc(vd->e()), ss.str());
         }
       }
-      parts.push_back(new SetLit(Expression::loc(vd->e()), enumIds));
+      parts.emplace_back(make<SetLit>(Expression::loc(vd->e()), enumIds));
     } else if (c != nullptr) {
       if (c->id() == env.constants.ids.enumFromConstructors) {
         if (c->argCount() != 1 || !Expression::isa<ArrayLit>(c->arg(0))) {
@@ -234,10 +231,10 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         }
         auto* al = Expression::cast<ArrayLit>(c->arg(0));
         for (unsigned int i = 0; i < al->size(); i++) {
-          parts.push_back((*al)[i]);
+          parts.emplace_back((*al)[i]);
         }
       } else {
-        parts.push_back(c);
+        parts.emplace_back(c);
       }
     } else if (auto* binop = Expression::dynamicCast<BinOp>(vde)) {
       if (binop->op() != BinOpType::BOT_PLUSPLUS) {
@@ -253,29 +250,29 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
     }
   }
 
-  std::vector<Expression*> partCardinality;
+  std::vector<Ref<Expression>> partCardinality;
   for (unsigned int p = 0; p < parts.size(); p++) {
     if (auto* sl = Expression::dynamicCast<SetLit>(parts[p])) {
-      Expression* prevCardinality = partCardinality.empty() ? nullptr : partCardinality.back();
+      Ref<Expression> prevCardinality = partCardinality.empty() ? nullptr : partCardinality.back();
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         if (!Expression::isa<Id>(sl->v()[i])) {
           throw TypeError(
               env, Expression::locDefault(sl->v()[i], sl),
               std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
         }
-        auto* ti_id = new TypeInst(Expression::loc(sl->v()[i]), Type::parenum(enumId));
+        auto ti_id = make<TypeInst>(Expression::loc(sl->v()[i]), Type::parenum(enumId));
 
-        std::vector<Expression*> toEnumArgs(2);
+        std::vector<Ref<Expression>> toEnumArgs(2);
         toEnumArgs[0] = vd->id();
         if (prevCardinality == nullptr) {
           toEnumArgs[1] = IntLit::a(i + 1);
         } else {
           toEnumArgs[1] =
-              new BinOp(Location().introduce(), prevCardinality, BOT_PLUS, IntLit::a(i + 1));
+              make<BinOp>(Location().introduce(), prevCardinality, BOT_PLUS, IntLit::a(i + 1));
         }
-        Call* toEnum = Call::a(Expression::loc(sl->v()[i]), ASTString("to_enum"), toEnumArgs);
-        auto* vd_id = new VarDecl(Expression::loc(ti_id), ti_id,
-                                  Expression::cast<Id>(sl->v()[i])->str(), toEnum);
+        Ref<Call> toEnum = Call::a(Expression::loc(sl->v()[i]), ASTString("to_enum"), toEnumArgs);
+        auto vd_id = make<VarDecl>(Expression::loc(ti_id), ti_id,
+                                   Expression::cast<Id>(sl->v()[i])->str(), toEnum);
         auto* vdi_id = VarDeclI::a(Expression::loc(vd_id), vd_id);
         ASTString str = Expression::cast<Id>(sl->v()[i])->str();
         env.reverseEnum[str] = vdi_id;
@@ -288,34 +285,34 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
       std::string name =
           create_enum_to_string_name(ident, "_enum_to_string_" + std::to_string(p) + "_");
-      std::vector<Expression*> al_args(sl->v().size());
+      std::vector<Ref<Expression>> al_args(sl->v().size());
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         auto str = Expression::cast<Id>(sl->v()[i])->str();
-        al_args[i] = new StringLit(Location().introduce(), str);
+        al_args[i] = make<StringLit>(Location().introduce(), str);
         /// TODO: reimplement reverseEnum with a symbol table into the model (so you can evalPar an
         /// expression)
       }
-      auto* al = new ArrayLit(Location().introduce(), al_args);
+      auto al = make<ArrayLit>(Location().introduce(), al_args);
 
-      std::vector<TypeInst*> ranges(1);
-      ranges[0] = new TypeInst(Location().introduce(), Type::parint());
-      auto* ti = new TypeInst(Location().introduce(), Type::parstring(1));
-      ti->setRanges(ranges);
-      auto* vd_enumToString = new VarDecl(Location().introduce(), ti, name, al);
+      std::vector<Ref<TypeInst>> ranges(1);
+      ranges[0] = make<TypeInst>(Location().introduce(), Type::parint());
+      auto ti = make<TypeInst>(Location().introduce(), Type::parstring(1));
+      ti->setRanges(raw(ranges));
+      auto vd_enumToString = make<VarDecl>(Location().introduce(), ti, name, al);
       enumItems->addItem(VarDeclI::a(Location().introduce(), vd_enumToString));
 
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
-      auto* ti_aa = new TypeInst(Location().introduce(), tx);
-      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
+      auto ti_aa = make<TypeInst>(Location().introduce(), tx);
+      auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.genId());
       vd_aa->toplevel(false);
-      auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
+      auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+      auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.genId());
       vd_ab->toplevel(false);
-      auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
+      auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+      auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
       vd_aj->toplevel(false);
-      auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+      auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
       std::vector<VarDecl*> fi_params(3);
       fi_params[0] = vd_aa;
       fi_params[1] = vd_ab;
@@ -323,76 +320,79 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
       std::vector<Expression*> deopt_args(1);
       deopt_args[0] = vd_aa->id();
-      Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
-      Call* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, deopt_args);
-      std::vector<Expression*> aa_args(1);
+      Ref<Call> deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+      Ref<Call> occurs = Call::a(Location().introduce(), env.constants.ids.occurs, deopt_args);
+      std::vector<Ref<Expression>> aa_args(1);
       if (prevCardinality == nullptr) {
         aa_args[0] = deopt;
       } else {
-        aa_args[0] = new BinOp(Location().introduce(), deopt, BOT_MINUS, prevCardinality);
+        aa_args[0] = make<BinOp>(Location().introduce(), deopt, BOT_MINUS, prevCardinality);
       }
-      auto* aa = new ArrayAccess(Location().introduce(), vd_enumToString->id(), aa_args);
+      auto aa = make<ArrayAccess>(Location().introduce(), vd_enumToString->id(), aa_args);
 
-      auto* sl_absent = new StringLit(Location().introduce(), "<>");
+      auto sl_absent = make<StringLit>(Location().introduce(), "<>");
 
-      ITE* if_absent = new ITE(
-          Location().introduce(),
-          {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent);
+      auto sl_null = make<StringLit>(Location().introduce(), ASTString("null"));
+      Ref<ITE> if_absent = make<ITE>(Location().introduce(),
+                                     std::vector<Expression*>{vd_aj->id(), sl_null}, sl_absent);
 
-      auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":"));
-      auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
-      auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
-                                 Call::a(Location().introduce(), env.constants.ids.show, {aa}));
-      auto* quote_aa2 = new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
+      auto json_e_quote = make<StringLit>(Location().introduce(), ASTString("{\"e\":"));
+      auto json_e_quote_end = make<StringLit>(Location().introduce(), ASTString("}"));
+      auto quote_aa = make<BinOp>(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
+                                  Call::a(Location().introduce(), env.constants.ids.show, {aa}));
+      auto quote_aa2 =
+          make<BinOp>(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
 
-      Call* quote_dzn = Call::a(Location().introduce(), ASTString("showDznId"), {aa});
+      Ref<Call> quote_dzn = Call::a(Location().introduce(), ASTString("showDznId"), {aa});
 
-      std::vector<Expression*> ite_ifelse(2);
+      std::vector<Ref<Expression>> ite_ifelse(2);
       ite_ifelse[0] = occurs;
       ite_ifelse[1] =
-          new ITE(Location().introduce(), {vd_ab->id(), quote_dzn, vd_aj->id(), quote_aa2}, aa);
+          make<ITE>(Location().introduce(),
+                    std::vector<Expression*>{vd_ab->id(), quote_dzn, vd_aj->id(), quote_aa2}, aa);
 
-      ITE* ite = new ITE(Location().introduce(), ite_ifelse, if_absent);
+      Ref<ITE> ite = make<ITE>(Location().introduce(), ite_ifelse, if_absent);
 
       std::string toString = "_toString_";
       if (parts.size() > 1) {
         toString += std::to_string(p) + "_";
       }
 
-      auto* fi = new FunctionI(Location().introduce(),
-                               ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
-                               fi_params, ite);
+      auto fi = make<FunctionI>(Location().introduce(),
+                                ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
+                                fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = Expression::dynamicCast<Call>(parts[p])) {
       enumConstructorSetTypes.emplace_back(c);
       if (c->id() == env.constants.ids.anon_enum || c->id() == env.constants.ids.anon_enum_set) {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
-        auto* ti_aa = new TypeInst(Location().introduce(), tx);
-        auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
+        auto ti_aa = make<TypeInst>(Location().introduce(), tx);
+        auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.genId());
         vd_aa->toplevel(false);
 
-        auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-        auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
+        auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+        auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.genId());
         vd_ab->toplevel(false);
 
-        auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-        auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
+        auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+        auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
         vd_aj->toplevel(false);
 
         std::vector<Expression*> deopt_args(1);
         deopt_args[0] = vd_aa->id();
-        Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
-        Call* if_absent = Call::a(Location().introduce(), env.constants.ids.absent, deopt_args);
-        auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
-        ITE* sl_absent = new ITE(
-            Location().introduce(),
-            {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
+        Ref<Call> deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+        Ref<Call> if_absent = Call::a(Location().introduce(), env.constants.ids.absent, deopt_args);
+        auto sl_absent_dzn = make<StringLit>(Location().introduce(), "<>");
+        auto sl_null = make<StringLit>(Location().introduce(), ASTString("null"));
+        Ref<ITE> sl_absent = make<ITE>(
+            Location().introduce(), std::vector<Expression*>{vd_aj->id(), sl_null}, sl_absent_dzn);
 
-        auto* sl_dzn = new StringLit(Location().introduce(), ASTString(std::string("to_enum(") +
-                                                                       ident->str().c_str() + ","));
+        auto sl_dzn =
+            make<StringLit>(Location().introduce(),
+                            ASTString(std::string("to_enum(") + ident->str().c_str() + ","));
 
-        Expression* enumCard;
+        Ref<Expression> enumCard;
         if (c->id() == env.constants.ids.anon_enum) {
           enumCard = c->arg(0);
         } else {
@@ -401,35 +401,35 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         if (partCardinality.empty()) {
           partCardinality.push_back(enumCard);
         } else {
-          partCardinality.push_back(
-              new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, enumCard));
+          partCardinality.emplace_back(
+              make<BinOp>(Location().introduce(), partCardinality.back(), BOT_PLUS, enumCard));
         }
 
-        Call* showInt = Call::a(Location().introduce(), env.constants.ids.show, {deopt});
-        auto* construct_string_dzn =
-            new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
-        auto* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
-        auto* construct_string_dzn_2 =
-            new BinOp(Location().introduce(), construct_string_dzn, BOT_PLUSPLUS, closing_bracket);
+        Ref<Call> showInt = Call::a(Location().introduce(), env.constants.ids.show, {deopt});
+        auto construct_string_dzn =
+            make<BinOp>(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
+        auto closing_bracket = make<StringLit>(Location().introduce(), ASTString(")"));
+        auto construct_string_dzn_2 = make<BinOp>(Location().introduce(), construct_string_dzn,
+                                                  BOT_PLUSPLUS, closing_bracket);
 
-        auto* sl = new StringLit(Location().introduce(),
-                                 ASTString("to_enum(" + std::string(ident->str().c_str()) + ","));
-        auto* construct_string0 = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
-        auto* construct_string = new BinOp(Location().introduce(), construct_string0, BOT_PLUSPLUS,
-                                           new StringLit(Location().introduce(), ")"));
+        auto sl = make<StringLit>(Location().introduce(),
+                                  ASTString("to_enum(" + std::string(ident->str().c_str()) + ","));
+        auto construct_string0 = make<BinOp>(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+        auto construct_string = make<BinOp>(Location().introduce(), construct_string0, BOT_PLUSPLUS,
+                                            make<StringLit>(Location().introduce(), ")"));
 
-        auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-        auto* json_e_quote_mid = new StringLit(Location().introduce(), ASTString("\", \"i\":"));
-        auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
-        auto* construct_string_json = new BinOp(
+        auto json_e_quote = make<StringLit>(Location().introduce(), ASTString("{\"e\":\""));
+        auto json_e_quote_mid = make<StringLit>(Location().introduce(), ASTString("\", \"i\":"));
+        auto json_e_quote_end = make<StringLit>(Location().introduce(), ASTString("}"));
+        auto construct_string_json = make<BinOp>(
             Location().introduce(), json_e_quote, BOT_PLUSPLUS,
-            new StringLit(Location().introduce(), Printer::escapeStringLit(ident->str())));
-        auto* construct_string_json_1a = new BinOp(Location().introduce(), construct_string_json,
-                                                   BOT_PLUSPLUS, json_e_quote_mid);
-        auto* construct_string_json_1b =
-            new BinOp(Location().introduce(), construct_string_json_1a, BOT_PLUSPLUS, showInt);
-        auto* construct_string_json_2 = new BinOp(Location().introduce(), construct_string_json_1b,
-                                                  BOT_PLUSPLUS, json_e_quote_end);
+            make<StringLit>(Location().introduce(), Printer::escapeStringLit(ident->str())));
+        auto construct_string_json_1a = make<BinOp>(Location().introduce(), construct_string_json,
+                                                    BOT_PLUSPLUS, json_e_quote_mid);
+        auto construct_string_json_1b =
+            make<BinOp>(Location().introduce(), construct_string_json_1a, BOT_PLUSPLUS, showInt);
+        auto construct_string_json_2 = make<BinOp>(Location().introduce(), construct_string_json_1b,
+                                                   BOT_PLUSPLUS, json_e_quote_end);
 
         std::vector<Expression*> if_then(6);
         if_then[0] = if_absent;
@@ -438,9 +438,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         if_then[3] = construct_string_dzn_2;
         if_then[4] = vd_aj->id();
         if_then[5] = construct_string_json_2;
-        ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
+        Ref<ITE> ite = make<ITE>(Location().introduce(), if_then, construct_string);
 
-        auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+        auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
         std::vector<VarDecl*> fi_params(3);
         fi_params[0] = vd_aa;
         fi_params[1] = vd_ab;
@@ -450,9 +450,9 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           toString += std::to_string(p) + "_";
         }
 
-        auto* fi = new FunctionI(Location().introduce(),
-                                 ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
-                                 fi_params, ite);
+        auto fi = make<FunctionI>(Location().introduce(),
+                                  ASTString(create_enum_to_string_name(ident, toString)), ti_fi,
+                                  fi_params, ite);
         enumItems->addItem(fi);
       } else {
         // This is an enum constructor C(E)
@@ -466,12 +466,12 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           // expression is not an identifer, create new VarDecl for the argument
           std::ostringstream constructorArgIdent;
           constructorArgIdent << "_constrId_" << p << "_" << *ident;
-          Call* enumOf = Call::a(Location().introduce(), ASTString("enum_of"), {c->arg(0)});
+          Ref<Call> enumOf = Call::a(Location().introduce(), ASTString("enum_of"), {c->arg(0)});
           Type t;
           t.st(Type::ST_SET);
-          auto* constructorArgVdTi = new TypeInst(Location().introduce(), t, enumOf);
-          auto* constructorArgVd = new VarDecl(Location().introduce(), constructorArgVdTi,
-                                               constructorArgIdent.str(), c->arg(0));
+          auto constructorArgVdTi = make<TypeInst>(Location().introduce(), t, enumOf);
+          auto constructorArgVd = make<VarDecl>(Location().introduce(), constructorArgVdTi,
+                                                constructorArgIdent.str(), c->arg(0));
 
           enumItems->addItem(VarDeclI::a(Location().introduce(), constructorArgVd));
           constructorArgId = constructorArgVd->id();
@@ -480,17 +480,18 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         // Compute minimum-1 of constructor argument
         Id* constructorArgMin;
         {
-          auto* min =
-              Call::a(Location().introduce(), ASTString("mzn_min_or_0"), {constructorArgId});
-          Expression* prevCard = partCardinality.empty() ? IntLit::a(0) : partCardinality.back();
-          auto* minMinusOne =
-              new BinOp(Location().introduce(), prevCard, BOT_MINUS,
-                        new BinOp(Location().introduce(), min, BOT_MINUS, IntLit::a(1)));
+          auto min = Call::a(Location().introduce(), ASTString("mzn_min_or_0"), {constructorArgId});
+          Ref<Expression> prevCard =
+              partCardinality.empty() ? Ref<Expression>(IntLit::a(0)) : partCardinality.back();
+          auto minMinusOne =
+              make<BinOp>(Location().introduce(), prevCard, BOT_MINUS,
+                          make<BinOp>(Location().introduce(), min, BOT_MINUS, IntLit::a(1)));
           std::ostringstream constructorArgMinIdent;
           constructorArgMinIdent << "_constrMin_" << p << "_" << *ident;
-          auto* constructorArgMinVd = new VarDecl(
-              Location().introduce(), new TypeInst(Location().introduce(), Type::parint(), nullptr),
-              constructorArgMinIdent.str(), minMinusOne);
+          auto constructorArgMinVd =
+              make<VarDecl>(Location().introduce(),
+                            make<TypeInst>(Location().introduce(), Type::parint(), nullptr),
+                            constructorArgMinIdent.str(), minMinusOne);
           enumItems->addItem(VarDeclI::a(Location().introduce(), constructorArgMinVd));
           constructorArgMin = constructorArgMinVd->id();
         }
@@ -530,10 +531,11 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type Xt(Type::parint());
           Xt.st(Type::ST_SET);
           Xt.typeId(enumId);
-          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt);
           ASTString Cfn_id = c->id();
-          auto* inv = Call::a(Location().introduce(), Cfn_id, {constructorArgId});
-          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {}, inv);
+          auto inv = Call::a(Location().introduce(), Cfn_id, {constructorArgId});
+          auto Cfn =
+              make<FunctionI>(Location().introduce(), Cfn_id, Cfn_ti, std::vector<VarDecl*>(), inv);
           enumItems->addItem(Cfn);
         }
 
@@ -541,38 +543,41 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           {
             Type Xt(baseType);
             Xt.typeId(enumId);
-            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt);
             Type argT;
             argT.ti(baseType.ti());
-            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+            auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, constructorArgId);
+            auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             vd_x->toplevel(false);
 
-            auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
-                                         {constructorArgId});
+            auto isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
+                                        {constructorArgId});
 
-            Expression* realX =
-                new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
-            auto* Cfn_then = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
+            auto realX =
+                make<BinOp>(Location().introduce(), constructorArgMin, BOT_PLUS, vd_x->id());
+            auto Cfn_then = Call::a(Location().introduce(), "to_enum", {vd->id(), realX});
 
-            auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
-            auto* sparse_inv = Call::a(Location().introduce(), ASTString("set_to_sparse_inverse"),
-                                       {constructorArgId});
-            auto* mx = new VarDecl(Location().introduce(), mxti, env.genId(), sparse_inv);
+            auto mxti = make<TypeInst>(Location().introduce(), Type::mkAny());
+            auto sparse_inv = Call::a(Location().introduce(), ASTString("set_to_sparse_inverse"),
+                                      {constructorArgId});
+            auto mx = make<VarDecl>(Location().introduce(), mxti, env.genId(), sparse_inv);
 
-            auto* mxx = new ArrayAccess(Location().introduce(), mx->id(), {vd_x->id()});
-            Expression* realMx =
-                new BinOp(Location().introduce(), constructorArgMin, BOT_PLUS, mxx);
-            auto* let_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realMx});
+            auto mxx = make<ArrayAccess>(Location().introduce(), mx->id(),
+                                         std::vector<Expression*>{vd_x->id()});
+            auto realMx = make<BinOp>(Location().introduce(), constructorArgMin, BOT_PLUS, mxx);
+            auto let_body = Call::a(Location().introduce(), "to_enum", {vd->id(), realMx});
 
-            auto* Cfn_else = new Let(Location().introduce(), {mx}, let_body);
+            auto Cfn_else =
+                make<Let>(Location().introduce(), std::vector<Expression*>{mx}, let_body);
             Expression::addAnnotation(Cfn_else, env.constants.ann.mzn_evaluate_once);
 
-            auto* ite = new ITE(Location().introduce(), {isContiguous, Cfn_then}, Cfn_else);
+            auto ite = make<ITE>(Location().introduce(),
+                                 std::vector<Expression*>{isContiguous, Cfn_then}, Cfn_else);
             Expression::addAnnotation(ite, env.constants.ann.mzn_evaluate_once);
 
             ASTString Cfn_id = c->id();
-            auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+            auto Cfn = make<FunctionI>(Location().introduce(), Cfn_id, Cfn_ti,
+                                       std::vector<VarDecl*>{vd_x}, ite);
             env.reverseEnum[Cfn_id] = Cfn;
             enumItems->addItem(Cfn);
           }
@@ -580,45 +585,47 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Type Xt(baseType);
             Xt.ot(Type::OT_OPTIONAL);
             Xt.typeId(enumId);
-            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt);
             Type argT;
             argT.ti(baseType.ti());
             argT.ot(Type::OT_OPTIONAL);
-            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+            auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, constructorArgId);
+            auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
-            auto* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
-            auto* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
-            auto* inv = Call::a(Location().introduce(), Cfn_id, {deopt});
-            auto* toEnumAbsent =
+            auto occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
+            auto deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
+            auto inv = Call::a(Location().introduce(), Cfn_id, {deopt});
+            auto toEnumAbsent =
                 Call::a(Location().introduce(), "to_enum", {vd->id(), env.constants.absent});
-            auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-            auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, ite);
+            auto ite = make<ITE>(Location().introduce(), std::vector<Expression*>{occurs, inv},
+                                 toEnumAbsent);
+            auto Cfn = make<FunctionI>(Location().introduce(), Cfn_id, Cfn_ti,
+                                       std::vector<VarDecl*>{vd_x}, ite);
             enumItems->addItem(Cfn);
           }
           {
             Type Xt(baseType);
             Xt.st(Type::ST_SET);
             Xt.typeId(enumId);
-            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+            auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt);
             Type argT;
             argT.ti(baseType.ti());
             argT.st(Type::ST_SET);
-            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, constructorArgId);
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+            auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, constructorArgId);
+            auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cfn_id = c->id();
             vd_x->toplevel(false);
-            auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-            auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
+            auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
+            auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
             s->toplevel(false);
-            auto* inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
+            auto inv = Call::a(Location().introduce(), Cfn_id, {s->id()});
             Generator gen({s}, vd_x->id(), nullptr);
             Generators gens;
             gens.g = {gen};
-            auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-            auto* Cfn =
-                new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, comprehension);
+            auto comprehension = make<Comprehension>(Location().introduce(), inv, gens, true);
+            auto Cfn = make<FunctionI>(Location().introduce(), Cfn_id, Cfn_ti,
+                                       std::vector<VarDecl*>{vd_x}, comprehension);
             enumItems->addItem(Cfn);
           }
           {
@@ -630,25 +637,27 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               } else if (i == 2) {
                 Xt.st(Type::ST_SET);
               }
-              auto* range_tiid = new TIId(Location().introduce(), "X");
-              auto* Cfn_x_ti_r = new TypeInst(Location().introduce(), Type::top(), range_tiid);
+              auto range_tiid = make<TIId>(Location().introduce(), "X");
+              auto Cfn_x_ti_r = make<TypeInst>(Location().introduce(), Type::top(), range_tiid);
               ASTExprVec<TypeInst> ranges({Cfn_x_ti_r});
-              auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, ranges, vd->id());
+              auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt, ranges, vd->id());
               Type argT(Xt);
-              auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, ranges, constructorArgId);
-              auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+              auto Cfn_x_ti =
+                  make<TypeInst>(Location().introduce(), argT, ranges, constructorArgId);
+              auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
               vd_x->toplevel(false);
-              auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-              auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
+              auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
+              auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
               s->toplevel(false);
-              auto* inv = Call::a(Location().introduce(), c->id(), {s->id()});
+              auto inv = Call::a(Location().introduce(), c->id(), {s->id()});
               Generator gen({s}, vd_x->id(), nullptr);
               Generators gens;
               gens.g = {gen};
-              auto* comprehension = new Comprehension(Location().introduce(), inv, gens, false);
-              auto* arrayXd = Call::a(Location().introduce(), env.constants.ids.arrayXd,
-                                      {vd_x->id(), comprehension});
-              auto* Cfn = new FunctionI(Location().introduce(), c->id(), Cfn_ti, {vd_x}, arrayXd);
+              auto comprehension = make<Comprehension>(Location().introduce(), inv, gens, false);
+              auto arrayXd = Call::a(Location().introduce(), env.constants.ids.arrayXd,
+                                     {vd_x->id(), comprehension});
+              auto Cfn = make<FunctionI>(Location().introduce(), c->id(), Cfn_ti,
+                                         std::vector<VarDecl*>{vd_x}, arrayXd);
               enumItems->addItem(Cfn);
             }
           }
@@ -656,89 +665,94 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             Type rT;
             rT.ti(baseType.ti());
             rT.typeId(constructorArgId->type().typeId());
-            auto* toEfn_ti = new TypeInst(Location().introduce(), rT, constructorArgId);
+            auto toEfn_ti = make<TypeInst>(Location().introduce(), rT, constructorArgId);
             Type Xt(baseType);
             Xt.typeId(enumId);
-            auto* toEfn_x_ti = new TypeInst(Location().introduce(), Xt, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, env.genId());
+            auto toEfn_x_ti = make<TypeInst>(Location().introduce(), Xt, vd->id());
+            auto vd_x = make<VarDecl>(Location().introduce(), toEfn_x_ti, env.genId());
             vd_x->toplevel(false);
 
-            auto* isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
-                                         {constructorArgId});
+            auto isContiguous = Call::a(Location().introduce(), ASTString("mzn_set_is_contiguous"),
+                                        {constructorArgId});
 
-            Expression* realX =
-                new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
-            auto* toEfn_then =
-                Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
+            auto realX =
+                make<BinOp>(Location().introduce(), vd_x->id(), BOT_MINUS, constructorArgMin);
+            auto toEfn_then = Call::a(Location().introduce(), "to_enum", {constructorArgId, realX});
 
-            auto* mxti = new TypeInst(Location().introduce(), Type::mkAny());
-            auto* sparse_inv =
+            auto mxti = make<TypeInst>(Location().introduce(), Type::mkAny());
+            auto sparse_inv =
                 Call::a(Location().introduce(), ASTString("set2array"), {constructorArgId});
-            auto* mx = new VarDecl(Location().introduce(), mxti, env.genId(), sparse_inv);
+            auto mx = make<VarDecl>(Location().introduce(), mxti, env.genId(), sparse_inv);
 
-            Expression* realMx;
+            Ref<Expression> realMx;
             if (partCardinality.empty()) {
               realMx = vd_x->id();
             } else {
-              realMx =
-                  new BinOp(Location().introduce(), vd_x->id(), BOT_MINUS, partCardinality.back());
+              realMx = make<BinOp>(Location().introduce(), vd_x->id(), BOT_MINUS,
+                                   partCardinality.back());
             }
-            auto* mxx = new ArrayAccess(Location().introduce(), mx->id(), {realMx});
-            auto* let_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, mxx});
+            auto mxx = make<ArrayAccess>(Location().introduce(), mx->id(),
+                                         std::vector<Expression*>{realMx});
+            auto let_body = Call::a(Location().introduce(), "to_enum", {constructorArgId, mxx});
 
-            auto* toEfn_else = new Let(Location().introduce(), {mx}, let_body);
+            auto toEfn_else =
+                make<Let>(Location().introduce(), std::vector<Expression*>{mx}, let_body);
             Expression::addAnnotation(toEfn_else, env.constants.ann.mzn_evaluate_once);
 
-            auto* ite = new ITE(Location().introduce(), {isContiguous, toEfn_then}, toEfn_else);
+            auto ite = make<ITE>(Location().introduce(),
+                                 std::vector<Expression*>{isContiguous, toEfn_then}, toEfn_else);
             Expression::addAnnotation(ite, env.constants.ann.mzn_evaluate_once);
 
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-            auto* toEfn = new FunctionI(Location().introduce(), Cinv_id, toEfn_ti, {vd_x}, ite);
+            auto toEfn = make<FunctionI>(Location().introduce(), Cinv_id, toEfn_ti,
+                                         std::vector<VarDecl*>{vd_x}, ite);
             enumItems->addItem(toEfn);
           }
           {
             Type rt;
             rt.ti(baseType.ti());
             rt.ot(Type::OT_OPTIONAL);
-            auto* Cfn_ti = new TypeInst(Location().introduce(), rt, constructorArgId);
+            auto Cfn_ti = make<TypeInst>(Location().introduce(), rt, constructorArgId);
             Type argT(baseType);
             argT.ot(Type::OT_OPTIONAL);
             argT.typeId(enumId);
-            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+            auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, vd->id());
+            auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
             vd_x->toplevel(false);
-            auto* occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
-            auto* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
-            auto* inv = Call::a(Location().introduce(), Cinv_id, {deopt});
-            auto* toEnumAbsent = Call::a(Location().introduce(), "to_enum",
-                                         {constructorArgId, env.constants.absent});
-            auto* ite = new ITE(Location().introduce(), {occurs, inv}, toEnumAbsent);
-            auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, ite);
+            auto occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
+            auto deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
+            auto inv = Call::a(Location().introduce(), Cinv_id, {deopt});
+            auto toEnumAbsent = Call::a(Location().introduce(), "to_enum",
+                                        {constructorArgId, env.constants.absent});
+            auto ite = make<ITE>(Location().introduce(), std::vector<Expression*>{occurs, inv},
+                                 toEnumAbsent);
+            auto Cfn = make<FunctionI>(Location().introduce(), Cinv_id, Cfn_ti,
+                                       std::vector<VarDecl*>{vd_x}, ite);
             enumItems->addItem(Cfn);
           }
           {
             Type Xt;
             Xt.ti(baseType.ti());
             Xt.st(Type::ST_SET);
-            auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, constructorArgId);
+            auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt, constructorArgId);
             Type argT(baseType);
             argT.st(Type::ST_SET);
             argT.typeId(enumId);
-            auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, vd->id());
-            auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+            auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, vd->id());
+            auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             vd_x->toplevel(false);
             ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-            auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-            auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
+            auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
+            auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
             s->toplevel(false);
-            auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
+            auto inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
             Generator gen({s}, vd_x->id(), nullptr);
             Generators gens;
             gens.g = {gen};
-            auto* comprehension = new Comprehension(Location().introduce(), inv, gens, true);
-            auto* Cfn =
-                new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, comprehension);
+            auto comprehension = make<Comprehension>(Location().introduce(), inv, gens, true);
+            auto Cfn = make<FunctionI>(Location().introduce(), Cinv_id, Cfn_ti,
+                                       std::vector<VarDecl*>{vd_x}, comprehension);
             enumItems->addItem(Cfn);
           }
           {
@@ -750,26 +764,27 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               } else if (i == 2) {
                 Xt.st(Type::ST_SET);
               }
-              auto* range_tiid = new TIId(Location().introduce(), "X");
-              auto* Cfn_x_ti_r = new TypeInst(Location().introduce(), Type::top(), range_tiid);
+              auto range_tiid = make<TIId>(Location().introduce(), "X");
+              auto Cfn_x_ti_r = make<TypeInst>(Location().introduce(), Type::top(), range_tiid);
               ASTExprVec<TypeInst> ranges({Cfn_x_ti_r});
-              auto* Cfn_ti = new TypeInst(Location().introduce(), Xt, ranges, constructorArgId);
+              auto Cfn_ti = make<TypeInst>(Location().introduce(), Xt, ranges, constructorArgId);
               Type argT(Xt);
-              auto* Cfn_x_ti = new TypeInst(Location().introduce(), argT, ranges, vd->id());
-              auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, env.genId());
+              auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, ranges, vd->id());
+              auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
               vd_x->toplevel(false);
               ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-              auto* s_ti = new TypeInst(Location().introduce(), Type::parint());
-              auto* s = new VarDecl(Location().introduce(), s_ti, env.genId());
+              auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
+              auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
               s->toplevel(false);
-              auto* inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
+              auto inv = Call::a(Location().introduce(), Cinv_id, {s->id()});
               Generator gen({s}, vd_x->id(), nullptr);
               Generators gens;
               gens.g = {gen};
-              auto* comprehension = new Comprehension(Location().introduce(), inv, gens, false);
-              auto* arrayXd = Call::a(Location().introduce(), env.constants.ids.arrayXd,
-                                      {vd_x->id(), comprehension});
-              auto* Cfn = new FunctionI(Location().introduce(), Cinv_id, Cfn_ti, {vd_x}, arrayXd);
+              auto comprehension = make<Comprehension>(Location().introduce(), inv, gens, false);
+              auto arrayXd = Call::a(Location().introduce(), env.constants.ids.arrayXd,
+                                     {vd_x->id(), comprehension});
+              auto Cfn = make<FunctionI>(Location().introduce(), Cinv_id, Cfn_ti,
+                                         std::vector<VarDecl*>{vd_x}, arrayXd);
               enumItems->addItem(Cfn);
             }
           }
@@ -788,51 +803,55 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           Type tx = Type::parint();
           tx.typeId(enumId);
           tx.ot(Type::OT_OPTIONAL);
-          auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
-          auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
+          auto ti_aa = make<TypeInst>(Location().introduce(), tx, vd->id());
+          auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.genId());
           vd_aa->toplevel(false);
 
-          auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-          auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
+          auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+          auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.genId());
           vd_ab->toplevel(false);
 
-          auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-          auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
+          auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+          auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
           vd_aj->toplevel(false);
 
           std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
-          Call* invCall = Call::a(Location().introduce(), Cinv_id, {vd_aa->id()});
+          Ref<Call> invCall = Call::a(Location().introduce(), Cinv_id, {vd_aa->id()});
 
-          Call* if_absent = Call::a(Location().introduce(), "absent", {vd_aa->id()});
-          auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
-          ITE* sl_absent =
-              new ITE(Location().introduce(),
-                      {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))},
-                      sl_absent_dzn);
+          Ref<Call> if_absent = Call::a(Location().introduce(), "absent", {vd_aa->id()});
+          auto sl_absent_dzn = make<StringLit>(Location().introduce(), "<>");
+          auto sl_null = make<StringLit>(Location().introduce(), ASTString("null"));
+          Ref<ITE> sl_absent =
+              make<ITE>(Location().introduce(), std::vector<Expression*>{vd_aj->id(), sl_null},
+                        sl_absent_dzn);
 
           needToString.insert(constructorArgId, true);
-          Call* toString = Call::a(Location().introduce(),
-                                   create_enum_to_string_name(constructorArgId, "_toString_"),
-                                   {invCall, vd_ab->id(), vd_aj->id()});
-          auto* c_quoted = Call::a(Location().introduce(), "showDznId",
-                                   {new StringLit(Location().introduce(), c->id())});
-          auto* c_ident = new ITE(Location().introduce(), {vd_ab->id(), c_quoted},
-                                  new StringLit(Location().introduce(), c->id()));
-          auto* openOther = new BinOp(Location().introduce(), c_ident, BOT_PLUSPLUS,
-                                      new StringLit(Location().introduce(), "("));
-          auto* openJson =
-              new StringLit(Location().introduce(),
-                            "{ \"c\" : \"" + Printer::escapeStringLit(c->id()) + "\", \"e\" : ");
-          ITE* openConstr = new ITE(Location().introduce(), {vd_aj->id(), openJson}, openOther);
-          auto* closeJson = new StringLit(Location().introduce(), "}");
-          auto* closeOther = new StringLit(Location().introduce(), ")");
-          ITE* closeConstr = new ITE(Location().introduce(), {vd_aj->id(), closeJson}, closeOther);
+          Ref<Call> toString = Call::a(Location().introduce(),
+                                       create_enum_to_string_name(constructorArgId, "_toString_"),
+                                       {invCall, vd_ab->id(), vd_aj->id()});
+          auto c_sl = make<StringLit>(Location().introduce(), c->id());
+          auto c_quoted = Call::a(Location().introduce(), "showDznId", {c_sl});
+          auto c_ident =
+              make<ITE>(Location().introduce(), std::vector<Expression*>{vd_ab->id(), c_quoted},
+                        make<StringLit>(Location().introduce(), c->id()));
+          auto openOther = make<BinOp>(Location().introduce(), c_ident, BOT_PLUSPLUS,
+                                       make<StringLit>(Location().introduce(), "("));
+          auto openJson =
+              make<StringLit>(Location().introduce(),
+                              "{ \"c\" : \"" + Printer::escapeStringLit(c->id()) + "\", \"e\" : ");
+          Ref<ITE> openConstr = make<ITE>(
+              Location().introduce(), std::vector<Expression*>{vd_aj->id(), openJson}, openOther);
+          auto closeJson = make<StringLit>(Location().introduce(), "}");
+          auto closeOther = make<StringLit>(Location().introduce(), ")");
+          Ref<ITE> closeConstr = make<ITE>(
+              Location().introduce(), std::vector<Expression*>{vd_aj->id(), closeJson}, closeOther);
 
-          auto* concat1 = new BinOp(Location().introduce(), openConstr, BOT_PLUSPLUS, toString);
-          auto* concat2 = new BinOp(Location().introduce(), concat1, BOT_PLUSPLUS, closeConstr);
+          auto concat1 = make<BinOp>(Location().introduce(), openConstr, BOT_PLUSPLUS, toString);
+          auto concat2 = make<BinOp>(Location().introduce(), concat1, BOT_PLUSPLUS, closeConstr);
 
-          ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, concat2);
-          auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+          Ref<ITE> ite = make<ITE>(Location().introduce(),
+                                   std::vector<Expression*>{if_absent, sl_absent}, concat2);
+          auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
           std::vector<VarDecl*> fi_params(3);
           fi_params[0] = vd_aa;
           fi_params[1] = vd_ab;
@@ -842,18 +861,18 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             XtoString += std::to_string(p) + "_";
           }
 
-          auto* fi = new FunctionI(Location().introduce(),
-                                   ASTString(create_enum_to_string_name(ident, XtoString)), ti_fi,
-                                   fi_params, ite);
+          auto fi = make<FunctionI>(Location().introduce(),
+                                    ASTString(create_enum_to_string_name(ident, XtoString)), ti_fi,
+                                    fi_params, ite);
           enumItems->addItem(fi);
         }
 
-        Call* cardE = Call::a(Location().introduce(), "card", {constructorArgId});
+        Ref<Call> cardE = Call::a(Location().introduce(), "card", {constructorArgId});
         if (partCardinality.empty()) {
-          partCardinality.push_back(cardE);
+          partCardinality.emplace_back(cardE);
         } else {
-          partCardinality.push_back(
-              new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, cardE));
+          partCardinality.emplace_back(
+              make<BinOp>(Location().introduce(), partCardinality.back(), BOT_PLUS, cardE));
         }
       }
     } else {
@@ -862,68 +881,69 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
   }
 
   // Create set literal for overall enum
-  Expression* upperBound;
+  Ref<Expression> upperBound;
   if (!partCardinality.empty()) {
     upperBound = partCardinality.back();
   } else {
     // For empty enums, just create 1..0.
     upperBound = IntLit::a(0);
   }
-  auto* rhs = new BinOp(Expression::loc(vd), IntLit::a(1), BOT_DOTDOT, upperBound);
+  auto rhs = make<BinOp>(Expression::loc(vd), IntLit::a(1), BOT_DOTDOT, upperBound);
   vd->e(rhs);
 
   if (parts.size() > 1) {
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
     tx.typeId(enumId);
-    auto* ti_aa = new TypeInst(Location().introduce(), tx, vd->id());
-    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.genId());
+    auto ti_aa = make<TypeInst>(Location().introduce(), tx, vd->id());
+    auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.genId());
     vd_aa->toplevel(false);
 
-    auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.genId());
+    auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.genId());
     vd_ab->toplevel(false);
 
-    auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.genId());
+    auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
     vd_aj->toplevel(false);
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_aa->id();
-    Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
-    Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
-    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
-    ITE* sl_absent = new ITE(
-        Location().introduce(),
-        {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
+    Ref<Call> deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+    Ref<Call> if_absent = Call::a(Location().introduce(), "absent", deopt_args);
+    auto sl_absent_dzn = make<StringLit>(Location().introduce(), "<>");
+    auto sl_null = make<StringLit>(Location().introduce(), ASTString("null"));
+    Ref<ITE> sl_absent = make<ITE>(Location().introduce(),
+                                   std::vector<Expression*>{vd_aj->id(), sl_null}, sl_absent_dzn);
 
-    std::vector<Expression*> ite_cases_a;
-    Expression* ite_cases_else;
+    std::vector<Ref<Expression>> ite_cases_a;
+    Ref<Expression> ite_cases_else;
     for (unsigned int i = 0; i < parts.size(); i++) {
       std::string toString = "_toString_" + std::to_string(i) + "_";
-      Call* c = Call::a(Location().introduce(), create_enum_to_string_name(ident, toString),
-                        {vd_aa->id(), vd_ab->id(), vd_aj->id()});
+      Ref<Call> c = Call::a(Location().introduce(), create_enum_to_string_name(ident, toString),
+                            {vd_aa->id(), vd_ab->id(), vd_aj->id()});
       if (i < parts.size() - 1) {
-        auto* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
-        ite_cases_a.push_back(bo);
-        ite_cases_a.push_back(c);
+        auto bo = make<BinOp>(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
+        ite_cases_a.emplace_back(bo);
+        ite_cases_a.emplace_back(c);
       } else {
         ite_cases_else = c;
       }
     }
 
-    ITE* ite_cases = new ITE(Location().introduce(), ite_cases_a, ite_cases_else);
+    Ref<ITE> ite_cases = make<ITE>(Location().introduce(), ite_cases_a, ite_cases_else);
 
-    ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, ite_cases);
+    Ref<ITE> ite = make<ITE>(Location().introduce(), std::vector<Expression*>{if_absent, sl_absent},
+                             ite_cases);
 
-    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    auto* fi = new FunctionI(Location().introduce(),
-                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, ite);
+    auto fi = make<FunctionI>(Location().introduce(),
+                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                              fi_params, ite);
     enumItems->addItem(fi);
 
     /*
@@ -947,86 +967,86 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
      */
 
-    TIId* tiid = new TIId(Location().introduce(), "U");
-    auto* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
+    Ref<TIId> tiid = make<TIId>(Location().introduce(), "U");
+    auto ti_range = make<TypeInst>(Location().introduce(), Type::parint(), tiid);
     std::vector<TypeInst*> ranges(1);
     ranges[0] = ti_range;
 
     Type tx = Type::parint(-1);
     tx.ot(Type::OT_OPTIONAL);
-    auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
+    auto x_ti = make<TypeInst>(Location().introduce(), tx, ranges, ident);
+    auto vd_x = make<VarDecl>(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
-    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
+    auto b_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_b = make<VarDecl>(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
-    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
+    auto j_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_j = make<VarDecl>(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
-    auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
+    auto xx_range = make<TypeInst>(Location().introduce(), Type::parint(), nullptr);
     std::vector<TypeInst*> xx_ranges(1);
     xx_ranges[0] = xx_range;
-    auto* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
+    auto xx_ti = make<TypeInst>(Location().introduce(), tx, xx_ranges, ident);
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
-    Call* array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
+    Ref<Call> array1dCall = Call::a(Location().introduce(), env.constants.ids.array1d, array1dArgs);
 
-    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, env.genId(), array1dCall);
+    auto vd_xx = make<VarDecl>(Location().introduce(), xx_ti, env.genId(), array1dCall);
     vd_xx->toplevel(false);
 
-    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
+    auto idx_i_ti = make<TypeInst>(Location().introduce(), Type::parint());
+    auto idx_i = make<VarDecl>(Location().introduce(), idx_i_ti, env.genId());
     idx_i->toplevel(false);
 
     std::vector<Expression*> aa_xxi_idx(1);
     aa_xxi_idx[0] = idx_i->id();
-    auto* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
+    auto aa_xxi = make<ArrayAccess>(Location().introduce(), vd_xx->id(), aa_xxi_idx);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
     _toString_ENUMArgs[0] = aa_xxi;
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM =
+    Ref<Call> _toString_ENUM =
         Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                 _toString_ENUMArgs);
 
     std::vector<Expression*> index_set_xx_args(1);
     index_set_xx_args[0] = vd_xx->id();
-    Call* index_set_xx = Call::a(Location().introduce(), "index_set", index_set_xx_args);
+    Ref<Call> index_set_xx = Call::a(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
     Generator gen(gen_exps, index_set_xx, nullptr);
 
     Generators generators;
     generators.g.push_back(gen);
-    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto comp = make<Comprehension>(Location().introduce(), _toString_ENUM, generators, false);
 
-    std::vector<Expression*> join_args(2);
-    join_args[0] = new StringLit(Location().introduce(), ", ");
+    std::vector<Ref<Expression>> join_args(2);
+    join_args[0] = make<StringLit>(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = Call::a(Location().introduce(), "join", join_args);
+    Ref<Call> join = Call::a(Location().introduce(), "join", join_args);
 
-    auto* sl_open = new StringLit(Location().introduce(), "[");
-    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
-    auto* sl_close = new StringLit(Location().introduce(), "]");
-    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
+    auto sl_open = make<StringLit>(Location().introduce(), "[");
+    auto bopp0 = make<BinOp>(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
+    auto sl_close = make<StringLit>(Location().introduce(), "]");
+    auto bopp1 = make<BinOp>(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
 
     std::vector<Expression*> let_args(1);
     let_args[0] = vd_xx;
-    Let* let = new Let(Location().introduce(), let_args, bopp1);
+    Ref<Let> let = make<Let>(Location().introduce(), let_args, bopp1);
 
-    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(),
-                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, let);
+    auto fi = make<FunctionI>(Location().introduce(),
+                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                              fi_params, let);
     enumItems->addItem(fi);
   }
 
@@ -1044,36 +1064,36 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     Type argType = Type::parsetenum(ident->type().typeId());
     argType.ot(Type::OT_OPTIONAL);
-    auto* x_ti = new TypeInst(Location().introduce(), argType, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
+    auto x_ti = make<TypeInst>(Location().introduce(), argType, ident);
+    auto vd_x = make<VarDecl>(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
-    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
+    auto b_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_b = make<VarDecl>(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
-    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
+    auto j_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_j = make<VarDecl>(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_x->id();
-    Call* deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
-    Call* if_absent = Call::a(Location().introduce(), "absent", deopt_args);
-    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
-    ITE* sl_absent = new ITE(Location().introduce(),
-                             {vd_j->id(), new StringLit(Location().introduce(), ASTString("null"))},
-                             sl_absent_dzn);
+    Ref<Call> deopt = Call::a(Location().introduce(), env.constants.ids.deopt, deopt_args);
+    Ref<Call> if_absent = Call::a(Location().introduce(), "absent", deopt_args);
+    auto sl_absent_dzn = make<StringLit>(Location().introduce(), "<>");
+    auto sl_null = make<StringLit>(Location().introduce(), ASTString("null"));
+    Ref<ITE> sl_absent = make<ITE>(Location().introduce(),
+                                   std::vector<Expression*>{vd_j->id(), sl_null}, sl_absent_dzn);
 
-    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, env.genId());
+    auto idx_i_ti = make<TypeInst>(Location().introduce(), Type::parint());
+    auto idx_i = make<VarDecl>(Location().introduce(), idx_i_ti, env.genId());
     idx_i->toplevel(false);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
     _toString_ENUMArgs[0] = idx_i->id();
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM =
+    Ref<Call> _toString_ENUM =
         Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                 _toString_ENUMArgs);
 
@@ -1083,37 +1103,39 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     Generators generators;
     generators.g.push_back(gen);
-    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto comp = make<Comprehension>(Location().introduce(), _toString_ENUM, generators, false);
 
-    std::vector<Expression*> join_args(2);
-    join_args[0] = new StringLit(Location().introduce(), ", ");
+    std::vector<Ref<Expression>> join_args(2);
+    join_args[0] = make<StringLit>(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = Call::a(Location().introduce(), "join", join_args);
+    Ref<Call> join = Call::a(Location().introduce(), "join", join_args);
 
-    ITE* json_set =
-        new ITE(Location().introduce(),
-                {vd_j->id(), new StringLit(Location().introduce(), ASTString("\"set\":["))},
-                new StringLit(Location().introduce(), ASTString("")));
-    ITE* json_set_close = new ITE(
-        Location().introduce(), {vd_j->id(), new StringLit(Location().introduce(), ASTString("]"))},
-        new StringLit(Location().introduce(), ASTString("")));
+    auto sl_set_open = make<StringLit>(Location().introduce(), ASTString("\"set\":["));
+    Ref<ITE> json_set =
+        make<ITE>(Location().introduce(), std::vector<Expression*>{vd_j->id(), sl_set_open},
+                  make<StringLit>(Location().introduce(), ASTString("")));
+    auto sl_set_close = make<StringLit>(Location().introduce(), ASTString("]"));
+    Ref<ITE> json_set_close =
+        make<ITE>(Location().introduce(), std::vector<Expression*>{vd_j->id(), sl_set_close},
+                  make<StringLit>(Location().introduce(), ASTString("")));
 
-    auto* sl_open = new StringLit(Location().introduce(), "{");
-    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, json_set);
-    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, join);
-    auto* bopp2 = new BinOp(Location().introduce(), bopp1, BOT_PLUSPLUS, json_set_close);
-    auto* sl_close = new StringLit(Location().introduce(), "}");
-    auto* bopp3 = new BinOp(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
-    ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, bopp3);
+    auto sl_open = make<StringLit>(Location().introduce(), "{");
+    auto bopp0 = make<BinOp>(Location().introduce(), sl_open, BOT_PLUSPLUS, json_set);
+    auto bopp1 = make<BinOp>(Location().introduce(), bopp0, BOT_PLUSPLUS, join);
+    auto bopp2 = make<BinOp>(Location().introduce(), bopp1, BOT_PLUSPLUS, json_set_close);
+    auto sl_close = make<StringLit>(Location().introduce(), "}");
+    auto bopp3 = make<BinOp>(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
+    Ref<ITE> ite =
+        make<ITE>(Location().introduce(), std::vector<Expression*>{if_absent, sl_absent}, bopp3);
 
-    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(),
-                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, ite);
+    auto fi = make<FunctionI>(Location().introduce(),
+                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                              fi_params, ite);
     enumItems->addItem(fi);
   }
 
@@ -1125,34 +1147,34 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
      */
 
-    TIId* tiid = new TIId(Location().introduce(), "U");
-    auto* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
+    Ref<TIId> tiid = make<TIId>(Location().introduce(), "U");
+    auto ti_range = make<TypeInst>(Location().introduce(), Type::parint(), tiid);
     std::vector<TypeInst*> ranges(1);
     ranges[0] = ti_range;
 
     Type tx = Type::parsetint(-1);
     tx.ot(Type::OT_OPTIONAL);
-    auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    auto* vd_x = new VarDecl(Location().introduce(), x_ti, env.genId());
+    auto x_ti = make<TypeInst>(Location().introduce(), tx, ranges, ident);
+    auto vd_x = make<VarDecl>(Location().introduce(), x_ti, env.genId());
     vd_x->toplevel(false);
 
-    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_b = new VarDecl(Location().introduce(), b_ti, env.genId());
+    auto b_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_b = make<VarDecl>(Location().introduce(), b_ti, env.genId());
     vd_b->toplevel(false);
 
-    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    auto* vd_j = new VarDecl(Location().introduce(), j_ti, env.genId());
+    auto j_ti = make<TypeInst>(Location().introduce(), Type::parbool());
+    auto vd_j = make<VarDecl>(Location().introduce(), j_ti, env.genId());
     vd_j->toplevel(false);
 
-    auto* idx_xi_ti = new TypeInst(Location().introduce(), tx);
-    auto* idx_xi = new VarDecl(Location().introduce(), idx_xi_ti, env.genId());
+    auto idx_xi_ti = make<TypeInst>(Location().introduce(), tx);
+    auto idx_xi = make<VarDecl>(Location().introduce(), idx_xi_ti, env.genId());
     idx_xi->toplevel(false);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
     _toString_ENUMArgs[0] = idx_xi->id();
     _toString_ENUMArgs[1] = vd_b->id();
     _toString_ENUMArgs[2] = vd_j->id();
-    Call* _toString_ENUM =
+    Ref<Call> _toString_ENUM =
         Call::a(Location().introduce(), create_enum_to_string_name(ident, "_toString_"),
                 _toString_ENUMArgs);
 
@@ -1162,26 +1184,26 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
 
     Generators generators;
     generators.g.push_back(gen);
-    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto comp = make<Comprehension>(Location().introduce(), _toString_ENUM, generators, false);
 
-    std::vector<Expression*> join_args(2);
-    join_args[0] = new StringLit(Location().introduce(), ", ");
+    std::vector<Ref<Expression>> join_args(2);
+    join_args[0] = make<StringLit>(Location().introduce(), ", ");
     join_args[1] = comp;
-    Call* join = Call::a(Location().introduce(), "join", join_args);
+    Ref<Call> join = Call::a(Location().introduce(), "join", join_args);
 
-    auto* sl_open = new StringLit(Location().introduce(), "[");
-    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
-    auto* sl_close = new StringLit(Location().introduce(), "]");
-    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
+    auto sl_open = make<StringLit>(Location().introduce(), "[");
+    auto bopp0 = make<BinOp>(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
+    auto sl_close = make<StringLit>(Location().introduce(), "]");
+    auto bopp1 = make<BinOp>(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
 
-    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    auto* fi = new FunctionI(Location().introduce(),
-                             ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
-                             fi_params, bopp1);
+    auto fi = make<FunctionI>(Location().introduce(),
+                              ASTString(create_enum_to_string_name(ident, "_toString_")), ti_fi,
+                              fi_params, bopp1);
     enumItems->addItem(fi);
   }
 }
@@ -1201,8 +1223,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
 }
 
 VarDecl* TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) {
-  GCLock lock;
-  Id* ident = new Id(Location(), id_v, nullptr);
+  Ref<Id> ident = make<Id>(Location(), id_v, nullptr);
   VarDecl* decl = scopes.find(ident);
   if (decl == nullptr) {
     std::ostringstream ss;
@@ -1385,11 +1406,12 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       run(env, let->in());
       VarDeclCmp poscmp(pos);
       std::stable_sort(let->let().begin(), let->let().end(), poscmp);
+      auto letOrig = let->letOrig();
       for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
         if (auto* vd = Expression::dynamicCast<VarDecl>(let->let()[i])) {
-          let->letOrig()[j++] = vd->e();
+          letOrig[j++] = vd->e();
           for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
-            let->letOrig()[j++] = vd->ti()->ranges()[k]->domain();
+            letOrig[j++] = vd->ti()->ranges()[k]->domain();
           }
         }
       }
@@ -1440,10 +1462,9 @@ static bool unbounded_above_index(Expression* dom, IntVal& lb) {
   return false;
 }
 
-KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_default,
-                       const Type& funarg_t) {
-  GCLock lock;
-  Expression* e = e0;
+Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_default,
+                             const Type& funarg_t) {
+  Ref<Expression> e = e0;
 
   if (env.warnImplicitEnum2Int &&
       (funarg_t.bt() == Type::BT_INT || funarg_t.bt() == Type::BT_FLOAT) &&
@@ -1469,8 +1490,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     auto* tupleType = env.getTupleType(Expression::type(e));
     if (tupleType->size() == 2 && (*tupleType)[1].isunknown()) {
       // Yes: insert field access
-      GCLock lock;
-      e = new FieldAccess(Expression::loc(e).introduce(), e, IntLit::a(1));
+      e = make<FieldAccess>(Expression::loc(e).introduce(), e, IntLit::a(1));
       Expression::type(e, (*tupleType)[0]);
     }
   }
@@ -1481,22 +1501,22 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     // let { any: xx = x } in arrayXd(xx, [it.c | it in array1d(xx)])
     auto* array_exp = fa->v();
     Type txx = Expression::type(array_exp);
-    auto* ti_xx = new TypeInst(Location().introduce(), Type::mkAny(-1));
-    Expression* array_exp_coerced =
-        add_coercion(env, m, array_exp, Expression::loc(array_exp), txx)();
-    auto* vd_xx = new VarDecl(Location().introduce(), ti_xx, env.genId(), array_exp_coerced);
+    auto ti_xx = make<TypeInst>(Location().introduce(), Type::mkAny(-1));
+    Ref<Expression> array_exp_coerced =
+        add_coercion(env, m, array_exp, Expression::loc(array_exp), txx);
+    auto vd_xx = make<VarDecl>(Location().introduce(), ti_xx, env.genId(), array_exp_coerced);
     vd_xx->toplevel(false);
 
     Type tyElem = Expression::type(array_exp).elemType(env);
 
-    auto* vd_it = new VarDecl(Location().introduce(),
-                              new TypeInst(Expression::loc(e).introduce(), tyElem), 3);
+    auto vd_it = make<VarDecl>(Location().introduce(),
+                               make<TypeInst>(Expression::loc(e).introduce(), tyElem), 3);
     vd_it->toplevel(false);
     Generator gen({vd_it}, vd_xx->id(), nullptr);
     Generators gens;
     gens.g = {gen};
 
-    auto* inner_fa = new FieldAccess(Expression::loc(e).introduce(), vd_it->id(), fa->field());
+    auto inner_fa = make<FieldAccess>(Expression::loc(e).introduce(), vd_it->id(), fa->field());
     Type inner_fa_t(fa->type());
     if (inner_fa_t.typeId() == 0) {
       inner_fa_t.dim(0);
@@ -1520,21 +1540,23 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
       }
     }
     inner_fa->type(inner_fa_t);
-    Expression* elem = add_coercion(env, m, inner_fa, Expression::loc(inner_fa), inner_fa_t)();
+    Ref<Expression> elem = add_coercion(env, m, inner_fa, Expression::loc(inner_fa), inner_fa_t);
     if (wrapArrayElem) {
-      auto* wrapper = ArrayLit::constructTuple(Expression::loc(inner_fa).introduce(), {elem});
+      auto wrapper = ArrayLit::constructTuple(Expression::loc(inner_fa).introduce(),
+                                              std::vector<Expression*>{elem});
       Expression::type(wrapper, elem_t);
       elem = wrapper;
     }
-    auto* comprehension = new Comprehension(Location().introduce(), elem, gens, false);
+    auto comprehension = make<Comprehension>(Location().introduce(), elem, gens, false);
     comprehension->type(Type::arrType(env, Type::partop(1), Expression::type(elem)));
 
-    auto* arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
-                            {vd_xx->id(), comprehension});
+    auto arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
+                           {vd_xx->id(), comprehension});
     arrayXd->type(Type::arrType(env, Expression::type(e), Expression::type(elem)));
     arrayXd->decl(m->matchFn(env, arrayXd, false, true));
 
-    Let* let = new Let(Expression::loc(e).introduce(), {vd_xx}, arrayXd);
+    Ref<Let> let =
+        make<Let>(Expression::loc(e).introduce(), std::vector<Expression*>{vd_xx}, arrayXd);
     let->type(arrayXd->type());
     e = let;
   }
@@ -1542,10 +1564,10 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
   if (Expression::isa<ArrayAccess>(e) && Expression::type(e).dim() > 0) {
     auto* aa = Expression::cast<ArrayAccess>(e);
     // Turn ArrayAccess into a slicing operation
-    std::vector<Expression*> args;
-    args.push_back(aa->v());
-    args.push_back(nullptr);
-    std::vector<Expression*> slice;
+    std::vector<Ref<Expression>> args;
+    args.emplace_back(aa->v());
+    args.emplace_back(nullptr);
+    std::vector<Ref<Expression>> slice;
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
       if (Expression::type(aa->idx()[i]).isSet()) {
         bool needIdxSet = true;
@@ -1562,7 +1584,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
         } else if (auto* sl = Expression::dynamicCast<SetLit>(aa->idx()[i])) {
           if ((sl->isv() != nullptr) && sl->isv()->size() == 1) {
             if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
-              args.push_back(sl);
+              args.emplace_back(sl);
               needIdxSet = false;
             } else if (sl->isv()->min() == -IntVal::infinity() &&
                        sl->isv()->max() == IntVal::infinity()) {
@@ -1578,7 +1600,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
           }
           std::vector<Expression*> origIdxsetArgs(1);
           origIdxsetArgs[0] = aa->v();
-          Call* origIdxset =
+          Ref<Call> origIdxset =
               Call::a(Expression::loc(aa->v()), ASTString(oss.str()), origIdxsetArgs);
           FunctionI* fi = m->matchFn(env, origIdxset, false);
           if (fi == nullptr) {
@@ -1588,12 +1610,12 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
           origIdxset->type(fi->rtype(env, origIdxsetArgs, nullptr, false));
           origIdxset->decl(fi);
           if (needInter) {
-            auto* inter =
-                new BinOp(Expression::loc(aa->idx()[i]), aa->idx()[i], BOT_INTERSECT, origIdxset);
+            auto inter =
+                make<BinOp>(Expression::loc(aa->idx()[i]), aa->idx()[i], BOT_INTERSECT, origIdxset);
             inter->type(Type::parsetint());
-            args.push_back(inter);
+            args.emplace_back(inter);
           } else if (openIntervalCall != nullptr) {
-            auto* newOpenIntervalCall =
+            auto newOpenIntervalCall =
                 Call::a(Expression::loc(openIntervalCall), openIntervalCall->id(), {origIdxset});
             FunctionI* nfi = m->matchFn(env, newOpenIntervalCall, false);
             if (nfi == nullptr) {
@@ -1602,42 +1624,42 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
             }
             newOpenIntervalCall->type(nfi->rtype(env, {origIdxset}, nullptr, false));
             newOpenIntervalCall->decl(nfi);
-            slice.push_back(newOpenIntervalCall);
-            args.push_back(newOpenIntervalCall);
+            slice.emplace_back(newOpenIntervalCall);
+            args.emplace_back(newOpenIntervalCall);
           } else {
-            args.push_back(origIdxset);
+            args.emplace_back(origIdxset);
           }
         }
         if (openIntervalCall == nullptr) {
-          slice.push_back(aa->idx()[i]);
+          slice.emplace_back(aa->idx()[i]);
         }
       } else {
-        Expression* slice_set;
+        Ref<Expression> slice_set;
         Expression* idx = aa->idx()[i];
         if (!Expression::isa<Id>(idx) && !Expression::isa<IntLit>(idx)) {
-          auto* ti = new TypeInst(Location().introduce(), Expression::type(idx), nullptr);
-          auto* vd = new VarDecl(Location().introduce(), ti, env.genId(), idx);
-          auto* bo = new BinOp(Expression::loc(aa->idx()[i]), vd->id(), BOT_DOTDOT, vd->id());
+          auto ti = make<TypeInst>(Location().introduce(), Expression::type(idx), nullptr);
+          auto vd = make<VarDecl>(Location().introduce(), ti, env.genId(), idx);
+          auto bo = make<BinOp>(Expression::loc(aa->idx()[i]), vd->id(), BOT_DOTDOT, vd->id());
           bo->type(Type::parsetint());
-          slice_set = new Let(Location().introduce(), {vd}, bo);
+          slice_set = make<Let>(Location().introduce(), std::vector<Expression*>{vd}, bo);
         } else {
-          slice_set = new BinOp(Expression::loc(aa->idx()[i]), idx, BOT_DOTDOT, idx);
+          slice_set = make<BinOp>(Expression::loc(aa->idx()[i]), idx, BOT_DOTDOT, idx);
         }
         Expression::type(slice_set, Type::parsetint());
         slice.push_back(slice_set);
       }
     }
-    auto* a_slice = new ArrayLit(Expression::loc(e), slice);
+    auto a_slice = make<ArrayLit>(Expression::loc(e), slice);
     a_slice->type(Type::parsetint(1));
     args[1] = a_slice;
     std::ostringstream oss;
     oss << "slice_" << (args.size() - 2) << "d";
-    Call* c = Call::a(Expression::loc(e), ASTString(oss.str()), args);
+    Ref<Call> c = Call::a(Expression::loc(e), ASTString(oss.str()), args);
     FunctionI* fi = m->matchFn(env, c, false);
     if (fi == nullptr) {
       throw TypeError(env, Expression::locDefault(e, loc_default), "missing builtin " + oss.str());
     }
-    c->type(fi->rtype(env, args, nullptr, false));
+    c->type(fi->rtype(env, raw(args), nullptr, false));
     c->decl(fi);
     e = c;
   }
@@ -1655,7 +1677,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     return tt;
   };
 
-  Expression* e_coerced = e;
+  Ref<Expression> e_coerced = e;
   if (Expression::type(e).structBT() && Expression::type(e).bt() == funarg_t.bt() &&
       Expression::type(e).dim() == funarg_t.dim()) {
     StructType* current = env.getStructType(Expression::type(e));
@@ -1663,23 +1685,23 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     if (intended->size() == current->size()) {
       // Directly add coercions in Array Literals
       if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
-        std::vector<Expression*> elem(al->size());
-        ArrayLit* c_al = nullptr;
+        std::vector<Ref<Expression>> elem(al->size());
+        Ref<ArrayLit> c_al;
         if (Expression::type(e).dim() > 0) {
           // Array of tuples (coerce each tuple individually)
           Type elemTy = funarg_t.elemType(env);
           for (unsigned int i = 0; i < al->size(); i++) {
-            elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy)();
+            elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy);
           }
           std::vector<std::pair<int, int>> dims(al->dims());
           for (unsigned int i = 0; i < al->dims(); i++) {
             dims[i] = {al->min(i), al->max(i)};
           }
-          c_al = new ArrayLit(Expression::loc(al).introduce(), elem, dims);
+          c_al = make<ArrayLit>(Expression::loc(al).introduce(), elem, dims);
           Type coercedTy = funarg_t;
           if (!elem.empty()) {
             auto common = Type::bot();
-            for (auto* el : elem) {
+            for (auto& el : elem) {
               common = Type::commonType(env, common, Expression::type(el), false);
             }
             assert(!common.isunknown());
@@ -1692,7 +1714,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
           bool allPar = true;
           for (unsigned int i = 0; i < al->size(); i++) {
             Type elemTy = (*intended)[i];
-            elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy)();
+            elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy);
             pt[i] = Expression::type(elem[i]);
             if (pt[i].isvar()) {
               allPar = false;
@@ -1702,7 +1724,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
             // Nested array wrapper
             pt[al->size()] = Type();
           }
-          c_al = ArrayLit::constructTuple(Expression::loc(al).introduce(), elem);
+          c_al = ArrayLit::constructTuple(Expression::loc(al).introduce(), raw(elem));
           Type st = getStructType(current, pt);
           if (allPar) {
             st.mkPar(env);
@@ -1727,7 +1749,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     return e_coerced;
   }
   e = e_coerced;
-  Call* c = nullptr;
+  Ref<Call> c;
   if (Expression::type(e).isSet() && funarg_t.dim() != 0) {
     if (Expression::type(e).isvar()) {
       throw TypeError(env, Expression::locDefault(e, loc_default),
@@ -1744,7 +1766,7 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
     }
     std::vector<Expression*> set2a_args(1);
     set2a_args[0] = e;
-    Call* set2a = Call::a(Expression::loc(e), ASTString("set2array"), set2a_args);
+    Ref<Call> set2a = Call::a(Expression::loc(e), ASTString("set2array"), set2a_args);
     FunctionI* fi = m->matchFn(env, set2a, false);
     if (fi != nullptr) {
       set2a->type(fi->rtype(env, set2a_args, nullptr, false));
@@ -1763,70 +1785,72 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
       // Directly add coercions in Array Literals
       assert(!Expression::isa<ArrayLit>(e));
       // Create (bounded) identifier for expression if not available
-      std::vector<Expression*> let_bindings;
-      Expression* ident = e;
+      std::vector<Ref<Expression>> let_bindings;
+      Ref<Expression> ident = e;
       if (!Expression::isa<Id>(ident)) {
-        auto* vd =
-            new VarDecl(Expression::loc(e),
-                        new TypeInst(Expression::loc(e).introduce(), Expression::type(e)), 1, e);
+        auto vd = make<VarDecl>(Expression::loc(e),
+                                make<TypeInst>(Expression::loc(e).introduce(), Expression::type(e)),
+                                1, e);
         vd->ti()->setStructDomain(env, Expression::type(e));
         vd->toplevel(false);
         vd->type(Expression::type(e));
-        let_bindings.push_back(vd);
+        let_bindings.emplace_back(vd);
         ident = vd->id();
       }
-      Expression* ret;
+      Ref<Expression> ret;
       if (Expression::type(e).dim() > 0) {
         Type tyElem = Expression::type(e).elemType(env);
         Type ty1d = Type::arrType(env, Type::partop(1), Expression::type(e));
         // Expressions that has array of tuple type
-        auto* array1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {ident});
+        auto array1d = Call::a(Expression::loc(e).introduce(), env.constants.ids.array1d, {ident});
         array1d->type(ty1d);
         array1d->decl(m->matchFn(env, array1d, false, true));
-        auto* vd_array1d = new VarDecl(
-            Expression::loc(e), new TypeInst(Expression::loc(e).introduce(), ty1d), 2, array1d);
+        auto vd_array1d = make<VarDecl>(
+            Expression::loc(e), make<TypeInst>(Expression::loc(e).introduce(), ty1d), 2, array1d);
         vd_array1d->ti()->setStructDomain(env, ty1d);
         vd_array1d->toplevel(false);
-        let_bindings.push_back(vd_array1d);
+        let_bindings.emplace_back(vd_array1d);
 
-        auto* index_set = Call::a(Expression::loc(e).introduce(), "index_set", {vd_array1d->id()});
+        auto index_set = Call::a(Expression::loc(e).introduce(), "index_set", {vd_array1d->id()});
         index_set->decl(m->matchFn(env, index_set, false, true));
         index_set->type(Type::parsetint());
 
-        auto* vd_it = new VarDecl(Location().introduce(),
-                                  new TypeInst(Expression::loc(e).introduce(), tyElem), 3);
+        auto vd_it = make<VarDecl>(Location().introduce(),
+                                   make<TypeInst>(Expression::loc(e).introduce(), tyElem), 3);
         vd_it->toplevel(false);
         Generator gen({vd_it}, index_set, nullptr);
         Generators gens;
         gens.g = {gen};
 
-        auto* aa = new ArrayAccess(Expression::loc(e).introduce(), vd_array1d->id(), {vd_it->id()});
+        auto aa = make<ArrayAccess>(Expression::loc(e).introduce(), vd_array1d->id(),
+                                    std::vector<Expression*>{vd_it->id()});
         aa->type(tyElem);
-        Expression* elem = add_coercion(env, m, aa, Expression::loc(aa), funarg_t.elemType(env))();
-        auto* comprehension = new Comprehension(Location().introduce(), elem, gens, false);
+        Ref<Expression> elem =
+            add_coercion(env, m, aa, Expression::loc(aa), funarg_t.elemType(env));
+        auto comprehension = make<Comprehension>(Location().introduce(), elem, gens, false);
         comprehension->type(Type::arrType(env, Type::partop(1), Expression::type(elem)));
 
-        auto* arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
-                                {ident, comprehension});
+        auto arrayXd = Call::a(Expression::loc(e).introduce(), env.constants.ids.arrayXd,
+                               {ident, comprehension});
         arrayXd->type(Type::arrType(env, Expression::type(e), Expression::type(elem)));
         arrayXd->decl(m->matchFn(env, arrayXd, false, true));
         ret = arrayXd;
       } else {
         // Expression that has tuple type
-        std::vector<Expression*> collect(intended->size());
+        std::vector<Ref<Expression>> collect(intended->size());
         std::vector<Type> pt(intended->size());
         for (unsigned int i = 0; i < collect.size(); i++) {
-          collect[i] = new FieldAccess(Expression::loc(e).introduce(), ident, IntLit::a(i + 1));
+          collect[i] = make<FieldAccess>(Expression::loc(e).introduce(), ident, IntLit::a(i + 1));
           Expression::type(collect[i], (*current)[i]);
-          collect[i] = add_coercion(env, m, collect[i], loc_default, (*intended)[i])();
+          collect[i] = add_coercion(env, m, collect[i], loc_default, (*intended)[i]);
           pt[i] = Expression::type(collect[i]);
         }
-        auto* c_al = ArrayLit::constructTuple(Expression::loc(e).introduce(), collect);
+        auto c_al = ArrayLit::constructTuple(Expression::loc(e).introduce(), raw(collect));
         c_al->type(getStructType(current, pt));
         ret = c_al;
       }
       if (!let_bindings.empty()) {
-        auto* let = new Let(Expression::loc(e).introduce(), let_bindings, ret);
+        auto let = make<Let>(Expression::loc(e).introduce(), let_bindings, ret);
         let->type(Expression::type(ret));
         ret = let;
       }
@@ -1853,24 +1877,23 @@ KeepAlive add_coercion(EnvI& env, Model* m, Expression* e0, const Location& loc_
       ct.cv(Expression::type(e).cv() || ct.cv());
       c->type(ct);
       c->decl(fi);
-      KeepAlive ka(c);
-      return ka;
+      return c;
     }
   }
   throw TypeError(env, Expression::locDefault(e, loc_default),
                   "cannot determine coercion from type " + Expression::type(e).toString(env) +
                       " to type " + funarg_t.toString(env));
 }
-KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, Expression* e_default,
-                       const Type& funarg_t) {
+Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e, Expression* e_default,
+                             const Type& funarg_t) {
   return add_coercion(env, m, e, Expression::loc(e_default), funarg_t);
 }
-KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, Expression* e_default,
-                       Expression* funarg) {
+Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e, Expression* e_default,
+                             Expression* funarg) {
   return add_coercion(env, m, e, Expression::loc(e_default), Expression::type(funarg));
 }
-KeepAlive add_coercion(EnvI& env, Model* m, Expression* e, const Location& loc_default,
-                       Expression* funarg) {
+Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e, const Location& loc_default,
+                             Expression* funarg) {
   return add_coercion(env, m, e, loc_default, Expression::type(funarg));
 }
 
@@ -1972,8 +1995,10 @@ public:
                           "cannot coerce set literal element to var int");
         }
       }
-      for (unsigned int i = 0; i < sl->v().size(); i++) {
-        sl->v()[i] = add_coercion(_env, _model, sl->v()[i], sl, ty)();
+      auto slv = sl->v();
+      for (unsigned int i = 0; i < slv.size(); i++) {
+        Ref<Expression> coerced = add_coercion(_env, _model, slv[i], sl, ty);
+        slv.vec()->set(i, coerced);
       }
     }
     sl->type(ty);
@@ -2028,8 +2053,7 @@ public:
     for (unsigned int i = 0; i < al->size(); i++) {
       Expression* vi = (*al)[i];
       if (Expression::type(vi).dim() > 0) {
-        GCLock lock;
-        auto* wrapper = ArrayLit::constructTuple(Expression::loc(vi).introduce(), {vi});
+        auto wrapper = ArrayLit::constructTuple(Expression::loc(vi).introduce(), {vi});
         auto wrapper_t = _env.registerTupleType({Expression::type(vi), Type()});
         Type tt = Type::tuple();
         tt.ti(Expression::type(vi).ti());
@@ -2077,7 +2101,7 @@ public:
     }
 
     for (unsigned int i = 0; i < al->size(); i++) {
-      al->set(i, add_coercion(_env, _model, (*al)[i], al, elemTy)());
+      al->set(i, add_coercion(_env, _model, (*al)[i], al, elemTy));
     }
 
     auto arrType = Type::arrType(_env, Type::parint(static_cast<int>(al->dims())), elemTy);
@@ -2090,7 +2114,7 @@ public:
         Type plainTy = Expression::type(aa->v());
         plainTy.st(Type::ST_PLAIN);
         Type tv = Type::arrType(_env, Type::partop(1), plainTy);
-        aa->v(add_coercion(_env, _model, aa->v(), aa, tv)());
+        aa->v(add_coercion(_env, _model, aa->v(), aa, tv));
       } else if (Expression::type(aa->v()).bt() == Type::BT_TUPLE) {
         assert(Expression::type(aa->v()).typeId() != 0);
         TupleType* tt = _env.getTupleType(Expression::type(aa->v()));
@@ -2102,7 +2126,7 @@ public:
           throw TypeError(_env, Expression::loc(aa->v()), oss.str());
         }
         Type resultType = (*tt)[0];
-        aa->v(add_coercion(_env, _model, aa->v(), aa, resultType)());
+        aa->v(add_coercion(_env, _model, aa->v(), aa, resultType));
       } else {
         std::ostringstream oss;
         oss << "array access attempted on expression of type `"
@@ -2111,7 +2135,7 @@ public:
       }
     } else if (Expression::isa<ArrayAccess>(aa->v()) || Expression::isa<Call>(aa->v()) ||
                Expression::isa<FieldAccess>(aa->v())) {
-      aa->v(add_coercion(_env, _model, aa->v(), aa, Expression::type(aa->v()))());
+      aa->v(add_coercion(_env, _model, aa->v(), aa, Expression::type(aa->v())));
     }
     if (Expression::type(aa->v()).dim() != aa->idx().size()) {
       std::ostringstream oss;
@@ -2212,14 +2236,16 @@ public:
         if (!arrayEnumIds.empty()) {
           t.typeId(arrayEnumIds[i]);
         }
-        aa->idx()[i] = add_coercion(_env, _model, aai, aa, t)();
+        auto aaIdx = aa->idx();
+        aaIdx[i] = add_coercion(_env, _model, aai, aa, t);
         n_dimensions++;
       } else {
         Type t = Type::varint();
         if (!arrayEnumIds.empty()) {
           t.typeId(arrayEnumIds[i]);
         }
-        aa->idx()[i] = add_coercion(_env, _model, aai, aa, t)();
+        auto aaIdx = aa->idx();
+        aaIdx[i] = add_coercion(_env, _model, aai, aa, t);
       }
 
       if (Expression::type(aai).isOpt()) {
@@ -2332,7 +2358,7 @@ public:
         }
         loc = find.second;
         // Replace Id with IntLit
-        IntLit* nf = IntLit::a(static_cast<long long>(loc + 1));
+        Ref<IntLit> nf = IntLit::a(static_cast<long long>(loc + 1));
         fa->field(nf);
       }
       // Set overall expression type
@@ -2390,27 +2416,27 @@ public:
   }
   /// Visit array comprehension
   void vComprehension(Comprehension* c) {
-    Expression* c_e = c->e();
+    Ref<Expression> c_e = c->e();
     auto* indexTuple = Expression::dynamicCast<ArrayLit>(c->e());
     if (indexTuple != nullptr &&
         (!indexTuple->isTuple() || indexTuple->type().typeId() != Type::COMP_INDEX)) {
       indexTuple = nullptr;
     }
     if (indexTuple == nullptr) {
-      c_e = add_coercion(_env, _model, c_e, c, Expression::type(c_e))();
+      c_e = add_coercion(_env, _model, c_e, c, Expression::type(c_e));
       c->e(c_e);
     } else {
       for (unsigned int i = 0; i < indexTuple->size(); i++) {
         auto* elem = (*indexTuple)[i];
-        indexTuple->set(i, add_coercion(_env, _model, elem, c, Expression::type(elem))());
+        indexTuple->set(i, add_coercion(_env, _model, elem, c, Expression::type(elem)));
       }
       c_e = (*indexTuple)[indexTuple->size() - 1];
     }
     Type tt = Expression::type(c_e);
 
     if (tt.dim() > 0) {
-      GCLock lock;
-      auto* wrapper = ArrayLit::constructTuple(Expression::loc(c_e).introduce(), {c_e});
+      auto wrapper =
+          ArrayLit::constructTuple(Expression::loc(c_e).introduce(), std::vector<Expression*>{c_e});
       auto wrapper_t = _env.registerTupleType({tt, Type()});
       tt = Type::tuple();
       tt.ti(Expression::type(c_e).ti());
@@ -2536,27 +2562,25 @@ public:
     }
 
     {
-      GCLock lock;
       Generators generators;
       for (unsigned int i = 0; i < c->numberOfGenerators(); i++) {
         std::vector<VarDecl*> decls;
         for (unsigned int j = 0; j < c->numberOfDecls(i); j++) {
           decls.push_back(c->decl(i, j));
-          KeepAlive c_in = c->in(i) != nullptr
-                               ? add_coercion(_env, _model, c->in(i), c, Expression::type(c->in(i)))
-                               : nullptr;
+          Ref<Expression> c_in = c->in(i) != nullptr ? add_coercion(_env, _model, c->in(i), c,
+                                                                    Expression::type(c->in(i)))
+                                                     : nullptr;
           auto* decl_ti = c->decl(i, j)->ti();
           if (decl_ti->type().structBT() && decl_ti->domain() == nullptr) {
             decl_ti->setStructDomain(_env, decl_ti->type());
           }
           if (!whereMap[c->decl(i, j)].empty()) {
             // need a generator for all the decls up to this point
-            Expression* whereExpr = whereMap[c->decl(i, j)][0];
-            whereExpr = add_coercion(_env, _model, whereExpr, c, Expression::type(whereExpr))();
+            Ref<Expression> whereExpr = whereMap[c->decl(i, j)][0];
+            whereExpr = add_coercion(_env, _model, whereExpr, c, Expression::type(whereExpr));
             for (unsigned int k = 1; k < whereMap[c->decl(i, j)].size(); k++) {
-              GCLock lock;
-              auto* bo =
-                  new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c->decl(i, j)][k]);
+              auto bo = make<BinOp>(Location().introduce(), whereExpr, BOT_AND,
+                                    whereMap[c->decl(i, j)][k]);
               Type bo_t = Expression::type(whereMap[c->decl(i, j)][k]).isPar() &&
                                   Expression::type(whereExpr).isPar()
                               ? Type::parbool()
@@ -2568,15 +2592,15 @@ public:
               bo->type(bo_t);
               whereExpr = bo;
             }
-            generators.g.emplace_back(decls, c_in(), whereExpr);
+            generators.g.emplace_back(decls, c_in, whereExpr);
             decls.clear();
           } else if (j == c->numberOfDecls(i) - 1) {
-            generators.g.emplace_back(decls, c_in(), nullptr);
+            generators.g.emplace_back(decls, c_in, nullptr);
             decls.clear();
           }
         }
       }
-      c->init(c->e(), generators);
+      RC::replaceChildren(c, [&] { c->init(c->e(), generators); });
     }
 
     if (c->set()) {
@@ -2590,7 +2614,7 @@ public:
       if (tt.isvar()) {
         Type var_int = Type::varint();
         var_int.typeId(tt.typeId());
-        c->e(add_coercion(_env, _model, c->e(), c, var_int)());
+        c->e(add_coercion(_env, _model, c->e(), c, var_int));
         tt.bt(Type::BT_INT);
       }
     } else {
@@ -2644,12 +2668,11 @@ public:
       if (ty_where.structBT()) {
         c->decl(gen_i, 0)->ti()->setStructDomain(_env, ty_where);
       } else if (ty_where.dim() > 0) {
-        GCLock lock;
-        std::vector<TypeInst*> ranges(ty_where.dim());
+        std::vector<Ref<TypeInst>> ranges(ty_where.dim());
         for (int i = 0; i < ty_where.dim(); i++) {
-          ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+          ranges[i] = make<TypeInst>(Location().introduce(), Type::parint());
         }
-        c->decl(gen_i, 0)->ti()->setRanges(ranges);
+        c->decl(gen_i, 0)->ti()->setRanges(raw(ranges));
       }
     } else {
       const Type& ty_in = Expression::type(g_in);
@@ -2725,13 +2748,11 @@ public:
       if (tret.isbool()) {
         ite->elseExpr(_env.constants.literalTrue);
       } else if (tret.isstring()) {
-        GCLock lock;
-        ite->elseExpr(new StringLit(Expression::loc(ite).introduce(), ""));
+        ite->elseExpr(make<StringLit>(Expression::loc(ite).introduce(), ""));
       } else if (tret.isAnn()) {
         ite->elseExpr(_env.constants.ann.empty_annotation);
       } else if (tret.dim() > 0) {
-        GCLock lock;
-        ite->elseExpr(new ArrayLit(Expression::loc(ite).introduce(), std::vector<Expression*>()));
+        ite->elseExpr(make<ArrayLit>(Expression::loc(ite).introduce(), std::vector<Expression*>()));
         Expression::type(ite->elseExpr(), tret);
       } else {
         throw TypeError(_env, Expression::loc(ite),
@@ -2784,9 +2805,9 @@ public:
       tret.mkVar(_env);
     }
     for (unsigned int i = 0; i < ite->size(); i++) {
-      ite->thenExpr(i, add_coercion(_env, _model, ite->thenExpr(i), ite, tret)());
+      ite->thenExpr(i, add_coercion(_env, _model, ite->thenExpr(i), ite, tret));
     }
-    ite->elseExpr(add_coercion(_env, _model, ite->elseExpr(), ite, tret)());
+    ite->elseExpr(add_coercion(_env, _model, ite->elseExpr(), ite, tret));
     ite->type(tret);
   }
   /// Visit binary operator
@@ -2856,9 +2877,9 @@ public:
         bop->type(_env.concatTuple(lhsT, rhsT));
       }
     } else if (FunctionI* fi = _model->matchFn(_env, bop->opToString(), args, true)) {
-      bop->lhs(add_coercion(_env, _model, bop->lhs(), bop, fi->argtype(_env, args, 0))());
-      bop->rhs(add_coercion(_env, _model, bop->rhs(), bop, fi->argtype(_env, args, 1))());
-      args[0] = bop->lhs();
+      bop->lhs(add_coercion(_env, _model, bop->lhs(), bop, fi->argtype(_env, args, 0)));
+      args[0] = bop->lhs();  // (the old lhs may be gone)
+      bop->rhs(add_coercion(_env, _model, bop->rhs(), bop, fi->argtype(_env, args, 1)));
       args[1] = bop->rhs();
       Type ty = fi->rtype(_env, args, bop, true);
       ty.cv(Expression::type(bop->lhs()).cv() || Expression::type(bop->rhs()).cv() || ty.cv());
@@ -2907,8 +2928,9 @@ public:
               if (inner_bo->op() == BOT_EQ && Expression::type(inner_bo->lhs()).isint() &&
                   !Expression::type(inner_bo->lhs()).isOpt() &&
                   !Expression::type(inner_bo->rhs()).isOpt()) {
-                Expression* generated = inner_bo->lhs();
-                Expression* comparedTo = inner_bo->rhs();
+                // Refs: comp->e(generated) below releases inner_bo
+                Ref<Expression> generated = inner_bo->lhs();
+                Ref<Expression> comparedTo = inner_bo->rhs();
                 if (comp->containsBoundVariable(comparedTo)) {
                   if (comp->containsBoundVariable(generated)) {
                     comparedTo = nullptr;
@@ -2917,7 +2939,6 @@ public:
                   }
                 }
                 if (comparedTo != nullptr) {
-                  GCLock lock;
                   ASTString cid;
                   switch (bot) {
                     case BOT_EQ:
@@ -2961,7 +2982,6 @@ public:
             }
           } else if (call->argCount() == 2 && Expression::type(call->arg(0)).isIntArray() &&
                      Expression::type(call->arg(1)).isint()) {
-            GCLock lock;
             ASTString cid;
             switch (bot) {
               case BOT_EQ:
@@ -3011,7 +3031,7 @@ public:
     std::vector<Expression*> args(1);
     args[0] = uop->e();
     if (FunctionI* fi = _model->matchFn(_env, uop->opToString(), args, true)) {
-      uop->e(add_coercion(_env, _model, uop->e(), uop, fi->argtype(_env, args, 0))());
+      uop->e(add_coercion(_env, _model, uop->e(), uop, fi->argtype(_env, args, 0)));
       args[0] = uop->e();
       Type ty = fi->rtype(_env, args, uop, true);
       ty.cv(Expression::type(uop->e()).cv() || ty.cv());
@@ -3118,7 +3138,6 @@ public:
             assert(newArgs[i] != nullptr);
           }
         }
-        GCLock lock;
         call->args(newArgs);
       }
     }
@@ -3159,7 +3178,6 @@ public:
         newArgs[i] = fi->param(i)->e();
         assert(newArgs[i] != nullptr);
       }
-      GCLock lock;
       call->args(newArgs);
     }
 
@@ -3170,14 +3188,12 @@ public:
 
     if (fi != nullptr && fi->id() == _env.constants.ids.symmetry_breaking_constraint &&
         fi->paramCount() == 1 && fi->param(0)->type().isbool()) {
-      GCLock lock;
       call->id(_env.constants.ids.mzn_symmetry_breaking_constraint);
       fi = _model->matchFn(_env, call, true, true);
     } else if (fi != nullptr &&
                (fi->id() == _env.constants.ids.redundant_constraint ||
                 fi->id() == _env.constants.ids.implied_constraint) &&
                fi->paramCount() == 1 && fi->param(0)->type().isbool()) {
-      GCLock lock;
       call->id(_env.constants.ids.mzn_redundant_constraint);
       fi = _model->matchFn(_env, call, true, true);
     }
@@ -3225,7 +3241,6 @@ public:
         }
         if (macro) {
           // Call is not a macro if it has a reification implementation
-          GCLock lock;
           ASTString reif_id = _env.reifyId(fi->id());
           std::vector<Type> tt(fi->paramCount() + 1);
           for (unsigned int i = 0; i < fi->paramCount(); i++) {
@@ -3250,8 +3265,7 @@ public:
     bool cv = false;
     for (unsigned int i = 0; i < args.size(); i++) {
       if (auto* c = Expression::dynamicCast<Comprehension>(call->arg(i))) {
-        GCLock lock;
-        Expression* c_e = c->e();
+        Ref<Expression> c_e = c->e();
         ArrayLit* indexTuple = nullptr;
         if (Expression::isa<ArrayLit>(c_e) && Expression::cast<ArrayLit>(c_e)->isTuple() &&
             Expression::type(c_e).typeId() == Type::COMP_INDEX) {
@@ -3260,7 +3274,7 @@ public:
         }
         Type t_before = Expression::type(c_e);
         Type t = fi->argtype(_env, args, i).elemType(_env);
-        c_e = add_coercion(_env, _model, c_e, c, t)();
+        c_e = add_coercion(_env, _model, c_e, c, t);
         Type t_after = Expression::type(c_e);
         if (t_before != t_after) {
           if (indexTuple != nullptr) {
@@ -3277,8 +3291,8 @@ public:
           c->type(ct);
         }
       } else {
-        args[i] = add_coercion(_env, _model, call->arg(i), call, fi->argtype(_env, args, i))();
-        call->arg(i, args[i]);
+        call->arg(i, add_coercion(_env, _model, call->arg(i), call, fi->argtype(_env, args, i)));
+        args[i] = call->arg(i);
       }
       cv = cv || Expression::type(args[i]).cv();
     }
@@ -3292,6 +3306,7 @@ public:
         call->id(_env.constants.ids.enumOfInternal);
         VarDecl* enumDecl = _env.getEnum(enumId)->e();
         call->arg(0, enumDecl->id());
+        args[0] = call->arg(0);  // the old argument may be gone
         fi = _model->matchFn(_env, call, false, true);
       }
     }
@@ -3303,17 +3318,16 @@ public:
 
     if (Call* deprecated = fi->ann().getCall(_env.constants.ann.mzn_deprecated)) {
       // rewrite this call into a call to mzn_deprecate(..., e)
-      GCLock lock;
       std::vector<Expression*> params(call->argCount());
       for (unsigned int i = 0; i < params.size(); i++) {
         params[i] = call->arg(i);
       }
-      Call* origCall = Call::a(Expression::loc(call), call->id(), params);
+      Ref<Call> origCall = Call::a(Expression::loc(call), call->id(), params);
       origCall->type(ty);
       origCall->decl(fi);
       call->id(_env.constants.ids.mzn_deprecate);
-      std::vector<Expression*> args(
-          {new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), origCall});
+      auto fi_id = make<StringLit>(Location(), fi->id());
+      std::vector<Expression*> args({fi_id, deprecated->arg(0), deprecated->arg(1), origCall});
       call->args(args);
       FunctionI* deprecated_fi = _model->matchFn(_env, call, false, true);
       call->decl(deprecated_fi);
@@ -3365,11 +3379,8 @@ public:
       }
       isVar |= Expression::type(li).isvar();
     }
-    {
-      GCLock lock;
-      let->setLetOrig(ASTExprVec<Expression>(letOrig));
-    }
-    let->in(add_coercion(_env, _model, let->in(), let, Expression::type(let->in()))());
+    let->setLetOrig(ASTExprVec<Expression>(letOrig));
+    let->in(add_coercion(_env, _model, let->in(), let, Expression::type(let->in())));
     Type ty = Expression::type(let->in());
     ty.cv(cv || ty.cv());
     if (isVar && ty.bt() == Type::BT_BOOL && ty.dim() == 0) {
@@ -3432,12 +3443,11 @@ public:
               if (vet.structBT()) {
                 vd->ti()->setStructDomain(_env, vet);
               } else if (vet.dim() > 0) {
-                GCLock lock;
-                std::vector<TypeInst*> ranges(vet.dim());
+                std::vector<Ref<TypeInst>> ranges(vet.dim());
                 for (int i = 0; i < vet.dim(); i++) {
-                  ranges[i] = new TypeInst(Location().introduce(), Type::parint());
+                  ranges[i] = make<TypeInst>(Location().introduce(), Type::parint());
                 }
-                vd->ti()->setRanges(ranges);
+                vd->ti()->setRanges(raw(ranges));
               }
             }
           }
@@ -3446,20 +3456,19 @@ public:
                    Expression::isa<ArrayLit>(vd->e()) &&
                    Expression::cast<ArrayLit>(vd->e())->empty()) {
           // Replace [] with empty array literal of the correct dimensions
-          GCLock lock;
-          std::vector<Expression*> args;
+          std::vector<Ref<Expression>> args;
           args.reserve(vdt.dim() + 1);
           for (auto* r : vd->ti()->ranges()) {
             if (r->domain() != nullptr) {
-              args.push_back(r->domain());
+              args.emplace_back(r->domain());
               r->domain(nullptr);
             } else {
-              args.push_back(new SetLit(Location().introduce(), IntSetVal::a()));
+              args.emplace_back(make<SetLit>(Location().introduce(), IntSetVal::a()));
             }
           }
-          args.push_back(vd->e());
+          args.emplace_back(vd->e());
           const auto& ident = _env.constants.ids.arrayNd(vd->type().dim());
-          auto* call = Call::a(Location().introduce(), ident, args);
+          auto call = Call::a(Location().introduce(), ident, args);
           call->type(vd->type());
           call->decl(_env.model->matchFn(_env, call, false));
           vd->e(call);
@@ -3477,7 +3486,7 @@ public:
             _typeErrors.emplace_back(_env, loc, ss.str());
           }
         }
-        vd->e(add_coercion(_env, _model, vd->e(), vd, vd->ti()->type())());
+        vd->e(add_coercion(_env, _model, vd->e(), vd, vd->ti()->type()));
         vet = Expression::type(vd->e());
         if (vd->type().dim() > 0) {
           if (vet.typeId() != 0) {
@@ -3548,8 +3557,7 @@ public:
           }
         }
         if (!addAnnArgs.empty()) {
-          GCLock lock;
-          Call* nc = Call::a(Expression::loc(e), addAnnId, addAnnArgs);
+          Ref<Call> nc = Call::a(Expression::loc(e), addAnnId, addAnnArgs);
           FunctionI* fi = _model->matchFn(_env, nc, true, true);
         }
       }
@@ -3644,7 +3652,7 @@ public:
         if (tt.isvar() && tt.isOpt()) {
           throw TypeError(_env, Expression::loc(ti), "opt records with var fields are not allowed");
         }
-      } else if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+      } else if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
         }
@@ -3902,8 +3910,7 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
 
     // Step 1b: copy functions
     for (auto* f : parFnTodo) {
-      GCLock lock;
-      auto* cp = copy(env.envi(), parCopyMap, f)->cast<FunctionI>();
+      auto cp = copy(env.envi(), parCopyMap, f).cast<FunctionI>();
       for (unsigned int i = 0; i < cp->paramCount(); i++) {
         VarDecl* v = cp->param(i);
         v->ti()->mkPar(env.envi());
@@ -4007,7 +4014,7 @@ bool is_index_binder_marker(Expression* dom) {
 /// `array[c in C] of ...`); `range_in` is the original range expression
 /// (the `C` after the `in`).
 struct ArrayBinder {
-  VarDecl* vd;
+  Ref<VarDecl> vd;
   Expression* rangeIn;
 };
 
@@ -4053,8 +4060,8 @@ std::vector<ArrayBinder> strip_index_binders(TypeInst* ti) {
       auto* orig_range = Expression::cast<TypeInst>((*marker)[0]);
       Id* binder_id = Expression::cast<Id>((*marker)[1]);
       Location bloc = Expression::loc(binder_id);
-      auto* binder_ti = new TypeInst(bloc, Type());
-      auto* binder_vd = new VarDecl(bloc, binder_ti, binder_id);
+      auto binder_ti = make<TypeInst>(bloc, Type());
+      auto binder_vd = make<VarDecl>(bloc, binder_ti, binder_id);
       binder_vd->toplevel(false);
       binders.push_back({binder_vd, orig_range->domain()});
       new_ranges.push_back(orig_range);
@@ -4173,8 +4180,8 @@ void collect_decl_leaves(TypeInst* ti, std::vector<CardPathStep>& prefix,
 /// inferred type in place.  Comprehension generators (unlike let-bound
 /// VarDecls) don't require an initialiser, which is what makes this shape
 /// work as a wrapper.
-Expression* wrap_elem_domain_with_binders(EnvI& env, const std::vector<CardPathStep>& prefix,
-                                          Expression* original_domain) {
+Ref<Expression> wrap_elem_domain_with_binders(EnvI& env, const std::vector<CardPathStep>& prefix,
+                                              Expression* original_domain) {
   Location loc = Expression::loc(original_domain).introduce();
   Generators gens;
   for (const auto& step : prefix) {
@@ -4186,24 +4193,25 @@ Expression* wrap_elem_domain_with_binders(EnvI& env, const std::vector<CardPathS
         continue;
       }
       Location bloc = Expression::loc(b.vd).introduce();
-      auto* gen_ti = new TypeInst(bloc, Type());
-      auto* fresh_id = new Id(bloc, b.vd->id()->v(), nullptr);
-      auto* fresh_vd = new VarDecl(bloc, gen_ti, fresh_id);
+      auto gen_ti = make<TypeInst>(bloc, Type());
+      auto fresh_id = make<Id>(bloc, b.vd->id()->v(), nullptr);
+      auto fresh_vd = make<VarDecl>(bloc, gen_ti, fresh_id);
       fresh_vd->toplevel(false);
       gens.g.push_back(Generator({fresh_vd}, b.rangeIn, nullptr));
     }
   }
-  Expression* body = copy(env, original_domain);
-  auto* comp = new Comprehension(loc, body, gens, false);
+  Ref<Expression> body = copy(env, original_domain);
+  auto comp = make<Comprehension>(loc, body, gens, false);
   return Call::a(loc, ASTString("array_union"), {comp});
 }
 
 /// Strip the cardinality marker from \a carrier, restoring the real element-type
 /// domain, and return the cardinality expression.
-Expression* strip_set_card_marker(TypeInst* carrier) {
+Ref<Expression> strip_set_card_marker(TypeInst* carrier) {
   auto* al = Expression::cast<ArrayLit>(carrier->domain());
-  Expression* card_expr = (*al)[0];
-  auto* elem_ti = Expression::cast<TypeInst>((*al)[1]);
+  Ref<Expression> card_expr = (*al)[0];
+  // A Ref: replacing the domain releases the marker array that holds elem_ti
+  Ref<TypeInst> elem_ti = Expression::cast<TypeInst>((*al)[1]);
   carrier->domain(elem_ti->domain());
   carrier->setIsEnum(elem_ti->isEnum());
   return card_expr;
@@ -4218,10 +4226,10 @@ Expression* strip_set_card_marker(TypeInst* carrier) {
 /// `SetCard` → `mzn_internal_set_card(cur, e)`; `ElemDomain`
 /// → `mzn_internal_array_elem_in(cur, dom)`.  Wrapped in `forall` when any
 /// generators are introduced.
-Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& leaf,
-                                       Expression* body_expr) {
+Ref<Expression> build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& leaf,
+                                           Expression* body_expr) {
   Location loc = Expression::loc(vd).introduce();
-  Expression* cur = vd->id();
+  Ref<Expression> cur = vd->id();
   Generators gens;
   for (const auto& step : leaf.path) {
     switch (step.kind) {
@@ -4234,12 +4242,12 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
           }
         }
         if (any_binder) {
-          std::vector<Expression*> idx;
+          std::vector<Ref<Expression>> idx;
           idx.reserve(step.binders.size());
           for (const auto& b : step.binders) {
             if (b.vd != nullptr) {
               gens.g.push_back(Generator({b.vd}, b.rangeIn, nullptr));
-              idx.push_back(b.vd->id());
+              idx.emplace_back(b.vd->id());
             } else {
               // Mixed dimension with no binder: fall back to a fresh generator
               // bound to the same range expression by indexing through
@@ -4249,37 +4257,37 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
               // For now we don't support this mixed shape — flag at the
               // position-check stage if it arises.  Use array1d-peel as a
               // safe fallback so type checking proceeds with no aliasing.
-              auto* gen_ti = new TypeInst(loc, Type());
-              auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+              auto gen_ti = make<TypeInst>(loc, Type());
+              auto gen_vd = make<VarDecl>(loc, gen_ti, env.genId());
               gen_vd->toplevel(false);
               gens.g.push_back(Generator({gen_vd}, nullptr, nullptr));
-              idx.push_back(gen_vd->id());
+              idx.emplace_back(gen_vd->id());
             }
           }
-          cur = new ArrayAccess(loc, cur, idx);
+          cur = make<ArrayAccess>(loc, cur, idx);
         } else {
           // No user binders on this dimension level: keep the legacy
           // `array1d`-peel form.
-          auto* gen_ti = new TypeInst(loc, Type());
-          auto* gen_vd = new VarDecl(loc, gen_ti, env.genId());
+          auto gen_ti = make<TypeInst>(loc, Type());
+          auto gen_vd = make<VarDecl>(loc, gen_ti, env.genId());
           gen_vd->toplevel(false);
-          Call* a1d = Call::a(loc, env.constants.ids.array1d, {cur});
+          Ref<Call> a1d = Call::a(loc, env.constants.ids.array1d, {cur});
           gens.g.push_back(Generator({gen_vd}, a1d, nullptr));
           cur = gen_vd->id();
         }
         break;
       }
       case CardPathStep::TupleField: {
-        cur = new FieldAccess(loc, cur, IntLit::a(IntVal(step.tupleIdx)));
+        cur = make<FieldAccess>(loc, cur, IntLit::a(IntVal(step.tupleIdx)));
         break;
       }
       case CardPathStep::RecordField: {
-        cur = new FieldAccess(loc, cur, new Id(loc, step.recordName, nullptr));
+        cur = make<FieldAccess>(loc, cur, make<Id>(loc, step.recordName, nullptr));
         break;
       }
     }
   }
-  Expression* body;
+  Ref<Expression> body;
   if (leaf.kind == CardLeaf::SetCard) {
     body = Call::a(loc, env.constants.ids.mzn_internal_set_card, {cur, body_expr});
   } else {
@@ -4288,7 +4296,7 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
   if (gens.g.empty()) {
     return body;
   }
-  auto* comp = new Comprehension(loc, body, gens, false);
+  auto comp = make<Comprehension>(loc, body, gens, false);
   return Call::a(loc, env.constants.ids.forall, {comp});
 }
 
@@ -4299,15 +4307,15 @@ Expression* build_constraint_from_path(EnvI& env, VarDecl* vd, const CardLeaf& l
 /// in a `let` introducing the in-scope binders.  Phase 2
 /// (`finalize_indexed_decl_leaves`) strips those wraps after typechecking has
 /// derived the leaf's base type.
-std::vector<Expression*> process_decl_markers(EnvI& env, VarDecl* vd,
-                                              std::vector<TypeInst*>& letWrappedLeaves) {
+std::vector<Ref<Expression>> process_decl_markers(EnvI& env, VarDecl* vd,
+                                                  std::vector<TypeInst*>& letWrappedLeaves) {
   std::vector<CardLeaf> leaves;
   std::vector<CardPathStep> prefix;
   collect_decl_leaves(vd->ti(), prefix, leaves);
-  std::vector<Expression*> constraints;
+  std::vector<Ref<Expression>> constraints;
   constraints.reserve(leaves.size());
   for (const auto& leaf : leaves) {
-    Expression* body_expr;
+    Ref<Expression> body_expr;
     if (leaf.kind == CardLeaf::SetCard) {
       body_expr = strip_set_card_marker(leaf.carrier);
     } else {
@@ -4335,20 +4343,19 @@ public:
   /// constraints to the let.  Runs before the iterator descends into the let
   /// items, so their (now stripped) TypeInsts are not flagged by vTypeInst.
   void vLet(Let* let) {
-    GCLock lock;
     std::vector<Expression*> items;
-    std::vector<Expression*> constraints;
+    std::vector<Ref<Expression>> constraints;
     for (unsigned int i = 0; i < let->let().size(); i++) {
       Expression* li = let->let()[i];
       items.push_back(li);
       if (auto* vd = Expression::dynamicCast<VarDecl>(li)) {
-        for (Expression* c : process_decl_markers(env, vd, letWrappedLeaves)) {
+        for (auto& c : process_decl_markers(env, vd, letWrappedLeaves)) {
           constraints.push_back(c);
         }
       }
     }
     if (!constraints.empty()) {
-      for (auto* c : constraints) {
+      for (auto& c : constraints) {
         items.push_back(c);
       }
       let->setLet(ASTExprVec<Expression>(items));
@@ -4373,7 +4380,6 @@ public:
       // clear the element-type's domain, since it may reference the binder
       // and would otherwise cascade into an "undefined identifier" error
       // that masks our own diagnostic.
-      GCLock lock;
       ASTExprVec<TypeInst> ranges = ti->ranges();
       std::vector<TypeInst*> new_ranges;
       bool any = false;
@@ -4418,10 +4424,10 @@ public:
 class IndexedDeclItemVisitor : public ItemVisitor {
 public:
   EnvI& env;
-  std::vector<ConstraintI*>& toAdd;
+  std::vector<Ref<ConstraintI>>& toAdd;
   std::vector<TypeInst*>& letWrappedLeaves;
   IndexedDeclExprVisitor& ev;
-  IndexedDeclItemVisitor(EnvI& env0, std::vector<ConstraintI*>& toAdd0,
+  IndexedDeclItemVisitor(EnvI& env0, std::vector<Ref<ConstraintI>>& toAdd0,
                          std::vector<TypeInst*>& letWrappedLeaves0, IndexedDeclExprVisitor& ev0)
       : env(env0), toAdd(toAdd0), letWrappedLeaves(letWrappedLeaves0), ev(ev0) {}
   void run(Expression* e) {
@@ -4432,9 +4438,8 @@ public:
   void vVarDeclI(VarDeclI* vdi) {
     VarDecl* vd = vdi->e();
     {
-      GCLock lock;
       for (Expression* c : process_decl_markers(env, vd, letWrappedLeaves)) {
-        toAdd.push_back(new ConstraintI(Expression::loc(vd).introduce(), c));
+        toAdd.push_back(make<ConstraintI>(Expression::loc(vd).introduce(), c));
       }
     }
     run(vd);
@@ -4469,11 +4474,11 @@ public:
 /// errors.
 void desugar_indexed_declarations(EnvI& env, Model* m, std::vector<TypeError>& typeErrors,
                                   std::vector<TypeInst*>& letWrappedLeaves) {
-  std::vector<ConstraintI*> toAdd;
+  std::vector<Ref<ConstraintI>> toAdd;
   IndexedDeclExprVisitor ev(env, typeErrors, letWrappedLeaves);
   IndexedDeclItemVisitor iv(env, toAdd, letWrappedLeaves, ev);
   iter_items(iv, m);
-  for (auto* ci : toAdd) {
+  for (auto& ci : toAdd) {
     m->addItem(ci);
   }
 }
@@ -4498,7 +4503,7 @@ static void check_parameter_defaults(Env& env, const std::vector<FunctionI*>& fu
   // Parameter defaults: once a parameter has a default, every following
   // parameter must also have one. A default in a non-trailing position can
   // never be omitted at a call, so it would be pointlessly confusing.
-  ASTStringMap<std::vector<FunctionI*>> defaultCheckSeen;
+  std::unordered_map<ASTString, std::vector<FunctionI*>> defaultCheckSeen;
   for (auto* functionItem : functionItems) {
     bool sawDefault = false;
     for (unsigned int i = 0; i < functionItem->paramCount(); i++) {
@@ -4552,38 +4557,39 @@ static void check_parameter_defaults(Env& env, const std::vector<FunctionI*>& fu
 /// than an enum). New functions are added to \a m and appended to \a functionItems.
 static void generate_missing_to_string_functions(
     Env& env, Model* m, IdMap<bool>& needToString,
-    ASTStringMap<std::vector<FunctionI*>>& overload_map, std::vector<FunctionI*>& functionItems) {
+    std::unordered_map<ASTString, std::vector<FunctionI*>>& overload_map,
+    std::vector<FunctionI*>& functionItems) {
   for (auto& nts : needToString) {
     ASTString nts_id(create_enum_to_string_name(nts.first, "_toString_"));
     if (!env.model()->fnExists(env.envi(), nts_id) &&
         overload_map.find(nts_id) == overload_map.end()) {
-      GCLock lock;
       // Assumption: any _toString_ function that hasn't been generated by now
       // is for a set of int, rather than an enum. So generate a generic _toString_
       // function here:
       // function string: _to_String_<nts_id>(opt int: x, bool: b, bool: json) = show(i);
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
-      auto* ti_aa = new TypeInst(Location().introduce(), tx, new TIId(Location(), "$E"));
-      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, env.envi().genId());
+      auto ti_aa = make<TypeInst>(Location().introduce(), tx, make<TIId>(Location(), "$E"));
+      auto vd_aa = make<VarDecl>(Location().introduce(), ti_aa, env.envi().genId());
       vd_aa->toplevel(false);
 
-      auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, env.envi().genId());
+      auto ti_ab = make<TypeInst>(Location().introduce(), Type::parbool());
+      auto vd_ab = make<VarDecl>(Location().introduce(), ti_ab, env.envi().genId());
       vd_ab->toplevel(false);
 
-      auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, env.envi().genId());
+      auto ti_aj = make<TypeInst>(Location().introduce(), Type::parbool());
+      auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.envi().genId());
       vd_aj->toplevel(false);
 
-      auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+      auto ti_fi = make<TypeInst>(Location().introduce(), Type::parstring());
       std::vector<VarDecl*> fi_params(3);
       fi_params[0] = vd_aa;
       fi_params[1] = vd_ab;
       fi_params[2] = vd_aj;
 
-      Call* body = Call::a(Location().introduce(), Constants::constants().ids.show, {vd_aa->id()});
-      auto* fi = new FunctionI(Location().introduce(), nts_id, ti_fi, fi_params, body);
+      Ref<Call> body =
+          Call::a(Location().introduce(), Constants::constants().ids.show, {vd_aa->id()});
+      auto fi = make<FunctionI>(Location().introduce(), nts_id, ti_fi, fi_params, body);
       m->addItem(fi);
       functionItems.push_back(fi);
       m->registerFn(env.envi(), fi);
@@ -4616,45 +4622,44 @@ static void check_data_file_calls(EnvI& env) {
 /// compatible. Appends any mismatches to \a typeErrors.
 static void check_solution_checker_vars(Env& env, TopoSorter& ts,
                                         std::vector<TypeError>& typeErrors) {
-  for (auto vd_k : env.envi().checkVars) {
+  for (const auto& vd_k : env.envi().checkVars) {
     try {
       VarDecl* vd;
       try {
-        vd = ts.get(env.envi(), Expression::cast<VarDecl>(vd_k())->id()->str(),
-                    Expression::loc(Expression::cast<VarDecl>(vd_k())));
+        vd = ts.get(env.envi(), Expression::cast<VarDecl>(vd_k)->id()->str(),
+                    Expression::loc(Expression::cast<VarDecl>(vd_k)));
       } catch (TypeError&) {
-        if (Expression::cast<VarDecl>(vd_k())->type().isvar()) {
+        if (Expression::cast<VarDecl>(vd_k)->type().isvar()) {
           continue;  // var can be undefined
         }
         throw;
       }
       Expression::addAnnotation(vd, Constants::constants().ann.mzn_check_var);
       if (vd->type().typeId() != 0 && vd->type().bt() == Type::BT_INT) {
-        GCLock lock;
         std::vector<unsigned int> enumIds({vd->type().typeId()});
         if (vd->type().dim() > 0) {
           enumIds = env.envi().getArrayEnum(vd->type().typeId());
         }
-        std::vector<Expression*> enumIds_a(enumIds.size());
+        std::vector<Ref<Expression>> enumIds_a(enumIds.size());
         for (unsigned int i = 0; i < enumIds.size(); i++) {
           if (enumIds[i] != 0) {
             enumIds_a[i] = env.envi().getEnum(enumIds[i])->e()->id();
           } else {
-            enumIds_a[i] = new SetLit(Location().introduce(), std::vector<Expression*>());
+            enumIds_a[i] = make<SetLit>(Location().introduce(), std::vector<Expression*>());
           }
         }
-        auto* enumIds_al = new ArrayLit(Location().introduce(), enumIds_a);
+        auto enumIds_al = make<ArrayLit>(Location().introduce(), enumIds_a);
         enumIds_al->type(Type::parsetint(1));
         std::vector<Expression*> args({enumIds_al});
-        Call* checkEnum =
+        Ref<Call> checkEnum =
             Call::a(Location().introduce(), Constants::constants().ann.mzn_check_enum_var, args);
         checkEnum->type(Type::ann());
         checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
         Expression::addAnnotation(vd, checkEnum);
       }
-      Type vdktype = Expression::type(vd_k());
+      Type vdktype = Expression::type(vd_k);
       vdktype.mkVar(env.envi());
-      if (!Expression::type(vd_k()).isSubtypeOf(env.envi(), vd->type(), false)) {
+      if (!Expression::type(vd_k).isSubtypeOf(env.envi(), vd->type(), false)) {
         std::ostringstream ss;
         ss << "Solution checker requires `" << vd->id()->str() << "' to be of type `"
            << vdktype.toString(env.envi()) << "'";
@@ -4700,7 +4705,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   // Topological sorting
   IdMap<bool> needToString;
-  std::vector<KeepAlive> enumConstructorSetTypes;
+  std::vector<Ref<Expression>> enumConstructorSetTypes;
   TopoSorter ts(m, needToString, enumConstructorSetTypes);
 
   std::vector<FunctionI*> functionItems;
@@ -4715,7 +4720,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     Model& toAdd;
     std::vector<FunctionI*>& fis;
     std::vector<TypeError>& typeErrors;
-    ASTStringSet reifiedAnnotationIds;
+    std::unordered_set<ASTString> reifiedAnnotationIds;
     TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0, Model& toAdd0,
             std::vector<TypeError>& typeErrors0)
         : env(env0), model(model0), fis(fis0), toAdd(toAdd0), typeErrors(typeErrors0) {}
@@ -4740,31 +4745,30 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
       }
       if (foundReifiedAnnotation) {
-        GCLock lock;
         if (i->paramCount() == 1) {
           // turn into atomic annotation
           if (reifiedAnnotationIds.find(i->id()) == reifiedAnnotationIds.end()) {
-            auto* ti = new TypeInst(Location().introduce(), Type::ann());
-            auto* vd = new VarDecl(Location().introduce(), ti, i->id());
-            Expression::ann(vd).add(Call::a(Location().introduce(),
-                                            env.constants.ann.mzn_add_annotated_expression,
-                                            {IntLit::a(0)}));
+            auto ti = make<TypeInst>(Location().introduce(), Type::ann());
+            auto vd = make<VarDecl>(Location().introduce(), ti, i->id());
+            auto zero = IntLit::a(0);
+            Expression::ann(vd).add(Call::a(
+                Location().introduce(), env.constants.ann.mzn_add_annotated_expression, {zero}));
             toAdd.addItem(VarDeclI::a(Location().introduce(), vd));
             reifiedAnnotationIds.insert(i->id());
           }
         } else {
           // turn into annotation function with one argument less
-          std::vector<VarDecl*> newParams(i->paramCount() - 1);
+          std::vector<Ref<VarDecl>> newParams(i->paramCount() - 1);
           int j = 0;
           for (unsigned int k = 0; k < i->paramCount(); k++) {
             if (k != reifiedAnnotationIdx) {
-              newParams[j++] = Expression::cast<VarDecl>(copy(env, i->param(k)));
+              newParams[j++] = copy(env, i->param(k)).cast<VarDecl>();
             }
           }
-          auto* fi = new FunctionI(Location().introduce(), i->id(), i->ti(), newParams);
+          auto fi = make<FunctionI>(Location().introduce(), i->id(), i->ti(), newParams);
+          auto idxLit = IntLit::a(reifiedAnnotationIdx);
           fi->ann().add(Call::a(Location().introduce(),
-                                env.constants.ann.mzn_add_annotated_expression,
-                                {IntLit::a(reifiedAnnotationIdx)}));
+                                env.constants.ann.mzn_add_annotated_expression, {idxLit}));
           toAdd.addItem(fi);
           fis.push_back(fi);
         }
@@ -4834,14 +4838,13 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       hadSolveItem = true;
       if (!isFlatZinc && (si->e() != nullptr)) {
-        GCLock lock;
-        auto* ti = new TypeInst(Location().introduce(), Type());
-        VarDecl* obj;
+        auto ti = make<TypeInst>(Location().introduce(), Type());
+        Ref<VarDecl> obj;
         if (!isChecker) {
-          obj = new VarDecl(Expression::loc(si->e()).introduce(), ti, "_objective", si->e());
+          obj = make<VarDecl>(Expression::loc(si->e()).introduce(), ti, "_objective", si->e());
         } else {
-          obj =
-              new VarDecl(Expression::loc(si->e()).introduce(), ti, "_checker_objective", si->e());
+          obj = make<VarDecl>(Expression::loc(si->e()).introduce(), ti, "_checker_objective",
+                              si->e());
         }
         si->e(obj->id());
         Expression::addAnnotation(
@@ -4887,10 +4890,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     if (vd != nullptr) {
       if (vd->e() != nullptr) {
         if (allowMultiAssignment) {
-          GCLock lock;
-          m->addItem(new ConstraintI(
-              ai->loc(),
-              new BinOp(ai->loc(), new Id(Location().introduce(), ai->id(), vd), BOT_EQ, ai->e())));
+          m->addItem(make<ConstraintI>(
+              ai->loc(), make<BinOp>(ai->loc(), make<Id>(Location().introduce(), ai->id(), vd),
+                                     BOT_EQ, ai->e())));
         } else {
           typeErrors.emplace_back(env.envi(), ai->loc(),
                                   "multiple assignment to the same variable");
@@ -4918,7 +4920,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   check_parameter_defaults(env, functionItems, typeErrors);
 
-  ASTStringMap<std::vector<FunctionI*>> overload_map;
+  std::unordered_map<ASTString, std::vector<FunctionI*>> overload_map;
   for (auto* functionItem : functionItems) {
     bool fullyKnown = true;
     if (functionItem->ti()->type().isunknown() ||
@@ -5050,12 +5052,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     Model* _m;
     std::vector<PushUndefinedDeclsStackItem>& _stack;
     std::unordered_set<Item*>& _seenItems;
-    ASTStringMap<std::vector<FunctionI*>>& _overloadMap;
+    std::unordered_map<ASTString, std::vector<FunctionI*>>& _overloadMap;
 
   public:
     PushUndefinedDeclsV(EnvI& env, Model* m, std::vector<PushUndefinedDeclsStackItem>& stack,
                         std::unordered_set<Item*>& seenItems,
-                        ASTStringMap<std::vector<FunctionI*>>& overloadMap)
+                        std::unordered_map<ASTString, std::vector<FunctionI*>>& overloadMap)
         : _env(env), _m(m), _stack(stack), _seenItems(seenItems), _overloadMap(overloadMap) {}
 
     void pushItemAndCheckCycle(Item* item) {
@@ -5130,7 +5132,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     EnvI& _env;
     std::vector<PushUndefinedDeclsStackItem> _stack;
     std::unordered_set<Item*>& _seenItems;
-    ASTStringMap<std::vector<FunctionI*>>& _overloadMap;
+    std::unordered_map<ASTString, std::vector<FunctionI*>>& _overloadMap;
     Model* _m;
     Typer<false> _typer;
     BottomUpIterator<Typer<false>> _bottomUpTyper;
@@ -5139,7 +5141,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   public:
     TypeUndefinedDecls(EnvI& env, Model* m, std::unordered_set<Item*>& seenItems,
-                       ASTStringMap<std::vector<FunctionI*>>& overloadMap,
+                       std::unordered_map<ASTString, std::vector<FunctionI*>>& overloadMap,
                        std::vector<TypeError>& typeErrors)
         : _env(env),
           _m(m),
@@ -5202,7 +5204,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     std::unordered_set<Item*> seen_items;
     TypeUndefinedDecls typeUndefinedDecls(env.envi(), m, seen_items, overload_map, typeErrors);
     for (auto& declKA : ts.decls) {
-      auto* decl_item = Expression::cast<VarDecl>(declKA())->item();
+      auto* decl_item = Expression::cast<VarDecl>(declKA)->item();
       decl_item->e()->payload(0);
       if (decl_item->e()->toplevel()) {
         typeUndefinedDecls.run(decl_item);
@@ -5223,8 +5225,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     BottomUpIterator<Typer<true>> bottomUpTyper(ty);
 
     while (!enumConstructorSetTypes.empty()) {
-      auto* c = Expression::cast<Call>(enumConstructorSetTypes.back()());
+      Ref<Expression> ka = enumConstructorSetTypes.back();  // the only owner once popped
       enumConstructorSetTypes.pop_back();
+      auto* c = Expression::cast<Call>(ka);
       bottomUpTyper.run(c->arg(0));
       if (c->id() == env.envi().constants.ids.anon_enum) {
         if (Expression::type(c->arg(0)) != Type::parint()) {
@@ -5292,7 +5295,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
       void vConstraintI(ConstraintI* i) {
         _bottomUpTyper.run(i->e());
-        i->e(add_coercion(_env, _env.model, i->e(), i->loc(), Type::varbool())());
+        i->e(add_coercion(_env, _env.model, i->e(), i->loc(), Type::varbool()));
         if (!_env.isSubtype(Expression::type(i->e()), Type::varbool(), true)) {
           _typeErrors.emplace_back(_env, i->loc(),
                                    "invalid type of constraint, expected `" +
@@ -5317,7 +5320,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             if (et.isOpt()) {
               target_t.ot(Type::OT_OPTIONAL);
             }
-            i->e(add_coercion(_env, _env.model, i->e(), i->loc(), target_t)());
+            i->e(add_coercion(_env, _env.model, i->e(), i->loc(), target_t));
           }
 
           bool needOptCoercion = et.isOpt() && et.isint();
@@ -5333,11 +5336,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           }
 
           if (needOptCoercion) {
-            GCLock lock;
             std::vector<Expression*> args(2);
             args[0] = i->e();
             args[1] = _env.constants.boollit(i->st() == SolveI::ST_MAX);
-            Call* c = Call::a(Location().introduce(), ASTString("objective_deopt_"), args);
+            Ref<Call> c = Call::a(Location().introduce(), ASTString("objective_deopt_"), args);
             c->decl(_env.model->matchFn(_env, c, false));
             assert(c->decl());
             c->type(et);
@@ -5377,10 +5379,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         _bottomUpTyper.run(fi->ti());
         // Check that type-inst variables are used consistently
         enum TIVarType { TIVAR_INDEX, TIVAR_DOMAIN };
-        ASTStringMap<TIVarType> ti_map;
+        std::unordered_map<ASTString, TIVarType> ti_map;
         std::function<void(TypeInst * ti, TIVarType t)> checkTIId;
         checkTIId = [&ti_map, this, &checkTIId](TypeInst* ti, TIVarType t) {
-          if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+          if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
             if (!tiid->isEnum()) {
               auto lookup = ti_map.insert({tiid->v(), t});
               if (!lookup.second && lookup.first->second != t) {
@@ -5409,7 +5411,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
         std::function<void(TypeInst * ti, TIVarType t)> checkRetTIId;
         checkRetTIId = [&ti_map, this, &checkRetTIId](TypeInst* ti, TIVarType t) {
-          if (TIId* tiid = Expression::dynamicCast<TIId>(ti->domain())) {
+          if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
             auto it = ti_map.find(tiid->v());
             if (it == ti_map.end()) {
               std::ostringstream ss;
@@ -5465,7 +5467,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                   Expression::type(fi->e()).toString(_env) + "'");
         }
         if (fi->e() != nullptr) {
-          fi->e(add_coercion(_env, _m, fi->e(), fi->loc(), fi->ti()->type())());
+          fi->e(add_coercion(_env, _m, fi->e(), fi->loc(), fi->ti()->type()));
         }
       }
     } _tsv2(env.envi(), m, bottomUpTyper, typeErrors);
@@ -5479,7 +5481,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     OutputI* outputItem;
     TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
     void vAssignI(AssignI* i) {
-      i->decl()->e(add_coercion(env, m, i->e(), i->loc(), i->decl()->type())());
+      i->decl()->e(add_coercion(env, m, i->e(), i->loc(), i->decl()->type()));
     }
     static void vVarDeclI(VarDeclI* i) {
       if (i->e()->isTypeAlias()) {
@@ -5538,7 +5540,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (auto& declKA : ts.decls) {
-    auto* decl = Expression::cast<VarDecl>(declKA());
+    auto* decl = Expression::cast<VarDecl>(declKA);
     if (decl->isTypeAlias()) {
       continue;
     }
@@ -5901,7 +5903,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
   std::ostringstream ossOutput;
   process_toplevel_output_vars(env.envi());
   for (auto& it : env.envi().outputVars) {
-    auto* vd = Expression::cast<VarDecl>(it());
+    auto* vd = Expression::cast<VarDecl>(it);
     if (vd->id()->str() == "_objective" || vd->id()->str() == "_checker_objective") {
       // Never include
       continue;

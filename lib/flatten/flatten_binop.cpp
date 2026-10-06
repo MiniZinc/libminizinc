@@ -14,7 +14,7 @@
 #include <minizinc/exception.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/type.hh>
 #include <minizinc/values.hh>
 
@@ -223,7 +223,8 @@ bool is_reverse_map(EnvI& env, BinOp* e) {
 template <class Lit>
 void collect_linexps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression* exp,
                      std::vector<typename LinearTraits<Lit>::Val>& coeffs,
-                     std::vector<KeepAlive>& vars, typename LinearTraits<Lit>::Val& constval) {
+                     std::vector<Ref<Expression>>& vars,
+                     typename LinearTraits<Lit>::Val& constval) {
   typedef typename LinearTraits<Lit>::Val Val;
   struct StackItem {
     Expression* e;
@@ -302,24 +303,23 @@ void collect_linexps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression
 }
 
 template <class Lit>
-KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
-                   typename LinearTraits<Lit>::Val c1, Expression* e0, Expression* e1) {
+Ref<Expression> mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
+                         typename LinearTraits<Lit>::Val c1, Expression* e0, Expression* e1) {
   typedef typename LinearTraits<Lit>::Val Val;
-  GCLock lock;
 
   std::vector<Val> coeffs;
-  std::vector<KeepAlive> vars;
+  std::vector<Ref<Expression>> vars;
   Val constval = 0;
   collect_linexps<Lit>(env, c0, e0, coeffs, vars, constval);
   collect_linexps<Lit>(env, c1, e1, coeffs, vars, constval);
   simplify_lin<Lit>(coeffs, vars, constval);
-  KeepAlive ka;
+  Ref<Expression> ka;
   if (coeffs.empty()) {
     ka = LinearTraits<Lit>::newLit(constval);
   } else if (coeffs.size() == 1 && coeffs[0] == 1 && constval == 0) {
     ka = vars[0];
   } else {
-    std::vector<Expression*> coeffs_e(coeffs.size());
+    std::vector<Ref<Expression>> coeffs_e(coeffs.size());
     for (auto i = static_cast<unsigned int>(coeffs.size()); i--;) {
       if (!LinearTraits<Lit>::finite(coeffs[i])) {
         throw FlatteningError(
@@ -330,39 +330,35 @@ KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
       }
       coeffs_e[i] = LinearTraits<Lit>::newLit(coeffs[i]);
     }
-    std::vector<Expression*> vars_e(vars.size());
-    for (auto i = static_cast<unsigned int>(vars.size()); i--;) {
-      vars_e[i] = vars[i]();
-    }
 
-    std::vector<Expression*> args(3);
-    args[0] = new ArrayLit(Expression::loc(e0), coeffs_e);
+    std::vector<Ref<Expression>> args(3);
+    args[0] = make<ArrayLit>(Expression::loc(e0), coeffs_e);
     Type t = Type::arrType(env, Type::partop(1), Expression::type(coeffs_e[0]));
     Expression::type(args[0], t);
-    args[1] = new ArrayLit(Expression::loc(e0), vars_e);
-    Type tt = Type::arrType(env, Type::partop(1), Expression::type(vars_e[0]));
+    args[1] = make<ArrayLit>(Expression::loc(e0), vars);
+    Type tt = Type::arrType(env, Type::partop(1), Expression::type(vars[0]));
     Expression::type(args[1], tt);
     args[2] = LinearTraits<Lit>::newLit(constval);
-    Call* c = Call::a(Expression::loc(e0).introduce(), env.constants.ids.lin_exp, args);
+    Ref<Call> c = Call::a(Expression::loc(e0).introduce(), env.constants.ids.lin_exp, args);
     add_path_annotation(env, c);
     c->decl(env.model->matchFn(env, c, false));
     if (c->decl() == nullptr) {
       throw FlatteningError(env, Expression::loc(c), "cannot find matching declaration");
     }
-    c->type(c->decl()->rtype(env, args, nullptr, false));
-    ka = c;
+    c->type(c->decl()->rtype(env, raw(args), nullptr, false));
+    ka = std::move(c);
   }
-  assert(ka());
+  assert(ka != nullptr);
   return ka;
 }
 
-Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
+Ref<Call> aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
   assert(bot == BOT_AND || bot == BOT_OR);
   BinOpType negbot = (bot == BOT_AND ? BOT_OR : BOT_AND);
   typedef std::pair<Expression*, bool> arg_literal;
   typedef std::list<arg_literal> arg_literal_l;
   arg_literal_l bo_args({arg_literal(bo->lhs(), !negateArgs), arg_literal(bo->rhs(), !negateArgs)});
-  std::vector<Expression*> output_pos;
+  std::vector<Ref<Expression>> output_pos;
   std::vector<Expression*> output_neg;
   auto i = bo_args.begin();
   while (i != bo_args.end()) {
@@ -393,22 +389,22 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
       i++;
     } else {
       if (positive) {
-        output_pos.push_back(i->first);
+        output_pos.emplace_back(i->first);
       } else {
         output_neg.push_back(i->first);
       }
       i++;
     }
   }
-  Call* c;
-  std::vector<Expression*> c_args(1);
+  Ref<Call> c;
+  std::vector<Ref<Expression>> c_args(1);
   if (bot == BOT_AND) {
     for (auto& i : output_neg) {
-      UnOp* neg_arg = new UnOp(Expression::loc(i), UOT_NOT, i);
+      Ref<UnOp> neg_arg = make<UnOp>(Expression::loc(i), UOT_NOT, i);
       neg_arg->type(Expression::type(i));
-      output_pos.push_back(neg_arg);
+      output_pos.emplace_back(neg_arg);
     }
-    auto* al = new ArrayLit(Expression::loc(bo).introduce(), output_pos);
+    auto al = make<ArrayLit>(Expression::loc(bo).introduce(), output_pos);
     Type al_t = bo->type();
     al_t.dim(1);
     al->type(al_t);
@@ -417,24 +413,24 @@ Call* aggregate_and_or_ops(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot)
     c = Call::a(Expression::loc(bo).introduce(),
                 bot == BOT_AND ? env.constants.ids.forall : env.constants.ids.exists, c_args);
   } else {
-    auto* al_pos = new ArrayLit(Expression::loc(bo).introduce(), output_pos);
+    auto al_pos = make<ArrayLit>(Expression::loc(bo).introduce(), output_pos);
     Type al_t = bo->type();
     al_t.dim(1);
     al_pos->type(al_t);
     env.annotateFromCallStack(al_pos);
     c_args[0] = al_pos;
     if (!output_neg.empty()) {
-      auto* al_neg = new ArrayLit(Expression::loc(bo).introduce(), output_neg);
+      auto al_neg = make<ArrayLit>(Expression::loc(bo).introduce(), output_neg);
       al_neg->type(al_t);
       env.annotateFromCallStack(al_neg);
-      c_args.push_back(al_neg);
+      c_args.emplace_back(al_neg);
     }
     c = Call::a(Expression::loc(bo).introduce(),
                 output_neg.empty() ? env.constants.ids.exists : env.constants.ids.clause, c_args);
   }
   c->decl(env.model->matchFn(env, c, false));
   assert(c->decl());
-  Type t = c->decl()->rtype(env, c_args, nullptr, false);
+  Type t = c->decl()->rtype(env, raw(c_args), nullptr, false);
   t.cv(bo->type().cv());
   c->type(t);
   return c;
@@ -470,10 +466,11 @@ Expression* get_linexp(EnvI& env, Expression* e) {
 template <class Lit>
 void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE& ret,
                           Expression* le0, Expression* le1, BinOpType& bot, bool doubleNeg,
-                          std::vector<EE>& ees, std::vector<KeepAlive>& args, ASTString& callid) {
+                          std::vector<EE>& ees, std::vector<Ref<Expression>>& args,
+                          ASTString& callid) {
   typedef typename LinearTraits<Lit>::Val Val;
   std::vector<Val> coeffv;
-  std::vector<KeepAlive> alv;
+  std::vector<Ref<Expression>> alv;
   Val d = 0;
   Expression* le[2] = {le0, le1};
 
@@ -559,9 +556,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
       coeffv.push_back(sign);
       alv.emplace_back(le[i]);
     } else if (Call* sc = Expression::dynamicCast<Call>(le[i])) {
-      GCLock lock;
-      ArrayLit* sc_coeff = eval_array_lit(env, sc->arg(0));
-      ArrayLit* sc_al = eval_array_lit(env, sc->arg(1));
+      Ref<ArrayLit> sc_coeff = eval_array_lit(env, sc->arg(0));
+      Ref<ArrayLit> sc_al = eval_array_lit(env, sc->arg(1));
       try {
         d += sign * LinearTraits<Lit>::eval(env, sc->arg(2));
         for (unsigned int j = 0; j < sc_coeff->size(); j++) {
@@ -631,7 +627,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     } else {
       d = -d;
     }
-    typename LinearTraits<Lit>::Bounds ib = LinearTraits<Lit>::computeBounds(env, alv[0]());
+    typename LinearTraits<Lit>::Bounds ib = LinearTraits<Lit>::computeBounds(env, alv[0]);
     if (ib.valid) {
       bool failed = false;
       bool subsumed = false;
@@ -678,33 +674,33 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
       }
     }
 
-    if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]()) && bot == BOT_EQ) {
-      GCLock lock;
-      VarDecl* vd = Expression::cast<Id>(alv[0]())->decl();
+    if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]) && bot == BOT_EQ) {
+      VarDecl* vd = Expression::cast<Id>(alv[0])->decl();
       if (vd->ti()->domain()) {
         typename LinearTraits<Lit>::Domain domain =
             LinearTraits<Lit>::evalDomain(env, vd->ti()->domain());
         if (LinearTraits<Lit>::domainContains(domain, d)) {
           if (!LinearTraits<Lit>::domainEquals(domain, d)) {
-            set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(d), false);
+            auto newDomain = LinearTraits<Lit>::newDomain(d);
+            set_computed_domain(env, vd, newDomain, false);
           }
           ret.r = bind(env, ctx, r, env.constants.literalTrue);
         } else {
           ret.r = bind(env, ctx, r, env.constants.literalFalse);
         }
       } else {
-        set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(d), false);
+        auto newDomain = LinearTraits<Lit>::newDomain(d);
+        set_computed_domain(env, vd, newDomain, false);
         ret.r = bind(env, ctx, r, env.constants.literalTrue);
       }
     } else {
-      GCLock lock;
-      Expression* e0;
-      Expression* e1;
+      Ref<Expression> e0;
+      Ref<Expression> e1;
       BinOpType old_bot = bot;
       Val old_d = d;
       switch (bot) {
         case BOT_LE:
-          e0 = alv[0]();
+          e0 = alv[0];
           if (Expression::type(e0).isint()) {
             d--;
             bot = BOT_LQ;
@@ -712,7 +708,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           e1 = LinearTraits<Lit>::newLit(d);
           break;
         case BOT_GR:
-          e1 = alv[0]();
+          e1 = alv[0];
           if (Expression::type(e1).isint()) {
             d++;
             bot = BOT_LQ;
@@ -723,17 +719,17 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           break;
         case BOT_GQ:
           e0 = LinearTraits<Lit>::newLit(d);
-          e1 = alv[0]();
+          e1 = alv[0];
           bot = BOT_LQ;
           break;
         default:
-          e0 = alv[0]();
+          e0 = alv[0];
           e1 = LinearTraits<Lit>::newLit(d);
       }
-      if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]()) &&
-          !env.hasReverseMapper(Expression::cast<Id>(alv[0]())) &&
-          Expression::cast<Id>(alv[0]())->decl()->ti()->domain()) {
-        VarDecl* vd = Expression::cast<Id>(alv[0]())->decl();
+      if (ctx.b == C_ROOT && Expression::isa<Id>(alv[0]) &&
+          !env.hasReverseMapper(Expression::cast<Id>(alv[0])) &&
+          Expression::cast<Id>(alv[0])->decl()->ti()->domain()) {
+        VarDecl* vd = Expression::cast<Id>(alv[0])->decl();
         typename LinearTraits<Lit>::Domain domain =
             LinearTraits<Lit>::evalDomain(env, vd->ti()->domain());
         typename LinearTraits<Lit>::Domain ndomain =
@@ -745,24 +741,25 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
           }
           if (!LinearTraits<Lit>::domainEquals(domain, ndomain)) {
             ret.r = bind(env, ctx, r, env.constants.literalTrue);
-            set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(ndomain), false);
+            auto newDomain = LinearTraits<Lit>::newDomain(ndomain);
+            set_computed_domain(env, vd, newDomain, false);
 
             if (r == env.constants.varTrue) {
-              auto* bo = new BinOp(Location().introduce(), e0, bot, e1);
+              auto bo = make<BinOp>(Location().introduce(), e0, bot, e1);
               bo->type(Type::varbool());
               std::vector<Expression*> boargs(2);
               boargs[0] = e0;
               boargs[1] = e1;
-              Call* c = Call::a(Location(), op_to_builtin(env, e0, e1, bot), boargs);
+              Ref<Call> c = Call::a(Location(), op_to_builtin(env, e0, e1, bot), boargs);
               c->type(Type::varbool());
               c->decl(env.model->matchFn(env, c, false));
               auto it = env.cseMapFind(c);
               if (it != env.cseMapEnd()) {
-                if (Id* ident = Expression::dynamicCast<Id>(it->second.r)) {
+                if (Id* ident = Expression::dynamicCast<Id>(it->second.r.get())) {
                   bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
                   it->second.r = env.constants.literalTrue;
                 }
-                if (Id* ident = Expression::dynamicCast<Id>(it->second.b)) {
+                if (Id* ident = Expression::dynamicCast<Id>(it->second.b.get())) {
                   bind(env, Ctx(), ident->decl(), env.constants.literalTrue);
                   it->second.b = env.constants.literalTrue;
                 }
@@ -776,8 +773,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
       args.emplace_back(e1);
     }
   } else if (bot == BOT_EQ && coeffv.size() == 2 && coeffv[0] == -coeffv[1] && d == 0) {
-    Id* id0 = Expression::cast<Id>(alv[0]());
-    Id* id1 = Expression::cast<Id>(alv[1]());
+    Id* id0 = Expression::cast<Id>(alv[0]);
+    Id* id1 = Expression::cast<Id>(alv[1]);
     if (ctx.b == C_ROOT && r == env.constants.varTrue &&
         (id0->decl()->e() == nullptr || id1->decl()->e() == nullptr)) {
       if (id0->decl()->e()) {
@@ -787,20 +784,19 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
       }
     } else {
       callid = LinearTraits<Lit>::id_eq();
-      args.emplace_back(alv[0]());
-      args.emplace_back(alv[1]());
+      args.emplace_back(alv[0]);
+      args.emplace_back(alv[1]);
     }
   } else {
-    GCLock lock;
     if (assignTo != nullptr) {
       Val resultCoeff = 0;
       typename LinearTraits<Lit>::Bounds bounds(d, d, true);
       for (auto i = static_cast<unsigned int>(coeffv.size()); i--;) {
-        if (alv[i]() == assignTo) {
+        if (alv[i] == assignTo) {
           resultCoeff = coeffv[i];
           continue;
         }
-        typename LinearTraits<Lit>::Bounds bound = LinearTraits<Lit>::computeBounds(env, alv[i]());
+        typename LinearTraits<Lit>::Bounds bound = LinearTraits<Lit>::computeBounds(env, alv[i]);
 
         if (bound.valid && LinearTraits<Lit>::finite(bound)) {
           if (coeffv[i] > 0) {
@@ -832,7 +828,8 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
             typename LinearTraits<Lit>::Domain new_domain =
                 LinearTraits<Lit>::intersectDomain(domain, bounds.l, bounds.u);
             if (!LinearTraits<Lit>::domainEquals(domain, new_domain)) {
-              set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(new_domain), false);
+              auto newDomain = LinearTraits<Lit>::newDomain(new_domain);
+              set_computed_domain(env, vd, newDomain, false);
             }
           } else {
             ret.r = bind(env, ctx, r, env.constants.literalFalse);
@@ -840,35 +837,32 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
         } else {
           // Can only set as computed if there was no other RHS
           bool is_computed = vd->e() == nullptr;
-          set_computed_domain(env, vd, LinearTraits<Lit>::newDomain(bounds.l, bounds.u),
-                              is_computed);
+          auto newDomain = LinearTraits<Lit>::newDomain(bounds.l, bounds.u);
+          set_computed_domain(env, vd, newDomain, is_computed);
         }
       }
     }
 
     int coeff_sign;
     LinearTraits<Lit>::constructLinBuiltin(env, bot, callid, coeff_sign, d);
-    std::vector<Expression*> coeff_ev(coeffv.size());
+    std::vector<Ref<Expression>> coeff_ev(coeffv.size());
     for (auto i = static_cast<unsigned int>(coeff_ev.size()); i--;) {
       coeff_ev[i] = LinearTraits<Lit>::newLit(coeff_sign * coeffv[i]);
     }
-    auto* ncoeff = new ArrayLit(Location().introduce(), coeff_ev);
+    auto ncoeff = make<ArrayLit>(Location().introduce(), coeff_ev);
     Type t = Type::arrType(env, Type::partop(1), Expression::type(coeff_ev[0]));
     ncoeff->type(t);
     args.emplace_back(ncoeff);
-    std::vector<Expression*> alv_e(alv.size());
-    Type tt = Type::arrType(env, Type::partop(1), Expression::type(alv[0]()));
+    Type tt = Type::arrType(env, Type::partop(1), Expression::type(alv[0]));
     for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
-      if (Expression::type(alv[i]()).isvar()) {
+      if (Expression::type(alv[i]).isvar()) {
         tt.mkVar(env);
       }
-      alv_e[i] = alv[i]();
     }
-    auto* nal = new ArrayLit(Location().introduce(), alv_e);
+    auto nal = make<ArrayLit>(Location().introduce(), alv);
     nal->type(tt);
     args.emplace_back(nal);
-    Lit* il = LinearTraits<Lit>::newLit(-d);
-    args.push_back(il);
+    args.emplace_back(LinearTraits<Lit>::newLit(-d));
   }
 }
 
@@ -893,18 +887,17 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   ees[0] = flat_exp(env, argCtx(ctx0, bo->lhs()), bo->lhs(), nullptr, b);
   ees[1] = flat_exp(env, argCtx(ctx1, bo->rhs()), bo->rhs(), nullptr, b);
 
-  if (Expression::type(ees[0].r()).isPar() && Expression::type(ees[1].r()).isPar()) {
-    GCLock lock;
-    auto* parbo = new BinOp(Expression::loc(bo), ees[0].r(), bo->op(), ees[1].r());
-    std::vector<Expression*> args = {ees[0].r(), ees[1].r()};
+  if (Expression::type(ees[0].r).isPar() && Expression::type(ees[1].r).isPar()) {
+    auto parbo = make<BinOp>(Expression::loc(bo), ees[0].r, bo->op(), ees[1].r);
+    std::vector<Expression*> args = {ees[0].r, ees[1].r};
     FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, false);
     parbo->decl(fi);
-    Type tt = fi->rtype(env, {Expression::type(ees[0].r()), Expression::type(ees[1].r())}, nullptr,
-                        false);
+    Type tt =
+        fi->rtype(env, {Expression::type(ees[0].r), Expression::type(ees[1].r)}, nullptr, false);
     assert(tt.isPar());
     parbo->type(tt);
     try {
-      Expression* res = eval_par(env, parbo);
+      Ref<Expression> res = eval_par(env, parbo);
       assert(!Expression::type(res).isunknown());
       ret.r = bind(env, ctx, r, res);
       ret.b = conj(env, b, Ctx(), ees);
@@ -917,51 +910,50 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
 
   auto with_ees = [&](EE&& flat_exp) {
     ees.emplace_back(flat_exp);
-    ret.r = bind(env, ctx, r, ees.back().r());
+    ret.r = bind(env, ctx, r, ees.back().r);
     ret.b = conj(env, b, Ctx(), ees);
     return ret;
   };
 
-  if (!isBuiltin && (Expression::type(ees[0].r()) != Expression::type(bo->lhs()) ||
-                     Expression::type(ees[1].r()) != Expression::type(bo->rhs()))) {
+  if (!isBuiltin && (Expression::type(ees[0].r) != Expression::type(bo->lhs()) ||
+                     Expression::type(ees[1].r) != Expression::type(bo->rhs()))) {
     // The type has changed after flattening the arguments. E.g., the type may have gone
     // from opt to non-opt. In this case, flatten the whole BinOp again with the new
     // arguments, to ensure that the correct built-in is selected if necessary.
-    KeepAlive ka;
+    Ref<Expression> ka;
     {
-      GCLock lock;
-      auto* newBo = new BinOp(Expression::loc(bo), ees[0].r(), bo->op(), ees[1].r());
-      std::vector<Expression*> args({ees[0].r(), ees[1].r()});
+      auto newBo = make<BinOp>(Expression::loc(bo), ees[0].r, bo->op(), ees[1].r);
+      std::vector<Expression*> args({ees[0].r, ees[1].r});
       FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, true);
       assert(fi != nullptr);
       Type ty = fi->rtype(env, args, nullptr, true);
       newBo->type(ty);
       newBo->decl(fi);
-      ka = newBo;
+      ka = std::move(newBo);
     }
-    return with_ees(flatten_binop(env, ctx, ka(), r, b));
+    return with_ees(flatten_binop(env, ctx, ka, r, b));
   }
 
   try {
     if (isBuiltin && bot == BOT_MULT) {
-      Expression* e0r = ees[0].r();
-      Expression* e1r = ees[1].r();
+      Expression* e0r = ees[0].r;
+      Expression* e1r = ees[1].r;
       if (Expression::type(e0r).isPar()) {
         std::swap(e0r, e1r);
       }
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
         IntVal coeff = eval_int(env, e1r);
-        KeepAlive ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
-        return with_ees(flat_exp(env, ctx, ka(), r, b));
+        Ref<Expression> ka = mklinexp<IntLit>(env, coeff, 0, e0r, nullptr);
+        return with_ees(flat_exp(env, ctx, ka, r, b));
       }
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isfloat()) {
         FloatVal coeff = eval_float(env, e1r);
-        KeepAlive ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
-        return with_ees(flat_exp(env, ctx, ka(), r, b));
+        Ref<Expression> ka = mklinexp<FloatLit>(env, coeff, 0.0, e0r, nullptr);
+        return with_ees(flat_exp(env, ctx, ka, r, b));
       }
     } else if (isBuiltin && (bot == BOT_DIV || bot == BOT_IDIV)) {
-      Expression* e0r = ees[0].r();
-      Expression* e1r = ees[1].r();
+      Expression* e0r = ees[0].r;
+      Expression* e1r = ees[1].r;
       if (Expression::type(e1r).isPar() && Expression::type(e1r).isint()) {
         IntVal coeff = eval_int(env, e1r);
         if (coeff == 1) {
@@ -972,8 +964,8 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
         if (coeff == 1.0) {
           return with_ees(flat_exp(env, ctx, e0r, r, b));
         }
-        KeepAlive ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
-        return with_ees(flat_exp(env, ctx, ka(), r, b));
+        Ref<Expression> ka = mklinexp<FloatLit>(env, 1.0 / coeff, 0.0, e0r, nullptr);
+        return with_ees(flat_exp(env, ctx, ka, r, b));
       }
     }
   } catch (ResultUndefinedError&) {
@@ -981,9 +973,8 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
     ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
   }
 
-  GC::lock();
-  std::vector<Expression*> args = {ees[0].r(), ees[1].r()};
-  Call* cc;
+  std::vector<Expression*> args = {ees[0].r, ees[1].r};
+  Ref<Call> cc;
   if (!isBuiltin) {
     cc = Call::a(Expression::loc(bo).introduce(), bo->opToString(), args);
   } else {
@@ -992,17 +983,15 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
   cc->type(bo->type());
   auto cit = env.cseMapFind(cc);
   if (cit != env.cseMapEnd()) {
-    ret.b = bind(env, Ctx(), b, env.ignorePartial ? env.constants.literalTrue : cit->second.b);
-    ret.r = bind(env, ctx, r, cit->second.r);
+    ret.b =
+        bind(env, Ctx(), b, env.ignorePartial ? env.constants.literalTrue : cit->second.b.get());
+    ret.r = bind(env, ctx, r, cit->second.r.get());
   } else {
     if (FunctionI* fi = env.model->matchFn(env, cc->id(), args, false)) {
       assert(cc->type() == fi->rtype(env, args, nullptr, false));
       cc->decl(fi);
       cc->type(cc->decl()->rtype(env, args, nullptr, false));
-      KeepAlive ka(cc);
-      GC::unlock();
       ees.emplace_back(flat_exp(env, ctx, cc, r, ctx.partialityVar(env)));
-      GC::lock();
       ret.r = ees.back().r;
       ret.b = conj(env, b, Ctx(), ees);
     } else {
@@ -1014,7 +1003,6 @@ EE flatten_nonbool_op(EnvI& env, const Ctx& ctx, const Ctx& ctx0, const Ctx& ctx
       }
     }
   }
-  GC::unlock();
   return ret;
 }
 
@@ -1026,13 +1014,12 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
     if (vd->ti()->domain() == nullptr) {
       vd->ti()->domain(dom);
     } else {
-      GCLock lock;
-      auto* newdom = LinearTraits<Lit>::evalDomain(env, dom);
+      auto newdom = LinearTraits<Lit>::evalDomain(env, dom);
       while (ident != nullptr) {
         bool changeDom = false;
         if (ident->decl()->ti()->domain() != nullptr) {
-          auto* domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
-          auto* interdom = LinearTraits<Lit>::intersectDomain(domain, newdom);
+          auto domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
+          auto interdom = LinearTraits<Lit>::intersectDomain(domain, newdom);
           if (!LinearTraits<Lit>::domainEquals(domain, interdom)) {
             newdom = interdom;
             changeDom = true;
@@ -1043,8 +1030,8 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
         if (ident->type().st() == Type::ST_PLAIN && newdom->empty()) {
           env.fail();
         } else if (changeDom) {
-          set_computed_domain(env, ident->decl(), new SetLit(Location().introduce(), newdom),
-                              false);
+          auto sl = make<SetLit>(Location().introduce(), newdom);
+          set_computed_domain(env, ident->decl(), sl, false);
           if (ident->decl()->e() == nullptr && !newdom->empty() && newdom->min() == newdom->max() &&
               !vd->type().isSet()) {
             ident->decl()->e(LinearTraits<Lit>::newLit(newdom->min()));
@@ -1058,9 +1045,8 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
   }
   if (vd->ti()->domain() != nullptr) {
     // check if current domain is already subsumed or falsified by this constraint
-    GCLock lock;
-    auto* check_dom = LinearTraits<Lit>::evalDomain(env, dom);
-    auto* domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
+    auto check_dom = LinearTraits<Lit>::evalDomain(env, dom);
+    auto domain = LinearTraits<Lit>::evalDomain(env, ident->decl()->ti()->domain());
 
     if (LinearTraits<Lit>::domainSubset(domain, check_dom)) {
       // the constraint is subsumed
@@ -1184,14 +1170,14 @@ bool check_struct_lex(EnvI& env, Type t) {
 }
 
 /// Convert struct object (or array of objects) to an array
-ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
-  assert(GC::locked());
-  std::vector<Expression*> elems;
+Ref<ArrayLit> struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
+  // Owners: evaluated sub-arrays and the new bool2int calls live here until the result owns them
+  std::vector<Ref<Expression>> elems;
   bool all_bool = true;
   bool has_bool = false;
   bool is_par = Expression::type(obj).isPar();
 
-  std::vector<std::pair<ArrayLit*, unsigned int>> stack{{obj, 0}};
+  std::vector<std::pair<Ref<ArrayLit>, unsigned int>> stack{{obj, 0}};
   while (!stack.empty()) {
     auto& b = stack.back();
     if (b.second >= b.first->size()) {
@@ -1208,15 +1194,15 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
     switch (t.bt()) {
       case Type::BT_BOOL: {
         has_bool = true;
-        elems.push_back(elem);
+        elems.emplace_back(elem);
       } break;
       case Type::BT_INT: {
         all_bool = false;
-        elems.push_back(elem);
+        elems.emplace_back(elem);
       } break;
       case Type::BT_RECORD:
       case Type::BT_TUPLE: {
-        ArrayLit* seq = eval_array_lit(env, elem);
+        Ref<ArrayLit> seq = eval_array_lit(env, elem);
         stack.emplace_back(seq, 0);
       } break;
       default:
@@ -1224,12 +1210,12 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
     }
   }
   if (!all_bool && has_bool) {
-    auto* zero = IntLit::a(0);
-    auto* one = IntLit::a(1);
+    auto zero = IntLit::a(0);
+    auto one = IntLit::a(1);
     for (auto& elem : elems) {
       Type t = Expression::type(elem);
       if (t.isvarbool()) {
-        auto* c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem});
+        auto c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem.get()});
         c->type(Type::varint());
         c->decl(env.model->matchFn(env, c, false));
         elem = c;
@@ -1240,7 +1226,7 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
   }
   Type t = is_par ? (all_bool ? Type::parbool(1) : Type::parint(1))
                   : (all_bool ? Type::varbool(1) : Type::varint(1));
-  auto* al = new ArrayLit(Expression::loc(obj).introduce(), elems);
+  auto al = make<ArrayLit>(Expression::loc(obj).introduce(), elems);
   al->type(t);
   return al;
 }
@@ -1253,20 +1239,20 @@ ArrayLit* struct_as_array(EnvI& env, ArrayLit* obj, bool filter_par = false) {
 /// match the members of `obj`. The number of remaining rows is returned in
 /// `rows` (which cannot be derived from the resulting array when all members
 /// of `obj` are `par`).
-ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned int& rows) {
+Ref<ArrayLit> struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned int& rows) {
   assert(Expression::type(table).dim() == 1 && Expression::type(table).isPar() &&
          Expression::type(table).structBT());
   assert(Expression::type(obj).structBT());
-  assert(GC::locked());
-  std::vector<Expression*> elems;
+  // Owners: rows and sub-arrays that eval_array_lit creates live here until the result owns them
+  std::vector<Ref<Expression>> elems;
   bool all_bool = true;
   bool has_bool = false;
 
   rows = 0;
   for (unsigned int i = 0; i < table->size(); ++i) {
-    ArrayLit* row = eval_array_lit(env, (*table)[i]);
-    std::vector<std::tuple<ArrayLit*, ArrayLit*, unsigned int>> stack{{row, obj, 0}};
-    std::vector<Expression*> row_elems;
+    Ref<ArrayLit> row = eval_array_lit(env, (*table)[i]);
+    std::vector<std::tuple<Ref<ArrayLit>, Ref<ArrayLit>, unsigned int>> stack{{row, obj, 0}};
+    std::vector<Ref<Expression>> row_elems;
     bool matches = true;
     while (!stack.empty()) {
       // Extract elements from top of the stack
@@ -1283,8 +1269,8 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned in
       Type t = Expression::type(obj_elem);
       // Par on `obj` -> remove row if not equal, otherwise ignore element
       if (t.isPar()) {
-        Expression* r = eval_par(env, row_elem);
-        Expression* o = eval_par(env, obj_elem);
+        Ref<Expression> r = eval_par(env, row_elem);
+        Ref<Expression> o = eval_par(env, obj_elem);
         if (Expression::equal(r, o)) {
           continue;
         }
@@ -1296,16 +1282,16 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned in
       switch (t.bt()) {
         case Type::BT_BOOL: {
           has_bool = true;
-          row_elems.push_back(row_elem);
+          row_elems.emplace_back(row_elem);
         } break;
         case Type::BT_INT: {
           all_bool = false;
-          row_elems.push_back(row_elem);
+          row_elems.emplace_back(row_elem);
         } break;
         case Type::BT_RECORD:
         case Type::BT_TUPLE: {
-          ArrayLit* row_seq = eval_array_lit(env, row_elem);
-          ArrayLit* obj_seq = eval_array_lit(env, obj_elem);
+          Ref<ArrayLit> row_seq = eval_array_lit(env, row_elem);
+          Ref<ArrayLit> obj_seq = eval_array_lit(env, obj_elem);
           stack.emplace_back(row_seq, obj_seq, 0);
         } break;
         default:
@@ -1317,17 +1303,17 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned in
     }
     rows++;
     elems.reserve(elems.size() + row_elems.size());
-    for (auto* e : row_elems) {
+    for (auto& e : row_elems) {
       elems.push_back(e);
     }
   }
   if (!all_bool && has_bool) {
-    auto* zero = IntLit::a(0);
-    auto* one = IntLit::a(1);
+    auto zero = IntLit::a(0);
+    auto one = IntLit::a(1);
     for (auto& elem : elems) {
       Type t = Expression::type(elem);
       if (t.isvarbool()) {
-        auto* c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem});
+        auto c = Call::a(Location().introduce(), env.constants.ids.bool2int, {elem});
         c->type(Type::varint());
         c->decl(env.model->matchFn(env, c, false));
         elem = c;
@@ -1337,19 +1323,19 @@ ArrayLit* struct_as_table(EnvI& env, ArrayLit* table, ArrayLit* obj, unsigned in
     }
   }
   Type t = all_bool ? Type::parbool(1) : Type::parint(1);
-  auto* al = new ArrayLit(Expression::loc(obj).introduce(), elems);
+  auto al = make<ArrayLit>(Expression::loc(obj).introduce(), elems);
   al->type(t);
   return al;
 }
 
 EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expression* rhs,
                      bool doubleNeg, VarDecl* r, VarDecl* b) {
-  KeepAlive rewrite = nullptr;
-  ArrayLit* tupLHS = eval_array_lit(env, lhs);
-  ArrayLit* tupRHS = eval_array_lit(env, rhs);
+  Ref<Expression> rewrite = nullptr;
+  Ref<ArrayLit> tupLHS = eval_array_lit(env, lhs);
+  Ref<ArrayLit> tupRHS = eval_array_lit(env, rhs);
 
   auto new_binop = [&](Expression* lhs, BinOpType bot, Expression* rhs) {
-    auto* binop = new BinOp(Location().introduce(), lhs, bot, rhs);
+    auto binop = make<BinOp>(Location().introduce(), lhs, bot, rhs);
     FunctionI* fi = env.model->matchFn(
         env, binop->opToString(), std::vector<Type>({Expression::type(lhs), Expression::type(rhs)}),
         false);
@@ -1361,73 +1347,73 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
   switch (bot) {
     // tupA == tupB ==> forall([tupA.1 == tupB.1, ..., tupA.n == tupB.n])
     case BOT_EQ: {
-      GCLock lock;
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
-      std::vector<Expression*> comps(tupLHS->size());
+      std::vector<Ref<Expression>> comps(tupLHS->size());
       for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_EQ, (*tupRHS)[i]);
       }
-      auto* al = new ArrayLit(Location().introduce(), comps);
+      auto al = make<ArrayLit>(Location().introduce(), comps);
       al->type(Type::varbool(1));
-      auto* call = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+      auto call = Call::a(Location().introduce(), env.constants.ids.forall, {al});
       call->type(Type::varbool());
       call->decl(env.model->matchFn(env, call, false, true));
-      rewrite = call;
+      rewrite = std::move(call);
     } break;
     // tupA != tupB ==> exist([tupA.1 != tupB.1, ..., tupA.n != tupB.n])
     case BOT_NQ: {
-      GCLock lock;
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
-      std::vector<Expression*> comps(tupLHS->size());
+      std::vector<Ref<Expression>> comps(tupLHS->size());
       for (unsigned int i = 0; i < tupLHS->size(); ++i) {
         comps[i] = new_binop((*tupLHS)[i], BOT_NQ, (*tupRHS)[i]);
       }
-      auto* al = new ArrayLit(Location().introduce(), comps);
+      auto al = make<ArrayLit>(Location().introduce(), comps);
       al->type(Type::varbool(1));
-      auto* call = Call::a(Location().introduce(), env.constants.ids.exists, {al});
+      auto call = Call::a(Location().introduce(), env.constants.ids.exists, {al});
       call->type(Type::varbool());
       call->decl(env.model->matchFn(env, call, false, true));
-      rewrite = call;
+      rewrite = std::move(call);
     } break;
     // tupA <(=) tupB ==> lex_less(eq)(tupA.fields, tupB.fields)
     case BOT_LE:  // fallthrough
     case BOT_LQ: {
-      GCLock lock;
       assert(tupLHS->isTuple() == tupRHS->isTuple());
       assert(tupLHS->size() == tupRHS->size());
       if (check_struct_lex(env, Expression::type(lhs))) {
         // Create a lex_less(eq) call
-        ArrayLit* arrLHS = struct_as_array(env, tupLHS);
-        ArrayLit* arrRHS = struct_as_array(env, tupRHS);
+        Ref<ArrayLit> arrLHS = struct_as_array(env, tupLHS);
+        Ref<ArrayLit> arrRHS = struct_as_array(env, tupRHS);
 
-        auto* c = Call::a(Location().introduce(),
-                          bot == BOT_LQ ? env.constants.ids.lex_lesseq : env.constants.ids.lex_less,
-                          {arrLHS, arrRHS});
+        auto c = Call::a(Location().introduce(),
+                         bot == BOT_LQ ? env.constants.ids.lex_lesseq : env.constants.ids.lex_less,
+                         {arrLHS, arrRHS});
         c->type(Type::varbool());
         c->decl(env.model->matchFn(env, c, false));
-        rewrite = c;
+        rewrite = std::move(c);
       } else {
         // Create temp bool variables for lex decomposition
-        auto* bool_ti = new TypeInst(Location().introduce(), Type::varbool(1));
-        auto* range = new SetLit(Location().introduce(), IntSetVal::a(1, tupLHS->size()));
-        bool_ti->setRanges({new TypeInst(Location().introduce(), Type::parint(), range)});
-        auto* b_decl = new VarDecl(Location().introduce(), bool_ti, env.genId());
+        auto bool_ti = make<TypeInst>(Location().introduce(), Type::varbool(1));
+        auto range = make<SetLit>(Location().introduce(), IntSetVal::a(1, tupLHS->size()));
+        auto range_ti = make<TypeInst>(Location().introduce(), Type::parint(), range);
+        bool_ti->setRanges({range_ti});
+        auto b_decl = make<VarDecl>(Location().introduce(), bool_ti, env.genId());
         b_decl->type(Type::varbool(1));
-        std::vector<Expression*> b(tupLHS->size());
+        std::vector<Ref<Expression>> b(tupLHS->size());
         for (unsigned int i = 0; i < tupLHS->size(); ++i) {
-          b[i] = new ArrayAccess(Location().introduce(), b_decl->id(), {IntLit::a(i + 1)});
+          auto idx = IntLit::a(i + 1);
+          b[i] = make<ArrayAccess>(Location().introduce(), b_decl->id(),
+                                   std::vector<Expression*>({idx}));
           Expression::type(b[i], Type::varbool());
         }
         // Create the implications
-        std::vector<Expression*> impls(tupLHS->size());
+        std::vector<Ref<Expression>> impls(tupLHS->size());
         for (unsigned int i = 0; i < tupLHS->size(); ++i) {
-          auto* lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
-          auto* le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
+          auto lq = new_binop((*tupLHS)[i], BOT_LQ, (*tupRHS)[i]);
+          auto le = new_binop((*tupLHS)[i], BOT_LE, (*tupRHS)[i]);
           if (i < tupLHS->size() - 1) {
-            auto* _or = new_binop(le, BOT_OR, b[i + 1]);
-            auto* _and = new_binop(lq, BOT_AND, _or);
+            auto _or = new_binop(le, BOT_OR, b[i + 1]);
+            auto _and = new_binop(lq, BOT_AND, _or);
             impls[i] = new_binop(b[i], BOT_IMPL, _and);
           } else if (bot == BOT_LQ) {
             impls[i] = new_binop(b[i], BOT_IMPL, lq);
@@ -1435,22 +1421,22 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
             impls[i] = new_binop(b[i], BOT_IMPL, le);
           }
         }
-        auto* al = new ArrayLit(Location().introduce(), impls);
+        auto al = make<ArrayLit>(Location().introduce(), impls);
         al->type(Type::varbool(1));
-        auto* forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
+        auto forall = Call::a(Location().introduce(), env.constants.ids.forall, {al});
         forall->type(Type::varbool());
         forall->decl(env.model->matchFn(env, forall, false, true));
         // Wrap in let
-        auto* let = new Let(Location().introduce(), {b_decl}, new_binop(b[0], BOT_AND, forall));
+        auto let = make<Let>(Location().introduce(), std::vector<Expression*>({b_decl}),
+                             new_binop(b[0], BOT_AND, forall));
         let->type(Type::varbool());
-        rewrite = let;
+        rewrite = std::move(let);
       }
     } break;
     case BOT_IN: {
-      GCLock lock;
       unsigned int rows;
-      ArrayLit* table = struct_as_table(env, tupRHS, tupLHS, rows);
-      ArrayLit* elem = struct_as_array(env, tupLHS, true);
+      Ref<ArrayLit> table = struct_as_table(env, tupRHS, tupLHS, rows);
+      Ref<ArrayLit> elem = struct_as_array(env, tupLHS, true);
       unsigned int cols = elem->size();
       if (cols == 0) {
         // All members of the struct are par, so the constraint is decided by
@@ -1459,20 +1445,20 @@ EE rewrite_struct_op(EnvI& env, Ctx& ctx, Expression* lhs, BinOpType bot, Expres
         break;
       }
 
-      auto* indexedTable =
-          new ArrayLit(Expression::loc(table).introduce(), table, {{1, rows}, {1, cols}});
+      auto indexedTable = make<ArrayLit>(Expression::loc(table).introduce(), table,
+                                         std::vector<std::pair<int, int>>({{1, rows}, {1, cols}}));
       Type t = Type::arrType(env, Type::bot(2), table->type());
       indexedTable->type(t);
 
-      auto* c = Call::a(Location().introduce(), env.constants.ids.table, {elem, indexedTable});
+      auto c = Call::a(Location().introduce(), env.constants.ids.table, {elem, indexedTable});
       c->type(Type::varbool());
       c->decl(env.model->matchFn(env, c, false));
-      rewrite = c;
+      rewrite = std::move(c);
     } break;
     default:
       throw InternalError("Tuple operator rewrite not defined");
   }
-  return flat_exp(env, ctx, rewrite(), r, b);
+  return flat_exp(env, ctx, rewrite, r, b);
 }
 
 EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expression* e, VarDecl* r,
@@ -1492,16 +1478,15 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
   ees[0].b = e0.b;
   ees[1].b = e1.b;
 
-  if (isfalse(env, e0.b()) || isfalse(env, e1.b())) {
+  if (isfalse(env, e0.b) || isfalse(env, e1.b)) {
     ees.resize(2);
     ret.r = conj(env, r, ctx, ees);
     return ret;
   }
 
-  if (Expression::type(e0.r()).isPar() && Expression::type(e1.r()).isPar()) {
-    GCLock lock;
-    auto* bo_par = new BinOp(Expression::loc(e), e0.r(), bot, e1.r());
-    std::vector<Expression*> args({e0.r(), e1.r()});
+  if (Expression::type(e0.r).isPar() && Expression::type(e1.r).isPar()) {
+    auto bo_par = make<BinOp>(Expression::loc(e), e0.r, bot, e1.r);
+    std::vector<Expression*> args({e0.r, e1.r});
     bo_par->decl(env.model->matchFn(env, bo_par->opToString(), args, false));
     if (bo_par->decl() == nullptr) {
       throw FlatteningError(env, Expression::loc(bo_par), "cannot find matching declaration");
@@ -1515,92 +1500,91 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     ret.r = conj(env, r, ctx, ees);
     return ret;
   }
-  if (Expression::type(e0.r()).isPar() && (bot == BOT_EQ)) {
+  if (Expression::type(e0.r).isPar() && (bot == BOT_EQ)) {
     std::swap(e0, e1);
   }
 
   // Exclusion from domain, e.g., not (5 in x)
   if (isBuiltin && bot == BOT_IN && ctx.b == C_NEG && ctx.neg == true &&
-      r == env.constants.varTrue && Expression::type(e0.r()).isPar() &&
-      Expression::type(e1.r()).isIntSet() && Expression::isa<Id>(e1.r())) {
-    auto* vd = Expression::cast<Id>(e1.r())->decl();
+      r == env.constants.varTrue && Expression::type(e0.r).isPar() &&
+      Expression::type(e1.r).isIntSet() && Expression::isa<Id>(e1.r)) {
+    auto* vd = Expression::cast<Id>(e1.r)->decl();
     if (vd->ti()->domain() != nullptr) {
-      GCLock lock;
       // Rewrite to subset to change the domain
-      IntVal i = eval_int(env, e0.r());
-      IntSetRanges ri(IntSetVal::a(i, i));
-      IntSetRanges dom(eval_intset(env, vd->ti()->domain()));
+      IntVal i = eval_int(env, e0.r);
+      Ref<IntSetVal> isv_i = IntSetVal::a(i, i);
+      IntSetRanges ri(isv_i);
+      Ref<IntSetVal> isv_dom = eval_intset(env, vd->ti()->domain());
+      IntSetRanges dom(isv_dom);
       Ranges::Diff<IntVal, IntSetRanges, IntSetRanges> ns(dom, ri);
       ctx.b = C_ROOT;
       ctx.neg = false;
       std::swap(e0, e1);
       bot = BOT_SUBSET;
 
-      auto* val = new SetLit(Location().introduce(), IntSetVal::ai(ns));
+      auto val = make<SetLit>(Location().introduce(), IntSetVal::ai(ns));
       val->type(Type::parsetint());
-      e1.r = val;
+      e1.r = std::move(val);
     }
   }
 
-  if (isBuiltin && Expression::type(e1.r()).isPar() && Expression::isa<Id>(e0.r()) &&
+  if (isBuiltin && Expression::type(e1.r).isPar() && Expression::isa<Id>(e0.r) &&
       (bot == BOT_IN || bot == BOT_SUBSET)) {
-    if (Expression::type(e0.r()).bt() == Type::BT_INT &&
-        flatten_dom_constraint<IntLit>(env, ctx, Expression::cast<Id>(e0.r())->decl(), e1.r(), r,
+    if (Expression::type(e0.r).bt() == Type::BT_INT &&
+        flatten_dom_constraint<IntLit>(env, ctx, Expression::cast<Id>(e0.r)->decl(), e1.r, r,
                                        ret)) {
       return ret;
     }
-    if (Expression::type(e0.r()).bt() == Type::BT_FLOAT &&
-        flatten_dom_constraint<FloatLit>(env, ctx, Expression::cast<Id>(e0.r())->decl(), e1.r(), r,
+    if (Expression::type(e0.r).bt() == Type::BT_FLOAT &&
+        flatten_dom_constraint<FloatLit>(env, ctx, Expression::cast<Id>(e0.r)->decl(), e1.r, r,
                                          ret)) {
       return ret;
     }
   }
 
-  std::vector<KeepAlive> args;
+  std::vector<Ref<Expression>> args;
   ASTString callid;
 
   Expression* le0 = nullptr;
   Expression* le1 = nullptr;
 
   if (bot == BOT_IN) {
-    if (Expression::type(e0.r()).isint() && !Expression::type(e0.r()).isOpt() &&
-        Expression::type(e1.r()).isPar() && Expression::type(e1.r()).isSet()) {
+    if (Expression::type(e0.r).isint() && !Expression::type(e0.r).isOpt() &&
+        Expression::type(e1.r).isPar() && Expression::type(e1.r).isSet()) {
       bool has_infinity = false;
       {
-        GCLock lock;
-        IntSetVal* dom = eval_intset(env, e1.r());
+        Ref<IntSetVal> dom = eval_intset(env, e1.r);
         has_infinity = dom->min(0).isMinusInfinity() || dom->max(dom->size() - 1).isPlusInfinity();
       }
       if (has_infinity) {
-        KeepAlive ka;
+        Ref<Expression> ka;
         {
-          GCLock lock;
-          Call* call =
-              Call::a(Expression::loc(bo), env.constants.ids.mzn_set_in_internal, {e0.r(), e1.r()});
+          auto call =
+              Call::a(Expression::loc(bo), env.constants.ids.mzn_set_in_internal, {e0.r, e1.r});
           call->type(Type::varbool());
           call->decl(env.model->matchFn(env, call, false));
-          ka = call;
+          ka = std::move(call);
         }
-        return flat_exp(env, ctx, ka(), r, b);
+        return flat_exp(env, ctx, ka, r, b);
       }
     }
     // Otherwise translate to set_in as normal
-  } else if (Expression::type(e0.r()).isint() && !Expression::type(e0.r()).isOpt()) {
-    le0 = get_linexp<IntLit>(env, e0.r());
-  } else if (Expression::type(e0.r()).isfloat() && !Expression::type(e0.r()).isOpt()) {
-    le0 = get_linexp<FloatLit>(env, e0.r());
+  } else if (Expression::type(e0.r).isint() && !Expression::type(e0.r).isOpt()) {
+    le0 = get_linexp<IntLit>(env, e0.r);
+  } else if (Expression::type(e0.r).isfloat() && !Expression::type(e0.r).isOpt()) {
+    le0 = get_linexp<FloatLit>(env, e0.r);
   }
   if (le0 != nullptr) {
-    if (Expression::type(e0.r()).isint() && Expression::type(e1.r()).isint() &&
-        !Expression::type(e1.r()).isOpt()) {
-      le1 = get_linexp<IntLit>(env, e1.r());
-    } else if (Expression::type(e0.r()).isfloat() && Expression::type(e1.r()).isfloat() &&
-               !Expression::type(e1.r()).isOpt()) {
-      le1 = get_linexp<FloatLit>(env, e1.r());
+    if (Expression::type(e0.r).isint() && Expression::type(e1.r).isint() &&
+        !Expression::type(e1.r).isOpt()) {
+      le1 = get_linexp<IntLit>(env, e1.r);
+    } else if (Expression::type(e0.r).isfloat() && Expression::type(e1.r).isfloat() &&
+               !Expression::type(e1.r).isOpt()) {
+      le1 = get_linexp<FloatLit>(env, e1.r);
     }
   }
   if (le1 != nullptr) {
-    if (Expression::type(e0.r()).isint()) {
+    if (Expression::type(e0.r).isint()) {
       flatten_linexp_binop<IntLit>(env, ctx, r, b, ret, le0, le1, bot, doubleNeg, ees, args,
                                    callid);
     } else {
@@ -1608,11 +1592,11 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
                                      callid);
     }
   } else if (isBuiltin && bot == BOT_EQ && ctx.b == C_ROOT && r == env.constants.varTrue &&
-             Expression::isa<Id>(e0.r()) && Expression::type(e1.r()).isPar() &&
-             !env.hasReverseMapper(Expression::cast<Id>(e0.r()))) {
+             Expression::isa<Id>(e0.r) && Expression::type(e1.r).isPar() &&
+             !env.hasReverseMapper(Expression::cast<Id>(e0.r))) {
     // Par assignment to Id
-    auto* vd = Expression::cast<Id>(e0.r())->decl();
-    (void)bind(env, ctx, vd, e1.r());
+    auto* vd = Expression::cast<Id>(e0.r)->decl();
+    (void)bind(env, ctx, vd, e1.r);
     ees.resize(2);
     ret.r = conj(env, r, ctx, ees);
     return ret;
@@ -1629,18 +1613,16 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       default:
         break;
     }
-    if ((Expression::type(e0.r()).istuple() || Expression::type(e0.r()).isrecord()) &&
-        (isBuiltin || (bot == BOT_IN && check_struct_table(env, Expression::type(e0.r()),
-                                                           Expression::type(e1.r()))))) {
-      return rewrite_struct_op(env, ctx, e0.r(), bot, e1.r(), doubleNeg, r, b);
+    if ((Expression::type(e0.r).istuple() || Expression::type(e0.r).isrecord()) &&
+        (isBuiltin || (bot == BOT_IN &&
+                       check_struct_table(env, Expression::type(e0.r), Expression::type(e1.r))))) {
+      return rewrite_struct_op(env, ctx, e0.r, bot, e1.r, doubleNeg, r, b);
     }
     args.push_back(e0.r);
     args.push_back(e1.r);
   }
 
   if (!args.empty()) {
-    GC::lock();
-
     bool idIsOp = false;
     if (callid.empty()) {
       assert(args.size() == 2);
@@ -1648,15 +1630,12 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         callid = op_to_id(bot);
         idIsOp = true;
       } else {
-        callid = op_to_builtin(env, args[0](), args[1](), bot);
+        callid = op_to_builtin(env, args[0], args[1], bot);
       }
     }
 
-    std::vector<Expression*> args_e(args.size());
-    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
-      args_e[i] = args[i]();
-    }
-    Call* cc = Call::a(Expression::loc(e).introduce(), callid, args_e);
+    std::vector<Expression*> args_e = raw(args);
+    Ref<Call> cc = Call::a(Expression::loc(e).introduce(), callid, args_e);
     cc->decl(env.model->matchFn(env, cc->id(), args_e, false));
     if (cc->decl() == nullptr) {
       throw FlatteningError(env, Expression::loc(cc), "cannot find matching declaration");
@@ -1664,7 +1643,7 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
     if (idIsOp && cc->decl()->e() == nullptr) {
       // This is in fact a built-in operator, but we only found out after
       // constructing the call
-      cc = Call::a(Expression::loc(e).introduce(), op_to_builtin(env, args[0](), args[1](), bot),
+      cc = Call::a(Expression::loc(e).introduce(), op_to_builtin(env, args[0], args[1], bot),
                    args_e);
       cc->decl(env.model->matchFn(env, cc->id(), args_e, false));
       if (cc->decl() == nullptr) {
@@ -1681,35 +1660,32 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
       } else if ((le1 != nullptr) && Expression::isa<Id>(le1)) {
         assignTo = Expression::cast<Id>(le1);
       }
-      if (assignTo != nullptr) {
+      if (assignTo != nullptr && assignTo->decl()->flat() != nullptr) {
         make_defined_var(env, assignTo->decl()->flat(), cc);
       }
     }
 
     auto cit = env.cseMapFind(cc);
     if (cit != env.cseMapEnd()) {
-      cse_result_change_ctx(env, cit->second.r, ctx.b);
-      ees[2].b = cit->second.r;
+      cse_result_change_ctx(env, cit->second.r.get(), ctx.b);
+      ees[2].b = cit->second.r.get();
       if (doubleNeg) {
-        Type t = Expression::type(ees[2].b());
-        ees[2].b = new UnOp(Location().introduce(), UOT_NOT, ees[2].b());
-        Expression::type(ees[2].b(), t);
+        Type t = Expression::type(ees[2].b);
+        ees[2].b = make<UnOp>(Location().introduce(), UOT_NOT, ees[2].b);
+        Expression::type(ees[2].b, t);
       }
-      if (Id* id = Expression::dynamicCast<Id>(ees[2].b())) {
+      if (Id* id = Expression::dynamicCast<Id>(ees[2].b)) {
         env.addCtxAnn(id->decl(), ctx.b);
       }
       ret.r = conj(env, r, ctx, ees);
-      GC::unlock();
     } else {
       bool singleExp = true;
       for (auto& ee : ees) {
-        if (!istrue(env, ee.b())) {
+        if (!istrue(env, ee.b)) {
           singleExp = false;
           break;
         }
       }
-      KeepAlive ka(cc);
-      GC::unlock();
       Ctx ccCtx = ctx;
       if (doubleNeg) {
         ccCtx.b = -ctx.b;
@@ -1732,12 +1708,11 @@ EE flatten_bool_op(EnvI& env, Ctx& ctx, const Ctx& ctx0, const Ctx& ctx1, Expres
         }
         ees[2].b = flat_exp(env, reifCtx, cc, nullptr, env.constants.varTrue).r;
         if (doubleNeg) {
-          GCLock lock;
-          Type t = Expression::type(ees[2].b());
-          ees[2].b = new UnOp(Location().introduce(), UOT_NOT, ees[2].b());
-          Expression::type(ees[2].b(), t);
+          Type t = Expression::type(ees[2].b);
+          ees[2].b = make<UnOp>(Location().introduce(), UOT_NOT, ees[2].b);
+          Expression::type(ees[2].b, t);
         }
-        if (Id* id = Expression::dynamicCast<Id>(ees[2].b())) {
+        if (Id* id = Expression::dynamicCast<Id>(ees[2].b)) {
           env.addCtxAnn(id->decl(), ctx.b);
         }
         ret.r = conj(env, r, ctx, ees);
@@ -1770,7 +1745,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
                       "Reverse mappers require call on right hand side");
     }
 
-    std::vector<Expression*> args(c->argCount());
+    // Owned: a par argument flattens to a fresh literal that only its EE holds
+    std::vector<Ref<Expression>> args(c->argCount());
     for (unsigned int i = 0; i < c->argCount(); i++) {
       Id* idi = Expression::dynamicCast<Id>(c->arg(i));
       if (idi == nullptr) {
@@ -1778,32 +1754,30 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
                         "Reverse mapper calls require identifiers as arguments");
       }
       EE ee = flat_exp(env, Ctx(), idi, nullptr, env.constants.varTrue);
-      args[i] = ee.r();
+      args[i] = ee.r;
     }
 
     EE ee = flat_exp(env, Ctx(), id, nullptr, env.constants.varTrue);
 
-    GCLock lock;
-    Call* revMap = Call::a(Location().introduce(), c->id(), args);
+    Ref<Call> revMap = Call::a(Location().introduce(), c->id(), args);
 
-    args.push_back(ee.r());
-    Call* keepAlive = Call::a(Location().introduce(), env.constants.varRedef->id(), args);
+    args.push_back(ee.r);
+    Ref<Call> keepAlive = Call::a(Location().introduce(), env.constants.varRedef->id(), args);
     keepAlive->type(Type::varbool());
     keepAlive->decl(env.constants.varRedef);
     ret = flat_exp(env, Ctx(), keepAlive, env.constants.varTrue, env.constants.varTrue);
 
-    if (Expression::isa<Id>(ee.r())) {
-      env.reverseMappers.insert(Expression::cast<Id>(ee.r()), revMap);
+    if (Expression::isa<Id>(ee.r)) {
+      env.reverseMappers.insert(Expression::cast<Id>(ee.r), revMap.get());
     }
     return ret;
   }
   if ((bo->op() == BOT_EQ || bo->op() == BOT_EQUIV) &&
       (bo->lhs() == env.constants.absent || bo->rhs() == env.constants.absent)) {
-    GCLock lock;
     std::vector<Expression*> args(1);
     args[0] = bo->lhs() == env.constants.absent ? bo->rhs() : bo->lhs();
     if (args[0] != env.constants.absent) {
-      Call* cr = Call::a(Expression::loc(bo).introduce(), "absent", args);
+      Ref<Call> cr = Call::a(Expression::loc(bo).introduce(), "absent", args);
       cr->decl(env.model->matchFn(env, cr, false));
       cr->type(cr->decl()->rtype(env, args, nullptr, false));
       ret = flat_exp(env, ctx, cr, r, b);
@@ -1897,24 +1871,18 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           ret.r = bind(env, ctx, r, env.constants.literalTrue);
           break;
         }
-        GC::lock();
-        Call* c = aggregate_and_or_ops(env, bo, negArgs, bot);
-        KeepAlive ka(c);
-        GC::unlock();
+        Ref<Call> c = aggregate_and_or_ops(env, bo, negArgs, bot);
         ret = flat_exp(env, ctx, c, r, b);
-        if (Id* id = Expression::dynamicCast<Id>(ret.r())) {
+        if (Id* id = Expression::dynamicCast<Id>(ret.r)) {
           env.addCtxAnn(id->decl(), ctx.b);
         }
         break;
       }
     case BOT_OR:
       if (isBuiltin) {
-        GC::lock();
-        Call* c = aggregate_and_or_ops(env, bo, negArgs, bot);
-        KeepAlive ka(c);
-        GC::unlock();
+        Ref<Call> c = aggregate_and_or_ops(env, bo, negArgs, bot);
         ret = flat_exp(env, ctx, c, r, b);
-        if (Id* id = Expression::dynamicCast<Id>(ret.r())) {
+        if (Id* id = Expression::dynamicCast<Id>(ret.r)) {
           env.addCtxAnn(id->decl(), ctx.b);
         }
         break;
@@ -1922,13 +1890,13 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     case BOT_PLUS:
       if (isBuiltin) {
         try {
-          KeepAlive ka;
+          Ref<Expression> ka;
           if (Expression::type(boe0).isint()) {
             ka = mklinexp<IntLit>(env, 1, 1, boe0, boe1);
           } else {
             ka = mklinexp<FloatLit>(env, 1.0, 1.0, boe0, boe1);
           }
-          ret = flat_exp(env, ctx, ka(), r, b);
+          ret = flat_exp(env, ctx, ka, r, b);
         } catch (ResultUndefinedError&) {
           ret.r = create_dummy_value(env, Expression::type(e));
           ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
@@ -1938,13 +1906,13 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
     case BOT_MINUS:
       if (isBuiltin) {
         try {
-          KeepAlive ka;
+          Ref<Expression> ka;
           if (Expression::type(boe0).isint()) {
             ka = mklinexp<IntLit>(env, 1, -1, boe0, boe1);
           } else {
             ka = mklinexp<FloatLit>(env, 1.0, -1.0, boe0, boe1);
           }
-          ret = flat_exp(env, ctx, ka(), r, b);
+          ret = flat_exp(env, ctx, ka, r, b);
         } catch (ResultUndefinedError&) {
           ret.r = create_dummy_value(env, Expression::type(e));
           ret.b = bind(env, Ctx(), b, env.constants.literalFalse);
@@ -1955,7 +1923,6 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.i = C_MIX;
       ctx1.i = C_MIX;
       if (isBuiltin && Expression::type(boe0).isint()) {
-        GCLock lock;
         IntBounds bounds0 = compute_int_bounds(env, boe0);
         if (bounds0.valid && bounds0.u < 0) {
           ctx1.i = -ctx.i;
@@ -1974,7 +1941,6 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ctx0.i = C_MIX;
       ctx1.i = C_MIX;
       if (isBuiltin && Expression::type(boe0).isint()) {
-        GCLock lock;
         IntBounds bounds0 = compute_int_bounds(env, boe0);
         if (bounds0.valid && bounds0.u < 0) {
           ctx1.i = +ctx.i;
@@ -2008,10 +1974,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       if (ctx.b == C_ROOT && r == env.constants.varTrue && Expression::type(boe0).isPar() &&
           !Expression::type(boe0).isOpt()) {
         bool bval;
-        {
-          GCLock lock;
-          bval = eval_bool(env, boe0);
-        }
+        bval = eval_bool(env, boe0);
         if (bval) {
           Ctx nctx = ctx;
           nctx.neg = negArgs;
@@ -2030,11 +1993,11 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
           !Expression::type(boe1).isOpt()) {
         bool bval;
         {
-          GCLock lock;
           if (Expression::type(boe1).cv()) {
             Ctx ctx;
             ctx.b = C_MIX;
-            bval = eval_bool(env, flat_cv_exp(env, ctx, boe1)());
+            Ref<Expression> flat_boe1 = flat_cv_exp(env, ctx, boe1);
+            bval = eval_bool(env, flat_boe1);
           } else {
             bval = eval_bool(env, boe1);
           }
@@ -2053,16 +2016,15 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         ret = flat_exp(env, nctx, boe0, env.constants.varTrue, env.constants.varTrue);
         break;
       }
-      GC::lock();
-      std::vector<Expression*> args;
+      std::vector<Ref<Expression>> args;
       ASTString id;
       if (ctx.neg) {
-        std::vector<Expression*> bo_args(2);
+        std::vector<Ref<Expression>> bo_args(2);
         bo_args[0] = boe0;
-        bo_args[1] = new UnOp(Expression::loc(bo), UOT_NOT, boe1);
+        bo_args[1] = make<UnOp>(Expression::loc(bo), UOT_NOT, boe1);
         Expression::type(bo_args[1], Expression::type(boe1));
         id = env.constants.ids.forall;
-        args.push_back(new ArrayLit(Expression::loc(bo), bo_args));
+        args.emplace_back(make<ArrayLit>(Expression::loc(bo), bo_args));
         Expression::type(args[0], Type::varbool(1));
         ctx.neg = false;
         ctx.b = -ctx.b;
@@ -2071,26 +2033,24 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         clause_pos[0] = boe1;
         std::vector<Expression*> clause_neg(1);
         clause_neg[0] = boe0;
-        args.push_back(new ArrayLit(Expression::loc(boe1).introduce(), clause_pos));
+        args.emplace_back(make<ArrayLit>(Expression::loc(boe1).introduce(), clause_pos));
         Type t0 = Expression::type(boe1);
         t0.dim(1);
         Expression::type(args[0], t0);
-        args.push_back(new ArrayLit(Expression::loc(boe0).introduce(), clause_neg));
+        args.emplace_back(make<ArrayLit>(Expression::loc(boe0).introduce(), clause_neg));
         Type t1 = Expression::type(boe0);
         t1.dim(1);
         Expression::type(args[1], t1);
         id = env.constants.ids.clause;
       }
-      Call* c = Call::a(Expression::loc(bo).introduce(), id, args);
+      Ref<Call> c = Call::a(Expression::loc(bo).introduce(), id, args);
       c->decl(env.model->matchFn(env, c, false));
       if (c->decl() == nullptr) {
         throw FlatteningError(env, Expression::loc(c), "cannot find matching declaration");
       }
-      c->type(c->decl()->rtype(env, args, nullptr, false));
-      KeepAlive ka(c);
-      GC::unlock();
+      c->type(c->decl()->rtype(env, raw(args), nullptr, false));
       ret = flat_exp(env, ctx, c, r, b);
-      if (Id* id = Expression::dynamicCast<Id>(ret.r())) {
+      if (Id* id = Expression::dynamicCast<Id>(ret.r)) {
         env.addCtxAnn(id->decl(), ctx.b);
       }
     } break;
@@ -2115,15 +2075,15 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         }
         ctx0.b = C_MIX;
         EE e0 = flat_exp(env, ctx0, boe0, nullptr, ctx0.partialityVar(env));
-        if (istrue(env, e0.r())) {
+        if (istrue(env, e0.r)) {
           return flat_exp(env, ctx1, boe1, r, b);
         }
-        if (isfalse(env, e0.r())) {
+        if (isfalse(env, e0.r)) {
           ctx1.neg = true;
           ctx1.b = -ctx1.b;
           return flat_exp(env, ctx1, boe1, r, b);
         }
-        Id* id = Expression::cast<Id>(e0.r());
+        Id* id = Expression::cast<Id>(e0.r);
         ctx1.b = C_MIX;
         (void)flat_exp(env, ctx1, boe1, id->decl(), env.constants.varTrue);
         env.addCtxAnn(id->decl(), ctx1.b);
@@ -2154,15 +2114,15 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         }
         ctx0.b = C_MIX;
         EE e0 = flat_exp(env, ctx0, boe0, nullptr, ctx0.partialityVar(env));
-        if (isfalse(env, e0.r())) {
+        if (isfalse(env, e0.r)) {
           return flat_exp(env, ctx1, boe1, r, b);
         }
-        if (istrue(env, e0.r())) {
+        if (istrue(env, e0.r)) {
           ctx1.neg = true;
           ctx1.b = -ctx1.b;
           return flat_exp(env, ctx1, boe1, r, b);
         }
-        Id* id = Expression::cast<Id>(e0.r());
+        Id* id = Expression::cast<Id>(e0.r);
         ctx1.neg = true;
         ctx1.b = C_MIX;
         (void)flat_exp(env, ctx1, boe1, id->decl(), env.constants.varTrue);
@@ -2256,10 +2216,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       EE eev = flat_exp(env, ctx, boe0, nullptr, ctx.partialityVar(env));
       ee[0] = eev;
       ArrayLit* al;
-      if (Expression::isa<ArrayLit>(eev.r())) {
-        al = Expression::cast<ArrayLit>(eev.r());
+      if (Expression::isa<ArrayLit>(eev.r)) {
+        al = Expression::cast<ArrayLit>(eev.r);
       } else {
-        Id* id = Expression::cast<Id>(eev.r());
+        Id* id = Expression::cast<Id>(eev.r);
         if (id->decl() == nullptr) {
           throw InternalError("undefined identifier");
         }
@@ -2271,10 +2231,10 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
       ArrayLit* al0 = al;
       eev = flat_exp(env, ctx, boe1, nullptr, ctx.partialityVar(env));
       ee[1] = eev;
-      if (Expression::isa<ArrayLit>(eev.r())) {
-        al = Expression::cast<ArrayLit>(eev.r());
+      if (Expression::isa<ArrayLit>(eev.r)) {
+        al = Expression::cast<ArrayLit>(eev.r);
       } else {
-        Id* id = Expression::cast<Id>(eev.r());
+        Id* id = Expression::cast<Id>(eev.r);
         if (id->decl() == nullptr) {
           throw InternalError("undefined identifier");
         }
@@ -2283,9 +2243,8 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         }
         al = Expression::cast<ArrayLit>(follow_id(id));
       }
-      GCLock lock;
       ArrayLit* al1 = al;
-      ArrayLit* alret;
+      Ref<ArrayLit> alret;
       if (Expression::type(e).isrecord()) {
         alret = eval_record_merge(env, al0, al1);
       } else {
@@ -2296,7 +2255,7 @@ EE flatten_binop(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, Var
         for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
-        alret = new ArrayLit(Expression::loc(e), v);
+        alret = make<ArrayLit>(Expression::loc(e), v);
         if (Expression::type(e).istuple()) {
           alret = ArrayLit::constructTuple(Expression::loc(e), alret);
         }

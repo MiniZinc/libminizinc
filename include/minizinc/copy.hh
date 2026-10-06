@@ -20,8 +20,23 @@ protected:
   typedef std::unordered_map<Model*, Model*> ModelMap;
   ModelMap _modelMap;
 
-  ASTNodeWeakMap _nodeMap;
-  ASTNodeWeakMap _revNodeMap;
+  std::unordered_map<ASTNode*, ASTNode*> _nodeMap;
+  std::unordered_map<ASTNode*, ASTNode*> _revNodeMap;
+  /// Owns the nodes on both sides of the maps
+  std::vector<Ref<ASTNode>> _owned;
+
+  void insertNode(ASTNode* n0, ASTNode* n1) {
+    bool fwd = _nodeMap.emplace(n0, n1).second;
+    bool rev = _revNodeMap.emplace(n1, n0).second;
+    if (fwd || rev) {
+      _owned.emplace_back(n0);
+      _owned.emplace_back(n1);
+    }
+  }
+  static ASTNode* findNode(std::unordered_map<ASTNode*, ASTNode*>& m, ASTNode* n) {
+    auto it = m.find(n);
+    return it == m.end() ? nullptr : it->second;
+  }
 
 public:
   void insert(Expression* e0, Expression* e1);
@@ -42,8 +57,7 @@ public:
   void insert(const ASTExprVec<T>& e0, const ASTExprVec<T>& e1) {
     assert(e0.empty() == e1.empty());
     if (!e0.empty()) {
-      _nodeMap.insert(e0.vec(), e1.vec());
-      _revNodeMap.insert(e1.vec(), e0.vec());
+      insertNode(e0.vec(), e1.vec());
     }
   }
   template <class T>
@@ -51,7 +65,7 @@ public:
     if (e.empty()) {
       return nullptr;
     }
-    ASTNode* n = _nodeMap.find(e.vec());
+    ASTNode* n = findNode(_nodeMap, e.vec());
     return static_cast<ASTExprVecO<T*>*>(n);
   }
   template <class T>
@@ -59,31 +73,31 @@ public:
     if (e.empty()) {
       return nullptr;
     }
-    ASTNode* n = _revNodeMap.find(e.vec());
+    ASTNode* n = findNode(_revNodeMap, e.vec());
     return static_cast<ASTExprVecO<T*>*>(n);
   }
   void clear() {
     _modelMap.clear();
     _nodeMap.clear();
     _revNodeMap.clear();
+    _owned.clear();
   }
 };
 
-/// Create a deep copy of expression \a e
-Expression* copy(EnvI& env, Expression* e, bool followIds = false, bool copyFundecls = false,
-                 bool isFlatModel = false);
-/// Create a deep copy of item \a i
-Item* copy(EnvI& env, Item* i, bool followIds = false, bool copyFundecls = false,
-           bool isFlatModel = false);
+/// Create a deep copy of expression \a e. The declarations of the functions that it calls are not
+/// copied (see the overloads below for that).
+Ref<Expression> copy(EnvI& env, Expression* e, bool followIds = false);
+/// Create a deep copy of item \a i (function declarations are not copied, see above)
+Ref<Item> copy(EnvI& env, Item* i, bool followIds = false);
 /// Create a deep copy of model \a m
 Model* copy(EnvI& env, Model* m);
 
 /// Create a deep copy of expression \a e
-Expression* copy(EnvI& env, CopyMap& map, Expression* e, bool followIds = false,
-                 bool copyFundecls = false, bool isFlatModel = false);
+Ref<Expression> copy(EnvI& env, CopyMap& map, Expression* e, bool followIds = false,
+                     bool copyFundecls = false, bool isFlatModel = false);
 /// Create a deep copy of item \a i
-Item* copy(EnvI& env, CopyMap& map, Item* i, bool followIds = false, bool copyFundecls = false,
-           bool isFlatModel = false);
+Ref<Item> copy(EnvI& env, CopyMap& map, Item* i, bool followIds = false, bool copyFundecls = false,
+               bool isFlatModel = false);
 /// Create a deep copy of model \a m
 Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel = false);
 

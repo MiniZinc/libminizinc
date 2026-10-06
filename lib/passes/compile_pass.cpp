@@ -55,7 +55,6 @@ ASTString strip_stdlib_path(const vector<string>& includePaths, const ASTString&
 
 Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& globals_dirs,
                     CompilePassFlags& compflags, bool verbose = false) {
-  GCLock lock;
   CopyMap cm;
   Model* m = e.envi().originalModel != nullptr ? e.envi().originalModel : e.envi().model;
   auto* new_mod = new Model();
@@ -114,7 +113,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& 
   Model* inc_mod = parse_from_string(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
                                      false, true, verbose, std::cerr);
 
-  auto* new_inc = new IncludeI(Location().introduce(), ASTString("MultiPassDummy.mzn"));
+  auto new_inc = make<IncludeI>(Location().introduce(), ASTString("MultiPassDummy.mzn"));
   new_inc->m(inc_mod);
   inc_mod->setParent(new_mod);
   new_mod->addItem(new_inc);

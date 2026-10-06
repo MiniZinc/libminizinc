@@ -87,7 +87,7 @@ public:
   Status next() override { return SolverInstance::ERROR; }  // TODO: Implement
   void resetSolver() override;
 
-  Expression* getSolutionValue(Id* id) override;
+  Ref<Expression> getSolutionValue(Id* id) override;
   void printStatistics() override;
 
   // MiniZinc to Geas conversions

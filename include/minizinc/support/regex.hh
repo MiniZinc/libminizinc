@@ -12,7 +12,6 @@
 #pragma once
 
 // Regex Parser Requirements
-#include <minizinc/astmap.hh>
 #include <minizinc/aststring.hh>
 #include <minizinc/config.hh>
 #include <minizinc/values.hh>

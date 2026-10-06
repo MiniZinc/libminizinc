@@ -66,11 +66,11 @@ void CyclicIncludeError::json(std::ostream& os) const {
   os << "]}\n";
 }
 
-LocationException::LocationException(EnvI& env, const Location& loc, const std::string& msg)
-    : Exception(msg), _stack(std::make_shared<StackDump>(env)), _loc(loc) {}
+LocationException::LocationException(EnvI& env, Location loc, const std::string& msg)
+    : Exception(msg), _stack(std::make_shared<StackDump>(env)), _loc(std::move(loc)) {}
 
-LocationException::LocationException(const Location& loc, const std::string& msg)
-    : Exception(msg), _stack(std::make_shared<StackDump>()), _loc(loc) {}
+LocationException::LocationException(Location loc, const std::string& msg)
+    : Exception(msg), _stack(std::make_shared<StackDump>()), _loc(std::move(loc)) {}
 
 void LocationException::print(std::ostream& os) const {
   Exception::print(os);

@@ -84,6 +84,15 @@ class Test:
                 raise NotImplementedError("Unknown test case type")
         except mzn.MiniZincError as error:
             result = error
+            if any(
+                isinstance(exp, Error) and exp.stack is not yaml.Undefined
+                for exp in (self.expected if isinstance(self.expected, list) else [self.expected])
+            ):
+                # The minizinc Python driver does not surface the stack trace of an error, so
+                # run the executable directly and take it from the JSON stream.
+                for obj in run_json_stream(solver_name, file, extra_files, options):
+                    if obj.get("type") == "error":
+                        error.stack = [item.get("description") for item in obj.get("stack", [])]
             obtained = Error.from_mzn(result)
 
         required = self.expected if isinstance(self.expected, list) else [self.expected]
@@ -158,6 +167,40 @@ class Result:
         return instance
 
 
+def run_json_stream(solver_name, file, extra_files, options):
+    """
+    Runs the minizinc executable directly and yields the objects of its JSON stream.
+
+    Used for messages that the minizinc Python driver does not surface.
+    """
+    executable = str(mzn.default_driver._executable)
+    if solver_name.endswith(".msc"):
+        solver_arg = str(pathlib.Path(file).parent.joinpath(solver_name))
+    else:
+        solver_arg = solver_name
+    cmd = [executable, "--solver", solver_arg, "--json-stream"]
+    for key, value in options.items():
+        flag = "--" + str(key).replace("_", "-")
+        if value is True:
+            cmd.append(flag)
+        elif value is False:
+            continue
+        else:
+            cmd += [flag, str(value)]
+    cmd.append(str(file))
+    cmd += [str(f) for f in extra_files]
+
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            yield loads(line)
+        except ValueError:
+            continue
+
+
 @yaml.mapping("!CoreResult")
 class CoreResult:
     """
@@ -174,34 +217,9 @@ class CoreResult:
 
     @staticmethod
     def from_solve(solver_name, file, extra_files, options):
-        executable = str(mzn.default_driver._executable)
-        if solver_name.endswith(".msc"):
-            solver_arg = str(pathlib.Path(file).parent.joinpath(solver_name))
-        else:
-            solver_arg = solver_name
-        cmd = [executable, "--solver", solver_arg, "--json-stream"]
-        for key, value in options.items():
-            flag = "--" + str(key).replace("_", "-")
-            if value is True:
-                cmd.append(flag)
-            elif value is False:
-                continue
-            else:
-                cmd += [flag, str(value)]
-        cmd.append(str(file))
-        cmd += [str(f) for f in extra_files]
-
-        proc = subprocess.run(cmd, capture_output=True, text=True)
         status = None
         cores = []
-        for line in proc.stdout.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = loads(line)
-            except ValueError:
-                continue
+        for obj in run_json_stream(solver_name, file, extra_files, options):
             if obj.get("type") == "status":
                 status = obj.get("status")
             elif obj.get("type") == "core":
@@ -274,6 +292,9 @@ class Error:
     """
     A MiniZinc error with a type name and message.
 
+    `stack` is a list of descriptions that must occur in this order in the stack trace of the
+    error, such as `x = 1` for the binding of a comprehension variable.
+
     Represented by `!Error` in YAML.
     """
 
@@ -281,6 +302,7 @@ class Error:
         self.type = yaml.Undefined
         self.message = yaml.Undefined
         self.regex = yaml.Undefined
+        self.stack = yaml.Undefined
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -296,6 +318,11 @@ class Error:
             kind = type(actual)
             classes = (kind,) + kind.__bases__
             if not any(self.type == c.__name__ for c in classes):
+                return False
+
+        if self.stack is not yaml.Undefined:
+            remaining = iter(getattr(actual, "stack", []))
+            if not all(item in remaining for item in self.stack):
                 return False
 
         if self.message is not yaml.Undefined:

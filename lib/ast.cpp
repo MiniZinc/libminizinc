@@ -15,12 +15,15 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/values.hh>
 
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
 #include <limits>
 
 namespace MiniZinc {
@@ -29,8 +32,7 @@ namespace MiniZinc {
 ///
 /// TypeInst objects cannot be shared between VarDecl's, so domains of records/tuples require copies
 /// of their domain's TypeInst objects, but normal domains can be shared by multiple VarDecl's
-Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
-  assert(GC::locked());
+Ref<Expression> domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
   if (orig == nullptr) {
     return nullptr;
   }
@@ -39,14 +41,14 @@ Expression* domain_shallow_copy(EnvI& env, Expression* orig, Type type) {
     return orig;
   }
   StructType* st = env.getStructType(type);
-  std::vector<Expression*> clone(al->size());
+  std::vector<Ref<Expression>> clone(al->size());
   for (unsigned int i = 0; i < al->size(); i++) {
     Type nt = (*st)[i];
     auto* ti = Expression::cast<TypeInst>((*al)[i]);
-    clone[i] = new TypeInst(Expression::loc(orig), nt, ti->ranges(),
-                            domain_shallow_copy(env, ti->domain(), nt));
+    clone[i] = make<TypeInst>(Expression::loc(orig), nt, ti->ranges(),
+                              domain_shallow_copy(env, ti->domain(), nt));
   }
-  ArrayLit* tup = ArrayLit::constructTuple(Expression::loc(orig), clone);
+  Ref<ArrayLit> tup = ArrayLit::constructTuple(Expression::loc(orig), raw(clone));
   tup->type(type.elemType(env));
   return tup;
 }
@@ -85,19 +87,21 @@ Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int fi
 }
 
 Location::LocVec::LocVec(const ASTString& filename, IntVal combined) : ASTVec(2) {
+  RC::inc(filename.aststr());
   *(_data + 0) = filename.aststr();
-  *(_data + 1) = IntLit::a(combined);
+  *(_data + 1) = IntLit::a(combined).release();
 }
 
 Location::LocVec::LocVec(const ASTString& filename, unsigned int first_line,
                          unsigned int first_column, unsigned int last_line,
                          unsigned int last_column)
     : ASTVec(5) {
+  RC::inc(filename.aststr());
   *(_data + 0) = filename.aststr();
-  *(_data + 1) = IntLit::a(first_line);
-  *(_data + 2) = IntLit::a(last_line);
-  *(_data + 3) = IntLit::a(first_column);
-  *(_data + 4) = IntLit::a(last_column);
+  *(_data + 1) = IntLit::a(first_line).release();
+  *(_data + 2) = IntLit::a(last_line).release();
+  *(_data + 3) = IntLit::a(first_column).release();
+  *(_data + 4) = IntLit::a(last_column).release();
 }
 
 Location Location::nonalloc;  // NOLINT(bugprone-throwing-static-initialization)
@@ -136,12 +140,6 @@ std::string Location::toJSON() const {
   return os.str();
 }
 
-void Location::mark() const {
-  if (lv() != nullptr) {
-    lv()->mark();
-  }
-}
-
 Location Location::introduce() const {
   Location l = *this;
   if (l._locInfo.lv != nullptr) {
@@ -150,7 +148,7 @@ Location Location::introduce() const {
   return l;
 }
 
-void Expression::addAnnotation(Expression* e, Expression* ann) {
+void Expression::addAnnotation(Expression* e, Arg<Expression> ann) {
   if (!isUnboxedVal(e) && e != Constants::constants().literalTrue &&
       e != Constants::constants().literalFalse &&
       !Expression::equal(ann, Constants::constants().ann.empty_annotation)) {
@@ -166,137 +164,6 @@ void Expression::addAnnotations(Expression* e, const std::vector<Expression*>& a
       }
     }
   }
-}
-
-#define pushstack(e)      \
-  do {                    \
-    if ((e) != nullptr) { \
-      stack.push_back(e); \
-    }                     \
-  } while (0)
-#define pushall(v)                                \
-  do {                                            \
-    (v).mark();                                   \
-    for (unsigned int i = 0; i < (v).size(); i++) \
-      if ((v)[i] != nullptr) {                    \
-        stack.push_back((v)[i]);                  \
-      }                                           \
-  } while (0)
-#define pushann(a)                                                    \
-  do {                                                                \
-    for (ExpressionSetIter it = (a).begin(); it != (a).end(); ++it) { \
-      pushstack(*it);                                                 \
-    }                                                                 \
-  } while (0)
-void Expression::mark(Expression* e) {
-  if (e == nullptr || isUnboxedVal(e)) {
-    return;
-  }
-  std::vector<const Expression*> stack;
-  stack.reserve(1000);
-  stack.push_back(e);
-  while (!stack.empty()) {
-    const Expression* cur = stack.back();
-    stack.pop_back();
-    if (!isUnboxedVal(cur) && cur->_gcMark == 0U) {
-      cur->_gcMark = 1U;
-      Expression::loc(cur).mark();
-      pushann(Expression::ann(cur));
-      switch (Expression::eid(cur)) {
-        case Expression::E_INTLIT:
-        case Expression::E_FLOATLIT:
-        case Expression::E_BOOLLIT:
-        case Expression::E_ANON:
-          break;
-        case Expression::E_SETLIT:
-          if (Expression::cast<SetLit>(cur)->isv() != nullptr) {
-            Expression::cast<SetLit>(cur)->isv()->mark();
-          } else if (Expression::cast<SetLit>(cur)->fsv() != nullptr) {
-            Expression::cast<SetLit>(cur)->fsv()->mark();
-          } else {
-            pushall(Expression::cast<SetLit>(cur)->v());
-          }
-          break;
-        case Expression::E_STRINGLIT:
-          Expression::cast<StringLit>(cur)->v().mark();
-          break;
-        case Expression::E_ID:
-          if (Expression::cast<Id>(cur)->idn() == -1) {
-            Expression::cast<Id>(cur)->v().mark();
-          }
-          pushstack(Expression::cast<Id>(cur)->destination());
-          break;
-        case Expression::E_ARRAYLIT:
-          if (cur->_flag2) {
-            pushstack(Expression::cast<ArrayLit>(cur)->_u.al);
-          } else {
-            pushall(ASTExprVec<Expression>(Expression::cast<ArrayLit>(cur)->_u.v));
-          }
-          Expression::cast<ArrayLit>(cur)->_dims.mark();
-          break;
-        case Expression::E_ARRAYACCESS:
-          pushstack(Expression::cast<ArrayAccess>(cur)->v());
-          pushall(Expression::cast<ArrayAccess>(cur)->idx());
-          break;
-        case Expression::E_FIELDACCESS:
-          pushstack(Expression::cast<FieldAccess>(cur)->v());
-          pushstack(Expression::cast<FieldAccess>(cur)->field());
-          break;
-        case Expression::E_COMP:
-          pushstack(Expression::cast<Comprehension>(cur)->_e);
-          pushall(Expression::cast<Comprehension>(cur)->_g);
-          Expression::cast<Comprehension>(cur)->_gIndex.mark();
-          break;
-        case Expression::E_ITE:
-          pushstack(Expression::cast<ITE>(cur)->elseExpr());
-          pushall(Expression::cast<ITE>(cur)->_eIfThen);
-          break;
-        case Expression::E_BINOP:
-          pushstack(Expression::cast<BinOp>(cur)->lhs());
-          pushstack(Expression::cast<BinOp>(cur)->rhs());
-          break;
-        case Expression::E_UNOP:
-          pushstack(Expression::cast<UnOp>(cur)->e());
-          break;
-        case Expression::E_CALL:
-          Expression::cast<Call>(cur)->id().mark();
-          for (unsigned int i = Expression::cast<Call>(cur)->argCount(); (i--) != 0U;) {
-            pushstack(Expression::cast<Call>(cur)->arg(i));
-          }
-          if (static_cast<Call::CallKind>(cur->_secondaryId) >= Call::CK_NARY) {
-            Expression::cast<CallNary>(cur)->_args->mark();
-          }
-          if (FunctionI* fi = Expression::cast<Call>(cur)->decl()) {
-            Item::mark(fi);
-          }
-          break;
-        case Expression::E_VARDECL:
-          cur->_vdGcMark = 1U;
-          pushstack(Expression::cast<VarDecl>(cur)->ti());
-          pushstack(Expression::cast<VarDecl>(cur)->e());
-          pushstack(Expression::cast<VarDecl>(cur)->id());
-          break;
-        case Expression::E_LET:
-          pushall(Expression::cast<Let>(cur)->let());
-          pushall(Expression::cast<Let>(cur)->_letOrig);
-          pushstack(Expression::cast<Let>(cur)->in());
-          break;
-        case Expression::E_TI:
-          pushstack(Expression::cast<TypeInst>(cur)->domain());
-          pushall(Expression::cast<TypeInst>(cur)->ranges());
-          break;
-        case Expression::E_TIID:
-          Expression::cast<TIId>(cur)->v().mark();
-          break;
-      }
-    }
-  }
-}
-#undef pushstack
-#undef pushall
-
-bool Expression::hasMark(Expression* e) {
-  return e != nullptr && !isUnboxedVal(e) && e->_gcMark != 0U;
 }
 
 void IntLit::rehash() {
@@ -340,7 +207,7 @@ void BoolLit::rehash() {
 
 void StringLit::rehash() {
   initHash();
-  combineHash(_v.hash());
+  combineHash(v().hash());
 }
 
 void Id::rehash() {
@@ -360,21 +227,34 @@ int Id::levenshteinDistance(Id* other) const {
   return v().levenshteinDistance(other->v());
 }
 
+namespace {
+/// The name of \a id (see Id::str), without creating a string: the name of an introduced variable
+/// is written to \a buf
+const char* id_name(const Id* id, char* buf, size_t size) {
+  long long int idn = id->idn();
+  if (idn == -1) {
+    const char* s = id->v().c_str();
+    return s == nullptr ? "" : s;
+  }
+  if (idn < -1) {
+    return "_";
+  }
+  snprintf(buf, size, "X_INTRODUCED_%lld_", idn);
+  return buf;
+}
+}  // namespace
+
 ASTString Id::str() const {
   if (idn() == -1) {
     return v();
   }
-  if (idn() < -1) {
-    return ASTString("_");
-  }
-  std::ostringstream oss;
-  oss << "X_INTRODUCED_" << idn() << "_";
-  return ASTString(oss.str());
+  char buf[40];
+  return ASTString(std::string(id_name(this, buf, sizeof(buf))));
 }
 
 void TIId::rehash() {
   initHash();
-  combineHash(_v.hash());
+  combineHash(v().hash());
 }
 
 void AnonVar::rehash() { initHash(); }
@@ -408,7 +288,6 @@ unsigned int ArrayLit::length() const {
 }
 void ArrayLit::make1d() {
   if (!_dims.empty()) {
-    GCLock lock;
     if (_flag2) {
       std::vector<int> d(2 + _u.al->dims() * 2);
       unsigned int dimOffset = dims() * 2;
@@ -417,12 +296,12 @@ void ArrayLit::make1d() {
       for (unsigned int i = 2; i < d.size(); i++) {
         d[i] = _dims[dimOffset + i];
       }
-      _dims = ASTIntVec(d);
+      RC::setVec(_dims, ASTIntVec(d));
     } else {
       std::vector<int> d(2);
       d[0] = 1;
       d[1] = static_cast<int>(length());
-      _dims = ASTIntVec(d);
+      RC::setVec(_dims, ASTIntVec(d));
     }
   }
 }
@@ -454,14 +333,14 @@ Expression* ArrayLit::getSlice(unsigned int i) const {
   return (*_u.al)[origIdx(i)];
 }
 
-void ArrayLit::setSlice(unsigned int i, Expression* e) {
+void ArrayLit::setSlice(unsigned int i, Arg<Expression> e) {
   if (!_flag2) {
     assert(_u.v->flag());
     int off = static_cast<int>(length()) - static_cast<int>(_u.v->size());
     if (static_cast<int>(i) <= off) {
-      (*_u.v)[0] = e;
+      _u.v->set(0, e);
     } else {
-      (*_u.v)[i - off] = e;
+      _u.v->set(i - off, e);
     }
   } else {
     assert(_flag2);
@@ -563,15 +442,19 @@ size_t ArrayLit::computeHash() const {
   // Hash the index sets and the elements, not the representation, so that a view or a
   // compressed array has the same hash as an equal plain array (see Expression::equal)
   std::hash<int> h;
-  size_t r = combineHash(0, _id);
-  r = combineHash(r, h(static_cast<int>(dims())));
+  uint32_t r = 0;
+  auto combine = [&r](size_t v) {
+    r ^= static_cast<uint32_t>(v + 0x9e3779b9 + (r << 6) + (r >> 2));
+  };
+  combine(_id);
+  combine(h(static_cast<int>(dims())));
   for (unsigned int i = 0; i < dims(); i++) {
-    r = combineHash(r, h(min(i)));
-    r = combineHash(r, h(max(i)));
+    combine(h(min(i)));
+    combine(h(max(i)));
   }
   for (unsigned int i = size(); (i--) != 0U;) {
-    r = combineHash(r, h(static_cast<int>(i)));
-    r = combineHash(r, Expression::hash((*this)[i]));
+    combine(h(static_cast<int>(i)));
+    combine(Expression::hash((*this)[i]));
   }
   // Keep the sentinel for pending hashes unambiguous
   return r == pendingHash ? r - 1 : r;
@@ -601,10 +484,10 @@ void FieldAccess::rehash() {
 }
 
 Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression* where) {
-  std::vector<VarDecl*> vd;
+  std::vector<Ref<VarDecl>> vd;
   Location loc = in == nullptr ? Expression::loc(where) : Expression::loc(in);
   for (auto i : v) {
-    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), i);
+    auto nvd = make<VarDecl>(loc, make<TypeInst>(loc, Type::parint()), i);
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -613,10 +496,10 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
   _where = where;
 }
 Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* where) {
-  std::vector<VarDecl*> vd;
+  std::vector<Ref<VarDecl>> vd;
   for (auto* i : v) {
-    auto* nvd =
-        new VarDecl(Expression::loc(i), new TypeInst(Expression::loc(i), Type::parint()), i->v());
+    auto nvd = make<VarDecl>(Expression::loc(i), make<TypeInst>(Expression::loc(i), Type::parint()),
+                             i->v());
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -625,15 +508,15 @@ Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* wher
   _where = where;
 }
 Generator::Generator(const std::vector<std::string>& v, Expression* in, Expression* where) {
-  std::vector<VarDecl*> vd;
+  std::vector<Ref<VarDecl>> vd;
   Location loc = in == nullptr ? Expression::loc(where) : Expression::loc(in);
   int anon_count = -2;
   for (const auto& i : v) {
-    VarDecl* nvd;
+    Ref<VarDecl> nvd;
     if (i.empty()) {
-      nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), anon_count--);
+      nvd = make<VarDecl>(loc, make<TypeInst>(loc, Type::parint()), anon_count--);
     } else {
-      nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(i));
+      nvd = make<VarDecl>(loc, make<TypeInst>(loc, Type::parint()), ASTString(i));
     }
     nvd->toplevel(false);
     vd.push_back(nvd);
@@ -643,21 +526,21 @@ Generator::Generator(const std::vector<std::string>& v, Expression* in, Expressi
   _where = where;
 }
 Generator::Generator(const std::vector<VarDecl*>& v, Expression* in, Expression* where) {
-  _v = v;
+  _v.assign(v.begin(), v.end());
   _in = in;
   _where = where;
 }
 Generator::Generator(int pos, Expression* where) {
-  std::vector<VarDecl*> vd;
+  std::vector<Ref<VarDecl>> vd;
   std::ostringstream oss;
   oss << "__dummy" << pos;
-  auto* nvd =
-      new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type::parint()),
-                  ASTString(oss.str()));
+  auto nvd =
+      make<VarDecl>(Location().introduce(), make<TypeInst>(Location().introduce(), Type::parint()),
+                    ASTString(oss.str()));
   nvd->toplevel(false);
   vd.push_back(nvd);
   _v = vd;
-  _in = new ArrayLit(Location().introduce(), std::vector<Expression*>({IntLit::a(0)}));
+  _in = make<ArrayLit>(Location().introduce(), std::vector<Ref<Expression>>({IntLit::a(0)}));
   _where = where;
 }
 
@@ -739,18 +622,26 @@ void BinOp::rehash() {
 
 Call* BinOp::morph(const ASTString& ident, const std::vector<Expression*>& args) {
   assert(sizeof(BinOp) == sizeof(Call3));
-  _id = Call::eid;
-  _secondaryId = Call::CK_TERNARY;
-  _flag1 = true;
-  Call* c = Expression::cast<Call>(this);
-  c->id(ident);
-  c->args(args);
-  return c;
+  assert(args.size() == 3);
+  // The Call fields overlap the BinOp fields: write them without counting, then count the Call's
+  // children and release the BinOp's
+  RC::replaceChildren(this, [&] {
+    _id = Call::eid;
+    _secondaryId = Call::CK_TERNARY;
+    _flag1 = true;
+    auto* c = static_cast<Call3*>(static_cast<Expression*>(this));
+    // (stored without a count: replaceChildren counts the identifier with the other children)
+    c->_uId.decl = reinterpret_cast<FunctionI*>(ident.aststr());
+    for (unsigned int i = 0; i < 3; i++) {
+      c->_data[i] = args[i];
+    }
+  });
+  return Expression::cast<Call>(this);
 }
 
 namespace {
 
-class OpToString : public GCMarker {
+class OpToString {
 public:
   Id* sBOT_PLUS;       // NOLINT(readability-identifier-naming)
   Id* sBOT_MINUS;      // NOLINT(readability-identifier-naming)
@@ -783,76 +674,40 @@ public:
   Id* sBOT_NOT;        // NOLINT(readability-identifier-naming)
 
   OpToString() {
-    GC::lockNoGC();
-
-    sBOT_PLUS = new Id(Location(), "'+'", nullptr);
-    sBOT_MINUS = new Id(Location(), "'-'", nullptr);
-    sBOT_MULT = new Id(Location(), "'*'", nullptr);
-    sBOT_DIV = new Id(Location(), "'/'", nullptr);
-    sBOT_IDIV = new Id(Location(), "'div'", nullptr);
-    sBOT_MOD = new Id(Location(), "'mod'", nullptr);
-    sBOT_POW = new Id(Location(), "'^'", nullptr);
-    sBOT_LE = new Id(Location(), "'<'", nullptr);
-    sBOT_LQ = new Id(Location(), "'<='", nullptr);
-    sBOT_GR = new Id(Location(), "'>'", nullptr);
-    sBOT_GQ = new Id(Location(), "'>='", nullptr);
-    sBOT_EQ = new Id(Location(), "'='", nullptr);
-    sBOT_NQ = new Id(Location(), "'!='", nullptr);
-    sBOT_IN = new Id(Location(), "'in'", nullptr);
-    sBOT_SUBSET = new Id(Location(), "'subset'", nullptr);
-    sBOT_SUPERSET = new Id(Location(), "'superset'", nullptr);
-    sBOT_UNION = new Id(Location(), "'union'", nullptr);
-    sBOT_DIFF = new Id(Location(), "'diff'", nullptr);
-    sBOT_SYMDIFF = new Id(Location(), "'symdiff'", nullptr);
-    sBOT_INTERSECT = new Id(Location(), "'intersect'", nullptr);
-    sBOT_PLUSPLUS = new Id(Location(), "'++'", nullptr);
-    sBOT_EQUIV = new Id(Location(), "'<->'", nullptr);
-    sBOT_IMPL = new Id(Location(), "'->'", nullptr);
-    sBOT_RIMPL = new Id(Location(), "'<-'", nullptr);
-    sBOT_OR = new Id(Location(), "'\\/'", nullptr);
-    sBOT_AND = new Id(Location(), "'/\\'", nullptr);
-    sBOT_XOR = new Id(Location(), "'xor'", nullptr);
-    sBOT_DOTDOT = new Id(Location(), "'..'", nullptr);
-    sBOT_NOT = new Id(Location(), "'not'", nullptr);
-
-    GC::unlock();
+    sBOT_PLUS = immortal(make<Id>(Location(), "'+'", nullptr));
+    sBOT_MINUS = immortal(make<Id>(Location(), "'-'", nullptr));
+    sBOT_MULT = immortal(make<Id>(Location(), "'*'", nullptr));
+    sBOT_DIV = immortal(make<Id>(Location(), "'/'", nullptr));
+    sBOT_IDIV = immortal(make<Id>(Location(), "'div'", nullptr));
+    sBOT_MOD = immortal(make<Id>(Location(), "'mod'", nullptr));
+    sBOT_POW = immortal(make<Id>(Location(), "'^'", nullptr));
+    sBOT_LE = immortal(make<Id>(Location(), "'<'", nullptr));
+    sBOT_LQ = immortal(make<Id>(Location(), "'<='", nullptr));
+    sBOT_GR = immortal(make<Id>(Location(), "'>'", nullptr));
+    sBOT_GQ = immortal(make<Id>(Location(), "'>='", nullptr));
+    sBOT_EQ = immortal(make<Id>(Location(), "'='", nullptr));
+    sBOT_NQ = immortal(make<Id>(Location(), "'!='", nullptr));
+    sBOT_IN = immortal(make<Id>(Location(), "'in'", nullptr));
+    sBOT_SUBSET = immortal(make<Id>(Location(), "'subset'", nullptr));
+    sBOT_SUPERSET = immortal(make<Id>(Location(), "'superset'", nullptr));
+    sBOT_UNION = immortal(make<Id>(Location(), "'union'", nullptr));
+    sBOT_DIFF = immortal(make<Id>(Location(), "'diff'", nullptr));
+    sBOT_SYMDIFF = immortal(make<Id>(Location(), "'symdiff'", nullptr));
+    sBOT_INTERSECT = immortal(make<Id>(Location(), "'intersect'", nullptr));
+    sBOT_PLUSPLUS = immortal(make<Id>(Location(), "'++'", nullptr));
+    sBOT_EQUIV = immortal(make<Id>(Location(), "'<->'", nullptr));
+    sBOT_IMPL = immortal(make<Id>(Location(), "'->'", nullptr));
+    sBOT_RIMPL = immortal(make<Id>(Location(), "'<-'", nullptr));
+    sBOT_OR = immortal(make<Id>(Location(), "'\\/'", nullptr));
+    sBOT_AND = immortal(make<Id>(Location(), "'/\\'", nullptr));
+    sBOT_XOR = immortal(make<Id>(Location(), "'xor'", nullptr));
+    sBOT_DOTDOT = immortal(make<Id>(Location(), "'..'", nullptr));
+    sBOT_NOT = immortal(make<Id>(Location(), "'not'", nullptr));
   }
 
   static OpToString& o() {
     static OpToString _o;
     return _o;
-  }
-
-  void mark() override {
-    Expression::mark(sBOT_PLUS);
-    Expression::mark(sBOT_MINUS);
-    Expression::mark(sBOT_MULT);
-    Expression::mark(sBOT_DIV);
-    Expression::mark(sBOT_IDIV);
-    Expression::mark(sBOT_MOD);
-    Expression::mark(sBOT_POW);
-    Expression::mark(sBOT_LE);
-    Expression::mark(sBOT_LQ);
-    Expression::mark(sBOT_GR);
-    Expression::mark(sBOT_GQ);
-    Expression::mark(sBOT_EQ);
-    Expression::mark(sBOT_NQ);
-    Expression::mark(sBOT_IN);
-    Expression::mark(sBOT_SUBSET);
-    Expression::mark(sBOT_SUPERSET);
-    Expression::mark(sBOT_UNION);
-    Expression::mark(sBOT_DIFF);
-    Expression::mark(sBOT_SYMDIFF);
-    Expression::mark(sBOT_INTERSECT);
-    Expression::mark(sBOT_PLUSPLUS);
-    Expression::mark(sBOT_EQUIV);
-    Expression::mark(sBOT_IMPL);
-    Expression::mark(sBOT_RIMPL);
-    Expression::mark(sBOT_OR);
-    Expression::mark(sBOT_AND);
-    Expression::mark(sBOT_XOR);
-    Expression::mark(sBOT_DOTDOT);
-    Expression::mark(sBOT_NOT);
   }
 };
 }  // namespace
@@ -958,13 +813,27 @@ void Call::rehash() {
 
 void Call::args(const std::vector<Expression*>& args) {
   if (argCount() == args.size()) {
+    // Count all new arguments before any old one is released: a new argument may only be held
+    // by an old one (such as a child of an old argument, or an old argument in another slot)
+    for (auto* a : args) {
+      RC::inc(a);
+    }
     for (unsigned int i = 0; i < argCount(); i++) {
       arg(i, args[i]);
     }
-  } else if (argCount() == 0 && args.size() == 1) {
-    _secondaryId = CK_UNARY;
-    arg(0, args[0]);
-  } else {
+    for (auto* a : args) {
+      RC::dec(a);
+    }
+    return;
+  }
+  // The layout changes: write the new fields without counting, then count the new children and
+  // release the old ones
+  RC::replaceChildren(this, [&] {
+    if (argCount() == 0 && args.size() == 1) {
+      _secondaryId = CK_UNARY;
+      static_cast<Call4*>(this)->_data[0] = args[0];
+      return;
+    }
     switch (static_cast<CallKind>(_secondaryId)) {
       case CK_BINARY:
         _secondaryId = CK_NARY_2;
@@ -980,18 +849,22 @@ void Call::args(const std::vector<Expression*>& args) {
         break;
     }
     static_cast<CallNary*>(this)->_args = ASTExprVec<Expression>(args).vec();
-  }
+  });
 }
 
 /// Constructor to create commutative sorted call
-Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
+Ref<Call> Call::commutativeNormalized(EnvI& env, const Call* orig) {
   auto com_sort = [](Expression* x, Expression* y) {
     if (Expression::eid(x) != Expression::eid(y)) {
       return Expression::eid(x) < Expression::eid(y);
     }
     switch (Expression::eid(x)) {
       case Expression::E_ID: {
-        return Expression::cast<Id>(x)->str() < Expression::cast<Id>(y)->str();
+        // (the order of Id::str, which the flat model depends on)
+        char bx[40];
+        char by[40];
+        return strcmp(id_name(Expression::cast<Id>(x), bx, sizeof(bx)),
+                      id_name(Expression::cast<Id>(y), by, sizeof(by))) < 0;
       }
       case Expression::E_BOOLLIT: {
         return static_cast<int>(Expression::cast<BoolLit>(x)->v()) <
@@ -1046,16 +919,16 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
   };
 
   assert(orig->argCount() > 0);
-  Call* c = nullptr;
+  Ref<Call> c;
   if (orig->argCount() == 1) {
     assert(Expression::type(orig->arg(0)).dim() != 0);
-    ArrayLit* al = eval_array_lit(env, orig->arg(0));
+    Ref<ArrayLit> al = eval_array_lit(env, orig->arg(0));
     std::vector<Expression*> elem(al->size());
     for (unsigned int i = 0; i < al->size(); ++i) {
       elem[i] = (*al)[i];
     }
     std::sort(elem.begin(), elem.end(), com_sort);
-    auto* arg = new ArrayLit(Expression::loc(al), elem);
+    auto arg = make<ArrayLit>(Expression::loc(al), elem);
     arg->type(Expression::type(al));
     c = Call::a(Expression::loc(orig), orig->id(), {arg});
   } else {
@@ -1071,9 +944,9 @@ Call* Call::commutativeNormalized(EnvI& env, const Call* orig) {
 }
 
 void VarDecl::trail() {
-  GC::trail(&_e, e());
+  Trail::trail(&_e, e());
   if (!_ti->ranges().empty() || _ti->type().structBT()) {
-    GC::trail(reinterpret_cast<Expression**>(&_ti), _ti);
+    Trail::trail(reinterpret_cast<Expression**>(&_ti), _ti);
   }
 }
 
@@ -1112,7 +985,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
 }
 
 void Let::pushbindings() {
-  GC::mark();
+  Trail::mark();
   for (unsigned int i = 0, j = 0; i < _let.size(); i++) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(_let[i])) {
       vd->trail();
@@ -1124,7 +997,7 @@ void Let::pushbindings() {
   }
 }
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void Let::popbindings() { GC::untrail(); }
+void Let::popbindings() { Trail::untrail(); }
 
 void TypeInst::rehash() {
   initHash();
@@ -1138,7 +1011,7 @@ void TypeInst::rehash() {
 }
 
 void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
-  _ranges = ASTExprVec<TypeInst>(ranges);
+  RC::setVec(_ranges, ASTExprVec<TypeInst>(ranges));
   if (ranges.size() == 1 && (ranges[0] != nullptr) && Expression::isa<TypeInst>(ranges[0]) &&
       (Expression::cast<TypeInst>(ranges[0])->domain() != nullptr) &&
       Expression::isa<TIId>(Expression::cast<TypeInst>(ranges[0])->domain()) &&
@@ -1155,12 +1028,11 @@ void TypeInst::setRanges(const std::vector<TypeInst*>& ranges) {
 void TypeInst::canonicaliseStruct(EnvI& env) {
   bool isArrayOfArray = domain() != nullptr && Expression::isa<TypeInst>(domain());
   if (isArrayOfArray) {
-    GCLock lock;
     auto* inner = Expression::cast<TypeInst>(domain());
     assert(inner->isarray());
     auto tid = env.registerTupleType({Expression::type(inner), Type()});
     auto nt = Type::tuple(tid);
-    ArrayLit* al = ArrayLit::constructTuple(Expression::loc(inner), {inner});
+    Ref<ArrayLit> al = ArrayLit::constructTuple(Expression::loc(inner), {inner});
     al->type(nt);
     domain(al);
   }
@@ -1241,12 +1113,11 @@ void TypeInst::mkVar(const EnvI& env) {
     }
   } else {
     if (type().typeId() != 0) {
-      GCLock lock;
       RecordType* rt = env.getRecordType(type());
       for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
         field_ti->mkVar(env);
-        auto* field_vd = new VarDecl(Expression::loc(field_ti), field_ti, rt->fieldName(i));
+        auto field_vd = make<VarDecl>(Expression::loc(field_ti), field_ti, rt->fieldName(i));
         al->set(i, field_vd);
       }
     } else {
@@ -1287,36 +1158,35 @@ void TypeInst::mkPar(EnvI& env) {
 
 void TypeInst::setStructDomain(EnvI& env, const Type& struct_type, bool setTypeAny,
                                bool setTIRanges) {
-  GCLock lock;
   StructType* st = env.getStructType(struct_type);
-  std::vector<Expression*> field_ti(st->size());
+  std::vector<Ref<Expression>> field_ti(st->size());
   for (unsigned int i = 0; i < st->size(); ++i) {
     Type tti = (*st)[i];
     if (setTypeAny) {
       tti.any(true);
     }
-    field_ti[i] = new TypeInst(Expression::loc(this).introduce(), tti);
+    field_ti[i] = make<TypeInst>(Expression::loc(this).introduce(), tti);
     if (tti.structBT()) {
       Expression::cast<TypeInst>(field_ti[i])->setStructDomain(env, tti);
     } else if (tti.dim() != 0) {
-      std::vector<TypeInst*> newRanges(tti.dim());
+      std::vector<Ref<TypeInst>> newRanges(tti.dim());
       for (int k = 0; k < tti.dim(); k++) {
-        newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+        newRanges[k] = make<TypeInst>(Location().introduce(), Type::parint());
       }
-      Expression::cast<TypeInst>(field_ti[i])->setRanges(newRanges);
+      Expression::cast<TypeInst>(field_ti[i])->setRanges(raw(newRanges));
     }
   }
   if (setTIRanges && ranges().size() != type().dim()) {
     assert(ranges().empty() || ranges().size() == 1 &&
                                    Expression::isa<TIId>(ranges()[0]->domain()) &&
                                    !Expression::cast<TIId>(ranges()[0]->domain())->isEnum());
-    std::vector<TypeInst*> newRanges(type().dim());
+    std::vector<Ref<TypeInst>> newRanges(type().dim());
     for (int k = 0; k < type().dim(); k++) {
-      newRanges[k] = new TypeInst(Location().introduce(), Type::parint());
+      newRanges[k] = make<TypeInst>(Location().introduce(), Type::parint());
     }
-    setRanges(newRanges);
+    setRanges(raw(newRanges));
   }
-  auto* al = ArrayLit::constructTuple(Expression::loc(this).introduce(), field_ti);
+  auto al = ArrayLit::constructTuple(Expression::loc(this).introduce(), raw(field_ti));
   al->type(struct_type.elemType(env));
   domain(al);
   if (struct_type.dim() == 0 && !ranges().empty()) {
@@ -1344,7 +1214,6 @@ bool TypeInst::resolveAlias(EnvI& env) {
   if (!is_aliased()) {
     return false;
   }
-  GCLock lock;
   auto* alias = Expression::cast<TypeInst>(Expression::cast<Id>(domain())->decl()->e());
   Type ntype = alias->type();
   bool isArrayOfArray = false;
@@ -1448,11 +1317,10 @@ bool TypeInst::concatDomain(EnvI& env) {
   assert(lhs->type().typeId() != 0);
   assert(rhs->type().typeId() != 0);
 
-  ArrayLit* dom;
+  Ref<ArrayLit> dom;
   Type ty;
   if (lhs->type().isrecord()) {
     assert(rhs->type().isrecord());
-    GCLock lock;
     // Merge domains
     dom = eval_record_merge(env, Expression::cast<ArrayLit>(lhs->domain()),
                             Expression::cast<ArrayLit>(rhs->domain()));
@@ -1462,11 +1330,10 @@ bool TypeInst::concatDomain(EnvI& env) {
   } else {
     assert(lhs->type().istuple());
     assert(rhs->type().istuple());
-    GCLock lock;
     // Concat types
     ty = env.concatTuple(lhs->type(), rhs->type());
     // Concat domains
-    auto* nbo = new BinOp(Expression::loc(bop), lhs->domain(), bop->op(), rhs->domain());
+    auto nbo = make<BinOp>(Expression::loc(bop), lhs->domain(), bop->op(), rhs->domain());
     nbo->type(ty);
     dom = ArrayLit::constructTuple(Expression::loc(bop).introduce(), eval_array_lit(env, nbo));
     dom->type(ty);
@@ -1665,8 +1532,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     stack[i] = std::make_pair(fi->param(i)->ti(), get_type(ta[i]));
   }
 
-  ASTStringMap<std::pair<Type, bool>> tmap;
-  ASTStringSet hadIntInstantiation;
+  std::unordered_map<ASTString, std::pair<Type, bool>> tmap;
+  std::unordered_set<ASTString> hadIntInstantiation;
   while (!stack.empty()) {
     std::pair<TypeInst*, Type> cur(stack.back());
     stack.pop_back();
@@ -1821,7 +1688,8 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
 }
 }  // namespace
 
-Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, bool>>& tmap) {
+Type type_from_tmap(EnvI& env, TypeInst* ti,
+                    const std::unordered_map<ASTString, std::pair<Type, bool>>& tmap) {
   Type ret = ti->type();
   if (ret.structBT()) {
     auto* al = Expression::cast<ArrayLit>(ti->domain());
@@ -1967,61 +1835,6 @@ Type type_from_tmap(EnvI& env, TypeInst* ti, const ASTStringMap<std::pair<Type, 
     ret.mkPar(env);
   }
   return ret;
-}
-
-void Item::mark(Item* item) {
-  if (item->hasMark()) {
-    return;
-  }
-  item->_gcMark = 1;
-  item->loc().mark();
-  switch (item->iid()) {
-    case Item::II_INC:
-      item->cast<IncludeI>()->f().mark();
-      break;
-    case Item::II_VD:
-      item->_gcMark = 0;  // need to reset so that Expression::mark works
-      Expression::mark(item->cast<VarDeclI>()->e());
-#ifdef MINIZINC_GC_STATS
-      GC::stats()[MiniZinc::Expression::eid(item->cast<VarDeclI>()->e())].inmodel++;
-#endif
-      break;
-    case Item::II_ASN:
-      item->cast<AssignI>()->id().mark();
-      Expression::mark(item->cast<AssignI>()->e());
-      Expression::mark(item->cast<AssignI>()->decl());
-      break;
-    case Item::II_CON:
-      Expression::mark(item->cast<ConstraintI>()->e());
-#ifdef MINIZINC_GC_STATS
-      GC::stats()[MiniZinc::Expression::eid(item->cast<ConstraintI>()->e())].inmodel++;
-#endif
-      break;
-    case Item::II_SOL: {
-      auto* si = item->cast<SolveI>();
-      for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-        Expression::mark(*it);
-      }
-      Expression::mark(item->cast<SolveI>()->e());
-    } break;
-    case Item::II_OUT: {
-      auto* oi = item->cast<OutputI>();
-      Expression::mark(oi->e());
-      for (ExpressionSetIter it = oi->ann().begin(); it != oi->ann().end(); ++it) {
-        Expression::mark(*it);
-      }
-    } break;
-    case Item::II_FUN: {
-      auto* fi = item->cast<FunctionI>();
-      fi->id().mark();
-      Expression::mark(fi->ti());
-      for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
-        Expression::mark(*it);
-      }
-      Expression::mark(fi->e());
-      fi->markParams();
-    } break;
-  }
 }
 
 Type FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, Expression* call,
@@ -2633,18 +2446,18 @@ bool Expression::equalInternal(const Expression* e0, const Expression* e1) {
 }
 
 Constants::Constants() {
-  GC::lockNoGC();
-  auto* ti = new TypeInst(Location(), Type::parbool());
-  emptyBoolArray = new ArrayLit(Location(), std::vector<Expression*>{});
+  auto ti = make<TypeInst>(Location(), Type::parbool());
+  emptyBoolArray = immortal(make<ArrayLit>(Location(), std::vector<Expression*>{}));
   emptyBoolArray->type(Type::parbool(1));
-  literalTrue = new BoolLit(Location(), true);
-  varTrue = new VarDecl(Location(), ti, "_bool_true", literalTrue);
-  literalFalse = new BoolLit(Location(), false);
-  varFalse = new VarDecl(Location(), ti, "_bool_false", literalFalse);
-  varIgnore = new VarDecl(Location(), ti, "_bool_ignore");
-  absent = new Id(Location(), "_absent", nullptr);
-  varRedef = new FunctionI(Location(), ASTString("__internal_varRedef"),
-                           new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
+  literalTrue = immortal(make<BoolLit>(Location(), true));
+  varTrue = immortal(make<VarDecl>(Location(), ti, "_bool_true", literalTrue));
+  literalFalse = immortal(make<BoolLit>(Location(), false));
+  varFalse = immortal(make<VarDecl>(Location(), ti, "_bool_false", literalFalse));
+  varIgnore = immortal(make<VarDecl>(Location(), ti, "_bool_ignore"));
+  absent = immortal(make<Id>(Location(), "_absent", nullptr));
+  varRedef = immortal(make<FunctionI>(Location(), ASTString("__internal_varRedef"),
+                                      make<TypeInst>(Location(), Type::varbool()),
+                                      std::vector<VarDecl*>()));
   Type absent_t;
   absent_t.bt(Type::BT_BOT);
   absent_t.dim(0);
@@ -2652,10 +2465,10 @@ Constants::Constants() {
   absent_t.ot(Type::OT_OPTIONAL);
   Expression::type(absent, absent_t);
 
-  IntSetVal* isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-  infinityInt = new SetLit(Location(), isv_infty);
-  FloatSetVal* fsv_infty = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
-  infinityFloat = new SetLit(Location(), fsv_infty);
+  Ref<IntSetVal> isv_infty = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+  infinityInt = immortal(make<SetLit>(Location(), isv_infty));
+  Ref<FloatSetVal> fsv_infty = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+  infinityFloat = immortal(make<SetLit>(Location(), fsv_infty));
 
   ids.forall = addString("forall");
   ids.forallReif = addString("forallReif");
@@ -3018,7 +2831,6 @@ Constants::Constants() {
   cli_cat.io = addString("Input/Output Options");
   cli_cat.solver = addString("Solver Options");
   cli_cat.translation = addString("Translation Options");
-  GC::unlock();
 };
 
 bool Constants::isCallByReferenceId(const ASTString& cid) const {
@@ -3029,36 +2841,14 @@ bool Constants::isCallByReferenceId(const ASTString& cid) const {
           cid == ids.output_to_json_section || cid == ids.output);
 }
 
-void Constants::mark() {
-  Expression::mark(emptyBoolArray);
-  Expression::mark(literalTrue);
-  Expression::mark(varTrue);
-  Expression::mark(literalFalse);
-  Expression::mark(varFalse);
-  Expression::mark(varIgnore);
-  Item::mark(varRedef);
-  Expression::mark(absent);
-  Expression::mark(infinityInt);
-  Expression::mark(infinityFloat);
-
-  for (auto* ident : _ids) {
-    Expression::mark(ident);
-  }
-  for (auto& s : _strings) {
-    s.mark();
-  }
-}
-
 ASTString Constants::addString(const std::string& s) {
-  ASTString as(s);
-  _strings.push_back(as);
-  return as;
+  ASTString ret(s);
+  RC::immortal(ret.aststr());
+  return ret;
 }
 
 Id* Constants::addId(const std::string& s) {
-  Id* ident = new Id(Location(), ASTString(s), nullptr);
-  _ids.push_back(ident);
-  return ident;
+  return immortal(make<Id>(Location(), ASTString(s), nullptr));
 }
 
 const int Constants::max_array_size;
@@ -3068,7 +2858,16 @@ Constants& Constants::constants() {
   return _c;
 }
 
-Annotation::~Annotation() { delete _s; }
+Annotation::~Annotation() {
+  // Only annotations outside nodes are destroyed here (see RC::release)
+  clear();
+  delete _s;
+}
+
+void Annotation::forget() {
+  delete _s;
+  _s = nullptr;
+}
 
 bool Annotation::containsImpl(Expression* e) const { return _s->contains(e); }
 
@@ -3084,29 +2883,30 @@ ExpressionSetIter Annotation::end() const {
   return _s == nullptr ? ExpressionSetIter(true) : _s->end();
 }
 
-void Annotation::add(Expression* e) {
+void Annotation::add(Arg<Expression> e) {
   if (_s == nullptr) {
     _s = new ExpressionSet;
   }
-  if (e != nullptr && !Expression::equal(e, Constants::constants().ann.empty_annotation)) {
-    _s->insert(e);
+  if (e != nullptr && !Expression::equal(e, Constants::constants().ann.empty_annotation) &&
+      _s->insert(e)) {
+    RC::inc(e);
   }
 }
 
 void Annotation::add(std::vector<Expression*> e) {
-  if (_s == nullptr) {
-    _s = new ExpressionSet;
-  }
   for (auto i = static_cast<unsigned int>(e.size()); (i--) != 0U;) {
-    if (e[i] != nullptr && !Expression::equal(e[i], Constants::constants().ann.empty_annotation)) {
-      _s->insert(e[i]);
-    }
+    add(e[i]);
   }
 }
 
 void Annotation::remove(Expression* e) {
   if ((_s != nullptr) && (e != nullptr)) {
-    _s->remove(e);
+    auto it = _s->find(e);
+    if (it != _s->end()) {
+      Expression* stored = *it;
+      _s->remove(e);
+      RC::dec(stored);
+    }
   }
 }
 
@@ -3123,7 +2923,7 @@ void Annotation::removeCall(const ASTString& id) {
     }
   }
   for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0U;) {
-    _s->remove(toRemove[i]);
+    remove(toRemove[i]);
   }
 }
 
@@ -3157,6 +2957,9 @@ bool Annotation::containsCall(const MiniZinc::ASTString& id) const {
 
 void Annotation::clear() {
   if (_s != nullptr) {
+    for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
+      RC::dec(*it);
+    }
     _s->clear();
   }
 }
@@ -3169,7 +2972,9 @@ void Annotation::merge(const Annotation& ann) {
     _s = new ExpressionSet;
   }
   for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
-    _s->insert(*it);
+    if (_s->insert(*it)) {
+      RC::inc(*it);
+    }
   }
 }
 

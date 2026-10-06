@@ -16,14 +16,13 @@ namespace MiniZinc {
 EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  GCLock lock;
   auto* v = Expression::cast<VarDecl>(e);
   if (ctx.b != C_ROOT && !v->toplevel()) {
     throw InternalError("attempting to flatten non-toplevel VarDecl in context other than root");
   }
   VarDecl* it = v->flat();
   if (it == nullptr) {
-    TypeInst* ti = eval_typeinst(env, Ctx(), v);
+    Ref<TypeInst> ti = eval_typeinst(env, Ctx(), v);
     bool isEmptyArray = false;
     for (auto* nti : ti->ranges()) {
       if (nti->domain() == nullptr ||
@@ -57,7 +56,8 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         reuseVarId = false;
       }
     }
-    VarDecl* vd = new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr, false);
+    Ref<VarDecl> vd =
+        new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr, false);
     v->flat(vd);
     if (v->e() != nullptr) {
       Ctx nctx;

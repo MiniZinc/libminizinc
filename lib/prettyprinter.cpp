@@ -14,9 +14,9 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/type.hh>
@@ -379,13 +379,13 @@ public:
                 auto parExp = eval_float(*_env, const_cast<Expression*>(e));
                 _os << "(≡" << parExp << ")";
               } else if (Expression::type(e) == Type::parsetint()) {
-                auto* parExp = eval_intset(*_env, const_cast<Expression*>(e));
-                GCLock lock;
+                auto parExp = eval_intset(*_env, const_cast<Expression*>(e));
                 _os << "(≡";
-                p(new SetLit(Location().introduce(), parExp));
+                auto parSet = make<SetLit>(Location().introduce(), parExp);
+                p(parSet);
                 _os << ")";
               } else if (Expression::type(e).istuple() || Expression::type(e).isrecord()) {
-                auto* parExp = eval_array_lit(*_env, const_cast<Expression*>(e));
+                auto parExp = eval_array_lit(*_env, const_cast<Expression*>(e));
                 _os << "(≡ ";
                 p(parExp);
                 _os << " )";
@@ -503,7 +503,7 @@ public:
           if (parIdx) {
             ArrayAccessSucess success;
             try {
-              auto* result = eval_arrayaccess(*_env, const_cast<ArrayAccess*>(aa), success);
+              auto result = eval_arrayaccess(*_env, const_cast<ArrayAccess*>(aa), success);
               if (success()) {
                 if (Expression::type(e).isPar()) {
                   _os << "(≡";
@@ -593,7 +593,7 @@ public:
         }
         _os << (c->set() ? "}" : "]");
         if (trace && Expression::type(e).isPar()) {
-          Expression* result = nullptr;
+          Ref<Expression> result;
           try {
             result = eval_par(*_env, const_cast<Expression*>(e));
             _os << "(≡";
@@ -770,7 +770,7 @@ public:
           }
           _os << ")";
           if (trace && Expression::type(e).isPar()) {
-            Expression* result = nullptr;
+            Ref<Expression> result;
             try {
               result = eval_par(*_env, const_cast<Expression*>(e));
               _os << "(≡";
@@ -1163,10 +1163,10 @@ void Line::concatenateLines(Line& l) {
 
 class LinesToSimplify {
 private:
-  std::map<int, std::vector<int> > _lines;
+  std::map<int, std::vector<int>> _lines;
 
   // (i,j) in parent <=> j can only be simplified if i is simplified
-  std::vector<std::pair<int, int> > _parent;
+  std::vector<std::pair<int, int>> _parent;
   /*
    * if i can't simplify, remove j and his parents
    */
@@ -1175,7 +1175,7 @@ private:
 
 public:
   std::vector<int>* getLinesForPriority(int p) {
-    std::map<int, std::vector<int> >::iterator it;
+    std::map<int, std::vector<int>>::iterator it;
     for (it = _lines.begin(); it != _lines.end(); it++) {
       if (it->first == p) {
         return &(it->second);
@@ -1197,7 +1197,7 @@ public:
       _parent.emplace_back(l, par);
     }
     _mostRecentlyAdded.insert(std::pair<int, int>(p, l));
-    std::map<int, std::vector<int> >::iterator it;
+    std::map<int, std::vector<int>>::iterator it;
     for (it = _lines.begin(); it != _lines.end(); it++) {
       if (it->first == p) {
         it->second.push_back(l);
@@ -1206,7 +1206,7 @@ public:
     }
     std::vector<int> v;
     v.push_back(l);
-    _lines.insert(std::pair<int, std::vector<int> >(p, v));
+    _lines.insert(std::pair<int, std::vector<int>>(p, v));
   }
   void decrementLine(std::vector<int>* vec, int l) {
     std::vector<int>::iterator vit;
@@ -1218,7 +1218,7 @@ public:
       }
     }
     // Now the map
-    std::map<int, std::vector<int> >::iterator it;
+    std::map<int, std::vector<int>>::iterator it;
     for (it = _lines.begin(); it != _lines.end(); it++) {
       for (vit = it->second.begin(); vit != it->second.end(); vit++) {
         if (*vit >= l) {
@@ -1227,7 +1227,7 @@ public:
       }
     }
     // And the parent table
-    std::vector<std::pair<int, int> >::iterator vpit;
+    std::vector<std::pair<int, int>>::iterator vpit;
     for (vpit = _parent.begin(); vpit != _parent.end(); vpit++) {
       if (vpit->first >= l) {
         vpit->first--;
@@ -1238,7 +1238,7 @@ public:
     }
   }
   void remove(LinesToSimplify& lts) {
-    std::map<int, std::vector<int> >::iterator it;
+    std::map<int, std::vector<int>>::iterator it;
     for (it = lts._lines.begin(); it != lts._lines.end(); it++) {
       std::vector<int>::iterator vit;
       for (vit = it->second.begin(); vit != it->second.end(); vit++) {
@@ -1256,7 +1256,7 @@ public:
     }
     // Call on its parent
     if (!success) {
-      std::vector<std::pair<int, int> >::iterator vpit;
+      std::vector<std::pair<int, int>>::iterator vpit;
       for (vpit = _parent.begin(); vpit != _parent.end(); vpit++) {
         if (vpit->first == i && vpit->second != i && vpit->second != -1) {
           remove(v, vpit->second, false);
@@ -1266,7 +1266,7 @@ public:
   }
   std::vector<int>* getLinesToSimplify() {
     auto* vec = new std::vector<int>();
-    std::map<int, std::vector<int> >::iterator it;
+    std::map<int, std::vector<int>>::iterator it;
     for (it = _lines.begin(); it != _lines.end(); it++) {
       std::vector<int>& svec = it->second;
       vec->insert(vec->begin(), svec.begin(), svec.end());
@@ -2100,7 +2100,7 @@ private:
   int _indentationBase;
   int _currentLine;
   int _currentItem;
-  std::vector<std::vector<Line> > _items;
+  std::vector<std::vector<Line>> _items;
   std::vector<LinesToSimplify> _linesToSimplify;
   std::vector<LinesToSimplify> _linesNotToSimplify;
   bool _simp;
@@ -2546,7 +2546,7 @@ void FznJSONPrinter::print(MiniZinc::Model* m) {
       if (vd->ti()->domain() != nullptr) {
         _os << ", \"domain\" : [";
         if (vd->type().bt() == Type::BT_INT) {
-          auto* isv = eval_intset(_env, vd->ti()->domain());
+          auto isv = eval_intset(_env, vd->ti()->domain());
           for (unsigned int i = 0; i < isv->size(); i++) {
             if (i != 0) {
               _os << ", ";
@@ -2554,7 +2554,7 @@ void FznJSONPrinter::print(MiniZinc::Model* m) {
             _os << "[" << isv->min(i) << ", " << isv->max(i) << "]";
           }
         } else if (vd->type().bt() == Type::BT_FLOAT) {
-          auto* isv = eval_floatset(_env, vd->ti()->domain());
+          auto isv = eval_floatset(_env, vd->ti()->domain());
           for (unsigned int i = 0; i < isv->size(); i++) {
             if (i != 0) {
               _os << ", ";
@@ -2626,11 +2626,10 @@ void FznJSONPrinter::print(MiniZinc::Model* m) {
 
 std::string show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json) {
   Id* ti_id = env.getEnum(t.typeId())->e()->id();
-  GCLock lock;
-  std::vector<Expression*> args(3);
+  std::vector<Ref<Expression>> args(3);
   args[0] = e;
   if (Expression::type(e).dim() > 1) {
-    Call* array1d = Call::a(Location().introduce(), env.constants.ids.array1d, {e});
+    Ref<Call> array1d = Call::a(Location().introduce(), env.constants.ids.array1d, {e});
     Type array1dt = Type::arrType(env, Type::partop(1), t);
     array1d->type(array1dt);
     array1d->decl(env.model->matchFn(env, array1d, false, true));
@@ -2639,7 +2638,7 @@ std::string show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json
   args[1] = env.constants.boollit(dzn);
   args[2] = env.constants.boollit(json);
   ASTString enumName(create_enum_to_string_name(ti_id, "_toString_"));
-  auto* call = Call::a(Location().introduce(), enumName, args);
+  auto call = Call::a(Location().introduce(), enumName, args);
   auto* fi = env.model->matchFn(env, call, false, true);
   call->decl(fi);
   Expression::type(call, Type::parstring());
@@ -2647,8 +2646,7 @@ std::string show_enum_type(EnvI& env, Expression* e, Type t, bool dzn, bool json
 }
 
 std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
-  GCLock lock;
-  Expression* e = follow_id_to_decl(exp);
+  Ref<Expression> e = follow_id_to_decl(exp);
   if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
     if ((vd->e() != nullptr) && !Expression::isa<Call>(vd->e())) {
       e = vd->e();
@@ -2667,7 +2665,7 @@ std::string show_with_type(EnvI& env, Expression* exp, Type t, bool showDzn) {
     return show_enum_type(env, e, t, showDzn, false);
   }
   std::ostringstream oss;
-  if (auto* al = Expression::dynamicCast<ArrayLit>(e)) {
+  if (Ref<ArrayLit> al = Expression::dynamicCast<ArrayLit>(e)) {
     auto al_t = t;
     if (al->isTuple() && env.getTransparentType(t) != t) {
       // Unwrap nested array type
@@ -2722,8 +2720,6 @@ void debugprint(const MiniZinc::Expression* e, MiniZinc::EnvI& env) {
   p.print(e);
   std::cerr << '\n';
 }
-void debugprint(const MiniZinc::KeepAlive& e) { debugprint(e()); }
-void debugprint(const MiniZinc::KeepAlive& e, MiniZinc::EnvI& env) { debugprint(e(), env); }
 void debugprint(const MiniZinc::Item* i) { std::cerr << *i; }
 void debugprint(const MiniZinc::Item* i, MiniZinc::EnvI& env) {
   MiniZinc::Printer p(std::cerr, 0, true, &env);
@@ -2767,8 +2763,8 @@ void debugprint(const std::vector<MiniZinc::VarDecl*>& x) { debugprintvec(x); }
 void debugprint(const std::vector<MiniZinc::VarDecl*>& x, MiniZinc::EnvI& env) {
   debugprintvec(x, env);
 }
-void debugprint(const std::vector<MiniZinc::KeepAlive>& x) { debugprintvec(x); }
-void debugprint(const std::vector<MiniZinc::KeepAlive>& x, MiniZinc::EnvI& env) {
+void debugprint(const std::vector<MiniZinc::Ref<MiniZinc::Expression>>& x) { debugprintvec(x); }
+void debugprint(const std::vector<MiniZinc::Ref<MiniZinc::Expression>>& x, MiniZinc::EnvI& env) {
   debugprintvec(x, env);
 }
 void debugprint(const std::vector<MiniZinc::Item*>& x) { debugprintvec(x); }

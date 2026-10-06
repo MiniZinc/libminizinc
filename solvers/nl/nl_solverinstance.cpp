@@ -231,7 +231,7 @@ SolverInstance::Status NLSolverInstance::solve() {
 }
 
 // Unused
-Expression* NLSolverInstance::getSolutionValue(Id* id) {
+Ref<Expression> NLSolverInstance::getSolutionValue(Id* id) {
   assert(false);
   return nullptr;
 }

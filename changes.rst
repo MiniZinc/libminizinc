@@ -52,6 +52,10 @@ Changes:
    passed to a function, which made repeated calls on large arrays take time
    linear in the size of the array.
 -  Make the codebase pass more clang-tidy checks.
+-  Replace the mark-and-sweep garbage collector with reference counting, so
+   that nodes are freed as soon as they are no longer used. This makes the
+   compilation of large models faster and reduces its peak memory use. MiniZinc
+   now uses the mimalloc memory allocator.
 
 Bug fixes:
 ^^^^^^^^^^

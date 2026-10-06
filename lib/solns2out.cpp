@@ -182,9 +182,8 @@ void Solns2Out::restoreDefaults() {
       if (vdi->e()->id()->idn() != -1 || (vdi->e()->id()->v() != "_mzn_solution_checker" &&
                                           vdi->e()->id()->v() != "_mzn_stats_checker" &&
                                           vdi->e()->id()->v() != "_mzn_assumption_map")) {
-        GCLock lock;
         auto& de = findOutputVar(vdi->e()->id()->str());
-        vdi->e()->e(de.second());
+        vdi->e()->e(de.second);
         vdi->e()->evaluated(false);
       }
     }
@@ -356,17 +355,16 @@ void Solns2Out::checkSolution(std::ostream& oss) const {
   checker << _checkerModel;
   Printer p(checker, 0, false, &getEnv()->envi());
   {
-    GCLock lock;
     for (auto& i : *getModel()) {
       if (auto* vdi = i->dynamicCast<VarDeclI>()) {
         if (Expression::ann(vdi->e()).contains(Constants::constants().ann.mzn_check_var)) {
           checker << vdi->e()->id()->str() << " = ";
-          Expression* e = eval_par(getEnv()->envi(), vdi->e()->e());
+          Ref<Expression> e = eval_par(getEnv()->envi(), vdi->e()->e());
           auto* al = Expression::dynamicCast<ArrayLit>(e);
           std::vector<Id*> enumids;
           if (Call* cev = Expression::ann(vdi->e()).getCall(
                   Constants::constants().ann.mzn_check_enum_var)) {
-            auto* enumIdsAl = eval_array_lit(getEnv()->envi(), cev->arg(0));
+            auto enumIdsAl = eval_array_lit(getEnv()->envi(), cev->arg(0));
             for (unsigned int j = 0; j < enumIdsAl->size(); j++) {
               enumids.push_back(Expression::dynamicCast<Id>((*enumIdsAl)[j]));
             }
@@ -577,10 +575,9 @@ void Solns2Out::init() {
         }
       } else if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_assumption_map") {
         // A `list of tuple(string, string)` of `(variable name, expression)` pairs.
-        GCLock lock;
-        ArrayLit* al = eval_array_lit(getEnv()->envi(), vdi->e()->e());
+        Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), vdi->e()->e());
         for (unsigned int k = 0; k < al->size(); k++) {
-          ArrayLit* tuple = eval_array_lit(getEnv()->envi(), (*al)[k]);
+          Ref<ArrayLit> tuple = eval_array_lit(getEnv()->envi(), (*al)[k]);
           _assumptionMap[eval_string(getEnv()->envi(), (*tuple)[0])] =
               eval_string(getEnv()->envi(), (*tuple)[1]);
         }

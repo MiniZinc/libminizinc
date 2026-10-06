@@ -17,6 +17,25 @@ endif()
 option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
 option(HIGHS_PLUGIN "Build HiGHS binding as a plugin" ON)
 
+# Memory: mimalloc allocates AST nodes (downloaded with FetchContent). Off by default for
+# WebAssembly and with AddressSanitizer, which replaces malloc itself (also when it is enabled
+# through the compiler flags).
+if(DEFINED EMSCRIPTEN OR USE_ADDRESS_SANITIZER OR "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}" MATCHES "-fsanitize=[a-z,]*address")
+  set(mzn_use_mimalloc_default OFF)
+else()
+  set(mzn_use_mimalloc_default ON)
+endif()
+option(MZN_USE_MIMALLOC "Use mimalloc as the memory allocator" ${mzn_use_mimalloc_default})
+# The override replaces malloc for the whole process. A static override does not work on Windows.
+if(WIN32)
+  set(mzn_mimalloc_override_default OFF)
+else()
+  set(mzn_mimalloc_override_default ON)
+endif()
+option(MZN_MIMALLOC_OVERRIDE "Let mimalloc replace malloc for the whole process" ${mzn_mimalloc_override_default})
+# Debug check: track every AST node and report the ones that are still counted at exit (leaks)
+option(MZN_RC_CHECK "Report leaked reference-counted nodes at exit" OFF)
+
 # CMake options default value
 option(CMAKE_POSITION_INDEPENDENT_CODE "Default value for POSITION_INDEPENDENT_CODE of targets" TRUE)
 

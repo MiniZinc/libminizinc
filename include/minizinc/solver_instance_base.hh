@@ -118,7 +118,7 @@ private:
 template <bool AsgArray = false>
 class SolverInstanceBase2 : public SolverInstanceBase {
 protected:
-  virtual Expression* getSolutionValue(Id* id) = 0;
+  virtual Ref<Expression> getSolutionValue(Id* id) = 0;
 
 public:
   /// Assign output for all vars: need public for callbacks
@@ -139,12 +139,12 @@ public:
 typedef void (*poster)(SolverInstanceBase&, const Call* call);
 class Registry {
 protected:
-  ManagedASTStringMap<poster> _registry;
+  std::unordered_map<ASTString, poster> _registry;
   SolverInstanceBase& _base;
 
 public:
   Registry(SolverInstanceBase& base) : _base(base) {}
-  void add(ASTString name, poster p);
+  void add(const ASTString& name, poster p);
   void add(const std::string& name, poster p);
   void post(Call* c);
   void cleanup() { _registry.clear(); }

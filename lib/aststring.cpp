@@ -83,4 +83,9 @@ ASTStringData* ASTStringData::a(const std::string& s) {
   interner().emplace(std::make_pair(as->c_str(), as->size()), as);
   return as;
 }
+
+void ASTStringData::unintern(ASTNode* n) {
+  auto* s = static_cast<ASTStringData*>(n);
+  interner().erase({s->c_str(), s->size()});
+}
 }  // namespace MiniZinc

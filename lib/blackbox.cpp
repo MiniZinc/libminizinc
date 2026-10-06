@@ -13,7 +13,7 @@
 #include <minizinc/blackbox.hh>
 #include <minizinc/copy.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 
 #include <vector>
 
@@ -29,11 +29,10 @@ void wrap_blackbox_source(EnvI& env, Call* source, bool isExec) {
   if (source->argCount() == 0) {
     return;
   }
-  GCLock lock;
   Expression* arg0 = source->arg(0);
   Expression* isLibrary = env.constants.boollit(!isExec);
-  Call* resolve = Call::a(Expression::loc(arg0), env.constants.ids.blackbox.resolve_blackbox_source,
-                          {arg0, isLibrary});
+  Ref<Call> resolve = Call::a(
+      Expression::loc(arg0), env.constants.ids.blackbox.resolve_blackbox_source, {arg0, isLibrary});
   source->arg(0, resolve);
 }
 
@@ -94,7 +93,6 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
     wrap_blackbox_source(env, source, isExec);
 
     {
-      GCLock lock;
       Location loc = Location().introduce();
 
       // Classify the parameters. A propagator takes at most one `list of var int` and at most one
@@ -103,11 +101,11 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
       // - `parArgs`/`parArgTypes` describe a call to the `par` overload of the propagator (used to
       //   size a functional propagator's output): the variable lists are replaced by their
       //   element-wise lower bounds (`lb(...)`), the fixed parameters are passed through.
-      Expression* intList = nullptr;
-      Expression* floatList = nullptr;
+      Ref<Expression> intList;
+      Ref<Expression> floatList;
       std::vector<Expression*> allArgs;
       std::vector<Type> allArgTypes;
-      std::vector<Expression*> parArgs;
+      std::vector<Ref<Expression>> parArgs;
       std::vector<Type> parArgTypes;
       bool validArgs = true;
       for (unsigned int i = 0; i < fi->paramCount(); ++i) {
@@ -123,7 +121,7 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
               validArgs = false;
             }
             intList = p->id();
-            parArgs.push_back(Call::a(loc, c.ids.lb, {p->id()}));
+            parArgs.emplace_back(Call::a(loc, c.ids.lb, {p->id()}));
             parArgTypes.push_back(Type::parint(1));
           } else if (t.dim() == 1 && t.st() == Type::ST_PLAIN && t.bt() == Type::BT_FLOAT) {
             if (floatList != nullptr) {
@@ -133,7 +131,7 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
               validArgs = false;
             }
             floatList = p->id();
-            parArgs.push_back(Call::a(loc, c.ids.lb, {p->id()}));
+            parArgs.emplace_back(Call::a(loc, c.ids.lb, {p->id()}));
             parArgTypes.push_back(Type::parfloat(1));
           } else {
             typeErrors.emplace_back(env, Expression::loc(p),
@@ -142,7 +140,7 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
             validArgs = false;
           }
         } else {
-          parArgs.push_back(p->id());
+          parArgs.emplace_back(p->id());
           parArgTypes.push_back(t);
         }
       }
@@ -151,10 +149,10 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
       }
 
       if (intList == nullptr) {
-        intList = new ArrayLit(Location().introduce(), std::vector<Expression*>{});
+        intList = make<ArrayLit>(Location().introduce(), std::vector<Expression*>{});
       }
       if (floatList == nullptr) {
-        floatList = new ArrayLit(Location().introduce(), std::vector<Expression*>{});
+        floatList = make<ArrayLit>(Location().introduce(), std::vector<Expression*>{});
       }
       const Type retType = fi->ti()->type();
 
@@ -168,17 +166,17 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
         // Reason: use the user-defined `<name>_reason` if there is one, otherwise the conservative
         // default reason over all input bounds.
         const ASTString reasonId(std::string(fi->id().c_str()) + "_reason");
-        Expression* reason;
+        Ref<Expression> reason;
         if (m->matchFn(env, reasonId, allArgTypes, true) != nullptr) {
           reason = Call::a(loc, reasonId, allArgs);
         } else {
-          Call* lenInt = Call::a(loc, c.ids.length, {intList});
-          Call* lenFloat = Call::a(loc, c.ids.length, {floatList});
-          auto* n = new BinOp(loc, lenInt, BOT_PLUS, lenFloat);
+          Ref<Call> lenInt = Call::a(loc, c.ids.length, {intList});
+          Ref<Call> lenFloat = Call::a(loc, c.ids.length, {floatList});
+          auto n = make<BinOp>(loc, lenInt, BOT_PLUS, lenFloat);
           reason = Call::a(loc, c.ids.blackbox.blackbox_default_reason, {n});
         }
 
-        Call* body = Call::a(loc, c.ids.blackbox.blackbox_bounds, {intList, floatList, reason});
+        Ref<Call> body = Call::a(loc, c.ids.blackbox.blackbox_bounds, {intList, floatList, reason});
         Expression::addAnnotation(body, copy(env, source));
         fi->ann().remove(boundsAnn);
         fi->ann().remove(source);
@@ -188,21 +186,21 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
 
       // Value propagator. Both the relational and functional forms produce an output so that the
       // external computation can actually constrain the model.
-      Expression* intOutput;
-      Expression* floatOutput;
-      Expression* result;
-      std::vector<Expression*> letDecls;
+      Ref<Expression> intOutput;
+      Ref<Expression> floatOutput;
+      Ref<Expression> result;
+      std::vector<Ref<Expression>> letDecls;
 
       if (retType.dim() == 0 && retType.isvar() && retType.bt() == Type::BT_BOOL) {
         // Relational checker: a 0/1 output fixed to `true` by the predicate context.
-        auto* domain = new BinOp(loc, IntLit::a(0), BOT_DOTDOT, IntLit::a(1));
-        auto* rti = new TypeInst(loc, Type::varint(), domain);
-        auto* r = new VarDecl(loc, rti, env.genId());
+        auto domain = make<BinOp>(loc, IntLit::a(0), BOT_DOTDOT, IntLit::a(1));
+        auto rti = make<TypeInst>(loc, Type::varint(), domain);
+        auto r = make<VarDecl>(loc, rti, env.genId());
         r->toplevel(false);
-        intOutput = new ArrayLit(loc, std::vector<Expression*>{r->id()});
-        floatOutput = new ArrayLit(loc, std::vector<Expression*>{});
-        result = new BinOp(loc, r->id(), BOT_EQ, IntLit::a(1));
-        letDecls.push_back(r);
+        intOutput = make<ArrayLit>(loc, std::vector<Expression*>{r->id()});
+        floatOutput = make<ArrayLit>(loc, std::vector<Expression*>{});
+        result = make<BinOp>(loc, r->id(), BOT_EQ, IntLit::a(1));
+        letDecls.emplace_back(r);
       } else if (retType.dim() == 1 && retType.isvar() &&
                  (retType.bt() == Type::BT_INT || retType.bt() == Type::BT_FLOAT)) {
         // Functional propagator: the output index set is derived from the `par` overload of the
@@ -216,23 +214,23 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
                   "(used to determine the length of its output)");
           continue;
         }
-        Call* parCall = Call::a(loc, fi->id(), parArgs);
-        Call* idxSet = Call::a(loc, c.ids.index_set, {parCall});
-        auto* rangeTI = new TypeInst(loc, Type::parint(), idxSet);
+        Ref<Call> parCall = Call::a(loc, fi->id(), parArgs);
+        Ref<Call> idxSet = Call::a(loc, c.ids.index_set, {parCall});
+        auto rangeTI = make<TypeInst>(loc, Type::parint(), idxSet);
         std::vector<TypeInst*> ranges{rangeTI};
         const Type outType = (retType.bt() == Type::BT_INT) ? Type::varint(1) : Type::varfloat(1);
-        auto* outTI = new TypeInst(loc, outType, ranges);
-        auto* out = new VarDecl(loc, outTI, env.genId());
+        auto outTI = make<TypeInst>(loc, outType, ranges);
+        auto out = make<VarDecl>(loc, outTI, env.genId());
         out->toplevel(false);
         if (retType.bt() == Type::BT_INT) {
           intOutput = out->id();
-          floatOutput = new ArrayLit(loc, std::vector<Expression*>{});
+          floatOutput = make<ArrayLit>(loc, std::vector<Expression*>{});
         } else {
-          intOutput = new ArrayLit(loc, std::vector<Expression*>{});
+          intOutput = make<ArrayLit>(loc, std::vector<Expression*>{});
           floatOutput = out->id();
         }
         result = out->id();
-        letDecls.push_back(out);
+        letDecls.emplace_back(out);
       } else {
         typeErrors.emplace_back(
             env, fi->loc(),
@@ -241,11 +239,11 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
         continue;
       }
 
-      Call* bbCall =
+      Ref<Call> bbCall =
           Call::a(loc, c.ids.blackbox.blackbox, {intList, floatList, intOutput, floatOutput});
       Expression::addAnnotation(bbCall, copy(env, source));
-      letDecls.push_back(bbCall);
-      auto* body = new Let(loc, letDecls, result);
+      letDecls.emplace_back(bbCall);
+      auto body = make<Let>(loc, letDecls, result);
       fi->ann().remove(valueAnn);
       fi->ann().remove(source);
       fi->e(body);

@@ -32,7 +32,7 @@ bool eval_bool(EnvI& env, Expression* e);
 /// Evaluate par float expression \a e
 FloatVal eval_float(EnvI& env, Expression* e);
 /// Evaluate an array expression \a e into an array literal
-ArrayLit* eval_array_lit(EnvI& env, Expression* e);
+Ref<ArrayLit> eval_array_lit(EnvI& env, Expression* e);
 struct ArrayAccessSucess {
   bool success;
   int dim;
@@ -49,13 +49,14 @@ struct ArrayAccessSucess {
   }
   bool operator()() const { return success; }
   std::string errorMessage(EnvI& env, Expression* e) const;
-  Expression* dummyLiteral(EnvI& env, Type t) const;
+  Ref<Expression> dummyLiteral(EnvI& env, Type t) const;
 };
 
 /// Evaluate an access to array \a al with indices \a idx and return whether
 /// access succeeded in \a success
 template <class IdxV>
-Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAccessSucess& success) {
+Ref<Expression> eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx,
+                                 ArrayAccessSucess& success) {
   assert(al->dims() == idx.size());
   IntVal realidx = 0;
   int realdim = 1;
@@ -77,19 +78,19 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const IdxV& idx, ArrayAcce
 }
 
 /// Evaluate an array access \a e and return whether access succeeded in \a success
-Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success);
+Ref<Expression> eval_arrayaccess(EnvI& env, ArrayAccess* e, ArrayAccessSucess& success);
 /// Evaluate a set expression \a e into a set literal
-SetLit* eval_set_lit(EnvI& env, Expression* e);
+Ref<SetLit> eval_set_lit(EnvI& env, Expression* e);
 /// Evaluate a par integer set \a e
-IntSetVal* eval_intset(EnvI& env, Expression* e);
+Ref<IntSetVal> eval_intset(EnvI& env, Expression* e);
 /// Evaluate a par bool set \a e
-IntSetVal* eval_boolset(EnvI& env, Expression* e);
+Ref<IntSetVal> eval_boolset(EnvI& env, Expression* e);
 /// Evaluate a par float set \a e
-FloatSetVal* eval_floatset(EnvI& env, Expression* e);
+Ref<FloatSetVal> eval_floatset(EnvI& env, Expression* e);
 /// Evaluate a par string \a e
 std::string eval_string(EnvI& env, Expression* e);
 /// Evaluate a par expression \a e and return it wrapped in a literal
-Expression* eval_par(EnvI& env, Expression* e);
+Ref<Expression> eval_par(EnvI& env, Expression* e);
 /// Evaluate conditionals and lets inside function bodies that are annotated with
 /// ::mzn_evaluate_once
 void eval_static_function_body(EnvI& env, FunctionI* decl, Model& toAdd);
@@ -99,7 +100,7 @@ void check_par_declaration(EnvI& env, VarDecl* vd);
 void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber = -1,
                       const std::string& callId = std::string());
 /// Merge two record literals and return the result.
-ArrayLit* eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs);
+Ref<ArrayLit> eval_record_merge(EnvI& env, ArrayLit* lhs, ArrayLit* rhs);
 
 /// Representation for bounds of an integer expression
 struct IntBounds {
@@ -136,14 +137,14 @@ FloatBounds compute_float_bounds(EnvI& env, Expression* e);
  *
  * Returns NULL if bounds cannot be determined
  */
-IntSetVal* compute_intset_bounds(EnvI& env, Expression* e);
+Ref<IntSetVal> compute_intset_bounds(EnvI& env, Expression* e);
 
 class EvalBase {
 public:
   /// Evaluate bool expression that may contain variables
   static bool evalBoolCV(EnvI& env, Expression* e);
   /// Flatten expression that may contain variables
-  static KeepAlive flattenCV(EnvI& env, Expression* e);
+  static Ref<Expression> flattenCV(EnvI& env, Expression* e);
 };
 
 template <class T>
@@ -169,36 +170,34 @@ public:
 };
 
 template <class Eval, bool isIndexed>
-void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
+void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Expression* in,
                      EvaluatedCompTmp<typename Eval::ArrayVal>& a);
 
 template <class Eval, bool isIndexed>
-void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
+void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Expression* in,
                    EvaluatedCompTmp<typename Eval::ArrayVal>& a);
 
 template <class Eval, bool isSet, bool isIndexed>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, IntVal i,
-                     KeepAlive in, EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
-  GC::mark();
+                     Expression* in, EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
+  Trail::Scope trailScope;
   e->decl(gen, id)->trail();
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
   if (isSet) {
-    GCLock lock;
     e->decl(gen, id)->e(IntLit::a(i));
   } else {
-    if (in() == nullptr) {
+    if (in == nullptr) {
       // this is an assignment generator
-      KeepAlive asn;
+      Ref<Expression> asn;
       if (Expression::type(e->where(gen)).isvar() || Expression::type(e->where(gen)).cv()) {
         asn = eval.flattenCV(env, e->where(gen));
       } else {
-        GCLock lock;
         asn = eval_par(env, e->where(gen));
       }
-      e->decl(gen, id)->e(asn());
+      e->decl(gen, id)->e(asn);
       e->rehash();
     } else {
-      auto* al = Expression::cast<ArrayLit>(in());
+      auto* al = Expression::cast<ArrayLit>(in);
       e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
       e->rehash();
     }
@@ -227,19 +226,17 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
         if (e->in(gen + 1) == nullptr) {
           eval_comp_array<Eval, false, isIndexed>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
-          KeepAlive nextin;
-          KeepAlive gen_in = e->in(gen + 1);
-          if (Expression::type(gen_in()).isvar() || Expression::type(gen_in()).cv()) {
+          Ref<Expression> nextin;
+          Ref<Expression> gen_in = e->in(gen + 1);
+          if (Expression::type(gen_in).isvar() || Expression::type(gen_in).cv()) {
             gen_in = eval.flattenCV(env, e->in(gen + 1));
           }
-          if (Expression::type(gen_in()).dim() == 0) {
-            GCLock lock;
-            nextin = new SetLit(Location(), eval_intset(env, gen_in()));
+          if (Expression::type(gen_in).dim() == 0) {
+            nextin = make<SetLit>(Location(), eval_intset(env, gen_in));
           } else {
-            GCLock lock;
-            nextin = eval_array_lit(env, gen_in());
+            nextin = eval_array_lit(env, gen_in);
           }
-          if (Expression::type(gen_in()).dim() == 0) {
+          if (Expression::type(gen_in).dim() == 0) {
             eval_comp_set<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
           } else {
             eval_comp_array<Eval, isIndexed>(env, eval, e, gen + 1, 0, nextin, a);
@@ -254,7 +251,6 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
       eval_comp_array<Eval, isIndexed>(env, eval, e, gen, id + 1, in, a);
     }
   }
-  GC::untrail();
   e->decl(gen, id)->flat(nullptr);
 }
 
@@ -267,11 +263,11 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
  * \a a is the array in which to place the result.
  */
 template <class Eval, bool isIndexed>
-void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
+void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Expression* in,
                    EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
-  IntSetVal* isv = eval_intset(env, in());
+  Ref<IntSetVal> isv = eval_intset(env, in);
   if (isv->card().isPlusInfinity()) {
-    throw EvalError(env, Expression::loc(in()), "comprehension iterates over an infinite set");
+    throw EvalError(env, Expression::loc(in), "comprehension iterates over an infinite set");
   }
   IntSetRanges rsi(isv);
   Ranges::ToValues<IntSetRanges> rsv(rsi);
@@ -289,9 +285,9 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
  * \a a is the array in which to place the result.
  */
 template <class Eval, bool isIndexed>
-void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
+void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Expression* in,
                      EvaluatedCompTmp<typename Eval::ArrayVal>& a) {
-  auto* al = Expression::cast<ArrayLit>(in());
+  auto* al = Expression::cast<ArrayLit>(in);
   for (unsigned int i = 0; i < al->size(); i++) {
     eval_comp_array<Eval, false, isIndexed>(env, eval, e, gen, id, i, in, a);
   }
@@ -321,20 +317,21 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
       eval_comp_array<Eval, false, false>(env, eval, e, 0, 0, 0, e->in(0), a_tmp);
     }
   } else {
-    KeepAlive in;
+    Ref<Expression> in;
     {
-      GCLock lock;
       if (Expression::type(e->in(0)).dim() == 0) {
         if (Expression::type(e->in(0)).isvar()) {
-          in = new SetLit(Location(), compute_intset_bounds(env, e->in(0)));
+          in = make<SetLit>(Location(), compute_intset_bounds(env, e->in(0)));
         } else if (Expression::type(e->in(0)).cv()) {
-          in = new SetLit(Location(), eval_intset(env, eval.flattenCV(env, e->in(0))()));
+          Ref<Expression> flat_in = eval.flattenCV(env, e->in(0));
+          in = make<SetLit>(Location(), eval_intset(env, flat_in));
         } else {
-          in = new SetLit(Location(), eval_intset(env, e->in(0)));
+          in = make<SetLit>(Location(), eval_intset(env, e->in(0)));
         }
       } else {
         if (Expression::type(e->in(0)).isvar() || Expression::type(e->in(0)).cv()) {
-          in = eval_array_lit(env, eval.flattenCV(env, e->in(0))());
+          Ref<Expression> flat_in = eval.flattenCV(env, e->in(0));
+          in = eval_array_lit(env, flat_in);
         } else {
           in = eval_array_lit(env, e->in(0));
         }
@@ -400,10 +397,10 @@ EvaluatedComp<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehe
                         "comprehension generates multiple entries for same index");
       }
       seen[idx] = true;
-      a.a[idx] = a_tmp.a[i];
+      a.a[idx] = std::move(a_tmp.a[i]);
     }
   } else {
-    a.a = a_tmp.a;
+    a.a = std::move(a_tmp.a);
     a.dims.emplace_back(1, static_cast<int>(a.a.size()));
   }
   return a;

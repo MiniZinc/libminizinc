@@ -12,7 +12,6 @@
 #pragma once
 
 #include <minizinc/astexception.hh>
-#include <minizinc/astmap.hh>
 #include <minizinc/model.hh>
 
 #include <fstream>
@@ -51,11 +50,11 @@ protected:
   int _column;
   std::string _filename;
   /// Map from type alias name to the aliased TypeInst, populated in parseModel
-  ASTStringMap<TypeInst*> _aliases;
+  std::unordered_map<ASTString, TypeInst*> _aliases;
   /// If \a ti's domain references a known type alias, return a fresh TypeInst that
   /// merges the alias's base type/domain with \a ti's ranges. Follows alias chains.
   /// Returns \a ti unchanged when no alias applies.
-  TypeInst* resolveAlias(TypeInst* ti);
+  Ref<TypeInst> resolveAlias(TypeInst* ti);
   /// Collect the field declarations of record type-inst \a ti (following type-inst synonyms and
   /// record merges with ++). Returns false if \a ti is not known to be a record type-inst.
   bool collectRecordFields(TypeInst* ti, std::vector<VarDecl*>& fields);
@@ -66,14 +65,14 @@ protected:
   std::string expectString(std::istream& is);
   int expectInt(std::istream& is);
   void expectEof(std::istream& is);
-  Expression* parseEnumDef(std::istream& is);
-  Expression* parseEnumConstructorDef(std::istream& is, const std::string& seen);
-  Expression* parseEnum(std::istream& is);
-  Expression* parseEnumObject(std::istream& is, const std::string& seen);
-  Expression* parseExp(std::istream& is, bool parseObjects = true, TypeInst* ti = nullptr);
-  Expression* parseArray(std::istream& is, TypeInst* ti = nullptr, size_t range_index = 0);
-  Expression* parseSet(std::istream& is, TypeInst* ti = nullptr);
-  Expression* parseObject(std::istream& is, TypeInst* ti = nullptr);
+  Ref<Expression> parseEnumDef(std::istream& is);
+  Ref<Expression> parseEnumConstructorDef(std::istream& is, const std::string& seen);
+  Ref<Expression> parseEnum(std::istream& is);
+  Ref<Expression> parseEnumObject(std::istream& is, const std::string& seen);
+  Ref<Expression> parseExp(std::istream& is, bool parseObjects = true, TypeInst* ti = nullptr);
+  Ref<Expression> parseArray(std::istream& is, TypeInst* ti = nullptr, size_t range_index = 0);
+  Ref<Expression> parseSet(std::istream& is, TypeInst* ti = nullptr);
+  Ref<Expression> parseObject(std::istream& is, TypeInst* ti = nullptr);
 
   void parseModel(Model* m, std::istream& is, bool isData);
 
@@ -88,7 +87,7 @@ public:
   /// Check if string \a data may contain JSON-encoded MiniZinc data
   static bool stringIsJSON(const std::string& data);
   /// Coerces a array literal to take shape and (tuple) type
-  Expression* coerceArray(TypeInst* intendedTI, ArrayLit* al);
+  Ref<Expression> coerceArray(TypeInst* intendedTI, Ref<ArrayLit> al);
 };
 
 }  // namespace MiniZinc

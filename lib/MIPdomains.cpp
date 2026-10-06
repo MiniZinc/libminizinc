@@ -168,13 +168,13 @@ std::ostream& operator<<(std::ostream& os, const Interval<N>& ii) {
 }
 
 template <class N>
-class SetOfIntervals : public std::multiset<Interval<N> > {
+class SetOfIntervals : public std::multiset<Interval<N>> {
 public:
   using Intv = Interval<N>;
-  typedef std::multiset<Interval<N> > Base;
+  typedef std::multiset<Interval<N>> Base;
   typedef typename Base::iterator iterator;
   SetOfIntervals() : Base() {}
-  SetOfIntervals(std::initializer_list<Interval<N> > il) : Base(il) {}
+  SetOfIntervals(std::initializer_list<Interval<N>> il) : Base(il) {}
   template <class Iter>
   SetOfIntervals(Iter i1, Iter i2) : Base(i1, i2) {}
   /// Number of integer values in all the intervals
@@ -252,8 +252,8 @@ static std::ostream& operator<<(std::ostream& os, LinEqHelper<Coefs, Vars>& led)
   return os;
 }
 
-typedef LinEqHelper<std::array<double, 2>, std::array<VarDecl*, 2> > LinEq2Vars;
-typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*> > LinEq;
+typedef LinEqHelper<std::array<double, 2>, std::array<VarDecl*, 2>> LinEq2Vars;
+typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*>> LinEq;
 //     struct LinEq2Vars {
 //       std::array<double, 2> coefs;
 //       std::array<PVarDecl, 2> vd = { { 0, 0 } };
@@ -358,7 +358,6 @@ private:
 
   bool registerLinearConstraintDecls() {
     EnvI& env = getEnv()->envi();
-    GCLock lock;
 
     int_lin_eq = env.model->matchFn(env, env.constants.ids.int_.lin_eq, int_lin_eq_t, false);
     DBGOUT_MIPD("  int_lin_eq = " << int_lin_eq);
@@ -380,7 +379,6 @@ private:
     //       std::cerr << "  lin_exp_float=" << lin_exp_float << std::endl;
     // For this to work, need to define a function, see mzn_only_range_domains()
     //       {
-    //         GCLock lock;
     //         Call* call_EPS_for_LT =
     //           Call::a(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
     //         call_EPS_for_LT->type(Type::parfloat());
@@ -492,7 +490,6 @@ private:
 
   bool registerPOSTConstraintDecls() {
     EnvI& env = getEnv()->envi();
-    GCLock lock;
 
     _aCT.clear();
     _aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
@@ -550,7 +547,6 @@ private:
   /// Registering all _POST calls' domain-constrained variables
   void registerPOSTVariables() {
     EnvI& env = getEnv()->envi();
-    GCLock lock;
     Model& mFlat = *getEnv()->flat();
     // First, cleanup VarDecls' payload which stores index in _vVarDescr
     for (VarDeclIterator ivd = mFlat.vardecls().begin(); ivd != mFlat.vardecls().end(); ++ivd) {
@@ -562,7 +558,7 @@ private:
       bool fNonCtg = false;
       if (vd0->type().isint()) {  // currently only for int vars   TODO
         if (Expression* eDom = vd0->ti()->domain()) {
-          IntSetVal* dom = eval_intset(env, eDom);
+          Ref<IntSetVal> dom = eval_intset(env, eDom);
           fNonCtg = (dom->size() > 1);
         }
       }
@@ -730,8 +726,6 @@ private:
   }
 
   void propagateViews(bool& fChanges) {
-    GCLock lock;
-
     // Iterate thru original 2-variable equalities to mark views:
     Model& mFlat = *getEnv()->flat();
 
@@ -828,7 +822,7 @@ private:
 
   /// This vector stores the linear part of a general view
   /// x = <linear part> + rhs
-  typedef std::vector<std::pair<VarDecl*, double> > TLinExpLin;
+  typedef std::vector<std::pair<VarDecl*, double>> TLinExpLin;
   /// This struct has data describing the rest of a general view
   struct NViewData {
     VarDecl* pVarDefined = nullptr;
@@ -904,7 +898,6 @@ private:
 
   static void propagateImplViews(bool& fChanges) {
     //      EnvI& env = getEnv()->envi();
-    GCLock lock;
 
     // TODO
   }
@@ -994,7 +987,7 @@ private:
                                  // an (integer if any) variable with the least rel. factor
     bool fRef1HasEqEncode = false;
     /// This map stores the relations y = ax+b of all the clique's vars to y
-    typedef std::unordered_map<VarDecl*, std::pair<double, double> > TMapVars;
+    typedef std::unordered_map<VarDecl*, std::pair<double, double>> TMapVars;
     TMapVars mRef0, mRef1;  // to the main var 0, 1
 
     class TMatrixVars : public std::unordered_map<VarDecl*, TMapVars> {
@@ -1412,7 +1405,7 @@ private:
     /// Can also back-check from there?   TODO
     /// And further checks                TODO
     void syncWithEqEncoding() {
-      std::vector<Expression*> pp;
+      std::vector<Ref<Expression>> pp;
       auto bnds = sDomain.getBounds();
       const long long iMin = mipd.expr2ExprArray(
           Expression::cast<Call>(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e())->arg(1),
@@ -1694,10 +1687,10 @@ private:
       MZN_MIPD_assert_hard(RIT_Reif == nRT || RIT_Halfreif == nRT);
       //         MZN_MIPD_assert_hard( sDomain.size()>=2 );
       VarDecl* varFlag = MIPD::expr2VarDecl(expFlag);
-      std::vector<Expression*> vIntvFlags;
+      std::vector<Ref<Expression>> vIntvFlags;
       if (cls.fRef1HasEqEncode) {  // use eq_encoding
         MZN_MIPD_assert_hard(varFlag->type().isint());
-        std::vector<Expression*> pp;
+        std::vector<Ref<Expression>> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
             Expression::cast<Call>(mipd._vVarDescr[cls.varRef1->payload()].pEqEncoding->e())
@@ -1710,7 +1703,7 @@ private:
                vv <= static_cast<long long>(std::min(static_cast<double>(iMin + pp.size() - 1),
                                                      std::floor(intv.right)));
                ++vv) {
-            vIntvFlags.push_back(pp[vv - iMin]);
+            vIntvFlags.emplace_back(pp[vv - iMin]);
           }
         }
       } else {
@@ -1732,10 +1725,10 @@ private:
           }
           for (it12 = it1; it12 != it2; ++it12) {
             if (it12->varFlag != nullptr) {
-              vIntvFlags.push_back(it12->varFlag->id());
+              vIntvFlags.emplace_back(it12->varFlag->id());
             } else {
               MZN_MIPD_assert_hard(1 == sDomain.size());
-              vIntvFlags.push_back(IntLit::a(1));  // just a constant then
+              vIntvFlags.emplace_back(IntLit::a(1));  // just a constant then
             }
           }
         }
@@ -1744,9 +1737,10 @@ private:
         // Could find out if reif is true                  -- TODO && see above for 1 subinterval
         std::vector<double> onesm(vIntvFlags.size(), -1.0);
         onesm.push_back(1.0);
-        vIntvFlags.push_back(varFlag->id());
+        vIntvFlags.emplace_back(varFlag->id());
         EnumCmpType nCmpType = (RIT_Reif == nRT) ? CMPT_EQ : CMPT_LE;
-        addLinConstr(onesm, vIntvFlags, nCmpType, 0.0);
+        auto vFlags = raw(vIntvFlags);
+        addLinConstr(onesm, vFlags, nCmpType, 0.0);
       } else {  // the reif is false
         setVarDomain(varFlag, 0.0, 0.0);
       }
@@ -1756,18 +1750,19 @@ private:
       // need to check if the new range is in the previous bounds...   TODO
       if (vd->type().isfloat()) {
         //           if ( 0.0==lb && 0.0==ub ) {
-        auto* newDom =
-            new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
+        auto newDom =
+            make<BinOp>(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
         newDom->type(Type::parsetfloat());
         vd->ti()->domain(newDom);
         DBGOUT_MIPD("  NULL OUT:  " << vd->id()->str());
         //           }
       } else if (vd->type().isint() || vd->type().isbool()) {
-        auto* newDom = new SetLit(
+        auto newDom = make<SetLit>(
             Location().introduce(),
             IntSetVal::a(static_cast<long long int>(lb), static_cast<long long int>(ub)));
         newDom->type(Type::parsetint());
-        //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
+        //           Ref<TypeInst> nti =
+        //           copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
         //           nti->domain(newDom);
         vd->ti()->domain(newDom);
       } else {
@@ -1776,22 +1771,22 @@ private:
     }
 
     VarDecl* addIntVar(double LB, double UB) {
-      //         GCLock lock;
       // Cache them? Only location can be different                    TODO
-      auto* newDom =
-          new SetLit(Location().introduce(),
-                     IntSetVal::a(static_cast<long long int>(LB), static_cast<long long int>(UB)));
+      auto newDom = make<SetLit>(
+          Location().introduce(),
+          IntSetVal::a(static_cast<long long int>(LB), static_cast<long long int>(UB)));
       newDom->type(Type::parsetint());
-      auto* ti = new TypeInst(Location().introduce(), Type::varint(), newDom);
-      auto* newVar = new VarDecl(Location().introduce(), ti, mipd.getEnv()->envi().genId());
+      auto ti = make<TypeInst>(Location().introduce(), Type::varint(), newDom);
+      auto newVar = make<VarDecl>(Location().introduce(), ti, mipd.getEnv()->envi().genId());
       newVar->flat(newVar);
       mipd.getEnv()->envi().flatAddItem(VarDeclI::a(Location().introduce(), newVar));
-      return newVar;
+      VarDecl* ret = newVar.get();  // owned by the flat model
+      return ret;
     }
 
     void addLinConstr(std::vector<double>& coefs, std::vector<Expression*>& vars,
                       EnumCmpType nCmpType, double rhs) {
-      std::vector<Expression*> args(3);
+      std::vector<Ref<Expression>> args(3);
       MZN_MIPD_assert_hard(vars.size() >= 2);
       for (auto* v : vars) {
         MZN_MIPD_assert_hard(&v);
@@ -1817,8 +1812,8 @@ private:
             else
               DBGOUT_MIPD_FLUSH(mipd.expr2Const(v) << ',');
           } DBGOUT_MIPD(" ] " << (CMPT_EQ == nCmpType ? "== " : "<= ") << rhs););
-      std::vector<Expression*> nc_c;
-      std::vector<Expression*> nx;
+      std::vector<Ref<Expression>> nc_c;
+      std::vector<Ref<Expression>> nx;
       bool fFloat = false;
       for (auto* v : vars) {
         if (!Expression::type(v).isint()) {
@@ -1832,27 +1827,27 @@ private:
         for (int i = 0; i < vars.size(); ++i) {
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
-            nc_c.push_back(FloatLit::a(coefs[i]));
+            nc_c.emplace_back(FloatLit::a(coefs[i]));
             if (Expression::type(vars[i]).isint()) {
               std::vector<Expression*> i2f_args(1);
               i2f_args[0] = vars[i];
-              Call* i2f =
+              auto i2f =
                   Call::a(Location().introduce(), Constants::constants().ids.int2float, i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
               EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr,
                                 Constants::constants().varTrue);
-              nx.push_back(ret.r());
+              nx.push_back(ret.r);
             } else {
-              nx.push_back(vars[i]);  // ->id();   once passing a general expression
+              nx.emplace_back(vars[i]);  // ->id();   once passing a general expression
             }
           }
         }
         args[2] = FloatLit::a(rhs);
         Expression::type(args[2], Type::parfloat(0));
-        args[0] = new ArrayLit(Location().introduce(), nc_c);
+        args[0] = make<ArrayLit>(Location().introduce(), nc_c);
         Expression::type(args[0], Type::parfloat(1));
-        args[1] = new ArrayLit(Location().introduce(), nx);
+        args[1] = make<ArrayLit>(Location().introduce(), nx);
         Expression::type(args[1], Type::varfloat(1));
         if (CMPT_LE == nCmpType) {
           sName = Constants::constants().ids.float_.lin_le;  // "float_lin_le";
@@ -1862,15 +1857,15 @@ private:
         for (int i = 0; i < vars.size(); ++i) {
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
-            nc_c.push_back(IntLit::a(static_cast<long long int>(coefs[i])));
-            nx.push_back(vars[i]);  //->id();
+            nc_c.emplace_back(IntLit::a(static_cast<long long int>(coefs[i])));
+            nx.emplace_back(vars[i]);  //->id();
           }
         }
         args[2] = IntLit::a(static_cast<long long int>(rhs));
         Expression::type(args[2], Type::parint(0));
-        args[0] = new ArrayLit(Location().introduce(), nc_c);
+        args[0] = make<ArrayLit>(Location().introduce(), nc_c);
         Expression::type(args[0], Type::parint(1));
-        args[1] = new ArrayLit(Location().introduce(), nx);
+        args[1] = make<ArrayLit>(Location().introduce(), nx);
         Expression::type(args[1], Type::varint(1));
         if (CMPT_LE == nCmpType) {
           sName = Constants::constants().ids.int_.lin_le;  // "int_lin_le";
@@ -1884,17 +1879,17 @@ private:
         DBGOUT_MIPD_FLUSH(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
-      auto* nc = Call::a(Location().introduce(), ASTString(sName), args);
+      auto nc = Call::a(Location().introduce(), ASTString(sName), args);
       nc->type(Type::varbool());
       nc->decl(fDecl);
-      mipd.getEnv()->envi().flatAddItem(new ConstraintI(Location().introduce(), nc));
+      mipd.getEnv()->envi().flatAddItem(make<ConstraintI>(Location().introduce(), nc));
     }
 
     /// domain / reif set of one variable into that for a!her
     void convertIntSet(Expression* e, SetOfIntvReal& s, VarDecl* varTarget, double A, double B) {
       MZN_MIPD_assert_hard(A != 0.0);
       if (Expression::type(e).isIntSet()) {
-        IntSetVal* S = eval_intset(mipd.getEnv()->envi(), e);
+        Ref<IntSetVal> S = eval_intset(mipd.getEnv()->envi(), e);
         IntSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
           IntVal mmin = domr.min();
@@ -1910,7 +1905,7 @@ private:
         }
       } else {
         assert(Expression::type(e).isFloatSet());
-        FloatSetVal* S = eval_floatset(mipd.getEnv()->envi(), e);
+        Ref<FloatSetVal> S = eval_floatset(mipd.getEnv()->envi(), e);
         FloatSetRanges domr(S);
         for (; domr(); ++domr) {  // * A + B
           FloatVal mmin = domr.min();
@@ -1962,7 +1957,6 @@ private:
     for (int iVar = 0; iVar < _vVarDescr.size(); ++iVar) {
       //         VarDescr& var = _vVarDescr[iVar];
       if (_vVarDescr[iVar].fDomainConstrProcessed == 0U) {
-        GCLock lock;
         DomainDecomp dd(this, iVar);
         dd.doProcess();
         _vVarDescr[iVar].fDomainConstrProcessed = 1U;
@@ -2001,7 +1995,7 @@ private:
   /// Fills the vector of vardecls && returns the least index of the array
   template <class Array>
   long long expr2DeclArray(Expression* arg, Array& aVD) {
-    ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
+    Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), arg);
     checkOrResize(aVD, al->size());
     for (unsigned int i = 0; i < al->size(); i++) {
       aVD[i] = expr2VarDecl((*al)[i]);
@@ -2009,10 +2003,11 @@ private:
     return al->min(0);
   }
 
-  /// Fills the vector of expressions && returns the least index of the array
+  /// Fills the vector of expressions && returns the least index of the array (\a aVD must own
+  /// the elements: the evaluated array may be a new node that only this function holds)
   template <class Array>
   long long expr2ExprArray(Expression* arg, Array& aVD) {
-    ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
+    Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), arg);
     checkOrResize(aVD, al->size());
     for (unsigned int i = 0; i < al->size(); i++) {
       aVD[i] = ((*al)[i]);
@@ -2049,7 +2044,7 @@ private:
 
   template <class Array>
   void expr2Array(Expression* arg, Array& vals) {
-    ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
+    Ref<ArrayLit> al = eval_array_lit(getEnv()->envi(), arg);
     //       if ( typeid(typename Array::pointer) == typeid(typename Array::iterator) )  // fixed
     //       array
     //         MZN_MIPD_assert_hard( vals.size() == al->v().size() );
@@ -2295,7 +2290,6 @@ bool MIPD::fVerbose = false;
 void mip_domains(Env& env, bool fVerbose, int nmi, double dmd) {
   MIPD mipd(&env, fVerbose, nmi, dmd);
   if (!mipd.doMIPdomains()) {
-    GCLock lock;
     env.envi().fail();
   }
 }

@@ -101,7 +101,7 @@ void ChuffedSolverInstance::processFlatZinc() {
           } else if (vd->type().isint()) {
             FlatZinc::AST::SetLit* sl = nullptr;
             if (vd->ti()->domain() != nullptr) {
-              IntSetVal* isv = eval_intset(env().envi(), vd->ti()->domain());
+              Ref<IntSetVal> isv = eval_intset(env().envi(), vd->ti()->domain());
               if (isv->size() > 1) {
                 std::vector<int> vs;
                 for (unsigned int i = 0; i < isv->size(); i++) {
@@ -383,7 +383,6 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   if (lastSolutionOnly) {
     engine.setSolutionCallback([this](Problem* p) {
       // Assign solution but don't print it
-      GCLock lock;
       assignSolutionToOutput();
     });
   } else {
@@ -393,7 +392,6 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   engine.solve(_space);
   if (lastSolutionOnly && engine.solutions > 0) {
     // Print optimal solution
-    GCLock lock;
     // Deliberately not the override: the callback above already assigned the output
     // for this solution, and re-running assignSolutionToOutput() here would read the
     // engine's post-solve state instead.
@@ -428,7 +426,7 @@ SolverInstanceBase::Status ChuffedSolverInstance::solve() {
   return status;
 }
 
-Expression* ChuffedSolverInstance::getSolutionValue(Id* i) {
+Ref<Expression> ChuffedSolverInstance::getSolutionValue(Id* i) {
   auto* ident = i->decl()->id();
   if (ident->type().isvar()) {
     auto& var = _variableMap.get(ident);

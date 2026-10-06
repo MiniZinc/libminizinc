@@ -192,7 +192,7 @@ bool is_output(VarDecl* vd) {
   return false;
 }
 
-Expression* fixed_output_value(VarDecl* vd) {
+Ref<Expression> fixed_output_value(VarDecl* vd) {
   if (vd->type().isbool() && (vd->ti()->domain() != nullptr)) {
     return vd->ti()->domain();
   }
@@ -256,7 +256,8 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
       }
     }
     if (id0->decl()->e() != nullptr) {
-      Expression* rhs = id0->decl()->e();
+      // Held here: clearing the RHS of id0 below must not free the expression that top_down visits
+      Ref<Expression> rhs = id0->decl()->e();
 
       auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
       CollectOccurrencesE ce(env, env.varOccurrences, vdi1);
@@ -275,7 +276,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
     if (auto* alias = Expression::dynamicCast<Id>(id1->decl()->e())) {
       VarDecl* target = alias->decl();
       if (target == id0->decl() || target == id1->decl()) {
-        Expression* rhs = id1->decl()->e();
+        Ref<Expression> rhs = id1->decl()->e();
         id1->decl()->e(nullptr);
 
         auto* vdi1 = (*env.flat())[env.varOccurrences.find(id1->decl())]->cast<VarDeclI>();
@@ -307,16 +308,16 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
                                 Expression::cast<TypeInst>((*tis1)[i]));
             }
           } else if (ti0->type().bt() == Type::BT_INT) {
-            IntSetVal* isv0 = eval_intset(env, ti0->domain());
-            IntSetVal* isv1 = eval_intset(env, ti1->domain());
+            Ref<IntSetVal> isv0 = eval_intset(env, ti0->domain());
+            Ref<IntSetVal> isv1 = eval_intset(env, ti1->domain());
             IntSetRanges isv0r(isv0);
             IntSetRanges isv1r(isv1);
             Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv0r, isv1r);
-            IntSetVal* nd = IntSetVal::ai(inter);
+            Ref<IntSetVal> nd = IntSetVal::ai(inter);
             if (nd->empty() && !ti0->type().isSet()) {
               env.fail();
             } else if (!nd->equal(isv1)) {
-              ti1->domain(new SetLit(Location(), nd));
+              ti1->domain(make<SetLit>(Location(), nd));
               if (nd->equal(isv0)) {
                 ti1->setComputedDomain(ti0->computedDomain());
               } else {
@@ -329,12 +330,12 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
             }
           } else if (ti0->type().bt() == Type::BT_FLOAT) {
             // float
-            FloatSetVal* isv0 = eval_floatset(env, ti0->domain());
-            FloatSetVal* isv1 = eval_floatset(env, ti1->domain());
+            Ref<FloatSetVal> isv0 = eval_floatset(env, ti0->domain());
+            Ref<FloatSetVal> isv1 = eval_floatset(env, ti1->domain());
             FloatSetRanges isv0r(isv0);
             FloatSetRanges isv1r(isv1);
             Ranges::Inter<FloatVal, FloatSetRanges, FloatSetRanges> inter(isv0r, isv1r);
-            FloatSetVal* nd = FloatSetVal::ai(inter);
+            Ref<FloatSetVal> nd = FloatSetVal::ai(inter);
 
             FloatSetRanges nd_r(nd);
             FloatSetRanges isv1r_2(isv1);
@@ -342,7 +343,7 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
             if (nd->empty()) {
               env.fail();
             } else if (!Ranges::equal(nd_r, isv1r_2)) {
-              ti1->domain(new SetLit(Location(), nd));
+              ti1->domain(make<SetLit>(Location(), nd));
               FloatSetRanges nd_r_2(nd);
               FloatSetRanges isv0r_2(isv0);
               if (Ranges::equal(nd_r_2, isv0r_2)) {
@@ -447,7 +448,7 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
         cur = vdi->e();
         if (is_output(cur)) {
           // We have to change the output model if we remove this variable
-          Expression* val = fixed_output_value(cur);
+          Ref<Expression> val = fixed_output_value(cur);
           if (val != nullptr) {
             // Find corresponding variable in output model and fix it
             VarDecl* vd_out =
@@ -486,8 +487,6 @@ void optimize(Env& env, bool chain_compression) {
     std::deque<unsigned int> vardeclQueue;
 
     std::vector<unsigned int> boolConstraints;
-
-    GCLock lock;
 
     // Phase 0: clean up
     // - clear flags for all constraint and variable declaration items
@@ -644,8 +643,9 @@ void optimize(Env& env, bool chain_compression) {
         vdi->flag(false);
         if ((vdi->e()->e() != nullptr) && Expression::isa<Id>(vdi->e()->e()) &&
             Expression::type(vdi->e()).dim() == 0) {
-          // unify variable with the identifier it's assigned to
-          Id* id1 = Expression::cast<Id>(vdi->e()->e());
+          // unify variable with the identifier it's assigned to (held here: clearing the RHS
+          // releases it)
+          Ref<Id> id1 = Expression::cast<Id>(vdi->e()->e());
           vdi->e()->e(nullptr);
 
           // Transfer is_defined_var annotation
@@ -976,14 +976,14 @@ void optimize(Env& env, bool chain_compression) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
         } else if (vd->type().isint() && (vd->ti()->domain() != nullptr)) {
-          IntSetVal* isv = eval_intset(envi, vd->ti()->domain());
+          Ref<IntSetVal> isv = eval_intset(envi, vd->ti()->domain());
           if (auto* il = Expression::dynamicCast<IntLit>(vd->e())) {
             auto iv = IntLit::v(il);
             if (!isv->contains(iv)) {
               env.envi().fail();
             } else if (isv->size() != 1 || isv->card() != 1) {
               isv = IntSetVal::a(iv, iv);
-              vd->ti()->domain(new SetLit(Location().introduce(), isv));
+              vd->ti()->domain(make<SetLit>(Location().introduce(), isv));
               push_dependent_constraints(envi, vd->id(), constraintQueue);
             }
           }
@@ -991,7 +991,7 @@ void optimize(Env& env, bool chain_compression) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
         } else if (vd->type().isfloat() && (vd->ti()->domain() != nullptr)) {
-          FloatSetVal* fsv = eval_floatset(envi, vd->ti()->domain());
+          Ref<FloatSetVal> fsv = eval_floatset(envi, vd->ti()->domain());
           if (fsv->size() == 1 && fsv->card() == 1) {
             simplify_constraint(envi, m[var_idx], deletedVarDecls, constraintQueue, vardeclQueue);
           }
@@ -1095,7 +1095,7 @@ void optimize(Env& env, bool chain_compression) {
           }
         }
         if (compactedAl.size() < al->size()) {
-          c->arg(j, new ArrayLit(Expression::loc(al), compactedAl));
+          c->arg(j, make<ArrayLit>(Expression::loc(al), compactedAl));
           Expression::type(c->arg(j), Type::varbool(1));
         }
         empty = empty && compactedAl.empty();
@@ -1206,7 +1206,7 @@ protected:
   }
 
 public:
-  Expression* subst(Expression* e) {
+  Ref<Expression> subst(Expression* e) {
     if (auto* vd = Expression::dynamicCast<VarDecl>(follow_id_to_decl(e))) {
       if ((vd->e() != nullptr) && inlineLiteral(vd->e())) {
         _removed.push_back(vd);
@@ -1354,8 +1354,8 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           ii->remove();
         }
       } else if (Expression::type(c->arg(0)).isPar() && Expression::type(c->arg(1)).isPar()) {
-        Expression* e0 = eval_par(env, c->arg(0));
-        Expression* e1 = eval_par(env, c->arg(1));
+        Ref<Expression> e0 = eval_par(env, c->arg(0));
+        Ref<Expression> e1 = eval_par(env, c->arg(1));
         bool is_equal = Expression::equal(e0, e1);
         if ((is_true && is_equal) || (is_false && !is_equal)) {
           // do nothing
@@ -1401,10 +1401,9 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             break;
           case Type::BT_INT: {
             if (ident->type().st() == Type::ST_SET) {
-              GCLock lock;
-              IntSetVal* isv = eval_intset(env, arg);
+              Ref<IntSetVal> isv = eval_intset(env, arg);
               if (ti->domain() != nullptr) {
-                IntSetVal* dom = eval_intset(env, ti->domain());
+                Ref<IntSetVal> dom = eval_intset(env, ti->domain());
                 IntSetRanges domr(dom);
                 IntSetRanges slr(isv);
                 if (!Ranges::subset(slr, domr)) {
@@ -1413,26 +1412,26 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 }
               }
               if (ident->decl()->e() == nullptr) {
-                ident->decl()->e(new SetLit(Expression::loc(arg), isv));
+                ident->decl()->e(make<SetLit>(Expression::loc(arg), isv));
                 canRemove = true;
               } else if (auto* call = Expression::dynamicCast<Call>(ident->decl()->e())) {
                 // Remove call from RHS and add it as new constraint with the literal
-                auto* sl = new SetLit(Expression::loc(arg), isv);
+                auto sl = make<SetLit>(Expression::loc(arg), isv);
                 std::vector<Expression*> args(call->argCount() + 1);
                 for (unsigned int i = 0; i < call->argCount(); ++i) {
                   args[i] = call->arg(i);
                 }
                 args[call->argCount()] = sl;
-                auto* nc = Call::a(Expression::loc(call), call->id(), args);
+                auto nc = Call::a(Expression::loc(call), call->id(), args);
                 nc->type(Type::varbool());
                 nc->decl(env.model->matchFn(env, nc, false));
-                env.flatAddItem(new ConstraintI(Expression::loc(call), nc));
+                env.flatAddItem(make<ConstraintI>(Expression::loc(call), nc));
 
                 // Add literal as new RHS
                 ident->decl()->e(sl);
                 canRemove = true;
               } else {
-                IntSetVal* rhs = eval_intset(env, ident->decl()->e());
+                Ref<IntSetVal> rhs = eval_intset(env, ident->decl()->e());
                 if (!rhs->equal(isv)) {
                   env.fail();
                 }
@@ -1441,14 +1440,14 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             } else {
               IntVal d = eval_int(env, arg);
               if (ti->domain() == nullptr) {
-                ti->domain(new SetLit(Location().introduce(), IntSetVal::a(d, d)));
+                ti->domain(make<SetLit>(Location().introduce(), IntSetVal::a(d, d)));
                 ti->setComputedDomain(false);
                 canRemove = true;
               } else {
-                IntSetVal* isv = eval_intset(env, ti->domain());
+                Ref<IntSetVal> isv = eval_intset(env, ti->domain());
                 if (isv->contains(d)) {
                   ident->decl()->ti()->domain(
-                      new SetLit(Location().introduce(), IntSetVal::a(d, d)));
+                      make<SetLit>(Location().introduce(), IntSetVal::a(d, d)));
                   ident->decl()->ti()->setComputedDomain(false);
                   canRemove = true;
                 } else {
@@ -1460,13 +1459,13 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
           } break;
           case Type::BT_FLOAT: {
             if (ti->domain() == nullptr) {
-              ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
+              ti->domain(make<BinOp>(Location().introduce(), arg, BOT_DOTDOT, arg));
               ti->setComputedDomain(false);
               canRemove = true;
             } else {
               FloatVal value = eval_float(env, arg);
               if (LinearTraits<FloatLit>::domainContains(eval_floatset(env, ti->domain()), value)) {
-                ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
+                ti->domain(make<BinOp>(Location().introduce(), arg, BOT_DOTDOT, arg));
                 ti->setComputedDomain(false);
                 canRemove = true;
               } else {
@@ -1514,17 +1513,18 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
       Id* ident = Expression::isa<Id>(c->arg(0)) ? Expression::cast<Id>(c->arg(0))
                                                  : Expression::cast<Id>(c->arg(1));
       Expression* arg = Expression::isa<Id>(c->arg(0)) ? c->arg(1) : c->arg(0);
-      IntSetVal* domain = ident->decl()->ti()->domain() != nullptr
-                              ? eval_intset(env, ident->decl()->ti()->domain())
-                              : nullptr;
+      Ref<IntSetVal> domain = ident->decl()->ti()->domain() != nullptr
+                                  ? eval_intset(env, ident->decl()->ti()->domain())
+                                  : nullptr;
       if (domain != nullptr) {
         BinOpType bot = Expression::isa<Id>(c->arg(0)) ? (is_true ? BOT_LQ : BOT_GR)
                                                        : (is_true ? BOT_GQ : BOT_LE);
-        IntSetVal* newDomain = LinearTraits<IntLit>::limitDomain(bot, domain, eval_int(env, arg));
+        Ref<IntSetVal> newDomain =
+            LinearTraits<IntLit>::limitDomain(bot, domain, eval_int(env, arg));
         if (newDomain->empty()) {
           env.fail();
         } else {
-          ident->decl()->ti()->domain(new SetLit(Location().introduce(), newDomain));
+          ident->decl()->ti()->domain(make<SetLit>(Location().introduce(), newDomain));
           ident->decl()->ti()->setComputedDomain(false);
 
           if (newDomain->min() == newDomain->max()) {
@@ -1562,7 +1562,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
       } else {
         vd = nullptr;
       }
-      IntSetVal* vd_dom = nullptr;
+      Ref<IntSetVal> vd_dom;
       if (vd != nullptr) {
         if (vd->ti()->domain() != nullptr) {
           vd_dom = eval_intset(env, vd->ti()->domain());
@@ -1587,7 +1587,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             if (auto* vdi = ii->dynamicCast<VarDeclI>()) {
-              auto* v = IntLit::a(b2i_val ? 1 : 0);
+              auto v = IntLit::a(b2i_val ? 1 : 0);
               if (env.varOccurrences.occurrences(vdi->e()) == 0) {
                 if (is_output(vdi->e())) {
                   VarDecl* vd_out = (*env.output)[env.outputFlatVarOccurrences.find(vdi->e())]
@@ -1643,7 +1643,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             CollectDecls cd(env, env.varOccurrences, deletedVarDecls, ii);
             top_down(cd, c);
             vd->e(IntLit::a(v));
-            vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
+            vd->ti()->domain(make<SetLit>(Location().introduce(), IntSetVal::a(v, v)));
             vd->ti()->setComputedDomain(true);
             push_vardecl(env, env.varOccurrences.find(vd), vardeclQueue);
             push_dependent_constraints(env, vd->id(), constraintQueue);
@@ -1653,8 +1653,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
 
     } else {
       // General propagation: call a propagator registered for this constraint type
-      Expression* rewrite = nullptr;
-      GCLock lock;
+      Ref<Expression> rewrite;
       switch (OptimizeRegistry::registry().process(env, ii, c, rewrite)) {
         case OptimizeRegistry::CS_NONE:
           return false;
@@ -1727,7 +1726,7 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
             vdi->e()->e(rewrite);
             if ((vdi->e()->e() != nullptr) && Expression::isa<Id>(vdi->e()->e()) &&
                 vdi->e()->type().dim() == 0) {
-              Id* id1 = Expression::cast<Id>(vdi->e()->e());
+              Ref<Id> id1 = Expression::cast<Id>(vdi->e()->e());  // clearing the RHS releases it
               vdi->e()->e(nullptr);
               // Transfer is_defined_var annotation
               if (Expression::ann(id1->decl()).contains(env.constants.ann.is_defined_var)) {
@@ -1742,13 +1741,13 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 (vdi->e()->ti()->domain() != nullptr)) {
               if (Expression::type(vdi->e()->e()).isint()) {
                 IntVal iv = eval_int(env, vdi->e()->e());
-                IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
+                Ref<IntSetVal> dom = eval_intset(env, vdi->e()->ti()->domain());
                 if (!dom->contains(iv)) {
                   env.fail();
                 }
               } else if (Expression::type(vdi->e()->e()).isIntSet()) {
-                IntSetVal* isv = eval_intset(env, vdi->e()->e());
-                IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
+                Ref<IntSetVal> isv = eval_intset(env, vdi->e()->e());
+                Ref<IntSetVal> dom = eval_intset(env, vdi->e()->ti()->domain());
                 IntSetRanges isv_r(isv);
                 IntSetRanges dom_r(dom);
                 if (!Ranges::subset(isv_r, dom_r)) {
@@ -1756,13 +1755,13 @@ bool simplify_constraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarD
                 }
               } else if (Expression::type(vdi->e()->e()).isfloat()) {
                 FloatVal fv = eval_float(env, vdi->e()->e());
-                FloatSetVal* dom = eval_floatset(env, vdi->e()->ti()->domain());
+                Ref<FloatSetVal> dom = eval_floatset(env, vdi->e()->ti()->domain());
                 if (!dom->contains(fv)) {
                   env.fail();
                 }
               } else if (Expression::type(vdi->e()->e()).isFloatSet()) {
-                FloatSetVal* fsv = eval_floatset(env, vdi->e()->e());
-                FloatSetVal* dom = eval_floatset(env, vdi->e()->ti()->domain());
+                Ref<FloatSetVal> fsv = eval_floatset(env, vdi->e()->e());
+                Ref<FloatSetVal> dom = eval_floatset(env, vdi->e()->ti()->domain());
                 FloatSetRanges fsv_r(fsv);
                 FloatSetRanges dom_r(dom);
                 if (!Ranges::subset(fsv_r, dom_r)) {
@@ -2065,7 +2064,8 @@ void simplify_bool_constraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           // not subsumed, nonfixed==1
           assert(nonfixed_i != -1);
           auto* al = Expression::cast<ArrayLit>(follow_id(c->arg(nonfixed_i)));
-          Id* ident = Expression::cast<Id>((*al)[nonfixed_j]);
+          // Held here: clearing the RHS of vdi below can release the array it comes from
+          Ref<Id> ident = Expression::cast<Id>((*al)[nonfixed_j]);
           if ((ci != nullptr) || (vdi->e()->ti()->domain() != nullptr)) {
             bool result = nonfixed_i == 0;
             if ((vdi != nullptr) && vdi->e()->ti()->domain() == env.constants.literalFalse) {

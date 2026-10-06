@@ -40,43 +40,41 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
     if (id->type().dim() > 1) {
       throw InternalError("multi-dim arrays in negative positions not supported yet");
     }
-    KeepAlive ka;
+    Ref<Expression> ka;
     {
-      GCLock lock;
-      std::vector<VarDecl*> gen_id(1);
+      std::vector<Ref<VarDecl>> gen_id(1);
       gen_id[0] =
-          new VarDecl(Expression::loc(id), new TypeInst(Expression::loc(id), Type::parint()),
-                      env.genId(), IntLit::a(0));
+          make<VarDecl>(Expression::loc(id), make<TypeInst>(Expression::loc(id), Type::parint()),
+                        env.genId(), IntLit::a(0));
 
       /// TODO: support arbitrary dimensions
       std::vector<Expression*> idxsetargs(1);
       idxsetargs[0] = id;
-      Call* idxset = Call::a(Expression::loc(id).introduce(), "index_set", idxsetargs);
+      Ref<Call> idxset = Call::a(Expression::loc(id).introduce(), "index_set", idxsetargs);
       idxset->decl(env.model->matchFn(env, idxset, false));
       idxset->type(idxset->decl()->rtype(env, idxsetargs, nullptr, false));
-      Generator gen(gen_id, idxset, nullptr);
+      Generator gen(raw(gen_id), idxset, nullptr);
       std::vector<Expression*> idx(1);
       Generators gens;
       gens.g.push_back(gen);
-      UnOp* aanot = new UnOp(Expression::loc(id), UOT_NOT, nullptr);
-      auto* cp = new Comprehension(Expression::loc(id), aanot, gens, false);
+      Ref<UnOp> aanot = make<UnOp>(Expression::loc(id), UOT_NOT, nullptr);
+      auto cp = make<Comprehension>(Expression::loc(id), aanot, gens, false);
       Id* bodyidx = cp->decl(0, 0)->id();
       idx[0] = bodyidx;
-      auto* aa = new ArrayAccess(Expression::loc(id), id, idx);
+      auto aa = make<ArrayAccess>(Expression::loc(id), id, idx);
       aanot->e(aa);
       Type tt = id->type().elemType(env);
       aa->type(tt);
       aanot->type(aa->type());
       cp->type(id->type());
-      ka = cp;
+      ka = std::move(cp);
     }
     Ctx nctx = ctx;
     nctx.neg = false;
-    ret = flat_exp(env, nctx, ka(), r, b);
+    ret = flat_exp(env, nctx, ka, r, b);
   } else {
-    GCLock lock;
-    VarDecl* vd = id->decl()->flat();
-    Expression* rete = nullptr;
+    Ref<VarDecl> vd = id->decl()->flat();
+    Ref<Expression> rete;
     if (vd == nullptr) {
       if (id->decl()->e() == nullptr || Expression::type(id->decl()->e()).isAnn() ||
           Expression::type(id->decl()->e()).isvar() || Expression::type(id->decl()->e()).cv() ||
@@ -84,8 +82,8 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         // New top-level id, need to copy into env.m
         Ctx nctx;
         nctx.i = ctx.i;
-        auto* flat_ident = Expression::cast<Id>(
-            flat_exp(env, nctx, id->decl(), nullptr, env.constants.varTrue).r());
+        EE flat_ee = flat_exp(env, nctx, id->decl(), nullptr, env.constants.varTrue);
+        auto* flat_ident = Expression::cast<Id>(flat_ee.r);
         if (flat_ident->decl() == nullptr && id->type().isAnn()) {
           ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
           ret.r = bind(env, ctx, r, flat_ident);
@@ -107,13 +105,13 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             vd->ti()->domain(rete);
           } else if (vd->type() == Type::varint()) {
             IntVal v = eval_int(env, rete);
-            vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
+            vd->ti()->domain(make<SetLit>(Location().introduce(), IntSetVal::a(v, v)));
           } else if (vd->type() == Type::varfloat()) {
             FloatVal v = eval_float(env, rete);
-            vd->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(v, v)));
+            vd->ti()->domain(make<SetLit>(Location().introduce(), FloatSetVal::a(v, v)));
           } else if (vd->type() == Type::varsetint()) {
-            IntSetVal* v = eval_intset(env, rete);
-            vd->ti()->domain(new SetLit(Location().introduce(), v));
+            Ref<IntSetVal> v = eval_intset(env, rete);
+            vd->ti()->domain(make<SetLit>(Location().introduce(), v));
           }
           vd->ti()->setComputedDomain(true);
         }
@@ -131,22 +129,22 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         rete = IntLit::a(Expression::cast<SetLit>(vd->ti()->domain())->isv()->min());
       } else if (vd->ti()->type().structBT()) {
         auto* fieldsti = Expression::cast<ArrayLit>(vd->ti()->domain());
-        std::vector<Expression*> elems(fieldsti->size());
+        std::vector<Ref<Expression>> elems(fieldsti->size());
         for (unsigned int i = 0; i < fieldsti->size(); ++i) {
-          CallStackItem csi(env, IntLit::a(static_cast<long long int>(i)));
+          auto il = IntLit::a(static_cast<long long int>(i));
+          CallStackItem csi(env, il);
           auto* nti = Expression::cast<TypeInst>((*fieldsti)[i]);
           Type nty(nti->type());
-          auto* vti = new TypeInst(Location().introduce(), nty, nti->ranges(), nti->domain());
-          VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
+          auto vti = make<TypeInst>(Location().introduce(), nty, nti->ranges(), nti->domain());
+          Ref<VarDecl> nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
           elems[i] =
-              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains)
-                  .r();
+              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains).r;
         }
         // After introducing variables for each tuple element, the original domain can be
         // set to "computed" (since it is a consequence of the individual variable domains)
         vd->ti()->setComputedDomain(true);
 
-        ArrayLit* al = ArrayLit::constructTuple(Location().introduce(), elems);
+        Ref<ArrayLit> al = ArrayLit::constructTuple(Location().introduce(), raw(elems));
         al->type(vd->type());
 
         // Set tuple instantiation as RHS
@@ -160,14 +158,14 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
       }
     } else if (!vd->ti()->ranges().empty()) {
       // create fresh variables and array literal
-      std::vector<std::pair<int, int> > dims;
+      std::vector<std::pair<int, int>> dims;
       IntVal asize = 1;
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
         TypeInst* ti = vd->ti()->ranges()[i];
         if (ti->domain() == nullptr) {
           throw FlatteningError(env, Expression::loc(ti), "array dimensions unknown");
         }
-        IntSetVal* isv = eval_intset(env, ti->domain());
+        Ref<IntSetVal> isv = eval_intset(env, ti->domain());
         if (isv->empty()) {
           dims.emplace_back(1, 0);
           asize = 0;
@@ -193,23 +191,23 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
         throw FlatteningError(env, Expression::loc(vd), oss.str());
       }
 
-      std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
+      std::vector<Ref<Expression>> elems(static_cast<int>(asize.toInt()));
       for (int i = 0; i < static_cast<int>(asize.toInt()); i++) {
-        CallStackItem csi(env, IntLit::a(i));
-        auto* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
-        VarDecl* nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
+        auto il = IntLit::a(i);
+        CallStackItem csi(env, il);
+        auto vti = make<TypeInst>(Location().introduce(), tt, vd->ti()->domain());
+        Ref<VarDecl> nvd = new_vardecl(env, Ctx(), vti, nullptr, vd, nullptr);
         elems[i] = nvd->id();
         if (tt.structBT()) {
           elems[i] =
-              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains)
-                  .r();
+              flatten_id(env, ctx, nvd->id(), nullptr, env.constants.varTrue, doNotFollowChains).r;
         }
       }
       // After introducing variables for each array element, the original domain can be
       // set to "computed" (since it is a consequence of the individual variable domains)
       vd->ti()->setComputedDomain(true);
 
-      auto* al = new ArrayLit(Location().introduce(), elems, dims);
+      auto al = make<ArrayLit>(Location().introduce(), elems, dims);
       al->type(elems.empty() ? Type::bot(vd->type().dim()) : vd->type());
       vd->e(al);
       env.voAddExp(vd);
@@ -230,8 +228,8 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             // Do not create names for empty arrays but return array literal directly
             rete = vdea;
           } else {
-            VarDecl* nvd =
-                new_vardecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr, false);
+            auto nti = eval_typeinst(env, ctx, vd);
+            Ref<VarDecl> nvd = new_vardecl(env, ctx, nti, nullptr, vd, nullptr, false);
 
             if (vd->e() != nullptr) {
               (void)flat_exp(env, Ctx(), vd->e(), nvd, env.constants.varTrue);
@@ -251,10 +249,10 @@ EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
             }
           }
         } else {
-          if (Expression::isa<VarDecl>(it->second.r)) {
-            vd = Expression::cast<VarDecl>(it->second.r);
+          if (Expression::isa<VarDecl>(it->second.r.get())) {
+            vd = Expression::cast<VarDecl>(it->second.r.get());
           } else {
-            rete = it->second.r;
+            rete = it->second.r.get();
           }
         }
       }

@@ -84,6 +84,41 @@ bool Model::FnEntry::compare(const EnvI& env, const Model::FnEntry& e1, const Mo
 
 Model::Model() : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
+bool can_hold_itself(const Item* i) {
+  if (const auto* fi = i->dynamicCast<FunctionI>()) {
+    return fi->e() != nullptr || !fi->ann().isEmpty();
+  }
+  if (const auto* vdi = i->dynamicCast<VarDeclI>()) {
+    return !Expression::ann(vdi->e()).isEmpty() || vdi->e()->e() != nullptr;
+  }
+  return false;
+}
+
+void Model::cycleCandidates(std::vector<Weak<ASTNode>>& candidates) const {
+  std::unordered_set<FunctionI*> seen;  // (a function can be registered more than once)
+  // (registered functions are not always items: the instances of polymorphic functions are not)
+  for (const auto& entries : _fnmap) {
+    for (const auto& entry : entries.second) {
+      if (can_hold_itself(entry.fi.get()) && seen.insert(entry.fi.get()).second) {
+        candidates.emplace_back(entry.fi.get());
+      }
+    }
+  }
+  for (const auto& w : _removedCandidates) {
+    candidates.push_back(w);
+  }
+  for (auto* i : _items) {
+    if (auto* ii = i->dynamicCast<IncludeI>()) {
+      if (ii->own() && ii->m() != nullptr) {
+        ii->m()->cycleCandidates(candidates);
+      }
+    } else if (can_hold_itself(i) &&
+               (!i->isa<FunctionI>() || seen.insert(i->cast<FunctionI>()).second)) {
+      candidates.emplace_back(i);
+    }
+  }
+}
+
 Model::~Model() {
   for (auto* i : _items) {
     if (auto* ii = i->dynamicCast<IncludeI>()) {
@@ -92,6 +127,9 @@ Model::~Model() {
         ii->m(nullptr);
       }
     }
+  }
+  for (auto* i : _items) {
+    RC::dec(i);
   }
 }
 
@@ -112,7 +150,8 @@ SolveI* Model::solveItem() { return _solveItem; }
 
 OutputI* Model::outputItem() { return _outputItem; }
 
-void Model::addItem(Item* i) {
+void Model::addItem(Arg<Item> i) {
+  RC::inc(i);
   _items.push_back(i);
   if (i->isa<SolveI>()) {
     Model* m = this;
@@ -387,7 +426,7 @@ std::vector<Type> normalized_param_sig(EnvI& env, const FunctionI* fi) {
 // Map every nameable parameter of \a fi to its declaration. Returns false if \a fi cannot
 // be the target of a call that supplies all of its arguments by name, either because a
 // parameter that must be supplied cannot be named, or because two parameters share a name.
-bool nameable_params(FunctionI* fi, ASTStringMap<VarDecl*>& byName) {
+bool nameable_params(FunctionI* fi, std::unordered_map<ASTString, VarDecl*>& byName) {
   for (unsigned int i = 0; i < fi->paramCount(); i++) {
     VarDecl* p = fi->param(i);
     if (!is_nameable(p)) {
@@ -415,8 +454,8 @@ bool nameable_params(FunctionI* fi, ASTStringMap<VarDecl*>& byName) {
 // the types agree on K* then the call K* is ambiguous, and if they disagree on some name in
 // K* then so does every larger K.
 bool ambiguous_named_call(FunctionI* a, FunctionI* b) {
-  ASTStringMap<VarDecl*> pa;
-  ASTStringMap<VarDecl*> pb;
+  std::unordered_map<ASTString, VarDecl*> pa;
+  std::unordered_map<ASTString, VarDecl*> pb;
   if (!nameable_params(a, pa) || !nameable_params(b, pb)) {
     return false;
   }
@@ -521,7 +560,6 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
 
   addEntry(fe);
   if (fe.isPolymorphic) {
-    GCLock lock;
     FnEntry cur = fe;
     cur.isPolymorphicVariant = true;
 
@@ -549,7 +587,8 @@ void Model::addPolymorphicInstances(EnvI& env, Model::FnEntry& fe, std::vector<F
 
     // Create a parameter TypeInst in the format of a tuple TypeInst
     // Immediately copy so the internal TypeInst values can be changed
-    auto* paramtuple = Expression::cast<TypeInst>(copy(env, cur.fi->paramTypes()));
+    auto paramTypes = cur.fi->paramTypes();
+    auto paramtuple = copy(env, paramTypes).cast<TypeInst>();
     paramtuple->collectTypeIds(type_id_map, type_ids);
 
     std::vector<size_t> stack;
@@ -1550,7 +1589,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
           continue;
         }
         const std::vector<Type>& fi_t = i.t;
-        Expression* body = i.fi->e();
+        // Print the signature only (held here: the function may be the only owner of its body)
+        Ref<Expression> body = i.fi->e();
         i.fi->e(nullptr);
         pp.print(i.fi);
         i.fi->e(body);
@@ -1980,9 +2020,6 @@ void Model::checkReifParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  // Deriving the base id (ASTString) and emitting warnings allocates GC objects.
-  GCLock lock;
-
   // Exact per-parameter type equality over the leading `n` parameters (names ignored).
   auto leadingTypesEqual = [](const FunctionI* rf, const FunctionI* bf, unsigned int n) {
     for (unsigned int j = 0; j < n; j++) {
@@ -2096,9 +2133,6 @@ void Model::checkAuthoritativeParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  // Deriving normalised signatures and emitting warnings allocates GC objects.
-  GCLock lock;
-
   for (const auto& bucket : m->_fnmap) {
     auto ait = m->_fnAnchors.find(bucket.first);
     if (ait == m->_fnAnchors.end()) {
@@ -2334,10 +2368,32 @@ std::vector<Item*>::iterator Model::end() { return _items.end(); }
 std::vector<Item*>::const_iterator Model::end() const { return _items.end(); }
 
 void Model::compact() {
-  struct {
-    bool operator()(const Item* i) { return i->removed(); }
-  } isremoved;
-  _items.erase(remove_if(_items.begin(), _items.end(), isremoved), _items.end());
+  size_t kept = 0;
+  // Removed items that can hold themselves and that are still alive: the environment collects
+  // them when it is destroyed (see Env::~Env)
+  std::vector<Weak<ASTNode>> candidates;
+  for (auto& w : _removedCandidates) {
+    if (w.get() != nullptr) {
+      candidates.push_back(std::move(w));
+    }
+  }
+  for (auto* i : _items) {
+    if (i->removed()) {
+      // (Only a variable with annotations here: a removed variable with just a definition is
+      // common, and a weak reference to each of them costs memory. Such a variable can only be part
+      // of a cycle that also goes through the annotations of another variable.)
+      bool candidate = can_hold_itself(i) && (!i->isa<VarDeclI>() ||
+                                              !Expression::ann(i->cast<VarDeclI>()->e()).isEmpty());
+      if (candidate && RC::strong(i) > 1) {
+        candidates.emplace_back(i);
+      }
+      RC::dec(i);  // releasing an item does not read _items
+    } else {
+      _items[kept++] = i;
+    }
+  }
+  _items.resize(kept);
+  _removedCandidates = std::move(candidates);
 }
 
 }  // namespace MiniZinc

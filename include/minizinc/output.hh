@@ -13,7 +13,7 @@
 
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten_internal.hh>
-#include <minizinc/gc.hh>
+#include <minizinc/memory.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/values.hh>
 
@@ -45,8 +45,8 @@ void finalise_output(EnvI& e);
 /// Remove all links to variables in flat model from output model in \a env
 void cleanup_output(EnvI& env);
 
-ArrayLit* create_json_output(EnvI& env, bool includeObjective, bool includeOutputItem,
-                             bool includeChecker);
+Ref<ArrayLit> create_json_output(EnvI& env, bool includeObjective, bool includeOutputItem,
+                                 bool includeChecker);
 
 inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, IntVal max,
                                unsigned int enumId) {
@@ -57,8 +57,7 @@ inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, In
   auto* vd = env.getEnum(enumId)->e();
   IntVal card;
   {
-    GCLock lock;
-    IntSetVal* isv = eval_intset(env, vd->e());
+    Ref<IntSetVal> isv = eval_intset(env, vd->e());
     card = isv->card();
   }
   if (card == (max + 1 - min)) {
@@ -66,10 +65,10 @@ inline void display_enum_range(std::ostringstream& ss, EnvI& env, IntVal min, In
   } else if (max + 1 - min == 0) {
     ss << "{}";
   } else {
-    GCLock lock;
     ASTString enumName(create_enum_to_string_name(vd->id(), "_toString_"));
-    auto* call = Call::a(Location().introduce(), enumName,
-                         {IntLit::a(min), env.constants.literalTrue, env.constants.literalFalse});
+    auto minLit = IntLit::a(min);
+    auto call = Call::a(Location().introduce(), enumName,
+                        {minLit, env.constants.literalTrue, env.constants.literalFalse});
     auto* fi = env.model->matchFn(env, call, false, true);
     call->decl(fi);
     call->type(Type::parstring());
