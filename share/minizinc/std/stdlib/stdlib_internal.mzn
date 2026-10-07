@@ -32,7 +32,7 @@ test var_dom(array [$T] of opt int: x, set of int: d) = forall (xx in array1d(x)
 predicate var_dom(var set of int: x, set of int: s) =
   if has_ub_set(x) /\ ub(x) subset s then true else set_subset(x, s) endif;
 
-predicate var_dom(set of int: x, set of int: s) = x subset s;
+test var_dom(set of int: x, set of int: s) = x subset s;
 
 predicate var_dom(var opt set of int: x, set of int: s) =
   % An absent set has the empty set as its value (see opt_internal_set)

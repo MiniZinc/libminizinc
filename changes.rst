@@ -56,6 +56,8 @@ Changes:
    that nodes are freed as soon as they are no longer used. This makes the
    compilation of large models faster and reduces its peak memory use. MiniZinc
    now uses the mimalloc memory allocator.
+-  Make return type of internal ``var_dom(set of int: x, set of int: s)``
+   function par.
 
 Bug fixes:
 ^^^^^^^^^^
