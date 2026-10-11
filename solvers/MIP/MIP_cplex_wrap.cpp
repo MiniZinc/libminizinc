@@ -61,7 +61,7 @@ void* dll_open(const std::string& file) {
 }
 void* dll_sym(void* dll, const char* sym) {
 #ifdef _WIN32
-  void* ret = GetProcAddress((HMODULE)dll, sym);
+  void* ret = (void*)GetProcAddress((HMODULE)dll, sym);
 #else
   void* ret = dlsym(dll, sym);
 #endif
