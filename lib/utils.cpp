@@ -16,9 +16,9 @@
 #include <stdexcept>
 
 #if _WIN32
-#include <Windows.h>
 #include <io.h>
 #include <malloc.h>
+#include <windows.h>
 #define mzn_write(fd, buf, s) _write((fd), (buf), static_cast<unsigned int>(s))
 #else
 #include <csignal>

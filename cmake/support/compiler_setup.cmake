@@ -1,7 +1,7 @@
 set(CMAKE_CXX_STANDARD 11)
 
 if(WIN32)
-  # _WIN32_WINNT is set for <Windows.h> such that the Vista+ process APIs used
+  # _WIN32_WINNT is set for <windows.h> such that the Vista+ process APIs used
   # in include/minizinc/process.hh (STARTUPINFOEXW,
   # PROC_THREAD_ATTRIBUTE_HANDLE_LIST) are available.
   add_definitions(-DNOMINMAX -D_WIN32_WINNT=0x0600)

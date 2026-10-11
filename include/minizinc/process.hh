@@ -14,8 +14,8 @@
 #include <minizinc/solver.hh>
 
 #ifdef _WIN32
-#include <Windows.h>
 #include <tchar.h>
+#include <windows.h>
 #undef ERROR
 #elif !defined(__EMSCRIPTEN__)
 #include <cerrno>

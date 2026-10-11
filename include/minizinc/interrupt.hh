@@ -13,7 +13,7 @@
 
 #ifdef _WIN32
 
-#include <Windows.h>
+#include <windows.h>
 #undef ERROR
 #include <sstream>
 #include <thread>
