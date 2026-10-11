@@ -656,11 +656,11 @@ public:
     std::condition_variable cv;
 
     std::deque<std::string> outputQueue;
-    thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue,
-                     &pipeMutex, &cv_mutex, &cv);
-    thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &_pS2Out->getLog(),
-                     nullptr, &pipeMutex, nullptr, nullptr);
-    thread thrTimeout([&] {
+    std::thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr,
+                          &outputQueue, &pipeMutex, &cv_mutex, &cv);
+    std::thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &_pS2Out->getLog(),
+                          nullptr, &pipeMutex, nullptr, nullptr);
+    std::thread thrTimeout([&] {
       auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
       std::unique_lock<std::mutex> lck(_interruptMutex);
       if (_interactive) {
