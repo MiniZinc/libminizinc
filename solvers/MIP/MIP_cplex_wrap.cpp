@@ -29,7 +29,7 @@
 
 #ifdef CPLEX_PLUGIN
 #ifdef _WIN32
-#include <Windows.h>
+#include <windows.h>
 #undef ERROR
 #else
 #include <dlfcn.h>
