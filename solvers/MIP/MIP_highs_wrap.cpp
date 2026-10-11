@@ -31,7 +31,8 @@ HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
   if (dll.empty()) {
     _inner = std::unique_ptr<Plugin>(new Plugin({
 #ifdef _WIN32
-        FileUtils::progpath() + "\\bin\\highs.dll", "highs"
+        // HiGHS_jll names the DLL libhighs.dll, found via PATH set by the JLL wrapper.
+        FileUtils::progpath() + "\\bin\\highs.dll", "highs", "libhighs"
 #elif __APPLE__
         FileUtils::progpath() + "/lib/libhighs.dylib", "libhighs"
 #else
