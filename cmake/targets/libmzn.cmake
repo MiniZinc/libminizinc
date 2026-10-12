@@ -10,7 +10,7 @@ add_library(mzn
   lib/MIPdomains.cpp
   lib/ast.cpp
   lib/astexception.cpp
-  
+
   lib/aststring.cpp
   lib/astvec.cpp
   lib/blackbox.cpp
@@ -140,6 +140,10 @@ target_include_directories(mzn PRIVATE
 )
 
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
+if(WIN32)
+  # MSVC links these implicitly (default libs and #pragma comment), MinGW does not.
+  target_link_libraries(mzn shlwapi shell32 ole32 uuid)
+endif()
 
 if(MZN_RC_CHECK)
   target_compile_definitions(mzn PUBLIC MZN_RC_CHECK)

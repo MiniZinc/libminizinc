@@ -41,12 +41,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef _WIN32
+#include <shlwapi.h>
+#include <windows.h>
 #ifdef _MSC_VER
-#include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
-#include "Shlobj.h"
-
+#endif
 #include <direct.h>
+#include <shlobj.h>
 #else
 #include <dirent.h>
 #include <ftw.h>
@@ -130,7 +132,7 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
   auto f = !basePath.empty() && !is_absolute(filename) ? basePath + "/" + filename : filename;
 
   // Get real path of absolute path or resolve relative to current directory
-#ifdef _MSC_VER
+#ifdef _WIN32
   LPWSTR lpFilePart;
   DWORD nBufferLength = GetFullPathNameW(utf8_to_wide(f).c_str(), 0, nullptr, &lpFilePart);
   auto* lpBuffer = static_cast<LPWSTR>(LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength));
@@ -167,7 +169,7 @@ std::string join_path(const std::string& dir, const std::string& name) {
 }
 
 std::string dir_name(const std::string& filename) {
-#ifdef _MSC_VER
+#ifdef _WIN32
   size_t pos = filename.find_last_of("\\/");
   return (pos == std::string::npos) ? "" : filename.substr(0, pos);
 #else
@@ -180,7 +182,7 @@ std::string dir_name(const std::string& filename) {
 }
 
 std::string base_name(const std::string& filename) {
-#ifdef _MSC_VER
+#ifdef _WIN32
   size_t pos = filename.find_last_of("\\/");
   return (pos == std::string::npos) ? filename : filename.substr(pos + 1);
 #else
@@ -193,7 +195,7 @@ std::string base_name(const std::string& filename) {
 }
 
 bool is_absolute(const std::string& path) {
-#ifdef _MSC_VER
+#ifdef _WIN32
   if (path.size() > 2 &&
       ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/'))) {
     return true;
@@ -206,7 +208,7 @@ bool is_absolute(const std::string& path) {
 
 std::vector<std::string> get_env_list(const std::string& env) {
   std::string path;
-#ifdef _MSC_VER
+#ifdef _WIN32
   wchar_t* path_c = _wgetenv(utf8_to_wide(env).c_str());
   char pathsep = ';';
   if (path_c != nullptr) {
@@ -232,7 +234,7 @@ std::vector<std::string> get_env_list(const std::string& env) {
 
 std::string find_executable(const std::string& filename, const std::string& basePath,
                             const std::vector<std::string>& extraSearchDirs) {
-#ifdef _MSC_VER
+#ifdef _WIN32
   // On Windows, executables must end with one of these extensions
   std::vector<std::string> exeSuffixes = get_env_list("PATHEXT");
   if (std::find_if(exeSuffixes.begin(), exeSuffixes.end(), [&](const auto& suffix) {
@@ -345,7 +347,7 @@ std::string find_library(const std::string& name, const std::string& basePath) {
 
 std::vector<std::string> directory_list(const std::string& dir, const std::string& ext) {
   std::vector<std::string> entries;
-#ifdef _MSC_VER
+#ifdef _WIN32
   WIN32_FIND_DATAW findData;
   HANDLE hFind = ::FindFirstFileW(utf8_to_wide(dir + "/*." + ext).c_str(), &findData);
   if (hFind != INVALID_HANDLE_VALUE) {
@@ -382,7 +384,7 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
 }
 
 std::string working_directory() {
-#ifdef _MSC_VER
+#ifdef _WIN32
   wchar_t wd[FILENAME_MAX];
   if (_wgetcwd(wd, FILENAME_MAX) == FALSE) {
     return "";
@@ -450,7 +452,7 @@ std::string read_file_contents(const std::string& filename) {
 }
 
 std::string user_config_dir() {
-#ifdef _MSC_VER
+#ifdef _WIN32
   HRESULT hr;
   PWSTR pszPath = nullptr;
 
