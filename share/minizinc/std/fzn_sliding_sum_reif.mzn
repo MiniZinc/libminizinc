@@ -11,5 +11,5 @@ predicate fzn_sliding_sum_reif(
     int: lx = min(index_set(xs));
     int: ux = max(index_set(xs));
     array [lx - 1..ux] of var int: S;
-  } in S[lx - 1] = 0 /\ forall (i in lx..ux) (S[i] = xs[i] + S[i - 1]) /\ b <->
-    forall (i in lx - 1..ux - window_size) (S[i] <= S[i + window_size] - low /\ S[i + window_size] <= S[i] + up);
+  } in S[lx - 1] = 0 /\ forall (i in lx..ux) (S[i] = xs[i] + S[i - 1]) /\ (b <->
+    forall (i in lx - 1..ux - window_size) (S[i] <= S[i + window_size] - low /\ S[i + window_size] <= S[i] + up));

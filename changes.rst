@@ -115,6 +115,10 @@ Bug fixes:
    with ``q`` false).
 -  Fix an "arithmetic operation on infinite value" error when outputting a
    ``list of var`` declaration.
+-  Fix the decomposition of the reified ``sliding_sum`` constraint, where an
+   operator precedence error made the prefix sum definitions part of the
+   reified condition, which could produce an incorrect value for the control
+   variable.
 
 .. _v2.10.1:
 
