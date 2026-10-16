@@ -15,8 +15,12 @@
 #include <vector>
 
 // Macro so that we can use overloaded wide versions of fstream::open for Windows
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_MSC_VER)
 #define FILE_PATH(path) MiniZinc::FileUtils::utf8_to_wide(path)
+#elif defined(_WIN32)
+// libstdc++ (MinGW) only provides `const wchar_t*` overloads, not std::wstring.
+// The temporary lives until the end of the full-expression that opens the file.
+#define FILE_PATH(path) MiniZinc::FileUtils::utf8_to_wide(path).c_str()
 #else
 #define FILE_PATH(path) (path)
 #endif
