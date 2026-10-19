@@ -11,6 +11,8 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Normalize linear expressions (term order, sign, and common divisor), so that
+   common subexpression elimination finds more equal expressions.
 -  Add support for optional set variables (``var opt set of int``, including sets
    of enums). A ``var opt set`` is either a set or absent (``<>``), and absent is
    different from the empty set. The set operations (``in``, ``subset``,

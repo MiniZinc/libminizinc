@@ -574,6 +574,14 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     }
   }
   simplify_lin<Lit>(coeffv, alv, d);
+  // An equality or a disequality holds just as well with every sign flipped,
+  // so give both forms the same shape for the common subexpression map.
+  if ((bot == BOT_EQ || bot == BOT_NQ) && !coeffv.empty() && coeffv[0] < 0) {
+    for (auto& coeff : coeffv) {
+      coeff = -coeff;
+    }
+    d = -d;
+  }
   if (coeffv.empty()) {
     bool result;
     switch (bot) {
@@ -777,11 +785,14 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     Id* id1 = Expression::cast<Id>(alv[1]);
     if (ctx.b == C_ROOT && r == env.constants.varTrue &&
         (id0->decl()->e() == nullptr || id1->decl()->e() == nullptr)) {
-      if (id0->decl()->e()) {
-        (void)bind(env, ctx, id1->decl(), id0);
-      } else {
-        (void)bind(env, ctx, id0->decl(), id1);
+      // The terms are sorted, so their order says nothing about the model.
+      // Make the introduced variable the alias, so that the model variable stays.
+      if (id0->decl()->e() != nullptr ||
+          (id1->decl()->e() == nullptr && id1->decl()->introduced() &&
+           !id0->decl()->introduced())) {
+        std::swap(id0, id1);
       }
+      (void)bind(env, ctx, id0->decl(), id1);
     } else {
       callid = LinearTraits<Lit>::id_eq();
       args.emplace_back(alv[0]);
@@ -845,6 +856,33 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
 
     int coeff_sign;
     LinearTraits<Lit>::constructLinBuiltin(env, bot, callid, coeff_sign, d);
+
+    // Remove a common integer factor, so that scaled copies of one relation
+    // take the same shape. The relation is `sum <= -d`, `sum = -d` or
+    // `sum != -d` at this point.
+    if (std::is_same<Lit, IntLit>::value) {
+      Val g = LinearTraits<Lit>::commonDivisor(coeffv);
+      if (g > 1) {
+        Val rhs = -d;
+        const bool isEq = callid == env.constants.ids.int_.lin_eq;
+        const bool isNe = callid == env.constants.ids.int_.lin_ne;
+        if ((isEq || isNe) && rhs % g != 0) {
+          // No value of the sum is a multiple of g, so the equality fails.
+          bool result = isNe;
+          if (doubleNeg) {
+            result = !result;
+          }
+          ees[2].b = env.constants.boollit(result);
+          ret.r = conj(env, r, ctx, ees);
+          return;
+        }
+        rhs = (isEq || isNe) ? rhs / g : LinearTraits<Lit>::floorDiv(rhs, g);
+        for (auto& cv : coeffv) {
+          cv = cv / g;
+        }
+        d = -rhs;
+      }
+    }
     std::vector<Ref<Expression>> coeff_ev(coeffv.size());
     for (auto i = static_cast<unsigned int>(coeff_ev.size()); i--;) {
       coeff_ev[i] = LinearTraits<Lit>::newLit(coeff_sign * coeffv[i]);

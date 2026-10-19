@@ -909,6 +909,21 @@ public:
     Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(dr0, dr1);
     return IntSetVal::ai(inter);
   }
+  /// Greatest common divisor of the coefficients, or 1 when there is none
+  static IntVal commonDivisor(const std::vector<IntVal>& c) {
+    IntVal g = 0;
+    for (auto v : c) {
+      IntVal a = g < 0 ? -g : g;
+      IntVal b = v < 0 ? -v : v;
+      while (b != 0) {
+        IntVal t = a % b;
+        a = b;
+        b = t;
+      }
+      g = a;
+    }
+    return g > 1 ? g : IntVal(1);
+  }
   static Val floorDiv(Val v0, Val v1) {
     return static_cast<long long int>(
         std::floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
@@ -1055,6 +1070,8 @@ public:
     }
     return ndomain;
   }
+  /// Float coefficients have no common divisor to remove
+  static FloatVal commonDivisor(const std::vector<FloatVal>& /*c*/) { return FloatVal(1.0); }
   static Val floorDiv(Val v0, Val v1) { return v0 / v1; }
   static Val ceilDiv(Val v0, Val v1) { return v0 / v1; }
   static Ref<FloatLit> newLit(Val v) { return FloatLit::a(v); }
@@ -1099,16 +1116,20 @@ void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<R
       ci = i;
     }
   }
-  ci = 0;
-  for (unsigned int i = 0; i < c.size(); i++) {
+  // Emit the terms in the order the merge used, so that equal expressions get
+  // the same form and the common subexpression map can match them.
+  std::vector<typename LinearTraits<Lit>::Val> nc;
+  std::vector<Ref<Expression>> nx;
+  nc.reserve(c.size());
+  nx.reserve(x.size());
+  for (int i : idx) {
     if (c[i] != 0) {
-      c[ci] = c[i];
-      x[ci] = x[i];
-      ci++;
+      nc.push_back(c[i]);
+      nx.push_back(x[i]);
     }
   }
-  c.resize(ci);
-  x.resize(ci);
+  c.swap(nc);
+  x.swap(nx);
 }
 
 /// Helper function used to recursively change the context for (to be reified) functionally defined
