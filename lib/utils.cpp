@@ -185,6 +185,29 @@ struct OverflowHandler::OverflowInfo {
   EnvI* env = nullptr;
 };
 
+#ifdef __MINGW32__
+namespace {
+// MinGW compilers do not support __try/__except, so main cannot wrap run() in
+// an SEH handler. Catch the exceptions in an unhandled exception filter
+// instead. The filter runs on the overflowed stack (within the reserved
+// guarantee), so the stack cannot be reset and no call stack is dumped.
+LONG WINAPI unhandled_exception_filter(EXCEPTION_POINTERS* info) {
+  const DWORD code = info->ExceptionRecord->ExceptionCode;
+  if (code == EXCEPTION_STACK_OVERFLOW) {
+    const char* msg =
+        "MiniZinc error: Memory violation detected (stack overflow).\n"
+        "Check for deep (or infinite) recursion in the model.\n";
+    mzn_write(2, msg, strlen(msg));
+    _exit(1);
+  }
+  if (OverflowHandler::filter(code) == EXCEPTION_EXECUTE_HANDLER) {
+    OverflowHandler::handle(code);
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+}  // namespace
+#endif
+
 void OverflowHandler::install() {
   // Reserve enough stack for the SEH filter and diagnostic handler to run reliably.
   ULONG stackGuarantee = 64 * 1024;
@@ -192,6 +215,9 @@ void OverflowHandler::install() {
     std::cerr << "WARNING: Cannot reserve stack for the stack overflow handler.\n";
   }
   _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo());
+#ifdef __MINGW32__
+  SetUnhandledExceptionFilter(unhandled_exception_filter);
+#endif
 }
 
 void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
