@@ -104,6 +104,20 @@ int run(const std::string& exe, const std::vector<std::string>& args, bool jsonS
 #ifdef _WIN32
 #include <minizinc/interrupt.hh>
 
+#ifdef __MINGW32__
+namespace {
+// MinGW compilers do not support __try..__except, so handle SEH exceptions
+// that nothing else catches instead.
+LONG WINAPI unhandled_exception_filter(EXCEPTION_POINTERS* info) {
+  const DWORD code = info->ExceptionRecord->ExceptionCode;
+  if (OverflowHandler::filter(code) == EXCEPTION_EXECUTE_HANDLER) {
+    OverflowHandler::handle(code);
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+}  // namespace
+#endif
+
 int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
   InterruptListener::run();
   OverflowHandler::install();
@@ -126,6 +140,9 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
       OverflowHandler::handle(GetExceptionCode());
     }
   })();
+#elif defined(__MINGW32__)
+  SetUnhandledExceptionFilter(unhandled_exception_filter);
+  return run(exe, args, jsonStream);
 #else
   // Let debugger catch SEH exceptions
   return run(exe, args, jsonStream);
