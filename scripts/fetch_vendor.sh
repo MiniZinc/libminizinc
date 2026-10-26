@@ -6,7 +6,7 @@
 # Versions come from ./vendor.lock; assets from the per-dependency release
 # `<dep>-<version>` in MiniZinc/minizinc-vendor.
 #
-# Requires: gh (via $GH_TOKEN), tar.
+# Requires: tar, and gh (via $GH_TOKEN) or else curl.
 set -euo pipefail
 
 TRIPLE="${1:?usage: fetch_vendor.sh <triple> <dep> [<dep> ...]}"
@@ -24,7 +24,12 @@ for dep in "$@"; do
   [ -n "$ver" ] || { echo "no version pinned for '$dep' in vendor.lock" >&2; exit 1; }
   asset="${dep}-${ver}-${TRIPLE}.tar.gz"
   echo "Fetching $asset from $REPO"
-  gh release download "${dep}-${ver}" --repo "$REPO" --pattern "$asset" --dir "$here" --clobber
+  if command -v gh >/dev/null; then
+    gh release download "${dep}-${ver}" --repo "$REPO" --pattern "$asset" --dir "$here" --clobber
+  else
+    # Without gh (e.g. Read the Docs), fetch the public release asset directly.
+    curl -fsSL -o "$here/$asset" "https://github.com/$REPO/releases/download/${dep}-${ver}/$asset"
+  fi
   tar -xzf "$here/$asset" -C "$here/vendor"
   rm -f "$here/$asset"
 done

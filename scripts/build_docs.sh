@@ -4,18 +4,16 @@
 # Expects Sphinx + a LaTeX toolchain on PATH and mzn2doc already built at
 # $ROOT/build (see .github/workflows/docs.yml).
 #
-# The gecode/chuffed libraries are pulled from upstream rather than from a vendor
-# build: only their .mzn declarations are needed to document them, and this keeps
-# the step identical to .readthedocs.yaml's.
+# gecode.mzn and chuffed.mzn come from the vendor.lock versions of the
+# minizinc-vendor archives: only their declarations are needed to document them.
+# Keep this step identical to .readthedocs.yaml's.
 set -eux
 
 ROOT="${ROOT:-$PWD}"
 cd "$ROOT"
 
-curl -fsSL "https://raw.githubusercontent.com/Gecode/gecode/main/gecode/flatzinc/mznlib/gecode.mzn" \
-  -o share/minizinc/std/gecode.mzn
-curl -fsSL "https://raw.githubusercontent.com/chuffed/chuffed/stable/chuffed/flatzinc/mznlib/chuffed.mzn" \
-  -o share/minizinc/std/chuffed.mzn
+bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode chuffed
+cp vendor/gecode/share/minizinc/gecode/gecode.mzn vendor/chuffed/share/minizinc/chuffed/chuffed.mzn share/minizinc/std/
 
 ./build/mzn2doc --rst-output --include-stdlib --output-base "$ROOT/docs/en/lib" "$ROOT/docs/all.mzn"
 ./build/mzn2doc --rst-output --include-stdlib --output-base "$ROOT/docs/chi/lib" "$ROOT/docs/all.mzn"

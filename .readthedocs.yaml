@@ -14,8 +14,9 @@ build:
     - fonts-inconsolata
   jobs:
     pre_build:
-      - curl -L "https://raw.githubusercontent.com/Gecode/gecode/main/gecode/flatzinc/mznlib/gecode.mzn" -o share/minizinc/std/gecode.mzn
-      - curl -L "https://raw.githubusercontent.com/chuffed/chuffed/stable/chuffed/flatzinc/mznlib/chuffed.mzn" -o share/minizinc/std/chuffed.mzn
+      # gecode.mzn and chuffed.mzn at their vendor.lock versions, as in scripts/build_docs.sh
+      - bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode chuffed
+      - cp vendor/gecode/share/minizinc/gecode/gecode.mzn vendor/chuffed/share/minizinc/chuffed/chuffed.mzn share/minizinc/std/
       - cmake -S . -B build -G"Ninja" -DCMAKE_BUILD_TYPE=Debug
       - cmake --build build --target mzn2doc
       - ./build/mzn2doc --rst-output --include-stdlib --output-base docs/en/lib docs/all.mzn
