@@ -29,15 +29,12 @@
 #include <memory>
 #include <string>
 
-using namespace std;
-
 std::vector<std::string> MIPWrapper::getMznLib() {
   // Prefer an installed bundle; otherwise use the source directory.
   return {"-Glinear.lib.mzn", "-Glinear"};
 }
 
-namespace MiniZinc {
-namespace SCIPConstraints {
+namespace MiniZinc::SCIPConstraints {
 
 bool check_ann_user_cut(const Call* call) {
   for (auto* e : Expression::ann(call)) {
@@ -73,10 +70,9 @@ int get_mask_cons_type(const Call* call) {
   return mask;
   //       return MIPWrapper::MaskConsType_Normal;    // recognition fails
 }
-}  // namespace SCIPConstraints
-}  // namespace MiniZinc
+}  // namespace MiniZinc::SCIPConstraints
 
-using namespace MiniZinc;
+namespace MiniZinc {
 
 void XBZCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) {
   assert(_pMIP);
@@ -105,7 +101,7 @@ void XBZCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
   double dViol = cut.computeViol(slvOut.x, slvOut.nCols);
   if (dViol > 0.01) {  // ?? PARAM?  TODO
     cutsIn.push_back(cut);
-    cerr << " vi" << dViol << flush;
+    std::cerr << " vi" << dViol << std::flush;
     //     cout << cut.rmatind.size() << ' '
     //       << cut.rhs << "  cutlen, rhs. (Sense fixed to GQ) " << endl;
     //     for ( int i=0; i<cut.rmatind.size(); ++i )
@@ -117,7 +113,7 @@ void XBZCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
   }
 }
 
-void XBZCutGen::print(ostream& os) {
+void XBZCutGen::print(std::ostream& os) {
   os << varZ << '\n' << varX.size() << '\n';
   for (int i : varX) {
     os << i << ' ';
@@ -144,20 +140,20 @@ std::string SECCutGen::validate() const {
 void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput& cutsIn) {
   assert(_pMIP);
   /// Extract graph, converting to undirected
-  typedef map<pair<int, int>, double> TMapFlow;
+  typedef std::map<std::pair<int, int>, double> TMapFlow;
   TMapFlow mapFlow;
   for (int i = 0; i < nN; ++i) {
     for (int j = 0; j < nN; ++j) {
       const double xij = slvOut.x[varXij[nN * i + j]];
       if (i == j) {
-        MZN_ASSERT_HARD_MSG(1e-4 > fabs(xij),
+        MZN_ASSERT_HARD_MSG(1e-4 > std::fabs(xij),
                             "circuit: X[" << (i + 1) << ", " << (j + 1) << "]==" << xij);
       }
       MZN_ASSERT_HARD_MSG(
           -1e-4 < xij && 1.0 + 1e-4 > xij,  // adjusted from 1e-6 to 1e-4 for CBC. 7.8.19
           "circuit: X[" << (i + 1) << ", " << (j + 1) << "]==" << xij);
       if (1e-4 <= xij) {
-        mapFlow[make_pair(std::min(i, j), std::max(i, j))] += xij;
+        mapFlow[std::make_pair(std::min(i, j), std::max(i, j))] += xij;
       }
     }
   }
@@ -167,9 +163,9 @@ void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
   mc.nNodes = nN;
   mc.edges.reserve(mapFlow.size());
   mc.weights.reserve(mapFlow.size());
-  for (const auto& mf : mapFlow) {
-    mc.edges.push_back(mf.first);
-    mc.weights.push_back(mf.second);
+  for (const auto& [edge, weight] : mapFlow) {
+    mc.edges.push_back(edge);
+    mc.weights.push_back(weight);
   }
   Algorithms::MinCut::solve();
   /// Check if violation
@@ -210,4 +206,6 @@ void SECCutGen::generate(const MIPWrapper::Output& slvOut, MIPWrapper::CutInput&
   }
 }
 
-void SECCutGen::print(ostream& /*os*/) {}
+void SECCutGen::print(std::ostream& /*os*/) {}
+
+}  // namespace MiniZinc

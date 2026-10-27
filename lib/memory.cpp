@@ -441,10 +441,10 @@ void RC::collectCycles(const std::vector<Weak<ASTNode>>& candidates) {
   // A node with more references than the graph gives it is held from outside. It is alive, and so
   // is every node that it reaches.
   std::unordered_set<ASTNode*> alive;
-  for (auto& it : internal) {
-    if (strong(it.first) > it.second) {
-      alive.insert(it.first);
-      todo.push_back(it.first);
+  for (auto& [n, count] : internal) {
+    if (strong(n) > count) {
+      alive.insert(n);
+      todo.push_back(n);
     }
   }
   while (!todo.empty()) {
@@ -668,8 +668,8 @@ void RC::reportLeaks(std::ostream& os) {
     os << "RC check: " << deadAllocated << " destroyed nodes are still allocated (" << weakOverflow
        << " with a saturated weak count), " << strongOverflow
        << " nodes have a saturated strong count\n";
-    for (auto& it : deadKinds) {
-      os << "  " << it.first << ": " << it.second.first << " (" << it.second.second << ")\n";
+    for (auto& [name, counts] : deadKinds) {
+      os << "  " << name << ": " << counts.first << " (" << counts.second << ")\n";
     }
   }
   // Destroyed nodes that weak references keep (count 0) are not leaks, and their children are gone
@@ -684,8 +684,8 @@ void RC::reportLeaks(std::ostream& os) {
   }
   // Counts that come from other leaked nodes. A node with more counts than that is held from
   // outside the leaked set (a count that was never released); the rest are only held by cycles.
-  for (auto& it : leaked) {
-    strongChildren(it.first, [&](ASTNode* c) {
+  for (auto& [n, count] : leaked) {
+    strongChildren(n, [&](ASTNode* c) {
       auto lc = leaked.find(c);
       if (lc != leaked.end()) {
         lc->second++;
@@ -695,9 +695,9 @@ void RC::reportLeaks(std::ostream& os) {
   // Roots: nodes with a count that was never released. Nodes that they reach leak with them.
   // Leaked nodes that no root reaches are held only by cycles.
   std::unordered_set<ASTNode*> roots;
-  for (auto& it : leaked) {
-    if (strong(it.first) > it.second) {
-      roots.insert(it.first);
+  for (auto& [n, count] : leaked) {
+    if (strong(n) > count) {
+      roots.insert(n);
     }
   }
   std::unordered_set<ASTNode*> fromRoots = roots;
@@ -709,24 +709,23 @@ void RC::reportLeaks(std::ostream& os) {
   };
   std::map<std::string, Counts> byKind;
   std::map<std::string, ASTNode*> example;
-  for (auto& it : leaked) {
-    auto& c = byKind[kind(it.first)];
-    if (roots.count(it.first) != 0) {
+  for (auto& [n, count] : leaked) {
+    auto& c = byKind[kind(n)];
+    if (roots.count(n) != 0) {
       c.roots++;
-      example.emplace(kind(it.first), it.first);
-    } else if (fromRoots.count(it.first) != 0) {
+      example.emplace(kind(n), n);
+    } else if (fromRoots.count(n) != 0) {
       c.reached++;
     } else {
       c.cycles++;
-      example.emplace(kind(it.first), it.first);
+      example.emplace(kind(n), n);
     }
   }
   os << "RC check: " << leaked.size()
      << " leaked nodes (count never released, reached from those, in cycles)\n";
-  for (auto& it : byKind) {
-    os << "  " << it.first << ": " << it.second.roots << ", " << it.second.reached << ", "
-       << it.second.cycles;
-    auto e = example.find(it.first);
+  for (auto& [name, counts] : byKind) {
+    os << "  " << name << ": " << counts.roots << ", " << counts.reached << ", " << counts.cycles;
+    auto e = example.find(name);
     if (e != example.end() && e->second->_id > ASTNode::NID_END &&
         e->second->_id <= Expression::EID_END) {
       os << "  (e.g. " << Expression::loc(static_cast<Expression*>(e->second)).toString() << ")";

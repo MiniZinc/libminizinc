@@ -318,9 +318,7 @@ Id* EnvI::ctxToAnn(BCtx c) const {
 
 void EnvI::addCtxAnn(VarDecl* vd, const BCtx& c) const {
   if (vd != nullptr) {
-    BCtx nc;
-    bool annotated;
-    std::tie(nc, annotated) = annToCtx(vd);
+    auto [nc, annotated] = annToCtx(vd);
     // If previously annotated
     if (annotated) {
       // Early exit
@@ -728,9 +726,7 @@ void add_ctx_ann_elements(EnvI& env, Expression* array, BCtx c) {
   }
   // The array declaration caches the context it gave, so that a repeated use costs nothing
   if (arrayVd != nullptr) {
-    BCtx given;
-    bool annotated;
-    std::tie(given, annotated) = env.annToCtx(arrayVd);
+    auto [given, annotated] = env.annToCtx(arrayVd);
     if (annotated && (given == c || given == C_MIX)) {
       return;
     }
@@ -782,10 +778,9 @@ void release_deferred_bool_def(EnvI& env, VarDecl* vd, Item* item,
   }
   for (VarDecl* u : entry->second.refs) {
     // u can have been unified with another variable since
-    auto occ = env.varOccurrences.itemMap.find(u->id()->decl()->id());
-    if (occ.first) {
-      occ.second->erase(item);
-      if (toRemove != nullptr && occ.second->empty() && CollectDecls::varIsFree(u)) {
+    if (auto [found, items] = env.varOccurrences.itemMap.find(u->id()->decl()->id()); found) {
+      items->erase(item);
+      if (toRemove != nullptr && items->empty() && CollectDecls::varIsFree(u)) {
         toRemove->push_back(u);
       }
     }
@@ -815,9 +810,7 @@ bool flatten_deferred_bool_def(EnvI& env, VarDeclI* vdi, bool force) {
   release_deferred_bool_def(env, vd, vdi);
   CallStackItem csi(env, let);
   env.setPathSplice(get_recorded_path(env, vd));
-  BCtx usage;
-  bool annotated;
-  std::tie(usage, annotated) = env.annToCtx(vd);
+  auto [usage, annotated] = env.annToCtx(vd);
   Ctx ctx;
   if (!annotated) {
     // Unknown uses. The reification of a definition that stays a call is chosen from the
@@ -1113,11 +1106,11 @@ void OutputSectionStore::add(EnvI& env, const ASTString& section, Expression* e,
   }
 
   _blank = false;
-  auto ret = _idx.emplace(section, _sections.size());
-  if (ret.second) {
+  auto [it, inserted] = _idx.emplace(section, _sections.size());
+  if (inserted) {
     _sections.emplace_back(section, e, false);
   } else {
-    auto idx = ret.first->second;
+    auto idx = it->second;
     Ref<Expression> orig = _sections[idx].e;
     auto bo = make<BinOp>(Location().introduce(), orig, BOT_PLUSPLUS, e);
     Expression::type(bo, Type::parstring(1));
@@ -1182,7 +1175,7 @@ RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
   }
   _fieldNames.reserve(str_size);
   for (size_t i = 0; i < _size; ++i) {
-    _fieldNames.append(std::string(fields[i].first.c_str()));
+    _fieldNames.append(fields[i].first);
   }
 }
 RecordType::RecordType(const RecordType& orig) {
@@ -2075,8 +2068,7 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
     field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
     if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
       std::ostringstream oss;
-      oss << "record contains multiple fields with the name `" << field_pairs[i].first.c_str()
-          << "'.";
+      oss << "record contains multiple fields with the name `" << field_pairs[i].first << "'.";
       throw TypeError(*this, Expression::loc(rec), oss.str());
     }
   }
@@ -2128,8 +2120,8 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
       field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
       if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
         std::ostringstream oss;
-        oss << "record type contains multiple fields with the name `"
-            << field_pairs[i].first.c_str() << "'.";
+        oss << "record type contains multiple fields with the name `" << field_pairs[i].first
+            << "'.";
         throw TypeError(*this, Expression::loc(ti), oss.str());
       }
     }
@@ -2296,8 +2288,9 @@ void EnvI::cleanupExceptOutput() {
 }
 
 bool EnvI::outputSectionEnabled(const ASTString& section) const {
-  return fopts.notSections.count(section.c_str()) == 0 &&
-         (fopts.onlySections.empty() || fopts.onlySections.count(section.c_str()) > 0);
+  std::string name(section);
+  return fopts.notSections.count(name) == 0 &&
+         (fopts.onlySections.empty() || fopts.onlySections.count(name) > 0);
 }
 
 std::string EnvI::show(Expression* e) {
@@ -2458,7 +2451,7 @@ PathStore::Path EnvI::currentPath(bool force) {
     if (Expression::eid(e) == Expression::E_STRINGLIT && loc.firstLine() == 0U &&
         loc.firstColumn() == 0U && loc.lastLine() == 0U && loc.lastColumn() == 0U) {
       ASTString text = Expression::cast<StringLit>(e)->v();
-      path = paths.extend(path, std::string(text.c_str(), text.size()));
+      path = paths.extend(path, std::string(text));
       entry.path = path;
       continue;
     }
@@ -2790,7 +2783,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
         }
         if (f.structType.isrecord()) {
           RecordType* rt = env.getRecordType(f.structType);
-          auto field = make<Id>(Location().introduce(), rt->fieldName(f.idx), nullptr);
+          auto field = make<Id>(Location().introduce(), ASTString(rt->fieldName(f.idx)), nullptr);
           acc = make<FieldAccess>(Location().introduce(), acc, field);
         } else {
           acc = make<FieldAccess>(Location().introduce(), acc, IntLit::a(f.idx + 1));
@@ -4771,7 +4764,7 @@ void flatten(Env& e, FlatteningOptions opt) {
 
     // Statically evaluate some function bodies
     {
-      std::unique_ptr<Model> toAdd(new Model);
+      auto toAdd = std::make_unique<Model>();
       SimplifyFunctionBodiesVisitor _ffbv(env, *toAdd);
       iter_items<SimplifyFunctionBodiesVisitor>(_ffbv, e.model());
       for (auto* it : *toAdd) {
@@ -5589,18 +5582,16 @@ void flatten(Env& e, FlatteningOptions opt) {
       auto& os = e.envi().outstream;
       os << "{\"type\": \"profiling\", \"entries\": [";
       bool first = true;
-      for (auto& entry : *timingMap) {
-        std::chrono::milliseconds time_taken =
-            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+      for (auto& [loc, elapsed] : *timingMap) {
+        auto time_taken = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
         if (time_taken > std::chrono::milliseconds(0)) {
           if (first) {
             first = false;
           } else {
             os << ", ";
           }
-          os << "{\"filename\": \"" << Printer::escapeStringLit(entry.first.first)
-             << "\", \"line\": " << entry.first.second << ", \"time\": " << time_taken.count()
-             << "}";
+          os << "{\"filename\": \"" << Printer::escapeStringLit(loc.first)
+             << "\", \"line\": " << loc.second << ", \"time\": " << time_taken.count() << "}";
         }
       }
       os << "]}\n";
@@ -5613,13 +5604,11 @@ void flatten(Env& e, FlatteningOptions opt) {
         e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to "
                               "toplevel items)\n";
       }
-      for (auto& entry : *timingMap) {
-        std::chrono::milliseconds time_taken =
-            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+      for (auto& [loc, elapsed] : *timingMap) {
+        auto time_taken = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
         if (time_taken > std::chrono::milliseconds(0)) {
           std::ostringstream oss;
-          oss << "[\"" << entry.first.first << "\"," << entry.first.second << ","
-              << time_taken.count() << "]";
+          oss << "[\"" << loc.first << "\"," << loc.second << "," << time_taken.count() << "]";
           ss.addRaw("profiling", oss.str());
         }
       }
@@ -6497,9 +6486,7 @@ void cse_result_change_ctx(EnvI& env, Expression* cseRes, BCtx newCtx) {
       } else if (auto* redirect = Expression::dynamicCast<Id>(ident->decl()->e())) {
         stack.push_back(redirect);
       } else if (auto* c = Expression::dynamicCast<Call>(ident->decl()->e())) {
-        BCtx vdCtx;
-        bool annotated;
-        std::tie(vdCtx, annotated) = env.annToCtx(ident->decl());
+        BCtx vdCtx = std::get<0>(env.annToCtx(ident->decl()));
         if ((!first || vdCtx != newCtx) && vdCtx != C_ROOT && vdCtx != C_MIX) {
           env.addCtxAnn(ident->decl(), (first && newCtx == C_ROOT) ? C_ROOT : C_MIX);
           for (unsigned int i = 0; i < c->argCount(); i++) {

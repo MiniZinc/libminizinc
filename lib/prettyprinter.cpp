@@ -927,9 +927,9 @@ public:
           } else {
             _os << "annotation ";
           }
-        } else if (fi.ti()->type() == Type::parbool() && fi.id().c_str()[0] != '\'') {
+        } else if (fi.ti()->type() == Type::parbool() && !fi.id().beginsWith("'")) {
           _os << "test ";
-        } else if (fi.ti()->type() == Type::varbool() && fi.id().c_str()[0] != '\'') {
+        } else if (fi.ti()->type() == Type::varbool() && !fi.id().beginsWith("'")) {
           _os << "predicate ";
         } else {
           _os << "function ";
@@ -1250,8 +1250,7 @@ public:
     if (v != nullptr) {
       v->erase(std::remove(v->begin(), v->end(), i), v->end());
     }
-    for (auto& line : _lines) {
-      std::vector<int>& l = line.second;
+    for (auto& [lineNo, l] : _lines) {
       l.erase(std::remove(l.begin(), l.end(), i), l.end());
     }
     // Call on its parent
@@ -1469,7 +1468,7 @@ public:
       return new StringDocument("<>");
     }
     if (id->idn() == -1) {
-      return new StringDocument(std::string(id->v().c_str(), id->v().size()));
+      return new StringDocument(std::string(id->v()));
     }
     std::ostringstream oss;
     oss << "X_INTRODUCED_" << id->idn() << "_";
@@ -1797,7 +1796,7 @@ public:
         const auto* com = Expression::cast<Comprehension>(e);
         if (!com->set()) {
           auto* dl = new DocumentList("", " ", "");
-          dl->addStringToList(std::string(c->id().c_str(), c->id().size()));
+          dl->addStringToList(std::string(c->id()));
           auto* args = new DocumentList("", " ", "", false);
           auto* generators = new DocumentList("", ", ", "");
 
@@ -1808,8 +1807,7 @@ public:
               if (com->decl(i, j)->id()->idn() < -1) {
                 idents->addStringToList("_");
               } else {
-                idents->addStringToList(std::string(com->decl(i, j)->id()->v().c_str(),
-                                                    com->decl(i, j)->id()->v().size()));
+                idents->addStringToList(std::string(com->decl(i, j)->id()->v()));
               }
             }
             gen->addDocumentToList(idents);
@@ -1858,7 +1856,7 @@ public:
       oss << "type ";
       if (vd->id()->idn() == -1) {
         if (!vd->id()->v().empty()) {
-          oss << vd->id()->v().c_str();
+          oss << vd->id()->v();
         }
       } else {
         oss << "X_INTRODUCED_" << vd->id()->idn() << "_";
@@ -1871,7 +1869,7 @@ public:
       }
       if (vd->id()->idn() == -1) {
         if (!vd->id()->v().empty()) {
-          oss << ": " << vd->id()->v().c_str();
+          oss << ": " << vd->id()->v();
         }
       } else {
         oss << ": X_INTRODUCED_" << vd->id()->idn() << "_";
@@ -1992,7 +1990,7 @@ public:
   }
   ret mapAssignI(const AssignI& ai) {
     auto* dl = new DocumentList("", " = ", ";");
-    dl->addStringToList(std::string(ai.id().c_str(), ai.id().size()));
+    dl->addStringToList(std::string(ai.id()));
     dl->addDocumentToList(expression_to_document(ai.e(), _env));
     return dl;
   }
@@ -2051,7 +2049,7 @@ public:
       dl->addDocumentToList(expression_to_document(fi.ti(), _env));
       dl->addStringToList(": ");
     }
-    dl->addStringToList(std::string(fi.id().c_str(), fi.id().size()));
+    dl->addStringToList(std::string(fi.id()));
     if (fi.paramCount() > 0) {
       auto* params = new DocumentList("(", ", ", ")");
       for (unsigned int i = 0; i < fi.paramCount(); i++) {

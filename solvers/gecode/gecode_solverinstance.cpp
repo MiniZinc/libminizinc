@@ -23,7 +23,6 @@
 #include <cstdlib>
 #include <utility>
 
-using namespace std;
 using namespace Gecode;
 
 namespace MiniZinc {
@@ -52,21 +51,21 @@ SolverInstanceBase* GecodeSolverFactory::doCreateSI(Env& env, std::ostream& log,
   return new GecodeSolverInstance(env, log, opt);
 }
 
-string GecodeSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
-  string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version " +
-             string(GECODE_VERSION);
+std::string GecodeSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+  std::string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version " +
+                  std::string(GECODE_VERSION);
   return v;
 }
 
-string GecodeSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
-  return string(GECODE_VERSION);
+std::string GecodeSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+  return std::string(GECODE_VERSION);
 }
 
 bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                         std::vector<std::string>& argv,
                                         const std::string& workingDir) {
   auto& _opt = static_cast<GecodeOptions&>(*opt);
-  if (string(argv[i]) == "--backend-flags") {
+  if (std::string(argv[i]) == "--backend-flags") {
     if (++i == argv.size()) {
       return false;
     }
@@ -76,15 +75,15 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
         return false;
       }
     }
-  } else if (string(argv[i]) == "--allow-unbounded-vars") {
+  } else if (std::string(argv[i]) == "--allow-unbounded-vars") {
     _opt.allowUnboundedVars = true;
-  } else if (string(argv[i]) == "--only-range-domains") {
+  } else if (std::string(argv[i]) == "--only-range-domains") {
     _opt.onlyRangeDomains = true;
-  } else if (string(argv[i]) == "--sac") {
+  } else if (std::string(argv[i]) == "--sac") {
     _opt.sac = true;
-  } else if (string(argv[i]) == "--shave") {
+  } else if (std::string(argv[i]) == "--shave") {
     _opt.shave = true;
-  } else if (string(argv[i]) == "--pre-passes") {
+  } else if (std::string(argv[i]) == "--pre-passes") {
     if (++i == argv.size()) {
       return false;
     }
@@ -92,9 +91,9 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (passes >= 0) {
       _opt.prePasses = passes;
     }
-  } else if (string(argv[i]) == "-a" || string(argv[i]) == "--all-solutions") {
+  } else if (std::string(argv[i]) == "-a" || std::string(argv[i]) == "--all-solutions") {
     _opt.allSolutions = true;
-  } else if (string(argv[i]) == "-n" || string(argv[i]) == "--num-solutions") {
+  } else if (std::string(argv[i]) == "-n" || std::string(argv[i]) == "--num-solutions") {
     if (++i == argv.size()) {
       return false;
     }
@@ -102,7 +101,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (n >= 0) {
       _opt.nSolutions = n;
     }
-  } else if (string(argv[i]) == "--node") {
+  } else if (std::string(argv[i]) == "--node") {
     if (++i == argv.size()) {
       return false;
     }
@@ -110,7 +109,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (nodes >= 0) {
       _opt.nodes = nodes;
     }
-  } else if (string(argv[i]) == "--c_d") {
+  } else if (std::string(argv[i]) == "--c_d") {
     if (++i == argv.size()) {
       return false;
     }
@@ -118,7 +117,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (c_d >= 0) {
       _opt.c_d = static_cast<unsigned int>(c_d);
     }
-  } else if (string(argv[i]) == "--a_d") {
+  } else if (std::string(argv[i]) == "--a_d") {
     if (++i == argv.size()) {
       return false;
     }
@@ -127,7 +126,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
       _opt.a_d = static_cast<unsigned int>(a_d);
     }
 #if GECODE_VERSION_NUMBER >= 600300
-  } else if (string(argv[i]) == "--restart-limit") {
+  } else if (std::string(argv[i]) == "--restart-limit") {
     if (++i == argv.size()) {
       return false;
     }
@@ -136,7 +135,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
       _opt.restarts = restarts;
     }
 #endif
-  } else if (string(argv[i]) == "--fail") {
+  } else if (std::string(argv[i]) == "--fail") {
     if (++i == argv.size()) {
       return false;
     }
@@ -152,11 +151,11 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
     if (time >= 0) {
       _opt.time = time;
     }
-  } else if (string(argv[i]) == "-v" || string(argv[i]) == "--verbose-solving") {
+  } else if (std::string(argv[i]) == "-v" || std::string(argv[i]) == "--verbose-solving") {
     _opt.verbose = true;
-  } else if (string(argv[i]) == "-s" || string(argv[i]) == "--solver-statistics") {
+  } else if (std::string(argv[i]) == "-s" || std::string(argv[i]) == "--solver-statistics") {
     _opt.statistics = true;
-  } else if (string(argv[i]) == "-p") {
+  } else if (std::string(argv[i]) == "-p") {
     if (++i == argv.size()) {
       return false;
     }
@@ -170,7 +169,7 @@ bool GecodeSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i
   return true;
 }
 
-void GecodeSolverFactory::printHelp(ostream& os) {
+void GecodeSolverFactory::printHelp(std::ostream& os) {
   os << "Gecode solver plugin options:\n"
      << "  --allow-unbounded-vars\n"
      << "    give unbounded variables maximum bounds (this may lead to incorrect behaviour)\n"
@@ -1253,7 +1252,7 @@ Ref<Expression> GecodeSolverInstance::getSolutionValue(Id* id) {
       IntVal mi = svr.min();
       IntVal ma = svr.max();
       ++svr;
-      vector<IntVal> vals;
+      std::vector<IntVal> vals;
       if (svr()) {
         SetVarGlbValues svv(sv);
         IntVal i = svv.val();

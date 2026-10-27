@@ -11,6 +11,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Building MiniZinc from source now requires a C++17 compiler.
 -  Normalize linear expressions (term order, sign, and common divisor), so that
    common subexpression elimination finds more equal expressions.
 -  Add support for optional set variables (``var opt set of int``, including sets

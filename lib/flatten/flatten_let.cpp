@@ -144,8 +144,8 @@ LetFlatScope::LetFlatScope(Let* let) {
 }
 
 LetFlatScope::~LetFlatScope() {
-  for (auto& saved : _saved) {
-    saved.first->flat(saved.second);
+  for (auto& [vd, flat] : _saved) {
+    vd->flat(flat);
   }
 }
 

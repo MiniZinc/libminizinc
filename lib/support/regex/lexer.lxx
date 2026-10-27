@@ -14,7 +14,10 @@
 %option prefix="regex_yy"
 
 %top{
+#include <charconv>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <string>
 }
 
@@ -28,7 +31,13 @@
 %%
 
 [ \t\n] { /* ignore white space */ }
-[0-9]+  { regex_yylval.iValue = std::stoi(std::string(regex_yytext)); return R_INTEGER; }
+[0-9]+  {
+  const char* end = regex_yytext + std::strlen(regex_yytext);
+  if (std::from_chars(regex_yytext, end, regex_yylval.iValue).ec != std::errc()) {
+    throw std::out_of_range("Integer out of range in regular expression: '" + std::string(regex_yytext) + "'");
+  }
+  return R_INTEGER;
+}
 "|"     { return R_UNION; }
 "+"     { return R_PLUS; }
 "*"     { return R_STAR; }

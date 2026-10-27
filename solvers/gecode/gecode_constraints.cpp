@@ -16,8 +16,7 @@
 
 using namespace Gecode;
 
-namespace MiniZinc {
-namespace GecodeConstraints {
+namespace MiniZinc::GecodeConstraints {
 
 void p_distinct(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
@@ -2013,6 +2012,4 @@ void p_precede_set(SolverInstanceBase& s, const Call* ce) {
 }
 #endif
 
-}  // namespace GecodeConstraints
-
-}  // namespace MiniZinc
+}  // namespace MiniZinc::GecodeConstraints

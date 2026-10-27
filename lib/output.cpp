@@ -1344,8 +1344,7 @@ Ref<Expression> create_dzn_output(EnvI& e, bool includeObjective, bool includeOu
 
               auto sl = make<StringLit>(Location().introduce(), s.str());
               outputVars.emplace_back(sl);
-              ASTString toString(std::string("_toString_") +
-                                 e.getEnum(enumId)->e()->id()->str().c_str());
+              ASTString toString("_toString_" + std::string(e.getEnum(enumId)->e()->id()->str()));
 
               auto idxMinLit = IntLit::a(idxMin);
               auto toStringMin =
@@ -1638,9 +1637,8 @@ void process_toplevel_output_vars(EnvI& e) {
   if (!outputForChecker) {
     // Insert implicit output variables
     int inserted = 0;
-    for (auto& it : ovv.todo) {
-      int idx = static_cast<int>(it.first);
-      auto* vd = it.second;
+    for (auto& [pos, vd] : ovv.todo) {
+      int idx = static_cast<int>(pos);
       if (Expression::ann(vd).contains(e.constants.ann.no_output) || Expression::type(vd).isPar()) {
         continue;
       }

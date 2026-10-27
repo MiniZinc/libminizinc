@@ -273,12 +273,10 @@ public:
     }
     auto baseName = call->id();
     if (baseName.endsWith("_reif")) {
-      std::string reifName(baseName.c_str());
-      baseName = ASTString(reifName.substr(0, reifName.length() - 5));
+      baseName = ASTString(baseName.substr(0, baseName.size() - 5));
       argTypes.pop_back();
     } else if (baseName.endsWith("_imp")) {
-      std::string impName(baseName.c_str());
-      baseName = ASTString(impName.substr(0, impName.length() - 4));
+      baseName = ASTString(baseName.substr(0, baseName.size() - 4));
       argTypes.pop_back();
     }
     auto parTypes = argTypes;
@@ -289,13 +287,13 @@ public:
     for (auto& t : baseArgTypes) {
       t.mkPresentDeep(env);
     }
-    auto baseInstance =
+    auto [baseIt, inserted] =
         _map.emplace(InstantiatedItem(env, call->id(), baseArgTypes, paramNames), _instanceCount);
-    if (baseInstance.second) {
+    if (inserted) {
       // Base instance not created yet, so use new instance ID
       _instanceCount++;
     }
-    auto instanceId = baseInstance.first->second;
+    auto instanceId = baseIt->second;
     auto concreteInstance = _instances.emplace(env, call->id(), argTypes, paramNames);
     auto parInstance = _instances.emplace(env, call->id(), parTypes, paramNames);
 
@@ -333,12 +331,12 @@ public:
   }
   /// Point the operators to the specialised functions of their stand-in calls
   void finishOperators() {
-    for (auto& op : _operators) {
-      FunctionI* decl = Expression::cast<Call>(op.second)->decl();
-      if (auto* bo = Expression::dynamicCast<BinOp>(op.first)) {
+    for (auto& [op, call] : _operators) {
+      FunctionI* decl = Expression::cast<Call>(call)->decl();
+      if (auto* bo = Expression::dynamicCast<BinOp>(op)) {
         bo->decl(decl);
       } else {
-        Expression::cast<UnOp>(op.first)->decl(decl);
+        Expression::cast<UnOp>(op)->decl(decl);
       }
     }
   }
@@ -733,9 +731,7 @@ public:
         }
       }
 
-      for (auto& m : matches) {
-        auto* fi = m.first;
-        auto& concrete_types = m.second;
+      for (auto& [fi, concrete_types] : matches) {
         if (fi == nullptr) {
           continue;
         }
@@ -871,15 +867,15 @@ void type_specialise(Env& env, Model* model, TyperFn& typer) {
 }
 
 std::string demonomorphise_identifier(const ASTString& ident) {
-  if (ident.empty() || ident.c_str()[0] != '\\') {
-    return std::string(ident.c_str());
+  if (!ident.beginsWith("\\")) {
+    return std::string(ident);
   }
-  std::string s(ident.c_str() + 1);
-  auto s_end = s.find_first_of('@');
-  if (s_end != std::string::npos) {
-    return s.substr(s_end + 1);
+  std::string_view s = ident.substr(1);
+  auto s_end = s.find('@');
+  if (s_end != std::string_view::npos) {
+    return std::string(s.substr(s_end + 1));
   }
-  return std::string(ident.c_str());
+  return std::string(ident);
 }
 
 namespace {
@@ -933,7 +929,7 @@ void type_demonomorphise_library(Env& e, Model* model) {
     }
   }
   for (auto* fi : toRename) {
-    std::string ident(fi->id().c_str());
+    std::string ident(fi->id());
     ident[0] = '_';
     while (functionIds.find(ASTString(ident)) != functionIds.end()) {
       ident.insert(0, "_");

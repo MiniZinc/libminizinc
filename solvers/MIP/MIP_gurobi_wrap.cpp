@@ -38,19 +38,17 @@
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 #include <minizinc/utils.hh>
 
-using namespace std;
-
-string MIPGurobiWrapper::getDescription(FactoryOptions& factoryOpt,
-                                        MiniZinc::SolverInstanceBase::Options* opt) {
-  ostringstream oss;
+std::string MIPGurobiWrapper::getDescription(FactoryOptions& factoryOpt,
+                                             MiniZinc::SolverInstanceBase::Options* opt) {
+  std::ostringstream oss;
   oss << "MIP wrapper for Gurobi library " << getVersion(factoryOpt, nullptr);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
-                                    MiniZinc::SolverInstanceBase::Options* opt) {
-  ostringstream oss;
+std::string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
+                                         MiniZinc::SolverInstanceBase::Options* opt) {
+  std::ostringstream oss;
   MIPGurobiWrapper mgw(factoryOpt, nullptr);  // to avoid opening the env
   try {
     mgw.checkDLL();
@@ -65,7 +63,7 @@ string MIPGurobiWrapper::getVersion(FactoryOptions& factoryOpt,
   }
 }
 
-vector<string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
+std::vector<std::string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
   FactoryOptions factoryOpt;
   MIPGurobiWrapper mgw(factoryOpt, nullptr);
   try {
@@ -76,27 +74,27 @@ vector<string> MIPGurobiWrapper::getRequiredFlags(FactoryOptions& f) {
   }
 }
 
-vector<string> MIPGurobiWrapper::getFactoryFlags() { return {"--gurobi-dll"}; }
+std::vector<std::string> MIPGurobiWrapper::getFactoryFlags() { return {"--gurobi-dll"}; }
 
-string MIPGurobiWrapper::getId() { return "gurobi"; }
+std::string MIPGurobiWrapper::getId() { return "gurobi"; }
 
-string MIPGurobiWrapper::getName() { return "Gurobi"; }
+std::string MIPGurobiWrapper::getName() { return "Gurobi"; }
 
-vector<string> MIPGurobiWrapper::getTags() { return {"mip", "float", "api"}; }
+std::vector<std::string> MIPGurobiWrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
+std::vector<std::string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-vector<string> gurobi_dlls() {
-  const vector<string> versions = {
+std::vector<std::string> gurobi_dlls() {
+  const std::vector<std::string> versions = {
       "1303", "1302", "1301",  // Potential future versions which should load correctly
       "1300", "1203", "1202", "1201", "1200", "1103", "1102", "1101", "1100",
       "1003", "1002", "1001", "1000", "952",  "951",  "950",  "912",  "911",
       "910",  "903",  "902",  "901",  "900",  "811",  "810",  "801",  "800",
       "752",  "751",  "750",  "702",  "701",  "700",  "652",  "651",  "650"};
-  vector<string> dlls;
-  string lastMajorVersion;
+  std::vector<std::string> dlls;
+  std::string lastMajorVersion;
   for (const auto& version : versions) {
-    string majorVersion = version.substr(0, version.length() - 1);
+    std::string majorVersion = version.substr(0, version.length() - 1);
     if (majorVersion != lastMajorVersion) {
       dlls.push_back("gurobi" + majorVersion);
       lastMajorVersion = majorVersion;
@@ -120,7 +118,7 @@ vector<string> gurobi_dlls() {
   return dlls;
 }
 
-void MIPGurobiWrapper::Options::printHelp(ostream& os) {
+void MIPGurobiWrapper::Options::printHelp(std::ostream& os) {
   os << "GUROBI MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read GUROBI parameters from file
@@ -185,11 +183,11 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   std::string buf;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f" ||
-             string(argv[i]) == "--free-search") {   // NOLINT: Allow repeated empty if
-  } else if (string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "-f" ||
+             std::string(argv[i]) == "--free-search") {   // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "--fixed-search") {  // NOLINT: Allow repeated empty if
     nFreeSearch = MIPGurobiWrapper::SearchType::FIXED_SEARCH;
-  } else if (string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "--uniform-search") {  // NOLINT: Allow repeated empty if
     nFreeSearch = MIPGurobiWrapper::SearchType::UNIFORM_SEARCH;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
@@ -225,18 +223,18 @@ bool MIPGurobiWrapper::Options::processOption(int& i, std::vector<std::string>& 
   return true;
 }
 
-void MIPGurobiWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
+void MIPGurobiWrapper::wrapAssert(bool cond, const std::string& msg, bool fTerm) {
   if (!cond) {
     _gurobiBuffer = "[NO ERROR STRING GIVEN]";
     if (_error != 0) {
       _gurobiBuffer = dll_GRBgeterrormsg(_env);
     }
-    string msgAll =
+    std::string msgAll =
         ("  MIPGurobiWrapper runtime error:  " + _gurobiBuffer + "\nMessage from caller: " + msg);
     if (fTerm) {
       throw MiniZinc::Error(msgAll);
     }
-    cerr << msgAll << "\nGurobi error code: " << _error << '\n';
+    std::cerr << msgAll << "\nGurobi error code: " << _error << '\n';
   }
 }
 
@@ -265,7 +263,7 @@ void* try_dll_sym(void* dll, const char* sym) {
 void* dll_sym(void* dll, const char* sym) {
   void* ret = try_dll_sym(dll, sym);
   if (ret == nullptr) {
-    throw MiniZinc::Error("cannot load symbol " + string(sym) + " from gurobi dll");
+    throw MiniZinc::Error("cannot load symbol " + std::string(sym) + " from gurobi dll");
   }
   return ret;
 }
@@ -282,7 +280,7 @@ void dll_close(void* dll) {
 /// as if the user had asked for it.
 int __stdcall gurobi_log_to_stderr(char* msg, void* /*logdata*/) {
   if (msg != nullptr && !MiniZinc::beginswith(msg, "Set parameter LogToConsole")) {
-    cerr << msg;
+    std::cerr << msg;
   }
   return 0;
 }
@@ -494,10 +492,10 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPGurobiWrapper::getExtraFlags(
 }
 
 void MIPGurobiWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                 MIPWrapper::VarType* vt, string* names) {
+                                 MIPWrapper::VarType* vt, std::string* names) {
   /// Convert var types:
-  vector<char> ctype(n);
-  vector<char*> pcNames(n);
+  std::vector<char> ctype(n);
+  std::vector<char*> pcNames(n);
   for (size_t i = 0; i < n; ++i) {
     pcNames[i] = (char*)names[i].c_str();
     switch (vt[i]) {
@@ -535,7 +533,7 @@ static char get_grb_sense(MIPWrapper::LinConType s) {
 }
 
 void MIPGurobiWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
-                              double rhs, int mask, const string& rowName) {
+                              double rhs, int mask, const std::string& rowName) {
   //// Make sure in order to notice the indices of lazy constr:
   ++nRows;
   /// Convert var types:
@@ -564,7 +562,7 @@ void MIPGurobiWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper
 
 void MIPGurobiWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                               double* rmatval, MIPWrapper::LinConType sense,
-                                              double rhs, const string& rowName) {
+                                              double rhs, const std::string& rowName) {
   wrapAssert(0 <= bVal && 1 >= bVal, "Gurobi: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
   ++nRows;
@@ -580,7 +578,7 @@ void MIPGurobiWrapper::addMinimum(int iResultVar, int nnz, int* ind, const std::
   wrapAssert(_error == 0, "Failed: GRBaddgenconstrMin.");
 }
 
-void MIPGurobiWrapper::addTimes(int x, int y, int z, const string& rowName) {
+void MIPGurobiWrapper::addTimes(int x, int y, int z, const std::string& rowName) {
   /// As x*y - z == 0
   double zCoef = -1.0;
   double xyCoef = 1.0;
@@ -676,7 +674,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       // out-parameter, and clang-tidy's bugprone-multi-level-implicit-pointer-conversion
       // requires an explicit cast for the char** -> void* conversion.
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MSG_STRING, reinterpret_cast<void*>(&msg));
-      cerr << msg << flush;
+      std::cerr << msg << std::flush;
     }
   } else if (GRB_CB_MIPSOL == where) {
     /* MIP solution callback */
@@ -685,7 +683,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-    if (fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
+    if (std::fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + std::fabs(objVal))) {
       newincumbent = 1;
       // Not confirmed yet, see lazy cuts
       //      info->pOutput->objVal = objVal;
@@ -706,7 +704,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     /// Before printing
     if ((info->cutcbfn != nullptr) && ((info->cutMask & MIPWrapper::MaskConsType_Lazy) != 0)) {
       MIPWrapper::CutInput cutInput;
-      cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback \n";
+      std::cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback \n";
       info->cutcbfn(*info->pOutput, cutInput, info->psi, true);
       for (auto& cd : cutInput) {
         //         assert( cd.mask & MIPWrapper::MaskConsType_Lazy );
@@ -715,7 +713,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add lazy cut. \n";
+            std::cerr << "  GRB_wrapper: failed to add lazy cut. \n";
           } else {
             newincumbent = -1;
           }
@@ -725,7 +723,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       }
     }
     if (solcnt >= 0 /*This is solution number for Gurobi*/ && newincumbent >= 0) {
-      if (fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
+      if (std::fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + std::fabs(objVal))) {
         newincumbent = 1;
         info->pOutput->objVal = objVal;
         info->pOutput->status = MIPWrapper::SAT;
@@ -776,7 +774,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add user cut. \n";
+            std::cerr << "  GRB_wrapper: failed to add user cut. \n";
           }
         }
         if ((cd.mask & MIPWrapper::MaskConsType_Lazy) != 0) {
@@ -784,7 +782,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), get_grb_sense(cd.sense), cd.rhs);
           if (_error != 0) {
-            cerr << "  GRB_wrapper: failed to add lazy cut. \n";
+            std::cerr << "  GRB_wrapper: failed to add lazy cut. \n";
           }
         }
       }
@@ -796,7 +794,7 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
 
 MIPGurobiWrapper::Status MIPGurobiWrapper::convertStatus(int gurobiStatus) {
   Status s = Status::UNKNOWN;
-  ostringstream oss;
+  std::ostringstream oss;
   /* Converting the status. */
   if (gurobiStatus == GRB_OPTIMAL) {
     s = Status::OPT;
@@ -831,7 +829,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   if (!nLazyIdx.empty()) {
     assert(nLazyIdx.size() == nLazyValue.size());
     if (fVerbose) {
-      cerr << "  MIPGurobiWrapper: marking " << nLazyIdx.size() << " lazy cuts.\n";
+      std::cerr << "  MIPGurobiWrapper: marking " << nLazyIdx.size() << " lazy cuts.\n";
     }
     _error = dll_GRBsetintattrlist(_model, "Lazy", static_cast<int>(nLazyIdx.size()),
                                    nLazyIdx.data(), nLazyValue.data());
@@ -957,7 +955,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
       if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
         // For user cuts, needs to keep some info after presolve
         if (fVerbose) {
-          cerr << "  MIPGurobiWrapper: user cut callback enabled, setting PreCrush=1\n";
+          std::cerr << "  MIPGurobiWrapper: user cut callback enabled, setting PreCrush=1\n";
         }
         _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_PRECRUSH, 1);
         wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
@@ -965,7 +963,7 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
       if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
         // For lazy cuts, Gurobi disables some presolves
         if (fVerbose) {
-          cerr << "  MIPGurobiWrapper: lazy cut callback enabled, setting LazyConstraints=1\n";
+          std::cerr << "  MIPGurobiWrapper: lazy cut callback enabled, setting LazyConstraints=1\n";
         }
         _error = dll_GRBsetintparam(dll_GRBgetenv(_model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
         wrapAssert(_error == 0, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);
@@ -976,25 +974,29 @@ void MIPGurobiWrapper::solve() {        // Move into ancestor?
   }
 
   // Process extra flags options
-  for (auto& it : _options->extraParams) {
-    auto name = it.first.substr(9);
+  for (auto& [key, value] : _options->extraParams) {
+    auto name = key.substr(9);
     int type = dll_GRBgetparamtype(dll_GRBgetenv(_model), name.c_str());
     enum GurobiParamType { T_INT = 1, T_DOUBLE = 2, T_STRING = 3 };
     switch (type) {
       case T_INT:
-        _error = dll_GRBsetintparam(dll_GRBgetenv(_model), name.c_str(), stoi(it.second));
+        _error = dll_GRBsetintparam(dll_GRBgetenv(_model), name.c_str(), std::stoi(value));
         break;
       case T_DOUBLE:
-        _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), name.c_str(), stod(it.second));
+        _error = dll_GRBsetdblparam(dll_GRBgetenv(_model), name.c_str(), std::stod(value));
         break;
       case T_STRING:
-        _error = dll_GRBsetstrparam(dll_GRBgetenv(_model), name.c_str(), it.second.c_str());
+        _error = dll_GRBsetstrparam(dll_GRBgetenv(_model), name.c_str(), value.c_str());
         break;
       default:
         wrapAssert(false, "Could not determine type of parameter " + name, false);
         break;
     }
-    wrapAssert(_error == 0, "Failed to set parameter " + name + " = " + it.second, false);
+    if (_error != 0) {
+      std::ostringstream oss;
+      oss << "Failed to set parameter " << name << " = " << value;
+      wrapAssert(false, oss.str(), false);
+    }
   }
 
   /// after all modifs

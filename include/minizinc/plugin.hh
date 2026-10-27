@@ -95,12 +95,13 @@ private:
         file.size() >= ext.size() && file.compare(file.size() - ext.size(), ext.size(), ext) == 0;
     auto path = (hasExt || MiniZinc::FileUtils::is_absolute(file)) ? file : (file + ext);
 #ifdef _WIN32
-    auto dir = MiniZinc::FileUtils::dir_name(path);
+    auto dll = MiniZinc::FileUtils::to_path(path);
+    auto dir = dll.parent_path();
     if (!dir.empty()) {
       // Add the path with the DLL to the search path for dependency loading
-      SetDllDirectoryW(MiniZinc::FileUtils::utf8_to_wide(dir).c_str());
+      SetDllDirectoryW(dir.c_str());
     }
-    _dll = (void*)LoadLibrary((LPCSTR)path.c_str());
+    _dll = (void*)LoadLibraryW(dll.c_str());
     if (!dir.empty()) {
       SetDllDirectoryW(nullptr);
     }

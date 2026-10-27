@@ -18,6 +18,7 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <unordered_map>
 
@@ -26,20 +27,13 @@ namespace MiniZinc {
 struct CStringHash {
 public:
   // FIXME: This is not an amazing hash function
-  size_t operator()(const std::pair<const char*, size_t>& s) const {
+  size_t operator()(std::string_view s) const {
     size_t result = 0;
     const size_t prime = 31;
-    for (size_t i = 0; i < s.second; ++i) {
-      result = s.first[i] + (result * prime);
+    for (char c : s) {
+      result = c + (result * prime);
     }
     return result;
-  }
-};
-struct CStringEquals {
-public:
-  bool operator()(const std::pair<const char*, size_t>& s0,
-                  const std::pair<const char*, size_t>& s1) const {
-    return s0.second == s1.second && (strncmp(s0.first, s1.first, s0.second) == 0);
   }
 };
 
@@ -53,15 +47,14 @@ public:
 class ASTStringData : public ASTChunk {
 protected:
   /// Interning Hash Map
-  using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash,
-                                      CStringEquals>;
+  using Interner = std::unordered_map<std::string_view, ASTStringData*, CStringHash>;
   static Interner& interner();
   /// Constructor
-  ASTStringData(const std::string& s);
+  ASTStringData(std::string_view s);
 
 public:
   /// The interned string for \a s (not counted: the caller takes a reference, see ASTString)
-  static ASTStringData* a(const std::string& s);
+  static ASTStringData* a(std::string_view s);
   /// Remove the string \a n, which is being destroyed, from the interning map
   static void unintern(ASTNode* n);
   /// Return underlying C-style string
@@ -71,6 +64,8 @@ public:
   size_t size() const {
     return static_cast<unsigned int>(_size) - static_cast<unsigned int>(sizeof(size_t)) - 1;
   }
+  /// Return a view of the string
+  std::string_view view() const { return {c_str(), size()}; }
   /// Access character at position \a i
   char operator[](unsigned int i) {
     assert(i < size());
@@ -103,7 +98,7 @@ public:
   /// Default constructor
   ASTString() = default;
   /// Constructor
-  explicit ASTString(const std::string& s) : _s(ASTStringData::a(s)) { RC::incPlain(_s); }
+  explicit ASTString(std::string_view s) : _s(ASTStringData::a(s)) { RC::incPlain(_s); }
   /// Constructor
   explicit ASTString(ASTStringData* s) : _s(s) { RC::incPlain(_s); }
   /// Copy constructor
@@ -123,45 +118,42 @@ public:
   bool empty() const;
   /// Underlying C string object
   const char* c_str() const;  // NOLINT(readability-identifier-naming)
+  /// View of the string (borrowed: valid while this handle or a node holds it)
+  operator std::string_view() const;  // NOLINT(google-explicit-constructor)
   /// Underlying string implementation (borrowed: valid while this handle or a node holds it)
   ASTStringData* aststr() const { return _s; }
 
   /// Return if string \a s0 is equal to \a s1
   friend bool operator==(const ASTString& s0, const ASTString& s1);
   /// Return if string \a s0 is equal to \a s1
-  friend bool operator==(const ASTString& s0, const char* s1);
+  friend bool operator==(const ASTString& s0, std::string_view s1);
   /// Return if string \a s0 is equal to \a s1
-  friend bool operator==(const char* s0, const ASTString& s1);
-  /// Return if string \a s0 is equal to \a s1
-  friend bool operator==(const ASTString& s0, const std::string& s1);
-  /// Return if string \a s0 is equal to \a s1
-  friend bool operator==(const std::string& s0, const ASTString& s1);
+  friend bool operator==(std::string_view s0, const ASTString& s1);
 
   /// Return if string \a s0 is not equal to \a s1
   friend bool operator!=(const ASTString& s0, const ASTString& s1);
   /// Return if string \a s0 is not equal to \a s1
-  friend bool operator!=(const ASTString& s0, const char* s1);
+  friend bool operator!=(const ASTString& s0, std::string_view s1);
   /// Return if string \a s0 is not equal to \a s1
-  friend bool operator!=(const char* s0, const ASTString& s1);
-  /// Return if string \a s0 is not equal to \a s1
-  friend bool operator!=(const ASTString& s0, const std::string& s1);
-  /// Return if string \a s0 is not equal to \a s1
-  friend bool operator!=(const std::string& s0, const ASTString& s1);
+  friend bool operator!=(std::string_view s0, const ASTString& s1);
 
   /// Return if string is less than \a s
   bool operator<(const ASTString& s) const;
 
   /// Return if string ends with \a s
-  bool endsWith(const std::string& s) const;
+  bool endsWith(std::string_view s) const;
 
   /// Return if string begins with \a s
-  bool beginsWith(const std::string& s) const;
+  bool beginsWith(std::string_view s) const;
 
-  /// Returns a substring [pos, pos+count).
-  std::string substr(size_t pos = 0, size_t count = std::string::npos) const;
-  // Finds the last character equal to one of characters in the given character sequence.
-  size_t findLastOf(char ch, size_t pos = std::string::npos) const noexcept;
-  // Finds the first character equal to the given character sequence.
+  /// Returns a view of the substring [pos, pos+count) (borrowed, like the conversion to
+  /// std::string_view)
+  std::string_view substr(size_t pos = 0, size_t count = std::string_view::npos) const&;
+  /// The view would outlive a temporary handle
+  std::string_view substr(size_t pos = 0, size_t count = std::string_view::npos) const&& = delete;
+  /// Position of the last \a ch at or before \a pos, or std::string_view::npos
+  size_t findLastOf(char ch, size_t pos = std::string_view::npos) const noexcept;
+  /// Position of the first \a ch at or after \a pos, or std::string_view::npos
   size_t find(char ch, size_t pos = 0) const noexcept;
 
   /// Return Levenshtein distance to \a s
@@ -177,7 +169,7 @@ public:
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const ASTString& s) {
-  return s.empty() ? os : (os << s.c_str());
+  return os << std::string_view(s);
 }
 
 }  // namespace MiniZinc
@@ -206,100 +198,42 @@ namespace MiniZinc {
 inline size_t ASTString::size() const { return _s != nullptr ? _s->size() : 0; }
 inline bool ASTString::empty() const { return _s == nullptr; }
 // NOLINTNEXTLINE(readability-identifier-naming)
-inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : nullptr; }
+inline const char* ASTString::c_str() const { return _s != nullptr ? _s->c_str() : ""; }
+inline ASTString::operator std::string_view() const {
+  return _s != nullptr ? _s->view() : std::string_view();
+}
 
 inline bool operator==(const ASTString& s0, const ASTString& s1) { return s0._s == s1._s; }
 inline bool operator!=(const ASTString& s0, const ASTString& s1) { return s0._s != s1._s; }
 
-inline bool operator==(const ASTString& s0, const char* s1) {
-  size_t s1_size = strlen(s1);
-  return s0.size() == s1_size && (s1_size == 0 || strncmp(s0._s->c_str(), s1, s1_size) == 0);
+inline bool operator==(const ASTString& s0, std::string_view s1) {
+  return std::string_view(s0) == s1;
 }
-
-inline bool operator==(const char* s0, const ASTString& s1) {
-  size_t s0_size = strlen(s0);
-  return s1.size() == s0_size && (s0_size == 0 || strncmp(s1._s->c_str(), s0, s0_size) == 0);
+inline bool operator==(std::string_view s0, const ASTString& s1) {
+  return s0 == std::string_view(s1);
 }
-
-inline bool operator==(const ASTString& s0, const std::string& s1) {
-  return s0.size() == s1.size() &&
-         (s0.empty() || strncmp(s0._s->c_str(), s1.c_str(), s0.size()) == 0);
-}
-
-inline bool operator==(const std::string& s0, const ASTString& s1) {
-  return s0.size() == s1.size() &&
-         (s1.empty() || strncmp(s1._s->c_str(), s0.c_str(), s1.size()) == 0);
-}
-
-inline bool operator!=(const ASTString& s0, const char* s1) {
-  size_t s1_size = strlen(s1);
-  return s0.size() != s1_size || (s1_size != 0 && strncmp(s0._s->c_str(), s1, s1_size) != 0);
-}
-
-inline bool operator!=(const char* s0, const ASTString& s1) {
-  size_t s0_size = strlen(s0);
-  return s1.size() != s0_size || (s0_size != 0 && strncmp(s1._s->c_str(), s0, s0_size) != 0);
-}
-
-inline bool operator!=(const ASTString& s0, const std::string& s1) {
-  return s0.size() != s1.size() ||
-         (!s0.empty() && strncmp(s0._s->c_str(), s1.c_str(), s0.size()) != 0);
-}
-
-inline bool operator!=(const std::string& s0, const ASTString& s1) {
-  return s0.size() != s1.size() ||
-         (!s1.empty() && strncmp(s1._s->c_str(), s0.c_str(), s1.size()) != 0);
-}
+inline bool operator!=(const ASTString& s0, std::string_view s1) { return !(s0 == s1); }
+inline bool operator!=(std::string_view s0, const ASTString& s1) { return !(s0 == s1); }
 
 inline bool ASTString::operator<(const ASTString& s) const {
-  if (empty()) {
-    return !s.empty();
-  }
-  unsigned int size = static_cast<unsigned int>(std::min(_s->size(), s.size()));
-  int cmp = strncmp(_s->c_str(), s.c_str(), size);
-  if (cmp == 0) {
-    return _s->size() < s.size();
-  }
-  return cmp < 0;
+  return std::string_view(*this) < std::string_view(s);
 }
-inline bool ASTString::endsWith(const std::string& s) const {
-  return size() >= s.size() &&
-         (empty() || strncmp(_s->c_str() + size() - s.size(), s.c_str(), s.size()) == 0);
+inline bool ASTString::endsWith(std::string_view s) const {
+  std::string_view v(*this);
+  return v.size() >= s.size() && v.substr(v.size() - s.size()) == s;
 }
-inline bool ASTString::beginsWith(const std::string& s) const {
-  return size() >= s.size() && (empty() || strncmp(_s->c_str(), s.c_str(), s.size()) == 0);
+inline bool ASTString::beginsWith(std::string_view s) const {
+  return std::string_view(*this).substr(0, s.size()) == s;
 }
 
-inline std::string ASTString::substr(size_t pos, size_t count) const {
-  if (pos > size()) {
-    throw std::out_of_range("ASTString::substr pos out of range");
-  }
-  if (count == std::string::npos) {
-    return std::string(c_str() + pos, size() - pos);
-  }
-  return std::string(c_str() + pos, std::min(size() - pos, count));
+inline std::string_view ASTString::substr(size_t pos, size_t count) const& {
+  return std::string_view(*this).substr(pos, count);
 }
 inline size_t ASTString::findLastOf(char ch, size_t pos) const noexcept {
-  const char* str = c_str();
-  for (size_t i = std::min(size() - 1, pos); i >= 0; --i) {
-    if (str[i] == ch) {
-      return i;
-    }
-  }
-  return std::string::npos;
+  return std::string_view(*this).rfind(ch, pos);
 }
-
 inline size_t ASTString::find(char ch, size_t pos) const noexcept {
-  if (pos >= size()) {
-    return std::string::npos;
-  }
-  const char* str = c_str();
-  for (size_t i = pos; i < size(); ++i) {
-    if (str[i] == ch) {
-      return i;
-    }
-  }
-  return std::string::npos;
+  return std::string_view(*this).find(ch, pos);
 }
 
 inline size_t ASTString::hash() const { return _s != nullptr ? _s->hash() : 0; }

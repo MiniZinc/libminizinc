@@ -23,8 +23,7 @@ namespace MiniZinc {
 class FlatteningError : public LocationException {
 public:
   FlatteningError(EnvI& env, const Location& loc, const std::string& msg);
-  ~FlatteningError() throw() override {}
-  const char* what() const throw() override { return "flattening error"; }
+  const char* what() const noexcept override { return "flattening error"; }
 };
 
 /// Options for the flattener

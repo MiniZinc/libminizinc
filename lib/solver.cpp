@@ -41,10 +41,8 @@
 #include <ratio>
 #include <sstream>
 
-using namespace std;
-using namespace MiniZinc;
-
 namespace MiniZinc {
+
 /// Register a solver backend with the SolverRegistry. Each is defined in that backend's own
 /// translation unit, which is only compiled when the backend was enabled at configure time
 /// — hence the guards, which match the calls in SolverInitialiser below. Calling one twice
@@ -83,7 +81,6 @@ void register_xpress_solver();
 void register_fzn_solver();
 void register_mzn_solver();
 void register_nl_solver();
-}  // namespace MiniZinc
 
 SolverInitialiser::SolverInitialiser() {
 #ifdef HAS_OSICBC
@@ -137,7 +134,7 @@ MZNFZNSolverFlag MZNFZNSolverFlag::extra(const SolverConfig::ExtraFlag& ef) {
 }
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-SolverRegistry* MiniZinc::get_global_solver_registry() {
+SolverRegistry* get_global_solver_registry() {
   static SolverRegistry sr;
   return &sr;
 }
@@ -148,7 +145,7 @@ void SolverRegistry::addSolverFactory(SolverFactory* pSF) {
 }
 
 void SolverRegistry::removeSolverFactory(SolverFactory* pSF) {
-  auto it = find(_sfstorage.begin(), _sfstorage.end(), pSF);
+  auto it = std::find(_sfstorage.begin(), _sfstorage.end(), pSF);
   assert(pSF);
   _sfstorage.erase(it);
 }
@@ -160,7 +157,8 @@ void SolverRegistry::addFactoryFlag(const std::string& flag, SolverFactory* sf) 
 
 void SolverRegistry::removeFactoryFlag(const std::string& flag, SolverFactory* sf) {
   assert(sf);
-  auto it = find(_factoryFlagStorage.begin(), _factoryFlagStorage.end(), std::make_pair(flag, sf));
+  auto it =
+      std::find(_factoryFlagStorage.begin(), _factoryFlagStorage.end(), std::make_pair(flag, sf));
   _factoryFlagStorage.erase(it);
 }
 
@@ -294,7 +292,7 @@ void MznSolver::printHelp(std::ostream& os, const std::string& selectedSolver) {
     }
   } else {
     const SolverConfig& sc = _solverConfigs.config(selectedSolver);
-    string solverId;
+    std::string solverId;
     if (sc.executable().empty()) {
       solverId = sc.id();
     } else {
@@ -365,7 +363,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   if (lastdot != std::string::npos) {
     _executableName = _executableName.substr(0, lastdot);
   }
-  string solver;
+  std::string solver;
   bool load_params = false;
   bool mzn2fzn_exe = (_executableName == "mzn2fzn");
   if (mzn2fzn_exe) {
@@ -386,7 +384,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   // Add params from a file if necessary
   std::vector<std::string> paramFiles;
   for (i = 1; i < argc; ++i) {
-    string paramFile;
+    std::string paramFile;
     bool usedFlag = false;
     bool pushWorkingDir = true;
 
@@ -412,7 +410,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       workingDirs.pop_back();
     } else {
       size_t last_dot = argv[i].find_last_of('.');
-      if (last_dot != string::npos && argv[i].substr(last_dot, string::npos) == ".mpc") {
+      if (last_dot != std::string::npos && argv[i].substr(last_dot, std::string::npos) == ".mpc") {
         paramFile = argv[i];
       }
     }
@@ -464,16 +462,16 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   std::unordered_map<std::string, std::vector<std::string>> reducedSolverDefaults;
   if (!factoryFlags.empty()) {
     // Process solver default factory flags
-    for (const auto& factoryFlag : factoryFlags) {
-      auto factoryId = factoryFlag.second->getId();
-      if (reducedSolverDefaults.count(factoryId) == 0) {
-        reducedSolverDefaults.insert({factoryId, _solverConfigs.defaultOptions(factoryId)});
+    for (const auto& [flag, factory] : factoryFlags) {
+      auto factoryId = factory->getId();
+      auto [it, inserted] = reducedSolverDefaults.try_emplace(factoryId);
+      if (inserted) {
+        it->second = _solverConfigs.defaultOptions(factoryId);
       }
-      auto& defaultArgs = reducedSolverDefaults.find(factoryId)->second;
+      auto& defaultArgs = it->second;
       std::vector<std::string> keep;
       for (i = 0; i < defaultArgs.size(); i++) {
-        if (defaultArgs[i] != factoryFlag.first ||
-            !factoryFlag.second->processFactoryOption(i, defaultArgs)) {
+        if (defaultArgs[i] != flag || !factory->processFactoryOption(i, defaultArgs)) {
           keep.push_back(defaultArgs[i]);
         }
       }
@@ -490,9 +488,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       } else if (argv[i] == "--pop-working-directory") {
         workingDirs.pop_back();
       } else {
-        for (const auto& factoryFlag : factoryFlags) {
-          if (argv[i] == factoryFlag.first &&
-              factoryFlag.second->processFactoryOption(i, argv, workingDirs.back())) {
+        for (const auto& [flag, factory] : factoryFlags) {
+          if (argv[i] == flag && factory->processFactoryOption(i, argv, workingDirs.back())) {
             ok = true;
             break;
           }
@@ -543,7 +540,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         _os << "  " << solver << '\n';
       }
       _os << "Search path for solver configurations:\n";
-      for (const string& p : _solverConfigs.solverConfigsPath()) {
+      for (const std::string& p : _solverConfigs.solverConfigsPath()) {
         _os << "  " << p << '\n';
       }
       return OPTION_FINISH;
@@ -681,7 +678,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   if (!flagIsSolns2out) {
     SolverConfig& sc = _solverConfigs.config(solver);
-    string solverId;
+    std::string solverId;
     if (sc.executable().empty()) {
       solverId = sc.id();
     } else {
@@ -727,7 +724,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           }
 
           // Collect arguments required for underlying exe
-          vector<string> fzn_mzn_flags;
+          std::vector<std::string> fzn_mzn_flags;
           if (sc.needsStdlibDir()) {
             fzn_mzn_flags.emplace_back("--stdlib-dir");
             fzn_mzn_flags.push_back(FileUtils::share_directory());
@@ -834,7 +831,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             if (sc.needsPathsFile()) {
               // Instruct flattener to hold onto paths
               int i = 0;
-              vector<string> args{"--keep-paths"};
+              std::vector<std::string> args{"--keep-paths"};
               _flt.processOption(i, args);
 
               // Instruct FznSolverInstance to write a path file
@@ -1068,8 +1065,8 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
       !_flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while (std::cin.good()) {
-      string line;
-      getline(std::cin, line);
+      std::string line;
+      std::getline(std::cin, line);
       line += '\n';  // need eols as in t=raw stream
       s2out.feedRawDataChunk(line.c_str());
     }
@@ -1161,3 +1158,5 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   return getFltStatus();
   //  Add evalOutput() here?   TODO
 }
+
+}  // namespace MiniZinc

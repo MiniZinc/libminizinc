@@ -12,8 +12,11 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/utils.hh>
 
-#include <limits>
+#include <cctype>
+#include <charconv>
+#include <memory>
 #include <stdexcept>
+#include <system_error>
 
 #if _WIN32
 #include <io.h>
@@ -28,43 +31,38 @@
 
 namespace MiniZinc {
 
-int parse_int(const std::string& value) {
-  size_t parsed = 0;
-  const int result = std::stoi(value, &parsed, 10);
-  if (parsed != value.size()) {
+namespace {
+/// Parse all of \a value as a base-10 integer. Like std::stoi, leading whitespace and an
+/// explicit plus sign are accepted.
+template <class T>
+T parse_integer(const std::string& value) {
+  const char* first = value.data();
+  const char* last = first + value.size();
+  while (first != last && std::isspace(static_cast<unsigned char>(*first)) != 0) {
+    ++first;
+  }
+  if (last - first > 1 && *first == '+' && first[1] != '-') {
+    ++first;
+  }
+  T result;
+  auto [end, ec] = std::from_chars(first, last, result);
+  if (ec == std::errc::result_out_of_range) {
+    throw std::out_of_range("Integer out of range");
+  }
+  if (ec != std::errc() || end != last) {
     throw std::invalid_argument("Invalid integer");
   }
   return result;
 }
+}  // namespace
 
-long parse_long(const std::string& value) {
-  size_t parsed = 0;
-  const long result = std::stol(value, &parsed, 10);
-  if (parsed != value.size()) {
-    throw std::invalid_argument("Invalid integer");
-  }
-  return result;
-}
-
+int parse_int(const std::string& value) { return parse_integer<int>(value); }
+long parse_long(const std::string& value) { return parse_integer<long>(value); }
 unsigned long parse_unsigned_long(const std::string& value) {
-  const size_t first = value.find_first_not_of(" \t\n\r\f\v");
-  if (first != std::string::npos && value[first] == '-') {
-    throw std::out_of_range("Invalid unsigned integer");
-  }
-  size_t parsed = 0;
-  const unsigned long result = std::stoul(value, &parsed, 10);
-  if (parsed != value.size()) {
-    throw std::invalid_argument("Invalid unsigned integer");
-  }
-  return result;
+  return parse_integer<unsigned long>(value);
 }
-
 unsigned int parse_unsigned_int(const std::string& value) {
-  const unsigned long parsed = parse_unsigned_long(value);
-  if (parsed > std::numeric_limits<unsigned int>::max()) {
-    throw std::out_of_range("Invalid unsigned integer");
-  }
-  return static_cast<unsigned int>(parsed);
+  return parse_integer<unsigned int>(value);
 }
 
 int parse_int_option(const std::string& value, const std::string& option) {
@@ -150,7 +148,7 @@ void dump_stack(const std::vector<EnvI::CallStackEntry>& stack) {
       mzn_write(2, msg, strlen(msg));
       const Location& loc = Expression::cast<Call>(stack[i].e)->decl()->loc();
       msg = loc.filename().c_str();
-      if (msg == nullptr) {
+      if (*msg == '\0') {
         msg = "unknown file";
       } else {
         msg = basename_async_safe(msg);
@@ -191,7 +189,7 @@ void OverflowHandler::install() {
   if (SetThreadStackGuarantee(&stackGuarantee) == 0) {
     std::cerr << "WARNING: Cannot reserve stack for the stack overflow handler.\n";
   }
-  _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo());
+  _ofi = std::make_unique<OverflowInfo>();
 }
 
 void OverflowHandler::setEnv(Env& env) { _ofi->env = &env.envi(); }
@@ -312,7 +310,7 @@ void OverflowHandler::OverflowInfo::overflow(int sig, siginfo_t* info, void* con
 }
 
 void OverflowHandler::install(const char** argv) {
-  _ofi = std::unique_ptr<OverflowInfo>(new OverflowInfo(argv, ::malloc(SIGSTKSZ)));
+  _ofi = std::make_unique<OverflowInfo>(argv, ::malloc(SIGSTKSZ));
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
   return;  // AddressSanitizer reports crashes itself

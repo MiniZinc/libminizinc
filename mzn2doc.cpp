@@ -29,25 +29,24 @@
 #include <iostream>
 
 using namespace MiniZinc;
-using namespace std;
 
 int main(int argc, char** argv) {
-  string filename;
-  vector<string> includePaths;
+  std::string filename;
+  std::vector<std::string> includePaths;
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
   bool flag_index = true;
   bool flag_rst = false;
   int toplevel_groups = 0;
-  string output_base;
-  string header_file;
-  string footer_file;
+  std::string output_base;
+  std::string header_file;
+  std::string footer_file;
 
-  string std_lib_dir;
-  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-    std_lib_dir = string(MZNSTDLIBDIR);
+  std::string std_lib_dir;
+  if (auto dir = FileUtils::get_env("MZN_STDLIB_DIR")) {
+    std_lib_dir = *dir;
   }
-  string globals_dir;
+  std::string globals_dir;
 
   if (argc < 2) {
     goto error;
@@ -55,36 +54,38 @@ int main(int argc, char** argv) {
 
   try {
     for (int i = 1; i < argc; i++) {
-      if (string(argv[i]) == string("-h") || string(argv[i]) == string("--help")) {
+      if (std::string(argv[i]) == std::string("-h") ||
+          std::string(argv[i]) == std::string("--help")) {
         goto error;
       }
-      if (string(argv[i]) == string("--version")) {
+      if (std::string(argv[i]) == std::string("--version")) {
         std::cout << "MiniZinc documentation generator, version " << MZN_VERSION_MAJOR << "."
                   << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << '\n';
         std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61\n";
         std::exit(EXIT_SUCCESS);
       }
-      if (beginswith(string(argv[i]), "-I")) {
-        string include(argv[i]);
+      if (beginswith(argv[i], "-I")) {
+        std::string include(argv[i]);
         if (include.length() > 2) {
-          includePaths.push_back(include.substr(2) + string("/"));
+          includePaths.push_back(include.substr(2) + std::string("/"));
         } else {
           i++;
           if (i == argc) {
             goto error;
           }
-          includePaths.push_back(argv[i] + string("/"));
+          includePaths.push_back(argv[i] + std::string("/"));
         }
-      } else if (string(argv[i]) == string("-v") || string(argv[i]) == string("--verbose")) {
+      } else if (std::string(argv[i]) == std::string("-v") ||
+                 std::string(argv[i]) == std::string("--verbose")) {
         flag_verbose = true;
-      } else if (string(argv[i]) == "--stdlib-dir") {
+      } else if (std::string(argv[i]) == "--stdlib-dir") {
         i++;
         if (i == argc) {
           goto error;
         }
         std_lib_dir = argv[i];
-      } else if (beginswith(string(argv[i]), "-G")) {
-        string filename(argv[i]);
+      } else if (beginswith(argv[i], "-G")) {
+        std::string filename(argv[i]);
         if (filename.length() > 2) {
           globals_dir = filename.substr(2);
         } else {
@@ -94,41 +95,44 @@ int main(int argc, char** argv) {
           }
           globals_dir = argv[i];
         }
-      } else if (string(argv[i]) == "--toplevel-groups") {
+      } else if (std::string(argv[i]) == "--toplevel-groups") {
         i++;
         if (i == argc) {
           goto error;
         }
         toplevel_groups = parse_int_option(argv[i], "--toplevel-groups");
-      } else if (string(argv[i]) == "--html-header" || string(argv[i]) == "--rst-header") {
+      } else if (std::string(argv[i]) == "--html-header" ||
+                 std::string(argv[i]) == "--rst-header") {
         i++;
         if (i == argc) {
           goto error;
         }
-        header_file = string(argv[i]);
-      } else if (string(argv[i]) == "--html-footer" || string(argv[i]) == "--rst-footer") {
+        header_file = std::string(argv[i]);
+      } else if (std::string(argv[i]) == "--html-footer" ||
+                 std::string(argv[i]) == "--rst-footer") {
         i++;
         if (i == argc) {
           goto error;
         }
-        footer_file = string(argv[i]);
-      } else if (string(argv[i]) == "--include-stdlib") {
+        footer_file = std::string(argv[i]);
+      } else if (std::string(argv[i]) == "--include-stdlib") {
         flag_include_stdlib = true;
-      } else if (string(argv[i]) == "--no-index") {
+      } else if (std::string(argv[i]) == "--no-index") {
         flag_index = false;
-      } else if (string(argv[i]) == "--globals-dir" || string(argv[i]) == "--mzn-globals-dir") {
+      } else if (std::string(argv[i]) == "--globals-dir" ||
+                 std::string(argv[i]) == "--mzn-globals-dir") {
         i++;
         if (i == argc) {
           goto error;
         }
         globals_dir = argv[i];
-      } else if (string(argv[i]) == "--output-base") {
+      } else if (std::string(argv[i]) == "--output-base") {
         i++;
         if (i == argc) {
           goto error;
         }
         output_base = argv[i];
-      } else if (string(argv[i]) == "--rst-output") {
+      } else if (std::string(argv[i]) == "--rst-output") {
         flag_rst = true;
         toplevel_groups = 0;
       } else {
@@ -139,8 +143,8 @@ int main(int argc, char** argv) {
         }
         size_t last_dot = input_file.find_last_of('.');
         std::string extension;
-        if (last_dot != string::npos) {
-          extension = input_file.substr(last_dot, string::npos);
+        if (last_dot != std::string::npos) {
+          extension = input_file.substr(last_dot, std::string::npos);
         }
         if (extension == ".mzn") {
           if (filename.empty()) {
@@ -192,11 +196,11 @@ int main(int argc, char** argv) {
     }
 
     {
-      string header;
+      std::string header;
       size_t header_title = std::string::npos;
       size_t title_size = std::string("@TITLE").size();
       if (!header_file.empty()) {
-        std::ifstream hs(FILE_PATH(header_file));
+        std::ifstream hs(FileUtils::to_path(header_file));
         if (!hs.good()) {
           std::cerr << "Cannot open header file " << header_file << "\n";
           std::exit(EXIT_FAILURE);
@@ -205,9 +209,9 @@ int main(int argc, char** argv) {
         header = str;
         header_title = str.find("@TITLE");
       }
-      string footer;
+      std::string footer;
       if (!footer_file.empty()) {
-        std::ifstream hs(FILE_PATH(footer_file));
+        std::ifstream hs(FileUtils::to_path(footer_file));
         if (!hs.good()) {
           std::cerr << "Cannot open footer file " << footer_file << "\n";
           std::exit(EXIT_FAILURE);
@@ -233,7 +237,7 @@ int main(int argc, char** argv) {
           if (flag_verbose) {
             std::cerr << "Typechecking ...";
           }
-          vector<TypeError> typeErrors;
+          std::vector<TypeError> typeErrors;
           MiniZinc::typecheck(env, m, typeErrors, true, false);
           if (!typeErrors.empty()) {
             for (auto& typeError : typeErrors) {
@@ -265,7 +269,8 @@ int main(int argc, char** argv) {
           }
 
           for (auto& doc : docs) {
-            std::ofstream os(FILE_PATH(basedir + doc.filename() + (flag_rst ? ".rst" : ".html")));
+            std::ofstream os(
+                FileUtils::to_path(basedir + doc.filename() + (flag_rst ? ".rst" : ".html")));
             std::string header_replace = header;
             if (header_title != std::string::npos) {
               header_replace = header_replace.replace(header_title, title_size, doc.title());
@@ -293,8 +298,8 @@ int main(int argc, char** argv) {
         if (flag_verbose) {
           std::cerr << '\n';
         }
-        std::copy(istreambuf_iterator<char>(errstream), istreambuf_iterator<char>(),
-                  ostreambuf_iterator<char>(std::cerr));
+        std::copy(std::istreambuf_iterator<char>(errstream), std::istreambuf_iterator<char>(),
+                  std::ostreambuf_iterator<char>(std::cerr));
         exit(EXIT_FAILURE);
       }
     }

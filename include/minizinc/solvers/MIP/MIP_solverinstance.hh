@@ -15,6 +15,8 @@
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
+#include <optional>
+
 namespace MiniZinc {
 
 // can be redefined as compilation parameter
@@ -122,7 +124,7 @@ public:
   VarId exprToVar(Expression* arg);
   void exprToArray(Expression* arg, std::vector<double>& vals);
   void exprToVarArray(Expression* arg, std::vector<VarId>& vars);
-  std::pair<double, bool> exprToConstEasy(Expression* e);
+  std::optional<double> exprToConstEasy(Expression* e);
   double exprToConst(Expression* e);
 
   Ref<Expression> getSolutionValue(Id* id) override;

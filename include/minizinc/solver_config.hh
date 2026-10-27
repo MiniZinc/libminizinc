@@ -317,9 +317,7 @@ class ConfigException : public Exception {
 public:
   /// Construct with message \a msg
   ConfigException(const std::string& msg) : Exception(msg) {}
-  /// Destructor
-  ~ConfigException() throw() override {}
   /// Return description
-  const char* what() const throw() override { return "configuration error"; }
+  const char* what() const noexcept override { return "configuration error"; }
 };
 }  // namespace MiniZinc

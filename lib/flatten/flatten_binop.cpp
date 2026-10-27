@@ -860,7 +860,7 @@ void flatten_linexp_binop(EnvI& env, const Ctx& ctx, VarDecl* r, VarDecl* b, EE&
     // Remove a common integer factor, so that scaled copies of one relation
     // take the same shape. The relation is `sum <= -d`, `sum = -d` or
     // `sum != -d` at this point.
-    if (std::is_same<Lit, IntLit>::value) {
+    if constexpr (std::is_same_v<Lit, IntLit>) {
       Val g = LinearTraits<Lit>::commonDivisor(coeffv);
       if (g > 1) {
         Val rhs = -d;

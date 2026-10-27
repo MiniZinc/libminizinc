@@ -231,7 +231,7 @@ void flatten_linexp_call(EnvI& env, const Ctx& ctx, const Ctx& nctx, ASTString& 
 }
 
 /// Special form of disjunction for SCIP
-bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
+bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig, FunctionI* boundsDisj) {
   auto* pArrayLit = Expression::dynamicCast<ArrayLit>(arg);
   if (nullptr == pArrayLit) {
     return false;
@@ -300,10 +300,9 @@ bool is_totaladd_bounds_disj(EnvI& env, Expression* arg, Call* c_orig) {
                                        make<ArrayLit>(loc, varI),  make<ArrayLit>(loc, isUBF),
                                        make<ArrayLit>(loc, bndF),  make<ArrayLit>(loc, varF)};
 
-  Ref<Call> c = Call::a(Expression::loc(c_orig).introduce(),
-                        env.model->getFnDecls().boundsDisj.second->id(), args);
+  Ref<Call> c = Call::a(Expression::loc(c_orig).introduce(), boundsDisj->id(), args);
   c->type(Type::varbool());
-  c->decl(env.model->getFnDecls().boundsDisj.second);
+  c->decl(boundsDisj);
   env.flatAddItem(make<ConstraintI>(Expression::loc(c_orig).introduce(), c));
   return true;
 }
@@ -940,21 +939,17 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
       if (C_ROOT == ctx.b && cid == env.constants.ids.exists) {
         /// Check the special bounds disjunction for SCIP
         /// Only in root context
-        if (!env.model->getFnDecls().boundsDisj.first) {
-          env.model->getFnDecls().boundsDisj.first = true;
+        auto& boundsDisj = env.model->getFnDecls().boundsDisj;
+        if (!boundsDisj) {
           std::vector<Type> bj_t = {Type::parbool(1), Type::parint(1),   Type::varint(1),
                                     Type::parbool(1), Type::parfloat(1), Type::varfloat(1)};
-          env.model->getFnDecls().boundsDisj.second =
-              env.model->matchFn(env, ASTString("bounds_disj"), bj_t, false);
+          boundsDisj = env.model->matchFn(env, ASTString("bounds_disj"), bj_t, false);
         }
-        /// When the SCIP predicate is declared only
-        bool fBoundsDisj_Maybe = (nullptr != env.model->getFnDecls().boundsDisj.second);
-        if (fBoundsDisj_Maybe) {
-          if (is_totaladd_bounds_disj(env, args[0], c)) {
-            ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
-            ret.r = bind(env, ctx, r, env.constants.literalTrue);
-            return ret;
-          }
+        /// Only when the SCIP predicate is declared
+        if (*boundsDisj != nullptr && is_totaladd_bounds_disj(env, args[0], c, *boundsDisj)) {
+          ret.b = bind(env, Ctx(), b, env.constants.literalTrue);
+          ret.r = bind(env, ctx, r, env.constants.literalTrue);
+          return ret;
         }
       }
 

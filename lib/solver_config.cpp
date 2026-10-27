@@ -18,19 +18,19 @@
 
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
 #include <iterator>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <string>
-
-using namespace std;
 
 namespace MiniZinc {
 
 void json_coerce_assignments_2d(JSONParser& jp, Model* m, const std::vector<std::string>& names) {
   for (auto& i : *m) {
     if (auto* ai = i->dynamicCast<AssignI>()) {
-      std::string ident(ai->id().c_str(), ai->id().size());
+      std::string ident(ai->id());
       if (std::find(names.begin(), names.end(), ident) != names.end()) {
         if (auto* al = Expression::dynamicCast<ArrayLit>(ai->e())) {
           auto ti = make<TypeInst>(Location().introduce(), Type::mkAny(2));
@@ -48,17 +48,17 @@ bool SolverConfig::ExtraFlag::validate(const std::string& v) const {
       case FlagType::T_STRING:
         return range.empty() || std::find(range.begin(), range.end(), v) != range.end();
       case FlagType::T_INT: {
-        long long i = stoll(v);
-        return range.empty() || (i >= stoll(range[0]) && i <= stoll(range[1]));
+        long long i = std::stoll(v);
+        return range.empty() || (i >= std::stoll(range[0]) && i <= std::stoll(range[1]));
       }
       case FlagType::T_FLOAT: {
-        double i = stod(v);
-        return range.empty() || (i >= stod(range[0]) && i <= stod(range[1]));
+        double i = std::stod(v);
+        return range.empty() || (i >= std::stod(range[0]) && i <= std::stod(range[1]));
       }
     }
-  } catch (const invalid_argument&) {
+  } catch (const std::invalid_argument&) {
     return false;
-  } catch (const out_of_range&) {
+  } catch (const std::out_of_range&) {
     return false;
   }
   return false;
@@ -67,7 +67,7 @@ bool SolverConfig::ExtraFlag::validate(const std::string& v) const {
 namespace {
 std::string get_string(AssignI* ai) {
   if (auto* sl = Expression::dynamicCast<StringLit>(ai->e())) {
-    return std::string(sl->v().c_str(), sl->v().size());
+    return std::string(sl->v());
   }
   throw ConfigException("invalid configuration item (right hand side must be string)");
 }
@@ -88,7 +88,7 @@ std::vector<std::string> get_string_list(AssignI* ai) {
     std::vector<std::string> ret;
     for (unsigned int i = 0; i < al->size(); i++) {
       if (auto* sl = Expression::dynamicCast<StringLit>((*al)[i])) {
-        ret.emplace_back(sl->v().c_str(), sl->v().size());
+        ret.emplace_back(sl->v());
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a list of strings)");
@@ -109,8 +109,7 @@ std::vector<std::pair<std::string, std::string> > get_string_pair_list(AssignI* 
       auto* sl1 = Expression::dynamicCast<StringLit>((*al)[i]);
       auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
       if ((sl1 != nullptr) && (sl2 != nullptr)) {
-        ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
-                         std::string(sl2->v().c_str(), sl2->v().size()));
+        ret.emplace_back(std::string(sl1->v()), std::string(sl2->v()));
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -142,9 +141,8 @@ std::vector<std::vector<std::string> > get_default_option_list(AssignI* ai) {
       auto* sl1 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
       auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 2]);
       if ((sl0 != nullptr) && (sl1 != nullptr) && (sl2 != nullptr)) {
-        ret.push_back(std::vector<std::string>({std::string(sl0->v().c_str(), sl0->v().size()),
-                                                std::string(sl1->v().c_str(), sl1->v().size()),
-                                                std::string(sl2->v().c_str(), sl2->v().size())}));
+        ret.push_back(std::vector<std::string>(
+            {std::string(sl0->v()), std::string(sl1->v()), std::string(sl2->v())}));
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a list of strings)");
@@ -177,12 +175,11 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       auto* sl2 = Expression::dynamicCast<StringLit>((*al)[i + 1]);
       StringLit* sl3 = haveType ? Expression::dynamicCast<StringLit>((*al)[i + 2]) : nullptr;
       StringLit* sl4 = haveDefault ? Expression::dynamicCast<StringLit>((*al)[i + 3]) : nullptr;
-      std::string opt_type_full =
-          sl3 != nullptr ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
+      std::string opt_type_full = sl3 != nullptr ? std::string(sl3->v()) : "bool";
       std::vector<std::string> opt_range;
       std::string opt_def;
       if (sl4 != nullptr) {
-        opt_def = std::string(sl4->v().c_str(), sl4->v().size());
+        opt_def = std::string(sl4->v());
       } else if (opt_type_full == "bool") {
         opt_def = "false";
       } else if (opt_type_full == "int") {
@@ -212,8 +209,7 @@ std::vector<SolverConfig::ExtraFlag> get_extra_flag_list(AssignI* ai) {
       }
 
       if ((sl1 != nullptr) && (sl2 != nullptr)) {
-        ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
-                         std::string(sl2->v().c_str(), sl2->v().size()), flag_type, opt_range,
+        ret.emplace_back(std::string(sl1->v()), std::string(sl2->v()), flag_type, opt_range,
                          opt_def);
       } else {
         throw ConfigException(
@@ -254,24 +250,24 @@ struct SortByName {
 
 }  // namespace
 
-SolverConfig SolverConfig::load(const string& filename) {
+SolverConfig SolverConfig::load(const std::string& filename) {
   SolverConfig sc;
   sc._configFile = FileUtils::file_path(filename);
-  ostringstream errstream;
+  std::ostringstream errstream;
   try {
     Env confenv;
     std::unique_ptr<Model> m;
     if (JSONParser::fileIsJSON(filename)) {
       JSONParser jp(confenv.envi());
       try {
-        m.reset(new Model);
+        m = std::make_unique<Model>();
         jp.parse(m.get(), filename, false);
         json_coerce_assignments_2d(jp, m.get(), {"extraFlags"});
       } catch (JSONError& e) {
         throw ConfigException(e.msg());
       }
     } else {
-      vector<string> filenames;
+      std::vector<std::string> filenames;
       filenames.push_back(filename);
       m.reset(parse(confenv, filenames, {}, "", "", {}, {}, false, true, false, false, errstream));
     }
@@ -279,7 +275,7 @@ SolverConfig SolverConfig::load(const string& filename) {
       bool hadId = false;
       bool hadVersion = false;
       bool hadName = false;
-      string basePath = FileUtils::dir_name(sc._configFile);
+      std::string basePath = FileUtils::dir_name(sc._configFile);
       for (auto& i : *m) {
         if (auto* ai = i->dynamicCast<AssignI>()) {
           if (ai->id() == "id") {
@@ -578,7 +574,7 @@ BuiltinSolverConfigs& builtin_solver_configs() {
 void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   int newIdx = static_cast<int>(_solvers.size());
   _solvers.push_back(sc);
-  std::vector<string> sc_tags = sc.tags();
+  std::vector<std::string> sc_tags = sc.tags();
   std::string id = string_to_lower(sc.id());
   std::string name = string_to_lower(sc.name());
   sc_tags.push_back(id);
@@ -592,7 +588,7 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   sc_tags.push_back(name);
 
   // Add default tag if the solver is marked as the overall default
-  DefaultMap::const_iterator def_it = _tagDefault.find("");
+  auto def_it = _tagDefault.find("");
   if (def_it != _tagDefault.end() && def_it->second == id) {
     sc_tags.emplace_back("default");
   }
@@ -621,7 +617,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 
   for (auto& cf : configFiles) {
     if (!cf.empty() && FileUtils::file_exists(cf)) {
-      ostringstream errstream;
+      std::ostringstream errstream;
       try {
         Env userconfenv;
         if (!JSONParser::fileIsJSON(cf)) {
@@ -642,9 +638,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
               _mznlibDir = get_string(ai);
             } else if (ai->id() == "tagDefaults") {
               std::vector<std::pair<std::string, std::string> > tagDefs = get_string_pair_list(ai);
-              for (auto& td : tagDefs) {
-                std::string tag = td.first;
-                std::string solver_id = td.second;
+              for (auto& [tag, solver_id] : tagDefs) {
                 _tagDefault[tag] = solver_id;
               }
             } else if (ai->id() == "solverDefaults") {
@@ -719,19 +713,24 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 }
 
 void SolverConfigs::populate(std::ostream& log) {
-  for (const auto& sc : builtin_solver_configs().builtinSolvers) {
-    addConfig(sc.second);
+  for (const auto& [id, sc] : builtin_solver_configs().builtinSolvers) {
+    addConfig(sc);
   }
 
-  for (const string& cur_path : _solverPath) {
-    std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
-    for (auto& configFile : configFiles) {
+  for (const std::string& cur_path : _solverPath) {
+    std::error_code ec;
+    for (std::filesystem::directory_iterator it(FileUtils::to_path(cur_path), ec), end;
+         !ec && it != end; it.increment(ec)) {
+      std::error_code entryEc;  // An entry that cannot be read is skipped, not fatal
+      if (!it->is_regular_file(entryEc) || it->path().extension() != ".msc") {
+        continue;
+      }
+      auto configFile = FileUtils::to_utf8(it->path());
       try {
-        SolverConfig sc = SolverConfig::load(FileUtils::join_path(cur_path, configFile));
+        SolverConfig sc = SolverConfig::load(configFile);
         addConfig(sc);
       } catch (ConfigException& e) {
-        log << "Warning: error loading solver configuration from file " << cur_path << "/"
-            << configFile << "\n";
+        log << "Warning: error loading solver configuration from file " << configFile << "\n";
         log << "Error was:\n" << e.msg() << "\n";
       }
     }
@@ -743,7 +742,7 @@ void SolverConfigs::populate(std::ostream& log) {
   }
 }
 
-vector<string> SolverConfigs::solvers() const {
+std::vector<std::string> SolverConfigs::solvers() const {
   // Find default solver, if present
   std::string def_id;
   auto def_it = _tagDefault.find("");
@@ -751,7 +750,7 @@ vector<string> SolverConfigs::solvers() const {
     def_id = def_it->second;
   }
   // Create sorted list of solvers
-  vector<string> s;
+  std::vector<std::string> s;
   for (const auto& sc : _solvers) {
     if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) {
       continue;
@@ -807,7 +806,7 @@ namespace {
 std::string get_tag(const std::string& t) { return t.substr(0, t.find('@')); }
 std::string get_version(const std::string& t) {
   size_t sep = t.find('@');
-  return sep == string::npos ? "" : t.substr(sep + 1);
+  return sep == std::string::npos ? "" : t.substr(sep + 1);
 }
 }  // namespace
 
@@ -830,7 +829,7 @@ SolverConfig& SolverConfigs::config(const std::string& _s) {
 
   std::string firstTag;
   if (tags.empty()) {
-    DefaultMap::const_iterator def_it = _tagDefault.find("");
+    auto def_it = _tagDefault.find("");
     if (def_it != _tagDefault.end()) {
       firstTag = def_it->second;
     } else {
@@ -839,7 +838,7 @@ SolverConfig& SolverConfigs::config(const std::string& _s) {
   } else {
     firstTag = tags[0];
   }
-  TagMap::const_iterator tag_it = _tags.find(get_tag(firstTag));
+  auto tag_it = _tags.find(get_tag(firstTag));
 
   if (tag_it == _tags.end()) {
     throw ConfigException("no solver with tag " + get_tag(firstTag) + " found");
@@ -856,7 +855,7 @@ SolverConfig& SolverConfigs::config(const std::string& _s) {
       selectedSolvers.insert(sidx);
     }
   }
-  DefaultMap::const_iterator def_it = _tagDefault.find(get_tag(firstTag));
+  auto def_it = _tagDefault.find(get_tag(firstTag));
   if (def_it != _tagDefault.end()) {
     defaultSolvers.insert(def_it->second);
   }
@@ -917,7 +916,7 @@ std::vector<std::string> SolverConfigs::defaultOptions(const std::string& id) {
 }
 
 void SolverConfigs::registerBuiltinSolver(const SolverConfig& sc) {
-  builtin_solver_configs().builtinSolvers.insert(make_pair(sc.id(), sc));
+  builtin_solver_configs().builtinSolvers.insert(std::make_pair(sc.id(), sc));
 }
 
 }  // namespace MiniZinc

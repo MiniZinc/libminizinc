@@ -14,9 +14,7 @@
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
 
-namespace MiniZinc {
-
-namespace GecodeConstraints {
+namespace MiniZinc::GecodeConstraints {
 
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
@@ -276,5 +274,4 @@ PosterImpl(p_inverse_set);
 PosterImpl(p_precede_set);
 #endif
 
-}  // namespace GecodeConstraints
-}  // namespace MiniZinc
+}  // namespace MiniZinc::GecodeConstraints

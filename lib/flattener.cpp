@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <memory>
 
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverinstance.hh>
@@ -32,21 +33,20 @@
 #include <utility>
 #endif
 
-using namespace std;
-using namespace MiniZinc;
+namespace MiniZinc {
 
-void Flattener::printVersion(ostream& os) {
+void Flattener::printVersion(std::ostream& os) {
   os << "MiniZinc to FlatZinc converter, version " << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR
      << "." << MZN_VERSION_PATCH;
   if (!std::string(MZN_BUILD_REF).empty()) {
     os << ", build " << MZN_BUILD_REF;
   }
   os << '\n';
-  os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
+  os << "Copyright (C) 2014-" << std::string(__DATE__).substr(7, 4)
      << " Monash University, NICTA, Data61\n";
 }
 
-void Flattener::printHelp(ostream& os) const {
+void Flattener::printHelp(std::ostream& os) const {
   os << '\n'
      << "Flattener input options:\n"
      << "  --instance-check-only\n    Check the model instance (including data) for errors, but "
@@ -189,7 +189,7 @@ std::string Flattener::resolveGlobalsDir(const std::string& g,
 bool Flattener::processOption(int& i, std::vector<std::string>& argv,
                               const std::string& workingDir) {
   CLOParser cop(i, argv);
-  string buffer;
+  std::string buffer;
   int intBuffer;
 
   if (cop.getOption("-I --search-dir", &buffer)) {
@@ -270,24 +270,24 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     std::stringstream ss(buffer);
     while (ss.good()) {
       std::string section;
-      getline(ss, section, ',');
+      std::getline(ss, section, ',');
       _fopts.onlySections.insert(section);
     }
   } else if (cop.getOption("--not-sections", &buffer)) {
     std::stringstream ss(buffer);
     while (ss.good()) {
       std::string section;
-      getline(ss, section, ',');
+      std::getline(ss, section, ',');
       _fopts.notSections.insert(section);
     }
   } else if (cop.getOption("- --input-from-stdin")) {
     _flags.stdinInput = true;
   } else if (cop.getOption("-d --data", &buffer)) {
     auto last_dot = buffer.find_last_of('.');
-    if (last_dot == string::npos) {
+    if (last_dot == std::string::npos) {
       return false;
     }
-    auto extension = buffer.substr(last_dot, string::npos);
+    auto extension = buffer.substr(last_dot, std::string::npos);
     if (extension != ".dzn" && extension != ".json") {
       return false;
     }
@@ -405,19 +405,20 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     _flags.shave = false;
     _flags.sac = false;
     _fopts.recordDomainChanges = true;
-  } else if (string(argv[i]) == "--keep-paths") {
+  } else if (std::string(argv[i]) == "--keep-paths") {
     _flags.keepMznPaths = true;
     _fopts.collectMznPaths = true;
-  } else if (string(argv[i]) == "--only-toplevel-presolve") {
+  } else if (std::string(argv[i]) == "--only-toplevel-presolve") {
     _fopts.onlyToplevelPaths = true;
   } else if (cop.getOption("--allow-multiple-assignments")) {
     _flags.allowMultiAssign = true;
   } else if (cop.getOption("--no-half-reifications")) {
     _fopts.enableHalfReification = false;
-  } else if (string(argv[i]) == "--input-is-flatzinc") {
+  } else if (std::string(argv[i]) == "--input-is-flatzinc") {
     _isFlatzinc = true;
   } else if (cop.getOption("--compile-solution-checker", &buffer)) {
-    if (buffer.length() >= 8 && buffer.substr(buffer.length() - 8, string::npos) == ".mzc.mzn") {
+    if (buffer.length() >= 8 &&
+        buffer.substr(buffer.length() - 8, std::string::npos) == ".mzc.mzn") {
       _flags.compileSolutionCheckModel = true;
       _flags.modelCheckOnly = true;
       _filenames.push_back(FileUtils::file_path(buffer, workingDir));
@@ -429,9 +430,9 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     if (buffer.length() <= 4) {
       return false;
     }
-    auto extension = buffer.substr(buffer.length() - 4, string::npos);
+    auto extension = buffer.substr(buffer.length() - 4, std::string::npos);
     auto isChecker =
-        buffer.length() > 8 && buffer.substr(buffer.length() - 8, string::npos) == ".mzc.mzn";
+        buffer.length() > 8 && buffer.substr(buffer.length() - 8, std::string::npos) == ".mzc.mzn";
     if ((extension == ".mzn" && !isChecker) || extension == ".fzn") {
       if (extension == ".fzn") {
         _isFlatzinc = true;
@@ -448,8 +449,9 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
     if (buffer.length() <= 4) {
       return false;
     }
-    if (buffer.substr(buffer.length() - 4, string::npos) != ".mzc" &&
-        (buffer.length() <= 8 || buffer.substr(buffer.length() - 8, string::npos) != ".mzc.mzn")) {
+    if (buffer.substr(buffer.length() - 4, std::string::npos) != ".mzc" &&
+        (buffer.length() <= 8 ||
+         buffer.substr(buffer.length() - 8, std::string::npos) != ".mzc.mzn")) {
       _log << "Error: solution must have extension .mzc or .mzc.mzn\n";
       return false;
     }
@@ -460,13 +462,13 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv,
       return false;
     }
     size_t last_dot = input_file.find_last_of('.');
-    if (last_dot == string::npos) {
+    if (last_dot == std::string::npos) {
       return false;
     }
-    std::string extension = input_file.substr(last_dot, string::npos);
+    std::string extension = input_file.substr(last_dot, std::string::npos);
     if (extension == ".mzc" ||
         (input_file.length() >= 8 &&
-         input_file.substr(input_file.length() - 8, string::npos) == ".mzc.mzn")) {
+         input_file.substr(input_file.length() - 8, std::string::npos) == ".mzc.mzn")) {
       _flagSolutionCheckModel = input_file;
     } else if (extension == ".mzn" || extension == ".fzn") {
       if (extension == ".fzn") {
@@ -499,7 +501,7 @@ Flattener::~Flattener() {
   }
 }
 
-Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass>>& passes) {
+Env* Flattener::multiPassFlatten(const std::vector<std::unique_ptr<Pass>>& passes) {
   Env& e = *getEnv();
 
   Env* pre_env = &e;
@@ -588,13 +590,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     }
   }
 
-  if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputFzn) ||
-      _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputFzn)) {
+  if (_filenames.end() != std::find(_filenames.begin(), _filenames.end(), _flagOutputFzn) ||
+      _datafiles.end() != std::find(_datafiles.begin(), _datafiles.end(), _flagOutputFzn)) {
     _log << "  WARNING: fzn filename '" << _flagOutputFzn << "' matches an input file, ignoring.\n";
     _flagOutputFzn = "";
   }
-  if (_filenames.end() != find(_filenames.begin(), _filenames.end(), _flagOutputOzn) ||
-      _datafiles.end() != find(_datafiles.begin(), _datafiles.end(), _flagOutputOzn)) {
+  if (_filenames.end() != std::find(_filenames.begin(), _filenames.end(), _flagOutputOzn) ||
+      _datafiles.end() != std::find(_datafiles.begin(), _datafiles.end(), _flagOutputOzn)) {
     _log << "  WARNING: ozn filename '" << _flagOutputOzn << "' matches an input file, ignoring.\n";
     _flagOutputOzn = "";
   }
@@ -622,7 +624,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     std::stringstream errstream;
 
     Model* m;
-    _pEnv.reset(new Env(nullptr, _os, _log));
+    _pEnv = std::make_unique<Env>(nullptr, _os, _log);
     if (_cancelled) {
       _pEnv->envi().cancel();
     }
@@ -653,7 +655,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         Printer p(smm_oss, 0, false, &env->envi());
         p.print(smm);
         Env smm_env(smm);
-        vector<TypeError> typeErrors;
+        std::vector<TypeError> typeErrors;
         try {
           MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
           if (!typeErrors.empty()) {
@@ -742,7 +744,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     std::string modelText = modelString;
     if (_flags.stdinInput) {
       std::string input =
-          std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
+          std::string(std::istreambuf_iterator<char>(std::cin), std::istreambuf_iterator<char>());
       modelText += input;
     }
 
@@ -780,7 +782,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           type_demonomorphise_library(*env, m);
           p.print(m);
         }
-        vector<TypeError> typeErrors;
+        std::vector<TypeError> typeErrors;
         MiniZinc::typecheck(
             *env, m, typeErrors,
             _flags.modelTypesOnly || _flags.modelInterfaceOnly || _flags.modelCheckOnly,
@@ -801,7 +803,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (_flags.verbose) {
             _log << "Write solution checker to " << mzc_filename << "\n";
           }
-          std::ofstream mzc_f(FILE_PATH(mzc_filename));
+          std::ofstream mzc_f(FileUtils::to_path(mzc_filename));
           mzc_f << mzc;
           mzc_f.close();
         }
@@ -816,7 +818,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         }
       } else {
         if (_isFlatzinc) {
-          vector<TypeError> typeErrors;
+          std::vector<TypeError> typeErrors;
           MiniZinc::typecheck(*env, m, typeErrors,
                               _flags.modelCheckOnly || _flags.modelInterfaceOnly,
                               _flags.allowMultiAssign, true);
@@ -865,7 +867,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           cfs.modelInterfaceOnly = _flags.modelInterfaceOnly;
           cfs.allowMultiAssign = _flags.allowMultiAssign;
 
-          std::vector<unique_ptr<Pass>> managed_passes;
+          std::vector<std::unique_ptr<Pass>> managed_passes;
 
           if (_flags.twoPass) {
             std::vector<std::string> library{
@@ -904,21 +906,21 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         // variable name so the output is deterministic.
         if (env->envi().assumptionsUsed && !env->envi().assumptionExprs.empty()) {
           std::vector<std::pair<ASTString, std::string>> entries;
-          for (auto& entry : env->envi().assumptionExprs) {
+          for (auto& [name, expr] : env->envi().assumptionExprs) {
             std::ostringstream oss;
             Printer p(oss, 0, false, &env->envi());
-            p.print(entry.second);
-            entries.emplace_back(entry.first, oss.str());
+            p.print(expr);
+            entries.emplace_back(name, oss.str());
           }
           std::sort(entries.begin(), entries.end(),
                     [](const std::pair<ASTString, std::string>& a,
                        const std::pair<ASTString, std::string>& b) { return a.first < b.first; });
           std::vector<Ref<Expression>> tuples;
           tuples.reserve(entries.size());
-          for (const auto& e : entries) {
+          for (const auto& [name, value] : entries) {
             std::vector<Ref<Expression>> fields(2);
-            fields[0] = make<StringLit>(Location().introduce(), e.first);
-            fields[1] = make<StringLit>(Location().introduce(), ASTString(e.second));
+            fields[0] = make<StringLit>(Location().introduce(), name);
+            fields[1] = make<StringLit>(Location().introduce(), ASTString(value));
             auto tuple = ArrayLit::constructTuple(Location().introduce(), raw(fields));
             env->envi().registerTupleType(tuple);  // sets the tuple's `tuple(string, string)` type
             tuples.emplace_back(tuple);
@@ -1073,7 +1075,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (_flags.verbose) {
             _log << "Printing Paths to '" << _flagOutputPaths << "' ..." << std::flush;
           }
-          std::ofstream ofs(FILE_PATH(_flagOutputPaths), ios::out);
+          std::ofstream ofs(FileUtils::to_path(_flagOutputPaths), std::ios::out);
           check_io_status(ofs.good(), " I/O error: cannot open fzn output file. ");
           PathFilePrinter pfp(ofs, env->envi());
           pfp.print(env->flat());
@@ -1130,7 +1132,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (_flags.verbose) {
             _log << "Printing FlatZinc to '" << _flagOutputFzn << "' ..." << std::flush;
           }
-          std::ofstream ofs(FILE_PATH(_flagOutputFzn), ios::out);
+          std::ofstream ofs(FileUtils::to_path(_flagOutputFzn), std::ios::out);
           check_io_status(ofs.good(), " I/O error: cannot open fzn output file. ");
           switch (_flags.fznFormat) {
             case FlattenerFlags::FF_FZN: {
@@ -1172,7 +1174,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (_flags.verbose) {
               _log << "Printing .ozn to '" << _flagOutputOzn << "' ..." << std::flush;
             }
-            std::ofstream ofs(FILE_PATH(_flagOutputOzn), std::ios::out);
+            std::ofstream ofs(FileUtils::to_path(_flagOutputOzn), std::ios::out);
             check_io_status(ofs.good(), " I/O error: cannot open ozn output file. ");
             Printer p(ofs, 0, true, &env->envi());
             std::unique_ptr<Model> ozn(copy(env->envi(), env->output()));
@@ -1227,4 +1229,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 }
 
-void Flattener::printStatistics(ostream& /*os*/) {}
+void Flattener::printStatistics(std::ostream& /*os*/) {}
+
+}  // namespace MiniZinc

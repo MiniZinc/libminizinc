@@ -268,25 +268,6 @@ typedef LinEqHelper<std::vector<double>, std::vector<VarDecl*>> LinEq;
 
 std::vector<double> MIPD_stats(N_POSTs_size);  // NOLINT(bugprone-throwing-static-initialization)
 
-template <class T>
-static std::vector<T> make_vec(T t1, T t2) {
-  T c_array[] = {t1, t2};
-  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
-  return result;
-}
-template <class T>
-static std::vector<T> make_vec(T t1, T t2, T t3) {
-  T c_array[] = {t1, t2, t3};
-  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
-  return result;
-}
-template <class T>
-static std::vector<T> make_vec(T t1, T t2, T t3, T t4) {
-  T c_array[] = {t1, t2, t3, t4};
-  std::vector<T> result(c_array, c_array + sizeof(c_array) / sizeof(c_array[0]));
-  return result;
-}
-
 class MIPD {
 public:
   MIPD(Env* env, bool fV, int nmi, double dmd)
@@ -294,7 +275,7 @@ public:
     getEnv();
     fVerbose = fV;
   }
-  static bool fVerbose;
+  static inline bool fVerbose = false;
   const int nMaxIntv2Bits = 0;           // Maximal interval length to enforce equality encoding
   const double dMaxNValueDensity = 3.0;  // Maximal ratio cardInt() / size() of a domain
                                          // to enforce ee
@@ -347,12 +328,11 @@ private:
   FunctionI* lin_exp_float;
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> int_lin_eq_t = make_vec(Type::parint(1), Type::varint(1), Type::parint());
+  std::vector<Type> int_lin_eq_t = {Type::parint(1), Type::varint(1), Type::parint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> float_lin_eq_t =
-      make_vec(Type::parfloat(1), Type::varfloat(1), Type::parfloat());
+  std::vector<Type> float_lin_eq_t = {Type::parfloat(1), Type::varfloat(1), Type::parfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VIVF = make_vec(Type::varint(), Type::varfloat());
+  std::vector<Type> t_VIVF = {Type::varint(), Type::varfloat()};
 
   //     double float_lt_EPS_coef_ = 1e-5;
 
@@ -391,40 +371,40 @@ private:
 
   /// Possible function param sets
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VII = make_vec(Type::varint(), Type::parint());
+  std::vector<Type> t_VII = {Type::varint(), Type::parint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VIVI = make_vec(Type::varint(), Type::varint());
+  std::vector<Type> t_VIVI = {Type::varint(), Type::varint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VIIVI = make_vec(Type::varint(), Type::parint(), Type::varint());
+  std::vector<Type> t_VIIVI = {Type::varint(), Type::parint(), Type::varint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVI = make_vec(Type::varfloat(), Type::varint());
+  std::vector<Type> t_VFVI = {Type::varfloat(), Type::varint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVF = make_vec(Type::varfloat(), Type::varfloat());
+  std::vector<Type> t_VFVF = {Type::varfloat(), Type::varfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFFVI = make_vec(Type::varfloat(), Type::parfloat(), Type::varint());
+  std::vector<Type> t_VFFVI = {Type::varfloat(), Type::parfloat(), Type::varint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFFVIF =
-      make_vec(Type::varfloat(), Type::parfloat(), Type::varint(), Type::parfloat());
+  std::vector<Type> t_VFFVIF = {Type::varfloat(), Type::parfloat(), Type::varint(),
+                                Type::parfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVIF = make_vec(Type::varfloat(), Type::varint(), Type::parfloat());
+  std::vector<Type> t_VFVIF = {Type::varfloat(), Type::varint(), Type::parfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVIVF = make_vec(Type::varfloat(), Type::varint(), Type::varfloat());
+  std::vector<Type> t_VFVIVF = {Type::varfloat(), Type::varint(), Type::varfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVIVFF =
-      make_vec(Type::varfloat(), Type::varint(), Type::varfloat(), Type::parfloat());
+  std::vector<Type> t_VFVIVFF = {Type::varfloat(), Type::varint(), Type::varfloat(),
+                                 Type::parfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFVFF = make_vec(Type::varfloat(), Type::varfloat(), Type::parfloat());
+  std::vector<Type> t_VFVFF = {Type::varfloat(), Type::varfloat(), Type::parfloat()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VFFF = make_vec(Type::varfloat(), Type::parfloat(), Type::parfloat());
+  std::vector<Type> t_VFFF = {Type::varfloat(), Type::parfloat(), Type::parfloat()};
   //     std::vector<Type> t_VFVFVIF({ Type::varfloat(), Type::varfloat(), Type::varint(),
   //     Type::parfloat() });
 
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VIAVI = make_vec(Type::varint(), Type::varint(1));
+  std::vector<Type> t_VIAVI = {Type::varint(), Type::varint(1)};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VISI = make_vec(Type::varint(), Type::parsetint());
+  std::vector<Type> t_VISI = {Type::varint(), Type::parsetint()};
   // NOLINTNEXTLINE(readability-identifier-naming)
-  std::vector<Type> t_VISIVI = make_vec(Type::varint(), Type::parsetint(), Type::varint());
+  std::vector<Type> t_VISIVI = {Type::varint(), Type::parsetint(), Type::varint()};
 
   //     std::vector<Type> t_intarray(1);
   //     t_intarray[0] = Type::parint(-1);
@@ -873,8 +853,8 @@ private:
     MZN_MIPD_assert_hard(0.0 != std::fabs(coef1));
     nVRest.coef0 /= coef1;
     nVRest.rhs /= coef1;
-    for (auto& rhsL : rhsLin) {
-      rhsL.second /= coef1;
+    for (auto& [var, coef] : rhsLin) {
+      coef /= coef1;
     }
 
     auto it = _mNViews.find(rhsLin);
@@ -1112,8 +1092,8 @@ private:
       }
       DBGOUT_MIPD(" Clique " << _mipd._vVarDescr[_iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
-      for (auto& it1 : leg) {
-        _mipd._vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1U;
+      for (auto& [var, row] : leg) {
+        _mipd._vVarDescr[var->payload()].fDomainConstrProcessed = 1U;
       }
 
       // Propagate the 1st var's relations:
@@ -1129,13 +1109,12 @@ private:
       std::tuple<VarDescr::boolShort, bool, double, int> aCrit = {
           _mipd._vVarDescr[varRef1->payload()].fInt,
           _mipd._vVarDescr[varRef1->payload()].pEqEncoding != nullptr, 1.0, -(varRef1->payload())};
-      for (auto& it2 : mRef0) {
-        VarDescr& vard = _mipd._vVarDescr[it2.first->payload()];
+      for (auto& [var, eq] : mRef0) {
+        VarDescr& vard = _mipd._vVarDescr[var->payload()];
         std::tuple<VarDescr::boolShort, bool, double, int> aCrit1 = {
-            vard.fInt, vard.pEqEncoding != nullptr, std::fabs(it2.second.first),
-            -(it2.first->payload())};
+            vard.fInt, vard.pEqEncoding != nullptr, std::fabs(eq.first), -(var->payload())};
         if (aCrit1 > aCrit) {
-          varRef1 = it2.first;
+          varRef1 = var;
           aCrit = aCrit1;
         }
       }
@@ -1173,8 +1152,8 @@ private:
       // First, construct the domain decomposition in any case
       //         projectVariableConstr( cls.varRef1, std::make_pair(1.0, 0.0) );
       //         if ( nClique >= 0 ) {
-      for (auto& iRef1 : cls.mRef1) {
-        projectVariableConstr(iRef1.first, iRef1.second);
+      for (auto& [vd, eq1] : cls.mRef1) {
+        projectVariableConstr(vd, eq1);
       }
 
       DBGOUT_MIPD("Clique " << nClique << ": main ref var " << cls.varRef1->id()->str()
@@ -1383,13 +1362,12 @@ private:
 
     void makeRangeDomains() {
       auto bnds = sDomain.getBounds();
-      for (auto& iRef1 : cls.mRef1) {
-        VarDecl* vd = iRef1.first;
+      for (auto& [vd, eq1] : cls.mRef1) {
         // projecting the bounds back:
-        double lb0 = (bnds.left - iRef1.second.second) / iRef1.second.first;
-        double ub0 = (bnds.right - iRef1.second.second) / iRef1.second.first;
+        double lb0 = (bnds.left - eq1.second) / eq1.first;
+        double ub0 = (bnds.right - eq1.second) / eq1.first;
         if (lb0 > ub0) {
-          MZN_MIPD_assert_hard(iRef1.second.first < 0.0);
+          MZN_MIPD_assert_hard(eq1.first < 0.0);
           std::swap(lb0, ub0);
         }
         if (vd->type().isint()) {
@@ -1498,11 +1476,9 @@ private:
     /// deletes them as well
     void implementPOSTs() {
       auto bnds = sDomain.getBounds();
-      for (auto& iRef1 : cls.mRef1) {
+      for (auto& [vd, eq1] : cls.mRef1) {
         //           DBGOUT_MIPD_FLUSH( "  MIPD: implementing constraints of variable  " );
         //           DBGOUT_MIPD_SELF( debugprint(vd) );
-        VarDecl* vd = iRef1.first;
-        auto eq1 = iRef1.second;
         const double A = eq1.first;  // vd = A*arg + B.  conversion
         const double B = eq1.second;
         // process calls. Can use the constr type info.
@@ -2284,8 +2260,6 @@ void SetOfIntervals<N>::split2Bits() {
   }
   *(Base*)this = std::move(bsNew);
 }
-
-bool MIPD::fVerbose = false;
 
 void mip_domains(Env& env, bool fVerbose, int nmi, double dmd) {
   MIPD mipd(&env, fVerbose, nmi, dmd);

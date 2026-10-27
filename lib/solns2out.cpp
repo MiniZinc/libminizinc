@@ -14,17 +14,18 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <minizinc/file_utils.hh>
 #include <minizinc/library_bundle.hh>
 #include <minizinc/solns2out.hh>
 #include <minizinc/solver.hh>
 
 #include <fstream>
+#include <memory>
 #include <utility>
 
-using namespace std;
-using namespace MiniZinc;
+namespace MiniZinc {
 
-void Solns2Out::printHelp(ostream& os) {
+void Solns2Out::printHelp(std::ostream& os) {
   os << "Solution output options:\n"
      << "  --ozn-file <file>\n    Read output specification from ozn file.\n"
      << "  -o <file>, --output-to-file <file>\n    Filename for generated output.\n"
@@ -113,10 +114,10 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv,
       return false;
     }
     size_t last_dot = oznfile.find_last_of('.');
-    if (last_dot == string::npos) {
+    if (last_dot == std::string::npos) {
       return false;
     }
-    std::string extension = oznfile.substr(last_dot, string::npos);
+    std::string extension = oznfile.substr(last_dot, std::string::npos);
     if (extension == ".ozn") {
       initFromOzn(oznfile);
       return true;
@@ -137,7 +138,7 @@ bool Solns2Out::initFromEnv(Env* pE) {
 }
 
 void Solns2Out::initFromOzn(const std::string& filename) {
-  std::vector<string> filenames(1, filename);
+  std::vector<std::string> filenames(1, filename);
 
   _includePaths.push_back(stdIncludePath());
 
@@ -191,9 +192,9 @@ void Solns2Out::restoreDefaults() {
   _fNewSol2Print = false;
 }
 
-void Solns2Out::parseAssignments(string& solution) {
-  unique_ptr<Model> sm(parse_from_string(*_env, solution, "solution received from solver",
-                                         _includePaths, false, true, false, false, _log));
+void Solns2Out::parseAssignments(std::string& solution) {
+  std::unique_ptr<Model> sm(parse_from_string(*_env, solution, "solution received from solver",
+                                              _includePaths, false, true, false, false, _log));
   if (sm == nullptr) {
     throw Error("solns2out_base: could not parse solution");
   }
@@ -257,15 +258,15 @@ void Solns2Out::printSolution(std::istream& sol, std::ostream& os, bool outputTi
 }
 
 void Solns2Out::parseStatistics(const std::string& stats, std::ostream& os) {
-  unique_ptr<Model> sm(parse_from_string(*_env, stats, "statistics received from solver",
-                                         _includePaths, false, true, false, false, _log));
+  std::unique_ptr<Model> sm(parse_from_string(*_env, stats, "statistics received from solver",
+                                              _includePaths, false, true, false, false, _log));
   if (sm == nullptr) {
     throw Error("solns2out_base: could not parse statistics");
   }
   StatisticsStream ss(os, opt.flagEncapsulateJSON);
   for (unsigned int i = 0; i < sm->size(); i++) {
     if (auto* ai = (*sm)[i]->dynamicCast<AssignI>()) {
-      ss.add(ai->id().c_str(), ai->e());
+      ss.add(std::string(ai->id()), ai->e());
     }
   }
 }
@@ -275,7 +276,7 @@ bool Solns2Out::evalOutput() {
     return true;
   }
 
-  stringstream oss;
+  std::stringstream oss;
   if (!_checkerModel.empty()) {
     auto& checkerStream = _env->envi().checkerOutput;
     checkerStream.clear();
@@ -408,7 +409,7 @@ void Solns2Out::checkSolution(std::ostream& oss) const {
     } else {
       e.print(oss);
     }
-  } catch (const exception& e) {
+  } catch (const std::exception& e) {
     oss << e.what() << '\n';
   } catch (...) {
     oss << "  UNKNOWN EXCEPTION.\n";
@@ -445,7 +446,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
   } catch (const Exception& e) {
     std::string what = e.what();
     oss << what << (what.empty() ? "" : ": ") << e.msg() << '\n';
-  } catch (const exception& e) {
+  } catch (const std::exception& e) {
     oss << e.what() << '\n';
   } catch (...) {
     oss << "  UNKNOWN EXCEPTION.\n";
@@ -456,7 +457,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
 #endif
 }
 
-bool Solns2Out::evalOutputInternal(ostream& fout) {
+bool Solns2Out::evalOutputInternal(std::ostream& fout) {
   if (nullptr != _outputExpr) {
     _env->envi().evalOutput(fout, _log);
   }
@@ -582,7 +583,7 @@ void Solns2Out::init() {
               eval_string(getEnv()->envi(), (*tuple)[1]);
         }
       } else {
-        _declmap.insert(make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
+        _declmap.insert(std::make_pair(vdi->e()->id()->str(), DE(vdi->e(), vdi->e()->e())));
       }
     }
   }
@@ -590,7 +591,7 @@ void Solns2Out::init() {
   /// Main output file
   if (nullptr == _outStream) {
     if (!opt.flagOutputFile.empty()) {
-      _outStream.reset(new ofstream(FILE_PATH(opt.flagOutputFile)));
+      _outStream = std::make_unique<std::ofstream>(FileUtils::to_path(opt.flagOutputFile));
       MZN_ASSERT_HARD_MSG(_outStream.get(),
                           "solns2out_base: could not allocate stream object for file output into "
                               << opt.flagOutputFile);
@@ -599,14 +600,15 @@ void Solns2Out::init() {
   }
   /// Non-canonical output
   if (opt.flagCanonicalize && (!opt.flagOutputNoncanonical.empty())) {
-    _outStreamNonCanon.reset(new ofstream(FILE_PATH(opt.flagOutputNoncanonical)));
+    _outStreamNonCanon =
+        std::make_unique<std::ofstream>(FileUtils::to_path(opt.flagOutputNoncanonical));
     MZN_ASSERT_HARD_MSG(_outStreamNonCanon.get(),
                         "solns2out_base: could not allocate stream object for non-canon output");
     check_io_status(_outStreamNonCanon->good(), opt.flagOutputNoncanonical, false);
   }
   /// Raw output
   if (!opt.flagOutputRaw.empty()) {
-    _outStreamRaw.reset(new ofstream(FILE_PATH(opt.flagOutputRaw)));
+    _outStreamRaw = std::make_unique<std::ofstream>(FileUtils::to_path(opt.flagOutputRaw));
     MZN_ASSERT_HARD_MSG(_outStreamRaw.get(),
                         "solns2out_base: could not allocate stream object for raw output");
     check_io_status(_outStreamRaw->good(), opt.flagOutputRaw, false);
@@ -629,21 +631,21 @@ std::string Solns2Out::stdIncludePath() const {
 Solns2Out::~Solns2Out() {
   getOutput() << comments;
   if (opt.flagOutputFlush) {
-    getOutput() << flush;
+    getOutput() << std::flush;
   }
 }
 
-ostream& Solns2Out::getOutput() {
+std::ostream& Solns2Out::getOutput() {
   return (((_outStream != nullptr) && _outStream->good()) ? *_outStream : _os);
 }
 
-ostream& Solns2Out::getLog() { return _log; }
+std::ostream& Solns2Out::getLog() { return _log; }
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
-  istringstream solstream(data);
+  std::istringstream solstream(data);
   while (solstream.good()) {
-    string line;
-    getline(solstream, line);
+    std::string line;
+    std::getline(solstream, line);
     if (!_linePart.empty()) {
       line.insert(0, _linePart);
       _linePart.clear();
@@ -678,7 +680,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       if (opt.flagOutputComments) {
         std::istringstream iss(line);
         char c = '_';
-        iss >> skipws >> c;
+        iss >> std::skipws >> c;
         if (iss.good() && '%' == c) {
           bool is_statistic = line.substr(0, 13) == "%%%mzn-stat: ";
           bool is_core = line.substr(0, 13) == "%%%mzn-core: ";
@@ -896,7 +898,7 @@ void Solns2Out::createInputMap() {
   _mapInputStatus[opt.errorMsgDef] = SolverInstance::ERROR;
 }
 
-void Solns2Out::flushStatistics(ostream& os) {
+void Solns2Out::flushStatistics(std::ostream& os) {
   if (!_stats.empty()) {
     // Print any unprocessed statistics
     parseStatistics(_stats, getOutput());
@@ -904,7 +906,7 @@ void Solns2Out::flushStatistics(ostream& os) {
   }
 }
 
-void Solns2Out::printStatistics(ostream& os) {
+void Solns2Out::printStatistics(std::ostream& os) {
   StatisticsStream ss(os, opt.flagEncapsulateJSON);
   ss.add("nSolutions", stats.nSolns);
   if (!_statisticsCheckerModel.empty()) {
@@ -913,3 +915,5 @@ void Solns2Out::printStatistics(ostream& os) {
     ss.add("statisticsCheck", oss.str());
   }
 }
+
+}  // namespace MiniZinc

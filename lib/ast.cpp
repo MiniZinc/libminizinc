@@ -233,8 +233,7 @@ namespace {
 const char* id_name(const Id* id, char* buf, size_t size) {
   long long int idn = id->idn();
   if (idn == -1) {
-    const char* s = id->v().c_str();
-    return s == nullptr ? "" : s;
+    return id->v().c_str();
   }
   if (idn < -1) {
     return "_";
@@ -1117,7 +1116,8 @@ void TypeInst::mkVar(const EnvI& env) {
       for (unsigned int i = 0; i < al->size(); ++i) {
         auto* field_ti = Expression::cast<TypeInst>((*al)[i]);
         field_ti->mkVar(env);
-        auto field_vd = make<VarDecl>(Expression::loc(field_ti), field_ti, rt->fieldName(i));
+        auto field_vd =
+            make<VarDecl>(Expression::loc(field_ti), field_ti, ASTString(rt->fieldName(i)));
         al->set(i, field_vd);
       }
     } else {
@@ -1140,13 +1140,13 @@ void TypeInst::mkPar(EnvI& env) {
   tt.mkPar(env);
   std::vector<std::pair<TypeInst*, Type>> todo({{this, tt}});
   while (!todo.empty()) {
-    auto it = todo.back();
+    auto [ti, t] = todo.back();
     todo.pop_back();
-    it.first->type(it.second);
-    if (it.second.structBT()) {
-      auto* al = Expression::cast<ArrayLit>(it.first->domain());
-      al->type(it.second);
-      auto* st = env.getStructType(it.second);
+    ti->type(t);
+    if (t.structBT()) {
+      auto* al = Expression::cast<ArrayLit>(ti->domain());
+      al->type(t);
+      auto* st = env.getStructType(t);
       assert(st->size() == al->size() ||
              al->size() == 1 && st->size() == 2 && (*st)[1].isunknown());
       for (unsigned int i = 0; i < al->size(); i++) {
@@ -1570,7 +1570,7 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
             ss << "type-inst variable $" << tiid << " instantiated with incompatible types ("
                << tiit.toString(env) << " vs " << it->second.first.toString(env) << ")";
             const auto detail = detail_type_mismatch(env, it->second.first, tiit, strictEnum,
-                                                     std::string("$") + std::string(tiid.c_str()));
+                                                     "$" + std::string(tiid));
             if (!detail.empty()) {
               ss << " (" << detail << ")";
             }
@@ -1650,12 +1650,12 @@ Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, Expression*
     }
   }
   if (strictEnum) {
-    for (auto& it : tmap) {
-      if (it.second.first.bt() == Type::BT_INT && it.second.first.typeId() == 0 &&
-          hadIntInstantiation.find(it.first) == hadIntInstantiation.end()) {
+    for (auto& [name, inst] : tmap) {
+      if (inst.first.bt() == Type::BT_INT && inst.first.typeId() == 0 &&
+          hadIntInstantiation.find(name) == hadIntInstantiation.end()) {
         std::ostringstream ss;
-        ss << "type-inst variable $" << it.first << " used for different enum types";
-        throw TypeError(env, get_loc(it.second.first, call, fi), ss.str());
+        ss << "type-inst variable $" << name << " used for different enum types";
+        throw TypeError(env, get_loc(inst.first, call, fi), ss.str());
       }
     }
   }
@@ -2856,8 +2856,6 @@ ASTString Constants::addString(const std::string& s) {
 Id* Constants::addId(const std::string& s) {
   return immortal(make<Id>(Location(), ASTString(s), nullptr));
 }
-
-const int Constants::max_array_size;
 
 Constants& Constants::constants() {
   static Constants _c;

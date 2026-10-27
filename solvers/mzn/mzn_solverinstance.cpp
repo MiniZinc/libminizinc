@@ -20,8 +20,6 @@
 #include <cstdio>
 #include <fstream>
 
-using namespace std;
-
 namespace MiniZinc {
 
 MZNSolverFactory::MZNSolverFactory() {
@@ -37,18 +35,18 @@ MZNSolverFactory::MZNSolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string MZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
-  string v = "MZN solver plugin, compiled  " __DATE__ "  " __TIME__;
+std::string MZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+  std::string v = "MZN solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string MZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+std::string MZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string MZNSolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
+std::string MZNSolverFactory::getId() { return "org.minizinc.mzn-mzn"; }
 
-void MZNSolverFactory::printHelp(ostream& os) {
+void MZNSolverFactory::printHelp(std::ostream& os) {
   os << "MZN-MZN plugin options:\n"
      << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
      << "  --mzn-flags <options>, --minizinc-flags <options>, --backend-flags <options>\n"
@@ -87,7 +85,7 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                      const std::string& workingDir) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
-  string buffer;
+  std::string buffer;
   int nn = -1;
 
   if (cop.getOption("-m --minizinc-cmd", &buffer)) {
@@ -126,10 +124,10 @@ bool MZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
       return false;
     }
     size_t last_dot = input_file.find_last_of('.');
-    if (last_dot == string::npos) {
+    if (last_dot == std::string::npos) {
       return false;
     }
-    std::string extension = input_file.substr(last_dot, string::npos);
+    std::string extension = input_file.substr(last_dot, std::string::npos);
     if (extension == ".mzn" || extension == ".mzc" || extension == ".fzn" || extension == ".dzn" ||
         extension == ".json") {
       _opt.mznFlags.push_back(input_file);
@@ -152,7 +150,7 @@ SolverInstance::Status MZNSolverInstance::solve() {
     throw Error("No MiniZinc solver specified");
   }
   /// Passing options to solver
-  vector<string> cmd_line;
+  std::vector<std::string> cmd_line;
   cmd_line.push_back(opt.mznSolver);
   for (auto& f : opt.mznFlags) {
     cmd_line.push_back(f);

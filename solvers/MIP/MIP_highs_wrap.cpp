@@ -15,6 +15,7 @@
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -29,7 +30,7 @@ using namespace MiniZinc;
 HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
 #ifdef HIGHS_PLUGIN
   if (dll.empty()) {
-    _inner = std::unique_ptr<Plugin>(new Plugin({
+    _inner = std::make_unique<Plugin>(std::vector<std::string>{
 #ifdef _WIN32
         // HiGHS_jll names the DLL libhighs.dll, found via PATH set by the JLL wrapper.
         FileUtils::progpath() + "\\bin\\highs.dll", "highs", "libhighs"
@@ -38,9 +39,9 @@ HiGHSPlugin::HiGHSPlugin(const std::string& dll) {
 #else
         FileUtils::progpath() + "/../lib/libhighs.so", "libhighs"
 #endif
-    }));
+    });
   } else {
-    _inner = std::unique_ptr<Plugin>(new Plugin(dll));
+    _inner = std::make_unique<Plugin>(dll);
   }
   auto& plugin = *_inner;
 #endif
@@ -465,33 +466,32 @@ void MIPHiGHSWrapper::setOptions() {
                      "Unable to start solution callback");
   }
 
-  for (const auto& it : _options->extraParams) {
-    std::string name = it.first.substr(8);
+  for (const auto& [key, value] : _options->extraParams) {
+    std::string name = key.substr(8);
     HighsInt type;
     checkHiGHSReturn(_plugin->Highs_getOptionType(_highs, name.c_str(), &type),
                      "Unable to find type of option `" + name + "'");
     switch (type) {
       case kHighsOptionTypeBool: {
-        assert(it.second == "true" || it.second == "false");
-        checkHiGHSReturn(_plugin->Highs_setBoolOptionValue(
-                             _highs, name.c_str(), static_cast<HighsInt>(it.second == "true")),
+        assert(value == "true" || value == "false");
+        checkHiGHSReturn(_plugin->Highs_setBoolOptionValue(_highs, name.c_str(),
+                                                           static_cast<HighsInt>(value == "true")),
                          "unable to set HiGHS option `" + name + "'");
         break;
       }
       case kHighsOptionTypeInt: {
-        checkHiGHSReturn(_plugin->Highs_setIntOptionValue(_highs, name.c_str(), stoi(it.second)),
+        checkHiGHSReturn(_plugin->Highs_setIntOptionValue(_highs, name.c_str(), stoi(value)),
                          "unable to set HiGHS option `" + name + "'");
         break;
       }
       case kHighsOptionTypeDouble: {
-        checkHiGHSReturn(_plugin->Highs_setDoubleOptionValue(_highs, name.c_str(), stod(it.second)),
+        checkHiGHSReturn(_plugin->Highs_setDoubleOptionValue(_highs, name.c_str(), stod(value)),
                          "unable to set HiGHS option `" + name + "'");
         break;
       }
       case kHighsOptionTypeString: {
-        checkHiGHSReturn(
-            _plugin->Highs_setStringOptionValue(_highs, name.c_str(), it.second.c_str()),
-            "unable to set HiGHS option `" + name + "'");
+        checkHiGHSReturn(_plugin->Highs_setStringOptionValue(_highs, name.c_str(), value.c_str()),
+                         "unable to set HiGHS option `" + name + "'");
         break;
       }
       default:

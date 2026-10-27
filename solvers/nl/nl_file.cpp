@@ -16,34 +16,32 @@
  *      * A new line is '\n'
  */
 
-using namespace std;
-
 namespace MiniZinc {
 
 /** *** *** *** Helpers *** *** *** **/
 
 /** Create a string representing the name (and unique identifier) from an identifier. */
-string NLFile::getVarName(const Id* id) {
-  stringstream os;
+std::string NLFile::getVarName(const Id* id) {
+  std::stringstream os;
   if (id->idn() != -1) {
     os << "X_INTRODUCED_" << id->idn() << "_";
   } else if (!id->v().empty()) {
     os << id->v();
   }
-  string name = os.str();
+  std::string name = os.str();
   return name;
 }
 
 /** Create a string representing the name (and unique identifier) of a variable from a variable
  * declaration. */
-string NLFile::getVarName(const VarDecl* vd) { return getVarName(vd->id()); }
+std::string NLFile::getVarName(const VarDecl* vd) { return getVarName(vd->id()); }
 
 /** Create a string representing the name (and unique identifier) of a constraint from a specific
  * call expression. */
-string NLFile::getConstraintName(const Call* c) {
-  stringstream os;
+std::string NLFile::getConstraintName(const Call* c) {
+  std::stringstream os;
   os << c->id() << "_" << static_cast<const void*>(c);  // use the memory address as unique ID.
-  string name = os.str();
+  std::string name = os.str();
   return name;
 }
 
@@ -66,8 +64,8 @@ const ArrayLit* NLFile::getArrayLit(const Expression* e) {
 }
 
 /** Create a vector of double from a vector containing Expression being IntLit. */
-vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
-  vector<double> v;
+std::vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
+  std::vector<double> v;
   for (unsigned int i = 0; i < v_int->size(); ++i) {
     double d = static_cast<double>(IntLit::v(Expression::cast<IntLit>((*v_int)[i])).toInt());
     v.push_back(d);
@@ -76,8 +74,8 @@ vector<double> NLFile::fromVecInt(const ArrayLit* v_int) {
 }
 
 /** Create a vector of double from a vector containing Expression being FloatLit. */
-vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
-  vector<double> v;
+std::vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
+  std::vector<double> v;
   for (unsigned int i = 0; i < v_fp->size(); ++i) {
     double d = FloatLit::v(Expression::cast<FloatLit>((*v_fp)[i])).toDouble();
     v.push_back(d);
@@ -86,10 +84,10 @@ vector<double> NLFile::fromVecFloat(const ArrayLit* v_fp) {
 }
 
 /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
-  vector<string> v;
+std::vector<std::string> NLFile::fromVecId(const ArrayLit* v_id) {
+  std::vector<std::string> v;
   for (unsigned int i = 0; i < v_id->size(); ++i) {
-    string s = getVarName(Expression::cast<Id>((*v_id)[i])->decl());
+    std::string s = getVarName(Expression::cast<Id>((*v_id)[i])->decl());
     v.push_back(s);
   }
   return v;
@@ -105,7 +103,7 @@ vector<string> NLFile::fromVecId(const ArrayLit* v_id) {
  */
 void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression* rhs) {
   // Get the name
-  string name = getVarName(vd);
+  std::string name = getVarName(vd);
   // Discriminate according to the type:
   if (ti->isEnum()) {
     should_not_happen("Enum type in the flatzinc");
@@ -125,7 +123,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
         const ArrayLit* aa = getArrayLit(c->arg(0));
         for (unsigned int i = 0; i < aa->size(); ++i) {
           IntSetVal* r = Expression::cast<SetLit>((*aa)[i])->isv();
-          stringstream ss;
+          std::stringstream ss;
           if (r->empty()) {
             ss << "1..0";
           } else {
@@ -192,7 +190,7 @@ void NLFile::addVarDecl(const VarDecl* vd, const TypeInst* ti, const Expression*
 }
 
 /** Add an integer variable declaration to the NL File. */
-void NLFile::addVarDeclInteger(const string& name, const IntSetVal* isv, bool toReport) {
+void NLFile::addVarDeclInteger(const std::string& name, const IntSetVal* isv, bool toReport) {
   // Check that we do not have naming conflict
   assert(variables.find(name) == variables.end());
 
@@ -213,7 +211,7 @@ void NLFile::addVarDeclInteger(const string& name, const IntSetVal* isv, bool to
 }
 
 /** Add a floating point variable declaration to the NL File. */
-void NLFile::addVarDeclFloat(const string& name, const FloatSetVal* fsv, bool toReport) {
+void NLFile::addVarDeclFloat(const std::string& name, const FloatSetVal* fsv, bool toReport) {
   // Check that we do not have naming conflict
   assert(variables.find(name) == variables.end());
   // Check the domain.
@@ -404,7 +402,7 @@ NLToken NLFile::getTokenFromVarOrInt(const Expression* e) {
     return NLToken::n(value);
   }  // Variable
   VarDecl* vd = Expression::cast<Id>(e)->decl();
-  string n = getVarName(vd);
+  std::string n = getVarName(vd);
   return NLToken::v(n);
 }
 
@@ -417,7 +415,7 @@ NLToken NLFile::getTokenFromVarOrFloat(const Expression* e) {
     return NLToken::n(value);
   }  // Variable
   VarDecl* vd = Expression::cast<Id>(e)->decl();
-  string n = getVarName(vd);
+  std::string n = getVarName(vd);
   return NLToken::v(n);
 }
 
@@ -426,15 +424,15 @@ NLToken NLFile::getTokenFromVar(const Expression* e) {
   assert(!Expression::type(e).isPar());
   // Variable
   VarDecl* vd = Expression::cast<Id>(e)->decl();
-  string n = getVarName(vd);
+  std::string n = getVarName(vd);
   return NLToken::v(n);
 }
 
 /** Update an expression graph (only by appending token) with a linear combination
  *  of coefficients and variables. Count as "non linear" for the variables occuring here.
  */
-void NLFile::makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double>& coeffs,
-                           const vector<string>& vars) {
+void NLFile::makeSigmaMult(std::vector<NLToken>& expressionGraph, const std::vector<double>& coeffs,
+                           const std::vector<std::string>& vars) {
   assert(coeffs.size() == vars.size());
   assert(coeffs.size() >= 2);
 
@@ -462,13 +460,13 @@ void NLFile::makeSigmaMult(vector<NLToken>& expressionGraph, const vector<double
 // --- --- --- Linear Builders
 
 /** Create a linear constraint [coeffs] *+ [vars] = value. */
-void NLFile::linconsEq(const Call* c, const vector<double>& coeffs, const vector<string>& vars,
-                       const NLToken& value) {
+void NLFile::linconsEq(const Call* c, const std::vector<double>& coeffs,
+                       const std::vector<std::string>& vars, const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   if (value.isConstant()) {
@@ -485,9 +483,9 @@ void NLFile::linconsEq(const Call* c, const vector<double>& coeffs, const vector
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
-    vector<double> coeffs_(coeffs);
+    std::vector<double> coeffs_(coeffs);
     coeffs_.push_back(-1);
-    vector<string> vars_(vars);
+    std::vector<std::string> vars_(vars);
     vars_.push_back(value.str);
     cons.setJacobian(vars_, coeffs_, this);
   }
@@ -497,13 +495,13 @@ void NLFile::linconsEq(const Call* c, const vector<double>& coeffs, const vector
 }
 
 /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-void NLFile::linconsLe(const Call* c, const vector<double>& coeffs, const vector<string>& vars,
-                       const NLToken& value) {
+void NLFile::linconsLe(const Call* c, const std::vector<double>& coeffs,
+                       const std::vector<std::string>& vars, const NLToken& value) {
   // Create the Algebraic Constraint and set the data
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   if (value.isConstant()) {
@@ -520,9 +518,9 @@ void NLFile::linconsLe(const Call* c, const vector<double>& coeffs, const vector
     cons.range = bound;
     // No non linear part: leave the expression graph empty.
     // Linear part: set the jacobian
-    vector<double> coeffs_(coeffs);
+    std::vector<double> coeffs_(coeffs);
     coeffs_.push_back(-1);
-    vector<string> vars_(vars);
+    std::vector<std::string> vars_(vars);
     vars_.push_back(value.str);
     cons.setJacobian(vars_, coeffs_, this);
   }
@@ -536,13 +534,13 @@ void NLFile::linconsLe(const Call* c, const vector<double>& coeffs, const vector
  *  Warnings:   - Creates a logical constraint
  *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
  */
-void NLFile::linconsPredicate(const Call* c, NLToken::OpCode oc, const vector<double>& coeffs,
-                              const vector<string>& vars, const NLToken& value) {
+void NLFile::linconsPredicate(const Call* c, NLToken::OpCode oc, const std::vector<double>& coeffs,
+                              const std::vector<std::string>& vars, const NLToken& value) {
   // Create the Logical Constraint and set the data
   NLLogicalCons cons(static_cast<int>(logicalConstraints.size()));
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // Create the expression graph (Note: no Jacobian associated with a logical constraint).
@@ -589,7 +587,7 @@ void NLFile::nlconsEq(const Call* c, const NLToken& x, const NLToken& y) {
     NLAlgCons cons;
 
     // Get the name of the constraint
-    string cname = getConstraintName(c);
+    std::string cname = getConstraintName(c);
     cons.name = cname;
 
     // Create the bound of the constraint: equal 0
@@ -597,8 +595,8 @@ void NLFile::nlconsEq(const Call* c, const NLToken& x, const NLToken& y) {
     cons.range = bound;
 
     // Create the jacobian
-    vector<double> coeffs = {1, -1};
-    vector<string> vars = {x.str, y.str};
+    std::vector<double> coeffs = {1, -1};
+    std::vector<std::string> vars = {x.str, y.str};
     cons.setJacobian(vars, coeffs, this);
 
     // Store the constraint
@@ -630,7 +628,7 @@ void NLFile::nlconsLe(const Call* c, const NLToken& x, const NLToken& y) {
     NLAlgCons cons;
 
     // Get the name of the constraint
-    string cname = getConstraintName(c);
+    std::string cname = getConstraintName(c);
     cons.name = cname;
 
     // Create the bound of the constraint: <= 0
@@ -638,8 +636,8 @@ void NLFile::nlconsLe(const Call* c, const NLToken& x, const NLToken& y) {
     cons.range = bound;
 
     // Create the jacobian
-    vector<double> coeffs = {1, -1};
-    vector<string> vars = {x.str, y.str};
+    std::vector<double> coeffs = {1, -1};
+    std::vector<std::string> vars = {x.str, y.str};
     cons.setJacobian(vars, coeffs, this);
 
     // Store the constraint
@@ -658,7 +656,7 @@ void NLFile::nlconsPredicate(const Call* c, NLToken::OpCode oc, const NLToken& x
   NLLogicalCons cons(static_cast<int>(logicalConstraints.size()));
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // Create the expression graph
@@ -677,7 +675,7 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLTok
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // If z is a constant, use the bound, else use the jacobian
@@ -691,8 +689,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::OpCode oc, const NLTok
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs;
-    vector<string> vars;
+    std::vector<double> coeffs;
+    std::vector<std::string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -733,7 +731,7 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLT
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // If z is a constant, use the bound, else use the jacobian
@@ -747,8 +745,8 @@ void NLFile::nlconsOperatorBinary(const Call* c, NLToken::MOpCode moc, const NLT
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs;
-    vector<string> vars;
+    std::vector<double> coeffs;
+    std::vector<std::string> vars;
 
     // If x is a variable different from y (and must be different from z), give it 0 for the linear
     // part
@@ -787,7 +785,7 @@ void NLFile::nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToke
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // If y is a constant, use the bound, else use the jacobian
@@ -801,8 +799,8 @@ void NLFile::nlconsOperatorUnary(const Call* c, NLToken::OpCode oc, const NLToke
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs;
-    vector<string> vars;
+    std::vector<double> coeffs;
+    std::vector<std::string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -833,7 +831,7 @@ void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLTo
   NLAlgCons cons;
 
   // Get the name of the constraint
-  string cname = getConstraintName(c);
+  std::string cname = getConstraintName(c);
   cons.name = cname;
 
   // If y is a constant, use the bound, else use the jacobian
@@ -847,8 +845,8 @@ void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLTo
     NLBound bound = NLBound::makeEqual(0);
     cons.range = bound;
 
-    vector<double> coeffs;
-    vector<string> vars;
+    std::vector<double> coeffs;
+    std::vector<std::string> vars;
 
     // If x is a variable (must be different from y), give it '0' for the linear part
     if (x.isVariable()) {
@@ -881,8 +879,8 @@ void NLFile::nlconsOperatorUnaryLog2(const Call* c, const NLToken& x, const NLTo
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_eq(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsEq(c, coeffs, vars, value);
@@ -892,8 +890,8 @@ void NLFile::consint_lin_eq(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_le(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsLe(c, coeffs, vars, value);
@@ -903,8 +901,8 @@ void NLFile::consint_lin_le(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consint_lin_ne(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecInt(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrInt(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
@@ -997,8 +995,8 @@ void NLFile::int_abs(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_eq(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsEq(c, coeffs, vars, value);
@@ -1008,8 +1006,8 @@ void NLFile::consfp_lin_eq(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_le(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsLe(c, coeffs, vars, value);
@@ -1019,8 +1017,8 @@ void NLFile::consfp_lin_le(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_ne(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::NE, coeffs, vars, value);
@@ -1030,8 +1028,8 @@ void NLFile::consfp_lin_ne(const Call* c) {
 // NOLINTNEXTLINE(readability-identifier-naming)
 void NLFile::consfp_lin_lt(const Call* c) {
   // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-  vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
-  vector<string> vars = fromVecId(getArrayLit(c->arg(1)));
+  std::vector<double> coeffs = fromVecFloat(getArrayLit(c->arg(0)));
+  std::vector<std::string> vars = fromVecId(getArrayLit(c->arg(1)));
   NLToken value = getTokenFromVarOrFloat(c->arg(2));
   // Create the constraint
   linconsPredicate(c, NLToken::OpCode::LT, coeffs, vars, value);
@@ -1256,8 +1254,8 @@ void NLFile::float_tanh(const Call* c) {
  *  Simulate a linear constraint [1, -1]+*[x, y] = 0
  */
 void NLFile::int2float(const Call* c) {
-  vector<double> coeffs = {1, -1};
-  vector<string> vars;
+  std::vector<double> coeffs = {1, -1};
+  std::vector<std::string> vars;
   vars.push_back(getTokenFromVar(c->arg(0)).str);
   vars.push_back(getTokenFromVar(c->arg(1)).str);
   // Create the constraint
@@ -1280,20 +1278,20 @@ void NLFile::addSolve(SolveI::SolveType st, const Expression* e) {
     case SolveI::SolveType::ST_MIN: {
       // Maximize an objective represented by a variable
       objective.minmax = NLObjective::MINIMIZE;
-      string v = getTokenFromVar(e).str;
+      std::string v = getTokenFromVar(e).str;
       // Use the gradient
-      vector<double> coeffs = {1};
-      vector<string> vars = {v};
+      std::vector<double> coeffs = {1};
+      std::vector<std::string> vars = {v};
       objective.setGradient(vars, coeffs);
       break;
     }
     case SolveI::SolveType::ST_MAX: {
       // Maximize an objective represented by a variable
       objective.minmax = NLObjective::MAXIMIZE;
-      string v = getTokenFromVar(e).str;
+      std::string v = getTokenFromVar(e).str;
       // Use the gradient
-      vector<double> coeffs = {1};
-      vector<string> vars = {v};
+      std::vector<double> coeffs = {1};
+      std::vector<std::string> vars = {v};
       objective.setGradient(vars, coeffs);
       break;
     }
@@ -1489,7 +1487,7 @@ unsigned int NLFile::bvCount() const { return static_cast<unsigned int>(vname_bv
 /** *** *** *** Printable *** *** *** **/
 // Note:  * empty line not allowed
 //        * comment only not allowed
-ostream& NLFile::printToStream(ostream& os) const {
+std::ostream& NLFile::printToStream(std::ostream& os) const {
   // Print the header
   NLHeader::printToStream(os, *this);
   os << '\n';
@@ -1502,7 +1500,7 @@ ostream& NLFile::printToStream(ostream& os) const {
     unsigned int acc = 0;
     // Note stop before the last var. Total jacobian count is in the header.
     for (unsigned int i = 0; i < varCount() - 1; ++i) {
-      string name = vnames[i];
+      std::string name = vnames[i];
       acc += variables.at(name).jacobianCount;
       os << acc << "   # " << name << '\n';
     }

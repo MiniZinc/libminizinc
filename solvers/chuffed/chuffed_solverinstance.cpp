@@ -171,24 +171,22 @@ void ChuffedSolverInstance::processFlatZinc() {
     }
 
     _space = new FlatZinc::FlatZincSpace(intVarCount, boolVarCount, 0);
-    for (auto& iv : intVars) {
-      auto name = iv.first->str();
-      _space->newIntVar(iv.second.get(), std::string(name.c_str(), name.size()));
-      if (iv.second->output) {
+    for (auto& [id, spec] : intVars) {
+      _space->newIntVar(spec.get(), std::string(id->str()));
+      if (spec->output) {
         std::unique_ptr<FlatZinc::AST::IntVar> ivn(
             new FlatZinc::AST::IntVar(_space->intVarCount - 1));
         _space->setOutputElem(ivn.get());
       }
     }
-    for (auto& bv : boolVars) {
-      auto name = bv.first->str();
-      std::string label(name.c_str(), name.size());
-      _space->newBoolVar(bv.second.get());
+    for (auto& [id, spec] : boolVars) {
+      std::string label(id->str());
+      _space->newBoolVar(spec.get());
       BoolView newbv = _space->bv[_space->boolVarCount - 1];
-      boolVarString.emplace(newbv, bv.second->assigned ? "ASSIGNED_AT_ROOT" : label);
+      boolVarString.emplace(newbv, spec->assigned ? "ASSIGNED_AT_ROOT" : label);
       litString.emplace(toInt(newbv.getLit(true)), label + "=true");
       litString.emplace(toInt(newbv.getLit(false)), label + "=false");
-      if (bv.second->output) {
+      if (spec->output) {
         std::unique_ptr<FlatZinc::AST::BoolVar> bvn(
             new FlatZinc::AST::BoolVar(_space->boolVarCount - 1));
         _space->setOutputElem(bvn.get());
@@ -206,12 +204,12 @@ void ChuffedSolverInstance::processFlatZinc() {
           return new FlatZinc::AST::IntLit(v);
         }
         case Expression::E_STRINGLIT: {
-          return new FlatZinc::AST::String(Expression::cast<StringLit>(e)->v().c_str());
+          return new FlatZinc::AST::String(std::string(Expression::cast<StringLit>(e)->v()));
         }
         case Expression::E_ID: {
           auto* ident = Expression::cast<Id>(e);
           if (ident->type().isAnn()) {
-            return new FlatZinc::AST::Atom(ident->str().c_str());
+            return new FlatZinc::AST::Atom(std::string(ident->str()));
           }
           if (ident->type().dim() > 0) {
             assert(ident->decl()->e() != nullptr);
@@ -226,13 +224,13 @@ void ChuffedSolverInstance::processFlatZinc() {
         case Expression::E_CALL: {
           auto* c = Expression::cast<Call>(e);
           if (c->argCount() == 1) {
-            return new FlatZinc::AST::Call(c->id().c_str(), toNode(c->arg(0)));
+            return new FlatZinc::AST::Call(std::string(c->id()), toNode(c->arg(0)));
           }
           std::vector<FlatZinc::AST::Node*> args(c->argCount());
           for (unsigned int i = 0; i < c->argCount(); i++) {
             args[i] = toNode(c->arg(i));
           }
-          return new FlatZinc::AST::Call(c->id().c_str(), new FlatZinc::AST::Array(args));
+          return new FlatZinc::AST::Call(std::string(c->id()), new FlatZinc::AST::Array(args));
         }
         case Expression::E_ARRAYLIT: {
           auto* al = Expression::cast<ArrayLit>(e);
@@ -305,10 +303,10 @@ void ChuffedSolverInstance::processFlatZinc() {
             for (const auto& ann : Expression::ann(c)) {
               annotations.push_back(toNode(ann));
             }
-            ann = std::unique_ptr<FlatZinc::AST::Array>(new FlatZinc::AST::Array(annotations));
+            ann = std::make_unique<FlatZinc::AST::Array>(annotations);
           }
           FlatZinc::FlatZincSpace::postConstraint(
-              FlatZinc::ConExpr(c->id().c_str(), new FlatZinc::AST::Array(args)), ann.get());
+              FlatZinc::ConExpr(std::string(c->id()), new FlatZinc::AST::Array(args)), ann.get());
         }
       }
     }
@@ -321,7 +319,7 @@ void ChuffedSolverInstance::processFlatZinc() {
       for (const auto& ann : si->ann()) {
         annotations.push_back(toNode(ann));
       }
-      ann = std::unique_ptr<FlatZinc::AST::Array>(new FlatZinc::AST::Array(annotations));
+      ann = std::make_unique<FlatZinc::AST::Array>(annotations);
     }
 
     switch (si->st()) {

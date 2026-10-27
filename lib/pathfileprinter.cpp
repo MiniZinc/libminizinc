@@ -16,15 +16,12 @@
 
 namespace MiniZinc {
 
-using std::string;
-using std::vector;
-
 PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& /*env*/) : _os(o), _constraintIndex(0) {}
 
-void PathFilePrinter::addBetterName(Id* id, const string& name, const string& path,
+void PathFilePrinter::addBetterName(Id* id, const std::string& name, const std::string& path,
                                     bool overwrite = false) {
-  string oname;
-  string opath;
+  std::string oname;
+  std::string opath;
 
   auto it = _betternames.find(id);
   if (it != _betternames.end()) {
@@ -42,14 +39,14 @@ void PathFilePrinter::addBetterName(Id* id, const string& name, const string& pa
   _betternames[id] = NamePair(oname, opath);
 }
 
-string path2name(const string& path) {
+std::string path2name(const std::string& path) {
   std::stringstream name;
 
   size_t idpos = path.rfind("id:");
-  if (idpos != string::npos) {
+  if (idpos != std::string::npos) {
     idpos += 3;
     size_t semi = path.find(';', idpos);
-    if (semi != string::npos) {
+    if (semi != std::string::npos) {
       // Variable name
       name << path.substr(idpos, semi - idpos);
 
@@ -58,10 +55,10 @@ string path2name(const string& path) {
       size_t ilpos = semi - idpos;
       do {
         ilpos = path.find("il:", ilpos);
-        if (ilpos != string::npos) {
+        if (ilpos != std::string::npos) {
           ilpos += 3;
           semi = path.find(';', ilpos);
-          if (semi != string::npos) {
+          if (semi != std::string::npos) {
             if (dim == 0) {
               name << "[";
             } else {
@@ -71,14 +68,14 @@ string path2name(const string& path) {
             dim++;
           }
         }
-      } while (ilpos != string::npos);
+      } while (ilpos != std::string::npos);
 
       if (dim > 0) {
         name << "?]";
       }
 
       // Check for anon
-      if (path.find(":anon") != string::npos || path.find('=') != string::npos) {
+      if (path.find(":anon") != std::string::npos || path.find('=') != std::string::npos) {
         name.str("");
         name.clear();
       }
@@ -104,12 +101,12 @@ void PathFilePrinter::buildMap(Model* m) {
 
                 // Array of sets
                 ArrayLit& dimsets = *Expression::cast<ArrayLit>(ca->arg(0));
-                vector<IntVal> dims(dimsets.size(), 1);
+                std::vector<IntVal> dims(dimsets.size(), 1);
                 for (unsigned int i = 0; i < dimsets.size(); i++) {
                   auto* sl = Expression::cast<SetLit>(dimsets[i]);
                   dims[i] = sl->isv()->card();
                 }
-                vector<IntVal> dimspan(dims.size(), 1);
+                std::vector<IntVal> dimspan(dims.size(), 1);
                 for (unsigned int i = 0; i < dims.size(); i++) {
                   for (unsigned int j = i + 1; j < dims.size(); j++) {
                     dimspan[i] *= dims[j];
@@ -132,8 +129,7 @@ void PathFilePrinter::buildMap(Model* m) {
           }
         } else if (ca->id() == Constants::constants().ann.mzn_path) {
           auto* sl = Expression::cast<StringLit>(ca->arg(0));
-          addBetterName(e->id(), path2name(string(sl->v().c_str(), sl->v().size())),
-                        string(sl->v().c_str()));
+          addBetterName(e->id(), path2name(std::string(sl->v())), std::string(sl->v()));
         }
       }
     }
@@ -160,9 +156,9 @@ void PathFilePrinter::print(Item* item) {
       if (np.first.empty()) {
         _os << *id << "\t";
       } else {
-        string name = np.first;
+        std::string name = np.first;
         _os << name;
-        if (name.find('?') != string::npos) {
+        if (name.find('?') != std::string::npos) {
           _os << "(" << *id << ")";
         }
         _os << "\t";
@@ -219,9 +215,9 @@ void PathFilePrinter::json(Model* m) {
         if (np.first.empty()) {
           _os << Printer::escapeStringLit(id->str());
         } else {
-          string name = np.first;
+          std::string name = np.first;
           _os << Printer::escapeStringLit(name);
-          if (name.find('?') != string::npos) {
+          if (name.find('?') != std::string::npos) {
             _os << "(" << Printer::escapeStringLit(id->str()) << ")";
           }
         }

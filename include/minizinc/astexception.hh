@@ -29,8 +29,7 @@ protected:
 public:
   CyclicIncludeError(std::vector<ASTString> cycle)
       : Exception(""), _cycle(std::make_shared<const std::vector<ASTString>>(std::move(cycle))) {}
-  ~CyclicIncludeError() throw() override {}
-  const char* what() const throw() override { return "cyclic include error"; }
+  const char* what() const noexcept override { return "cyclic include error"; }
 
   void print(std::ostream& os) const override;
   void json(std::ostream& os) const override;
@@ -45,7 +44,6 @@ protected:
 public:
   LocationException(Location loc, const std::string& msg);
   LocationException(EnvI& env, Location loc, const std::string& msg);
-  ~LocationException() throw() override {}
   const Location& loc() const { return _loc; }
 
   bool dumpStack() const { return _dumpStack; }
@@ -70,8 +68,7 @@ public:
       : LocationException(loc, msg),
         _currentLine(std::make_shared<const std::string>(std::move(currentLine))),
         _includeStack(std::make_shared<const std::vector<ASTString>>(std::move(includeStack))) {}
-  ~SyntaxError() throw() override {}
-  const char* what() const throw() override { return "syntax error"; }
+  const char* what() const noexcept override { return "syntax error"; }
 
   void print(std::ostream& os) const override;
   void json(std::ostream& os) const override;
@@ -81,16 +78,14 @@ class IncludeError : public LocationException {
 public:
   IncludeError(EnvI& env, const Location& loc, const std::string& msg)
       : LocationException(env, loc, msg) {}
-  ~IncludeError() throw() override {}
-  const char* what() const throw() override { return "include error"; }
+  const char* what() const noexcept override { return "include error"; }
 };
 
 class TypeError : public LocationException {
 public:
   TypeError(EnvI& env, const Location& loc, const std::string& msg)
       : LocationException(env, loc, msg) {}
-  ~TypeError() throw() override {}
-  const char* what() const throw() override { return "type error"; }
+  const char* what() const noexcept override { return "type error"; }
 };
 
 class EvalError : public LocationException {
@@ -103,16 +98,14 @@ public:
     ss << msg << " '" << name << "'";
     setMsg(ss.str());
   }
-  ~EvalError() throw() override {}
-  const char* what() const throw() override { return "evaluation error"; }
+  const char* what() const noexcept override { return "evaluation error"; }
 };
 
 class AssertionError : public EvalError {
 public:
   AssertionError(EnvI& env, const Location& loc, const std::string& msg)
       : EvalError(env, loc, msg) {}
-  ~AssertionError() throw() override {}
-  const char* what() const throw() override { return "assertion failed"; }
+  const char* what() const noexcept override { return "assertion failed"; }
 };
 
 class ModelInconsistent : public LocationException {
@@ -120,8 +113,7 @@ public:
   ModelInconsistent(EnvI& env, const Location& loc, const std::string& msg = "")
       : LocationException(env, loc,
                           "model inconsistency detected" + (msg.empty() ? msg : ":  ") + msg) {}
-  ~ModelInconsistent() throw() override {}
-  const char* what() const throw() override { return "warning"; }
+  const char* what() const noexcept override { return "warning"; }
 };
 
 class ResultUndefinedError : public LocationException {
@@ -130,8 +122,7 @@ private:
 
 public:
   ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg);
-  ~ResultUndefinedError() throw() override {}
-  const char* what() const throw() override { return "result of evaluation is undefined"; }
+  const char* what() const noexcept override { return "result of evaluation is undefined"; }
   int warningIdx() const { return _warningIdx; }
 };
 

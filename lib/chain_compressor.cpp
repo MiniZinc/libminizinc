@@ -135,9 +135,8 @@ void ImpCompressor::compress() {
           auto* var = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*positive)[0]));
           if (var != nullptr) {
             bool output_var = Expression::ann(var).contains(_env.constants.ann.output_var);
-            auto usages = _env.varOccurrences.usages(var);
-            output_var = output_var || usages.second;
-            int occurrences = usages.first;
+            auto [occurrences, isOutput] = _env.varOccurrences.usages(var);
+            output_var = output_var || isOutput;
             unsigned long lhs_occurences = count(var);
             bool is_fixed = var->ti()->domain() != nullptr;
 #ifndef NDEBUG
@@ -183,12 +182,12 @@ void ImpCompressor::compress() {
     if ((lhs != nullptr) && (rhs != nullptr)) {
       assert(count(rhs) > 0);
 
-      auto range = find(rhs);
+      auto [begin, end] = find(rhs);
       std::vector<Item*> to_process;
-      for (auto match = range.first; match != range.second; ++match) {
+      for (auto match = begin; match != end; ++match) {
         to_process.push_back(match->second);
       }
-      _items.erase(range.first, range.second);
+      _items.erase(begin, end);
       for (auto* item : to_process) {
         bool success = compressItem(item, rhs, lhs);
         assert(success);
@@ -230,8 +229,8 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* oldLHS, VarDecl* newLHS) {
         } else {
           contents[i] = vd->id();
           // Remove ci from multimap for other negative variables
-          auto range = find(vd);
-          for (auto it = range.first; it != range.second; ++it) {
+          auto [begin, end] = find(vd);
+          for (auto it = begin; it != end; ++it) {
             if (it->second == ci) {
               _items.erase(it);
               break;
@@ -443,18 +442,16 @@ void LECompressor::compress() {
             }
             bool output_var = Expression::ann(neg).contains(_env.constants.ann.output_var);
 
-            auto usages = _env.varOccurrences.usages(neg);
-            int occurrences = usages.first;
-            output_var = output_var || usages.second;
+            auto [occurrences, isOutput] = _env.varOccurrences.usages(neg);
+            output_var = output_var || isOutput;
             unsigned long lhs_occurences = count(neg);
             bool compress = !output_var;
             auto search = _aliasMap.find(neg);
 
             if (search != _aliasMap.end()) {
               alias = search->second;
-              auto alias_usages = _env.varOccurrences.usages(alias);
-              int alias_occ = alias_usages.first;
-              compress = compress && (!alias_usages.second);
+              auto [alias_occ, alias_output] = _env.varOccurrences.usages(alias);
+              compress = compress && (!alias_output);
               unsigned long alias_lhs_occ = count(alias);
               // neg is only allowed to occur:
               // - once in the "implication"
@@ -485,14 +482,14 @@ void LECompressor::compress() {
     if ((lhs != nullptr) && (rhs != nullptr)) {
       assert(count(rhs) + count(alias) > 0);
 
-      auto range = find(rhs);
+      auto [begin, end] = find(rhs);
 
       {
         std::vector<Item*> to_process;
-        for (auto match = range.first; match != range.second; ++match) {
+        for (auto match = begin; match != end; ++match) {
           to_process.push_back(match->second);
         }
-        _items.erase(range.first, range.second);
+        _items.erase(begin, end);
         for (auto* item : to_process) {
           leReplaceVar<IntLit>(item, rhs, lhs);
         }
@@ -518,13 +515,13 @@ void LECompressor::compress() {
           addItem(VarDeclI::a(Expression::loc(lhs).introduce(), i2f_lhs));
         }
 
-        auto arange = find(alias);
+        auto [abegin, aend] = find(alias);
         {
           std::vector<Item*> to_process;
-          for (auto match = arange.first; match != arange.second; ++match) {
+          for (auto match = abegin; match != aend; ++match) {
             to_process.push_back(match->second);
           }
-          _items.erase(arange.first, arange.second);
+          _items.erase(abegin, aend);
           for (auto* item : to_process) {
             leReplaceVar<FloatLit>(item, alias, i2f_lhs);
           }

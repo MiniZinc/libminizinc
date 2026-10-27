@@ -1,5 +1,8 @@
 #line 17 "/Users/guidot/Programming/MiniZinc/libmzn/lib/support/regex/lexer.lxx"
+#include <charconv>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <string>
 
 
@@ -1232,7 +1235,13 @@ YY_RULE_SETUP
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-{ regex_yylval.iValue = std::stoi(std::string(regex_yytext)); return R_INTEGER; }
+{
+  const char* end = regex_yytext + std::strlen(regex_yytext);
+  if (std::from_chars(regex_yytext, end, regex_yylval.iValue).ec != std::errc()) {
+    throw std::out_of_range("Integer out of range in regular expression: '" + std::string(regex_yytext) + "'");
+  }
+  return R_INTEGER;
+}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP

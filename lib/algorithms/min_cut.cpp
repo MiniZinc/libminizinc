@@ -22,8 +22,6 @@ void Algorithms::MinCut::solve() {
 
   // A graphic of the min-cut is available at
   // <http://www.boost.org/doc/libs/release/libs/graph/doc/stoer_wagner_imgs/stoer_wagner.cpp.gif>
-  using namespace std;
-
   typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::no_property,
                                 boost::property<boost::edge_weight_t, double> >
       undirected_graph;
@@ -37,8 +35,8 @@ void Algorithms::MinCut::solve() {
                                     //   std::vector< weight_type > ws_array;
 
   edges_array.reserve(edges.size());
-  for (const auto& edg : edges)
-    edges_array.push_back(std::pair<unsigned long, unsigned long>(edg.first, edg.second));
+  for (const auto& [from, to] : edges)
+    edges_array.push_back(std::pair<unsigned long, unsigned long>(from, to));
 
   // for each of the 16 edges, define the associated edge weight. ws[i] is the weight for the edge
   // that is described by edges[i].

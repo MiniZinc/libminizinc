@@ -24,7 +24,9 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
+#include <optional>
 #include <random>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -292,24 +294,26 @@ public:
     assert(i < size());
     return _fields[i].second;
   }
-  std::string fieldName(unsigned int i) const {
+  /// Name of field \a i (borrowed: valid while this record type exists)
+  std::string_view fieldName(unsigned int i) const {
     assert(i < size());
+    std::string_view names(_fieldNames);
     if (i + 1 < size()) {
-      return _fieldNames.substr(_fields[i].first, _fields[i + 1].first - _fields[i].first);
+      return names.substr(_fields[i].first, _fields[i + 1].first - _fields[i].first);
     }
-    return _fieldNames.substr(_fields[i].first);
+    return names.substr(_fields[i].first);
   }
-  std::pair<bool, unsigned int> findField(const ASTString& name) const {
+  std::optional<unsigned int> findField(const ASTString& name) const {
     for (unsigned int i = 0; i < size(); ++i) {
       if (fieldName(i) == name) {
-        return {true, i};
+        return i;
       }
     }
-    return {false, 0};
+    return std::nullopt;
   };
   size_t hash() const {
     std::size_t seed = _size;
-    std::hash<std::string> h;
+    std::hash<std::string_view> h;
     for (unsigned int i = 0; i < _size; ++i) {
       seed ^= h(fieldName(i)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       seed ^= _fields[i].second.toInt() + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -516,8 +520,8 @@ public:
   public:
     /// The index of an array that equals \a al, or nullptr
     std::shared_ptr<const ArgValIndex> find(ArrayLit* al) {
-      auto range = _m.equal_range(Expression::hash(al));
-      for (auto it = range.first; it != range.second;) {
+      auto [begin, end] = _m.equal_range(Expression::hash(al));
+      for (auto it = begin; it != end;) {
         ArrayLit* key = it->second.al.get();
         if (key == nullptr) {
           it = _m.erase(it);
@@ -795,9 +799,7 @@ struct RecordFieldSort {
   bool operator()(const std::pair<ASTString, Type>& a, const std::pair<ASTString, Type>& b) const {
     return operator()(a.first, b.first);
   }
-  bool operator()(const ASTString& a, const ASTString& b) const {
-    return std::strcmp(a.c_str(), b.c_str()) < 0;
-  }
+  bool operator()(const ASTString& a, const ASTString& b) const { return a < b; }
 };
 
 template <class Lit>

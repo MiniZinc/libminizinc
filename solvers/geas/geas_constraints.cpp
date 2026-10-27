@@ -18,8 +18,7 @@
 #include <geas/constraints/builtins.h>
 #include <geas/constraints/flow/flow.h>
 
-namespace MiniZinc {
-namespace GeasConstraints {
+namespace MiniZinc::GeasConstraints {
 
 #define SI (static_cast<GeasSolverInstance&>(s))
 #define SD SI.solverData()
@@ -775,7 +774,6 @@ void p_table_int(SolverInstanceBase& s, const Call* call) {
   geas::table::post(SD, id, vars);
 }
 
-}  // namespace GeasConstraints
-}  // namespace MiniZinc
+}  // namespace MiniZinc::GeasConstraints
 
 #pragma clang diagnostic pop

@@ -98,7 +98,7 @@ void check_par_domain(EnvI& env, VarDecl* vd, Expression* rhs, int argNumber,
       for (unsigned int i = 0; i < al->size(); i++) {
         Ref<Expression> access;
         if (hadError) {
-          auto field = make<Id>(Location().introduce(), rt->fieldName(i), nullptr);
+          auto field = make<Id>(Location().introduce(), ASTString(rt->fieldName(i)), nullptr);
           access = make<FieldAccess>(Location().introduce(), it.accessor, field);
         }
         todo.emplace_back(access, (*al)[i], Expression::cast<TypeInst>((*domains)[i]));
@@ -227,15 +227,15 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
   // TODO: more specific error messages
   std::vector<std::pair<Expression*, TypeInst*>> todo({{v, fi->ti()}});
   while (!todo.empty()) {
-    auto entry = todo.back();
+    auto [e, ti] = todo.back();
     todo.pop_back();
 
-    if (Expression::type(entry.first).dim() > 0) {
-      auto al = eval_array_lit(env, entry.first);
-      for (unsigned int i = 0; i < entry.second->ranges().size(); i++) {
-        if ((entry.second->ranges()[i]->domain() != nullptr) &&
-            !Expression::isa<TIId>(entry.second->ranges()[i]->domain())) {
-          Ref<IntSetVal> isv = eval_intset(env, entry.second->ranges()[i]->domain());
+    if (Expression::type(e).dim() > 0) {
+      auto al = eval_array_lit(env, e);
+      for (unsigned int i = 0; i < ti->ranges().size(); i++) {
+        if ((ti->ranges()[i]->domain() != nullptr) &&
+            !Expression::isa<TIId>(ti->ranges()[i]->domain())) {
+          Ref<IntSetVal> isv = eval_intset(env, ti->ranges()[i]->domain());
           if (index_set_violation(isv, al->min(i), al->max(i))) {
             throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                        "function result violates function type-inst");
@@ -243,51 +243,51 @@ void check_struct_retval(EnvI& env, Expression* v, FunctionI* fi) {
         }
       }
       for (unsigned int i = 0; i < al->size(); i++) {
-        todo.emplace_back((*al)[i], entry.second);
+        todo.emplace_back((*al)[i], ti);
       }
       continue;
     }
 
-    if (entry.second->domain() == nullptr || Expression::isa<TIId>(entry.second->domain())) {
+    if (ti->domain() == nullptr || Expression::isa<TIId>(ti->domain())) {
       continue;
     }
 
-    if (Expression::type(entry.first).structBT()) {
-      auto domains = eval_array_lit(env, entry.second->domain());
-      auto al = eval_array_lit(env, entry.first);
+    if (Expression::type(e).structBT()) {
+      auto domains = eval_array_lit(env, ti->domain());
+      auto al = eval_array_lit(env, e);
       for (unsigned int i = 0; i < al->size(); i++) {
         todo.emplace_back((*al)[i], Expression::cast<TypeInst>((*domains)[i]));
       }
       continue;
     }
 
-    if (Expression::type(entry.first) == Type::parint()) {
-      Ref<IntSetVal> isv = eval_intset(env, entry.second->domain());
-      IntVal v = eval_int(env, entry.first);
+    if (Expression::type(e) == Type::parint()) {
+      Ref<IntSetVal> isv = eval_intset(env, ti->domain());
+      IntVal v = eval_int(env, e);
       if (!isv->contains(v)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (Expression::type(entry.first) == Type::parfloat()) {
-      Ref<FloatSetVal> fsv = eval_floatset(env, entry.second->domain());
-      FloatVal v = eval_float(env, entry.first);
+    } else if (Expression::type(e) == Type::parfloat()) {
+      Ref<FloatSetVal> fsv = eval_floatset(env, ti->domain());
+      FloatVal v = eval_float(env, e);
       if (!fsv->contains(v)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (Expression::type(entry.first) == Type::parsetint()) {
-      Ref<IntSetVal> isv = eval_intset(env, entry.second->domain());
+    } else if (Expression::type(e) == Type::parsetint()) {
+      Ref<IntSetVal> isv = eval_intset(env, ti->domain());
       IntSetRanges ir(isv);
-      Ref<IntSetVal> rsv = eval_intset(env, entry.first);
+      Ref<IntSetVal> rsv = eval_intset(env, e);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
                                    "function result violates function type-inst");
       }
-    } else if (Expression::type(entry.first) == Type::parsetfloat()) {
-      Ref<FloatSetVal> fsv = eval_floatset(env, entry.second->domain());
+    } else if (Expression::type(e) == Type::parsetfloat()) {
+      Ref<FloatSetVal> fsv = eval_floatset(env, ti->domain());
       FloatSetRanges fr(fsv);
-      Ref<FloatSetVal> rsv = eval_floatset(env, entry.first);
+      Ref<FloatSetVal> rsv = eval_floatset(env, e);
       FloatSetRanges rr(rsv);
       if (!Ranges::subset(rr, fr)) {
         throw ResultUndefinedError(env, Expression::loc(fi->e()),
@@ -2289,7 +2289,7 @@ std::string eval_string(EnvI& env, Expression* e) {
   switch (Expression::eid(e)) {
     case Expression::E_STRINGLIT: {
       ASTString str = Expression::cast<StringLit>(e)->v();
-      return std::string(str.c_str(), str.size());
+      return std::string(str);
     }
     case Expression::E_FLOATLIT:
     case Expression::E_INTLIT:
@@ -2305,7 +2305,7 @@ std::string eval_string(EnvI& env, Expression* e) {
       break;
     case Expression::E_ID: {
       ASTString str = eval_id<EvalStringLit>(env, e)->v();
-      return std::string(str.c_str(), str.size());
+      return std::string(str);
     } break;
     case Expression::E_ARRAYACCESS: {
       auto ev = eval_arrayaccess(env, Expression::cast<ArrayAccess>(e));

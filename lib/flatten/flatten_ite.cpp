@@ -189,25 +189,25 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       }
       noOtherBranches = noOtherBranches && other_branches[ite->size()].empty();
     }
-    for (auto& eq : eq_occurrences) {
-      if (eq.second >= static_cast<int>(ite->size())) {
+    for (auto& [ident, count] : eq_occurrences) {
+      if (count >= static_cast<int>(ite->size())) {
         // Any identifier that occurs in all or all but one branch gets its own conditional
-        results.emplace_back(eq.first->decl());
+        results.emplace_back(ident->decl());
         e_then.emplace_back();
         for (unsigned int i = 0; i < ite->size(); i++) {
-          auto it = eq_branches[i].find(eq.first);
+          auto it = eq_branches[i].find(ident);
           if (it == eq_branches[i].end()) {
             // not found, simply push x=x
-            e_then.back().emplace_back(eq.first);
+            e_then.back().emplace_back(ident);
           } else {
             e_then.back().emplace_back(it->second.first);
           }
         }
         {
-          auto it = eq_branches[ite->size()].find(eq.first);
+          auto it = eq_branches[ite->size()].find(ident);
           if (it == eq_branches[ite->size()].end()) {
             // not found, simply push x=x
-            e_else.emplace_back(eq.first);
+            e_else.emplace_back(ident);
           } else {
             e_else.emplace_back(it->second.first);
           }
@@ -215,11 +215,11 @@ EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b)
       } else {
         // All other identifiers are put in the vector of "other" branches
         for (unsigned int i = 0; i <= ite->size(); i++) {
-          auto it = eq_branches[i].find(eq.first);
+          auto it = eq_branches[i].find(ident);
           if (it != eq_branches[i].end()) {
             other_branches[i].push_back(it->second.second);
             noOtherBranches = false;
-            eq_branches[i].remove(eq.first);
+            eq_branches[i].remove(ident);
           }
         }
       }

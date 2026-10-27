@@ -15,7 +15,9 @@
 %option stack
 
 %top{
+#include <charconv>
 #include <cstdint>
+#include <cstring>
 }
 
 %{
@@ -75,29 +77,11 @@ namespace MiniZinc {
 
 namespace MiniZinc {
 
-  bool hexstrtointval(const char* s, long long int& v) {
-    std::istringstream iss(s);
-    iss >> std::hex >> v;
-    return !iss.fail();
-  }
-
-  bool octstrtointval(const char* s, long long int& v) {
-    std::istringstream iss(s);
-    iss >> std::oct >> v;
-    return !iss.fail();
-  }
-
-  bool fast_strtointval(const char* s, long long int& v) {
-    MiniZinc::IntVal x = 0;
-    try {
-      for (; *s != '\0'; ++s) {
-        x = (x*10) + (*s - '0');
-      }
-    } catch (MiniZinc::ArithmeticError&) {
-      return false;
-    }
-    v = x.toInt();
-    return true;
+  /// Parse all of \a s as an integer in \a base, or return false if it is out of range
+  bool strtointval(const char* s, long long int& v, int base = 10) {
+    const char* end = s + std::strlen(s);
+    auto [ptr, ec] = std::from_chars(s, end, v, base);
+    return ec == std::errc() && ptr == end;
   }
 
   bool strtofloatval(void* parm, const char* s, double& val) {
@@ -138,7 +122,7 @@ namespace MiniZinc {
   void clearBuffer(void* parm) {
     MiniZinc::ParserState* pp =
       static_cast<MiniZinc::ParserState*>(parm);
-    pp->stringBuffer = "";
+    pp->stringBuffer.clear();
   }
 
   void appendBufferString(void* parm, const char* s) {
@@ -221,13 +205,13 @@ namespace MiniZinc {
                 }
 
 0[xX][0-9A-Fa-f]+  {
-                    if (::MiniZinc::hexstrtointval(yytext+2, yylval->iValue))
+                    if (::MiniZinc::strtointval(yytext+2, yylval->iValue, 16))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
                 }
 0o[0-7]+        {
-                  if (::MiniZinc::octstrtointval(yytext+2, yylval->iValue))
+                  if (::MiniZinc::strtointval(yytext+2, yylval->iValue, 8))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -236,7 +220,7 @@ namespace MiniZinc {
                   return MZN_MAX_NEGATIVE_INTEGER_LITERAL;
                 }
 [0-9]+          {
-                  if (::MiniZinc::fast_strtointval(yytext, yylval->iValue))
+                  if (::MiniZinc::strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -443,7 +427,7 @@ $[A-Za-z][A-Za-z0-9_]* {
 <string,string_quote>\\t         { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\t'); }
 <string,string_quote>\\x[0-9a-fA-F][0-9a-fA-F]? {
   long long int hexVal;
-  if (::MiniZinc::hexstrtointval(yytext+2, hexVal)) {
+  if (::MiniZinc::strtointval(yytext+2, hexVal, 16)) {
     ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(hexVal));
   } else {
     return MZN_INVALID_STRING_LITERAL;
@@ -451,7 +435,7 @@ $[A-Za-z][A-Za-z0-9_]* {
 }
 <string,string_quote>\\[0-7][0-7]?[0-7]? {
   long long int octVal;
-  if (::MiniZinc::octstrtointval(yytext+1, octVal)) {
+  if (::MiniZinc::strtointval(yytext+1, octVal, 8)) {
     ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(octVal));
   } else {
     return MZN_INVALID_STRING_LITERAL;
@@ -467,7 +451,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 <string_quote>\"          { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
-<string,string_quote>. { return (unsigned char)yytext[0]; }
+<string,string_quote>. { return static_cast<unsigned char>(yytext[0]); }
 <string,string_quote>[\xa\xd\x0] { return MZN_END_OF_LINE_IN_STRING; }
 <string,string_quote><<EOF>> { yy_pop_state(yyscanner); return MZN_UNTERMINATED_STRING; }
 
@@ -476,7 +460,7 @@ $[A-Za-z][A-Za-z0-9_]* {
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return MZN_QUOTED_IDENTIFIER; }
 
-.                 { return (unsigned char)yytext[0]; }
+.                 { return static_cast<unsigned char>(yytext[0]); }
 
 %%
 namespace MiniZinc {

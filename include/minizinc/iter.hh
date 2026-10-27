@@ -19,8 +19,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-namespace MiniZinc {
-namespace Ranges {
+namespace MiniZinc::Ranges {
 
 /**
  * \brief Base for range iterators with explicit min and max
@@ -821,5 +820,4 @@ inline bool less_eq(I& i, J& j) {
   return true;
 }
 
-}  // namespace Ranges
-}  // namespace MiniZinc
+}  // namespace MiniZinc::Ranges

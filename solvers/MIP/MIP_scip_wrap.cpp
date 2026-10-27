@@ -28,8 +28,6 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
-
 /// Load SCIP DLL with the given path
 ScipPlugin::ScipPlugin(const std::string& dll) : _inner(dll) { load(); }
 
@@ -167,18 +165,18 @@ void ScipPlugin::load() {
     }                                                                         \
   }
 
-string MIPScipWrapper::getDescription(FactoryOptions& factoryOpt,
-                                      MiniZinc::SolverInstanceBase::Options* opt) {
-  ostringstream oss;
+std::string MIPScipWrapper::getDescription(FactoryOptions& factoryOpt,
+                                           MiniZinc::SolverInstanceBase::Options* opt) {
+  std::ostringstream oss;
   oss << "MIP wrapper for SCIP " << getVersion(factoryOpt, opt)
       << ". Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
-string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
-                                  MiniZinc::SolverInstanceBase::Options* opt) {
+std::string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
+                                       MiniZinc::SolverInstanceBase::Options* opt) {
   try {
     auto* p = factoryOpt.scipDll.empty() ? new ScipPlugin() : new ScipPlugin(factoryOpt.scipDll);
-    ostringstream oss;
+    std::ostringstream oss;
     oss << p->SCIPmajorVersion() << '.' << p->SCIPminorVersion() << '.' << p->SCIPtechVersion()
         << '.' << p->SCIPsubversion();
     delete p;
@@ -187,7 +185,7 @@ string MIPScipWrapper::getVersion(FactoryOptions& factoryOpt,
     return "<unknown version>";
   }
 }
-vector<string> MIPScipWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
+std::vector<std::string> MIPScipWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   try {
     ScipPlugin p;
     return {};
@@ -196,17 +194,17 @@ vector<string> MIPScipWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   }
 }
 
-vector<string> MIPScipWrapper::getFactoryFlags() { return {"--scip-dll"}; };
+std::vector<std::string> MIPScipWrapper::getFactoryFlags() { return {"--scip-dll"}; };
 
-string MIPScipWrapper::getId() { return "scip"; }
+std::string MIPScipWrapper::getId() { return "scip"; }
 
-string MIPScipWrapper::getName() { return "SCIP"; }
+std::string MIPScipWrapper::getName() { return "SCIP"; }
 
-vector<string> MIPScipWrapper::getTags() { return {"mip", "float", "api"}; }
+std::vector<std::string> MIPScipWrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIPScipWrapper::getStdFlags() { return {"-i", "-p", "-s"}; }
+std::vector<std::string> MIPScipWrapper::getStdFlags() { return {"-i", "-p", "-s"}; }
 
-void MIPScipWrapper::Options::printHelp(ostream& os) {
+void MIPScipWrapper::Options::printHelp(std::ostream& os) {
   os << "SCIP  MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read SCIP parameters from file
@@ -232,24 +230,20 @@ void MIPScipWrapper::Options::printHelp(ostream& os) {
         "basename), default 'scip'\n\n";
 }
 
-static inline bool beginswith(const string& s, const string& t) {
-  return s.compare(0, t.length(), t) == 0;
-}
-
 bool MIPScipWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
                                                    const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   return cop.get("--scip-dll", &scipDll);
 }
 
-bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
+bool MIPScipWrapper::Options::processOption(int& i, std::vector<std::string>& argv,
                                             const std::string& workingDir) {
   MiniZinc::CLOParser cop(i, argv);
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f" ||
-             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "-f" ||
+             std::string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
@@ -271,16 +265,16 @@ bool MIPScipWrapper::Options::processOption(int& i, vector<string>& argv,
 }
 
 // NOLINTNEXTLINE(readability-identifier-naming)
-void MIPScipWrapper::SCIP_PLUGIN_CALL(SCIP_RETCODE retcode, const string& msg, bool fTerm) {
+void MIPScipWrapper::SCIP_PLUGIN_CALL(SCIP_RETCODE retcode, const std::string& msg, bool fTerm) {
   /* evaluate return code of the SCIP process */
   if (retcode != SCIP_OKAY) {
     /* write error back trace */
     _plugin->SCIPprintError(retcode);
-    string msgAll = ("  MIPScipWrapper runtime error, see output:  " + msg);
-    cerr << msgAll << '\n';
+    std::string msgAll = ("  MIPScipWrapper runtime error, see output:  " + msg);
+    std::cerr << msgAll << '\n';
     if (fTerm) {
-      cerr << "TERMINATING.\n";
-      throw runtime_error(msgAll);
+      std::cerr << "TERMINATING.\n";
+      throw std::runtime_error(msgAll);
     }
   }
 }
@@ -383,7 +377,7 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPScipWrapper::getExtraFlags(
 }
 
 SCIP_RETCODE MIPScipWrapper::doAddVarsSCIP(size_t n, double* obj, double* lb, double* ub,
-                                           MIPWrapper::VarType* vt, string* names) {
+                                           MIPWrapper::VarType* vt, std::string* names) {
   /// Convert var types:
   //   vector<char> ctype(n);
   //   vector<char*> pcNames(n);
@@ -401,7 +395,7 @@ SCIP_RETCODE MIPScipWrapper::doAddVarsSCIP(size_t n, double* obj, double* lb, do
         ctype = SCIP_VARTYPE_BINARY;
         break;
       default:
-        throw runtime_error("  MIPWrapper: unknown variable type");
+        throw std::runtime_error("  MIPWrapper: unknown variable type");
     }
     _scipVars.resize(_scipVars.size() + 1);
     if (fPhase1Over) {
@@ -426,7 +420,7 @@ SCIP_RETCODE MIPScipWrapper::delSCIPVars() {
 
 SCIP_RETCODE MIPScipWrapper::addRowSCIP(int nnz, int* rmatind, double* rmatval,
                                         MIPWrapper::LinConType sense, double rhs, int mask,
-                                        const string& rowName) {
+                                        const std::string& rowName) {
   /// Convert var types:
   double lh = -getInfBound();
   double rh = getInfBound();
@@ -441,7 +435,7 @@ SCIP_RETCODE MIPScipWrapper::addRowSCIP(int nnz, int* rmatind, double* rmatval,
       lh = rhs;
       break;
     default:
-      throw runtime_error("  MIPWrapper: unknown constraint type");
+      throw std::runtime_error("  MIPWrapper: unknown constraint type");
   }
   const int ccnt = 0;
   const int rcnt = 1;
@@ -449,7 +443,7 @@ SCIP_RETCODE MIPScipWrapper::addRowSCIP(int nnz, int* rmatind, double* rmatval,
   char* pRName = (char*)rowName.c_str();
   // ignoring mask for now.  TODO
   SCIP_CONS* cons;
-  vector<SCIP_VAR*> ab(nnz);
+  std::vector<SCIP_VAR*> ab(nnz);
 
   for (int j = 0; j < nnz; ++j) {
     ab[j] = _scipVars[rmatind[j]];
@@ -484,13 +478,13 @@ void MIPScipWrapper::setVarUB(int iVar, double ub) {
 
 void MIPScipWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                             double* rmatval, MIPWrapper::LinConType sense,
-                                            double rhs, const string& rowName) {
+                                            double rhs, const std::string& rowName) {
   MZN_ASSERT_HARD_MSG(0 <= bVal && 1 >= bVal, "SCIP: addIndicatorConstraint: bVal not 0/1");
   //// Make sure in order to notice the indices of lazy constr: also here?   TODO
   //  ++ nRows;
 
   SCIP_CONS* cons;
-  vector<SCIP_VAR*> ab(nnz);
+  std::vector<SCIP_VAR*> ab(nnz);
   SCIP_VAR*
       indicator_var;  // SCIP 6.0.1 requires that the implication is active for indicator_x == 1
 
@@ -522,7 +516,7 @@ void MIPScipWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* r
 }
 
 void MIPScipWrapper::addBoundsDisj(int n, double* fUB, double* bnd, int* vars, int nF, double* fUBF,
-                                   double* bndF, int* varsF, const string& rowName) {
+                                   double* bndF, int* varsF, const std::string& rowName) {
   SCIP_CONS* cons;
   std::vector<SCIP_VAR*> v(n + nF);
   std::vector<SCIP_BOUNDTYPE> bt(n + nF);
@@ -546,20 +540,20 @@ void MIPScipWrapper::addBoundsDisj(int n, double* fUB, double* bnd, int* vars, i
 }
 
 void MIPScipWrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, double b,
-                                   const string& rowName) {
+                                   const std::string& rowName) {
   SCIP_CONS* cons;
-  vector<SCIP_VAR*> ab(nnz);
-  vector<int> nd(nnz);
-  vector<int> nr(nnz);
+  std::vector<SCIP_VAR*> ab(nnz);
+  std::vector<int> nd(nnz);
+  std::vector<int> nr(nnz);
 
   for (int j = 0; j < nnz; ++j) {
     ab[j] = _scipVars[rmatind[j]];
-    nd[j] = (int)round(d[j]);
-    nr[j] = (int)round(r[j]);
+    nd[j] = (int)std::round(d[j]);
+    nr[j] = (int)std::round(r[j]);
   }
 
   SCIP_PLUGIN_CALL(_plugin->SCIPcreateConsBasicCumulative(
-      _scip, &cons, rowName.c_str(), nnz, ab.data(), nd.data(), nr.data(), (int)round(b)));
+      _scip, &cons, rowName.c_str(), nnz, ab.data(), nd.data(), nr.data(), (int)std::round(b)));
 
   SCIP_PLUGIN_CALL(_plugin->SCIPaddCons(_scip, cons));
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
@@ -570,8 +564,8 @@ void MIPScipWrapper::addCumulative(int nnz, int* rmatind, double* d, double* r, 
 void MIPScipWrapper::addLexLesseq(int nnz, int* rmatind1, int* rmatind2, bool isModelCons,
                                   const std::string& rowName) {
   SCIP_CONS* cons;
-  vector<SCIP_VAR*> vars1(nnz);
-  vector<SCIP_VAR*> vars2(nnz);
+  std::vector<SCIP_VAR*> vars1(nnz);
+  std::vector<SCIP_VAR*> vars2(nnz);
 
   for (int j = 0; j < nnz; ++j) {
     vars1[j] = _scipVars[rmatind1[j]];
@@ -590,8 +584,8 @@ void MIPScipWrapper::addLexChainLesseq(int m, int n, int* rmatind, int nOrbitope
                                        bool resolveprop, bool isModelCons,
                                        const std::string& rowName) {
   SCIP_CONS* cons;
-  vector<vector<SCIP_VAR*> > vars(m, vector<SCIP_VAR*>(size_t(n)));
-  vector<SCIP_VAR**> vars_data(m);
+  std::vector<std::vector<SCIP_VAR*> > vars(m, std::vector<SCIP_VAR*>(size_t(n)));
+  std::vector<SCIP_VAR**> vars_data(m);
 
   for (int i = 0; i < m; ++i) {
     for (int j = 0; j < n; ++j) {
@@ -607,7 +601,7 @@ void MIPScipWrapper::addLexChainLesseq(int m, int n, int* rmatind, int nOrbitope
   SCIP_PLUGIN_CALL(_plugin->SCIPreleaseCons(_scip, &cons));
 }
 
-void MIPScipWrapper::addTimes(int x, int y, int z, const string& rowName) {
+void MIPScipWrapper::addTimes(int x, int y, int z, const std::string& rowName) {
   /// As x*y - z == 0
   double zCoef = -1.0;
   double xyCoef = 1.0;
@@ -683,7 +677,7 @@ static SCIP_DECL_EVENTEXEC(event_exec_best_sol) { /*lint --e{715}*/
     return SCIP_OKAY;
   }
 
-  if (fabs(cbuiPtr->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
+  if (std::fabs(cbuiPtr->pOutput->objVal - objVal) > 1e-12 * (1.0 + std::fabs(objVal))) {
     newincumbent = 1;
     cbuiPtr->pOutput->objVal = objVal;
     cbuiPtr->pOutput->status = MIPWrapper::SAT;
@@ -782,7 +776,7 @@ MIPScipWrapper::Status MIPScipWrapper::convertStatus(SCIP_STATUS scipStatus) {
   return s;
 }
 
-SCIP_DECL_MESSAGEWARNING(print_msg) { cerr << msg << flush; }
+SCIP_DECL_MESSAGEWARNING(print_msg) { std::cerr << msg << std::flush; }
 
 bool MIPScipWrapper::addWarmStart(const std::vector<VarId>& vars, const std::vector<double>& vals) {
   assert(vars.size() == vals.size());
@@ -879,8 +873,8 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
   }
 
   // Process extra flags options
-  for (auto& it : _options->extraParams) {
-    auto name = it.first.substr(7);
+  for (auto& [key, value] : _options->extraParams) {
+    auto name = key.substr(7);
     std::replace(name.begin(), name.end(), '_', '/');
     auto* param = _plugin->SCIPgetParam(_scip, name.c_str());
     if (param == nullptr) {
@@ -889,25 +883,24 @@ SCIP_RETCODE MIPScipWrapper::solveSCIP() {  // Move into ancestor?
     auto type = _plugin->SCIPparamGetType(param);
     switch (type) {
       case SCIP_ParamType::SCIP_PARAMTYPE_BOOL:
-        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgBoolParam(_scip, param, it.second == "true"));
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgBoolParam(_scip, param, value == "true"));
         break;
       case SCIP_ParamType::SCIP_PARAMTYPE_CHAR:
-        if (!it.second.empty()) {
-          SCIP_PLUGIN_CALL_R(_plugin,
-                             _plugin->SCIPchgCharParam(_scip, param, it.second.c_str()[0]));
+        if (!value.empty()) {
+          SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgCharParam(_scip, param, value.c_str()[0]));
         }
         break;
       case SCIP_ParamType::SCIP_PARAMTYPE_INT:
-        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgIntParam(_scip, param, stoi(it.second)));
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgIntParam(_scip, param, std::stoi(value)));
         break;
       case SCIP_ParamType::SCIP_PARAMTYPE_LONGINT:
-        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgLongintParam(_scip, param, stoll(it.second)));
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgLongintParam(_scip, param, std::stoll(value)));
         break;
       case SCIP_ParamType::SCIP_PARAMTYPE_REAL:
-        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgRealParam(_scip, param, stod(it.second)));
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgRealParam(_scip, param, std::stod(value)));
         break;
       case SCIP_ParamType::SCIP_PARAMTYPE_STRING:
-        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgStringParam(_scip, param, it.second.c_str()));
+        SCIP_PLUGIN_CALL_R(_plugin, _plugin->SCIPchgStringParam(_scip, param, value.c_str()));
         break;
       default:
         break;

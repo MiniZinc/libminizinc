@@ -42,7 +42,7 @@ public:
   };
 
   /// The suffix that identifies a bundle
-  static const char* const SUFFIX;
+  static constexpr const char* SUFFIX = ".lib.mzn";
 
   /// Whether \a path names a library bundle that exists, without loading it
   static bool exists(const std::string& path);

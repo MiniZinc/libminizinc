@@ -43,10 +43,9 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         }
       }
     }
-    bool reuseVarId =
-        v->type().isAnn() ||
-        (v->toplevel() && v->id()->idn() == -1 && v->type().dim() <= 1 &&
-         Printer::quoteId(v->id()->v()).c_str()[0] != '\'' && v->id()->v().c_str()[0] != '_');
+    bool reuseVarId = v->type().isAnn() ||
+                      (v->toplevel() && v->id()->idn() == -1 && v->type().dim() <= 1 &&
+                       Printer::quoteId(v->id()->v())[0] != '\'' && !v->id()->v().beginsWith("_"));
     if (reuseVarId && v->type().dim() == 1) {
       auto* arrayRanges = ti->ranges()[0]->domain();
       if (arrayRanges == nullptr || !Expression::isa<SetLit>(arrayRanges) ||

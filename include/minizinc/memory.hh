@@ -64,15 +64,15 @@ public:
   void* operator new(size_t size);
 
   /// Placement-new
-  void* operator new(size_t /*s*/, void* n) throw() { return n; }
+  void* operator new(size_t /*s*/, void* n) noexcept { return n; }
 
   /// Delete node (no-op: see RC::release)
-  void operator delete(void* /*n*/, size_t /*s*/) throw() {}
+  void operator delete(void* /*n*/, size_t /*s*/) noexcept {}
   /// Delete node (no-op)
-  void operator delete(void* /*n*/, void* /*m*/) throw() {}
+  void operator delete(void* /*n*/, void* /*m*/) noexcept {}
 
   /// Delete node (no-op)
-  void operator delete(void* /*n*/) throw() {}
+  void operator delete(void* /*n*/) noexcept {}
 };
 
 /**
@@ -253,7 +253,7 @@ public:
   /// Store \a v in the strong field \a f (the old value is released after the store, so that a
   /// cascade it starts sees the new state)
   template <class T>
-  static void set(T*& f, typename std::common_type<T*>::type v) {  // (not deduced: accepts Arg)
+  static void set(T*& f, std::common_type_t<T*> v) {  // (not deduced: accepts Arg)
     inc(v);
     T* old = f;
     f = v;
@@ -271,7 +271,7 @@ public:
   }
   /// Store \a v in the weak field \a f
   template <class T>
-  static void setWeak(T*& f, typename std::common_type<T*>::type v) {
+  static void setWeak(T*& f, std::common_type_t<T*> v) {
     incWeak(v);
     T* old = f;
     f = v;
@@ -421,8 +421,7 @@ class Arg {
 public:
   Arg(T* p) : _p(p) {}
   /// Anything else that reads as a T*, such as an element of an ASTExprVec
-  template <class U,
-            class = typename std::enable_if<std::is_convertible<const U&, T*>::value>::type>
+  template <class U, class = std::enable_if_t<std::is_convertible_v<const U&, T*>>>
   Arg(const U& u) : _p(u) {}
   template <class U>
   Arg(const Ref<U>& r) : _p(r.get()) {}

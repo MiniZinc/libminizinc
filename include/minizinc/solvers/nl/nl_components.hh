@@ -74,8 +74,6 @@ public:
 
   /** Exception interface */
   const char* what() const noexcept override { return report->c_str(); }
-
-  ~NLException() noexcept override = default;
 };
 
 #ifdef assert
@@ -85,7 +83,7 @@ public:
 /** Should not happen macro */
 #define should_not_happen(MESSAGE)                           \
   do {                                                       \
-    ostringstream oss;                                       \
+    std::ostringstream oss;                                  \
     oss << MESSAGE; /* NOLINT(bugprone-macro-parentheses) */ \
     throw NLException(NULL, __FILE__, __LINE__, oss);        \
   } while (false)
@@ -99,7 +97,7 @@ public:
 #define assert(EXPRESSION)                                     \
   do {                                                         \
     if (!(EXPRESSION)) {                                       \
-      ostringstream oss;                                       \
+      std::ostringstream oss;                                  \
       throw NLException(#EXPRESSION, __FILE__, __LINE__, oss); \
     }                                                          \
   } while (false)

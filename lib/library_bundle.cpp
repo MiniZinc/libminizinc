@@ -15,8 +15,6 @@
 
 namespace MiniZinc {
 
-const char* const LibraryBundle::SUFFIX = ".lib.mzn";
-
 namespace {
 
 const char* const VERSION_PRAGMA = "/*** @mzn_lib_version ";
@@ -218,13 +216,12 @@ const LibraryBundle* LibraryBundleCache::get(const std::string& path) {
 
 const LibraryBundle::Entry* LibraryBundleCache::lookup(const std::string& qualifiedName,
                                                        const LibraryBundle** bundle) const {
-  for (const auto& b : _bundles) {
-    const std::string& p = b.first;
+  for (const auto& [p, b] : _bundles) {
     if (qualifiedName.size() > p.size() + 1 && qualifiedName[p.size()] == '/' &&
         qualifiedName.compare(0, p.size(), p) == 0) {
-      const LibraryBundle::Entry* e = b.second->entry(qualifiedName.substr(p.size() + 1));
+      const LibraryBundle::Entry* e = b->entry(qualifiedName.substr(p.size() + 1));
       if (e != nullptr && bundle != nullptr) {
-        *bundle = b.second.get();
+        *bundle = b.get();
       }
       return e;
     }
