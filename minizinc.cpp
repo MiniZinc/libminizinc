@@ -140,7 +140,7 @@ int wmain(int argc, wchar_t* argv[], wchar_t* envp[]) {
       OverflowHandler::handle(GetExceptionCode());
     }
   })();
-#elif defined(__MINGW32__)
+#elif defined(NDEBUG) && defined(__MINGW32__)
   SetUnhandledExceptionFilter(unhandled_exception_filter);
   return run(exe, args, jsonStream);
 #else
