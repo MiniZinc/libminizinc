@@ -79,6 +79,9 @@ function var opt bool: 'not'(var opt bool: x) = if absent(x) then <> else not de
 
 /** @group stdlib.builtins.logic Return truth value of \(\bigwedge_i \a x[i]\) */
 function bool: forall(array [$T] of bool: x) :: promise_commutative;
+/** @group stdlib.builtins.logic True iff for any \p i, \a x[i] is absent or true */
+function bool: forall(array [$T] of opt bool: x) :: promise_commutative =
+  forall (xi in array1d(x)) (absent(xi) \/ deopt(xi));
 /** @group stdlib.builtins.logic Return truth value of \(\bigwedge_i \a x[i]\) */
 function var bool: forall(array [$T] of var bool: x) :: promise_commutative;
 /** @group stdlib.builtins.logic True iff for any \p i, \a x[i] is absent or true */
@@ -87,6 +90,9 @@ predicate forall(array [int] of var opt bool: x) :: promise_commutative =
 
 /** @group stdlib.builtins.logic Return truth value of \(\bigvee_i \a x[i]\) */
 function bool: exists(array [$T] of bool: x) :: promise_commutative;
+/** @group stdlib.builtins.logic True iff for at least one \p i, \a x[i] occurs and is true */
+function bool: exists(array [$T] of opt bool: x) =
+  exists (xi in array1d(x)) (occurs(xi) /\ deopt(xi));
 /** @group stdlib.builtins.logic Return truth value of \(\bigvee_i \a x[i]\) */
 function var bool: exists(array [$T] of var bool: x) :: promise_commutative;
 /** @group stdlib.builtins.logic True iff for at least one \p i, \a x[i] occurs and is true */

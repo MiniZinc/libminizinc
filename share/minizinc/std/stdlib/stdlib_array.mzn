@@ -795,11 +795,11 @@ function array [$$F, $$G, $$H, $$I, $$J, $$K] of any $T: slice_6d(
 /** @group stdlib.builtins.array Test if \a i is in the index set of \a x */
 test has_index($$E: i, array [$$E] of any $T: x) = i in index_set(x);
 /** @group stdlib.builtins.array Test if \a e is an element of array \a x */
-test has_element($T: e, array [int] of $T: x) = exists (i in index_set(x)) (x[i] = e);
+test has_element($T: e, array [$X] of $T: x) = exists (xi in array1d(x)) (xi = e);
 /** @group stdlib.builtins.array Test if \a e is an element of array \a x */
-test has_element($T: e, array [int] of opt $T: x) = exists (i in index_set(x)) (x[i] = e);
+test has_element($T: e, array [$X] of opt $T: x) = exists (xi in array1d(x)) (xi = e);
 /** @group stdlib.builtins.array Test if \a e is an element of array \a x */
-predicate has_element($T: e, array [$$E] of any $T: x) = exists (i in index_set(x)) (x[i] = e);
+predicate has_element($T: e, array [$X] of any $T: x) = exists (xi in array1d(x)) (xi = e);
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
 function var set of $$T: array2set(array [$X] of var $$T: x) :: promise_total =
@@ -836,25 +836,25 @@ function var set of $$T: array2set(array [$X] of var opt $$T: x) :: promise_tota
   endif;
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
-function set of $$T: array2set(array [int] of $$T: x) = {x[i] | i in index_set(x)};
+function set of $$T: array2set(array [$X] of $$T: x) = {xi | xi in array1d(x)};
 
 /** @group stdlib.builtins.array Return the set containing the non-absent elements of \a x */
-function set of $$T: array2set(array [int] of opt $$T: x) = {
-  deopt(x[i]) |
-    i in index_set(x) where occurs(x[i]),
+function set of $$T: array2set(array [$X] of opt $$T: x) = {
+  deopt(xi) |
+    xi in array1d(x) where occurs(xi),
 };
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
 function set of bool: array2set(
-  array [int] of bool: x,
+  array [$X] of bool: x,
 ) =
   let {
-    bool: f = exists (b in x) (not b);
-    bool: t = exists (b in x) (b);
+    bool: f = exists (b in array1d(x)) (not b);
+    bool: t = exists (b in array1d(x)) (b);
   } in if f /\ t then {false, true} elseif f then {false} elseif t then {true} else {} endif;
 
 /** @group stdlib.builtins.array Return the set containing the elements of \a x */
-function set of float: array2set(array [int] of float: x) = {x[i] | i in index_set(x)};
+function set of float: array2set(array [$X] of float: x) = {xi | xi in array1d(x)};
 
 /** @group stdlib.builtins.array Return if \a y contains \a x */
 function bool: 'in'($X: x, array [$T] of $X: y) = exists (z in array1d(y)) (z = x);
