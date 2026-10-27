@@ -462,6 +462,19 @@ public:
   std::vector<Ref<Call>> dataFileCalls;
   std::vector<Ref<Expression>> checkVars;
   std::vector<Ref<Expression>> outputVars;
+  /// Whether `var bool` definitions are deferred (see defer_bool_def)
+  bool deferBoolDefs = false;
+  /// The order of the deferred definitions. An array that deferred definitions use has an entry
+  /// as well, so that its elements wait for them.
+  struct DeferredBoolDef {
+    /// Number of deferred definitions, and used arrays, that still have to give their context
+    int uses = 0;
+    /// The entries that count this definition in their uses (for an array: its elements)
+    std::vector<Ref<VarDecl>> used;
+    /// The flat variables that the definition uses, counted as occurrences until it is flattened
+    std::vector<Ref<VarDecl>> refs;
+  };
+  std::unordered_map<VarDecl*, DeferredBoolDef> deferredBoolDefs;
   OutputSectionStore outputSections;
   std::unordered_map<std::string, int> keyCounters;
   // Maps each FlatZinc variable name originating from an `assume` argument (or the objective)
@@ -745,8 +758,9 @@ inline bool is_list_index_set(IntSetVal* isv) {
 
 void set_computed_domain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+/// \a elementAccess: \a e is the array of an element access, which does not use all elements
 EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b,
-              bool doNotFollowChains);
+              bool doNotFollowChains, bool elementAccess = false);
 
 Ref<ArrayLit> field_slice(EnvI& env, StructType* st, ArrayLit* al,
                           const std::vector<std::pair<int, int>>& dims, unsigned int field);

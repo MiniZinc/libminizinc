@@ -60,6 +60,11 @@ Changes:
    now uses the mimalloc memory allocator.
 -  Make return type of internal ``var_dom(set of int: x, set of int: s)``
    function par.
+-  Flatten the definitions of ``var bool`` variables (top-level and in lets), and
+   of the elements of ``var bool`` arrays, after their uses, in the context of
+   those uses. A variable that is only used positively can now be half-reified,
+   together with the expressions in its definition, as when the definition is
+   written in place.
 
 Bug fixes:
 ^^^^^^^^^^

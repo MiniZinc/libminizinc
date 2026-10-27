@@ -553,6 +553,294 @@ PathStore::Path get_recorded_path(EnvI& env, const Expression* e) {
   return best;
 }
 
+namespace {
+/// Whether \a vd has a deferred definition. A flat right-hand side is never a let, so a let marks
+/// it.
+bool has_deferred_bool_def(VarDecl* vd) {
+  return vd != nullptr && vd->e() != nullptr && Expression::isa<Let>(vd->e());
+}
+
+/// A let closure over \a e that keeps the current values of its local variables, so that \a e can
+/// be flattened after they are out of scope. It shares \a e, because copies cost too much memory,
+/// and carries \a anns, so that they reach the constraints of \a e. Returns nullptr if \a e cannot
+/// be deferred. Adds the flat variables that \a e uses to \a refs.
+Ref<Let> bind_bool_def(EnvI& env, Expression* e, const std::vector<Expression*>& anns,
+                       std::vector<VarDecl*>& refs) {
+  if (!env.deferBoolDefs || !Expression::type(e).isvarbool() || Expression::isa<Id>(e)) {
+    return nullptr;
+  }
+  class Collect : public EVisitor {
+  public:
+    std::vector<VarDecl*>& refs;
+    std::vector<VarDecl*> used;
+    std::unordered_set<VarDecl*> bound;
+    Collect(std::vector<VarDecl*>& refs0) : refs(refs0) {}
+    void vId(Id* ident) {
+      if (ident->decl() == nullptr) {
+        return;
+      }
+      if (!ident->decl()->toplevel()) {
+        used.push_back(ident->decl());
+      } else if (ident->decl()->flat() != nullptr) {
+        // A model declaration points to its flat variable, and a flat variable to itself
+        refs.push_back(ident->decl()->flat());
+      }
+    }
+    void vVarDecl(VarDecl* vd) { bound.insert(vd); }
+    void vComprehensionGenerator(Comprehension* c, int gen) {
+      for (unsigned int i = 0; i < c->numberOfDecls(gen); i++) {
+        bound.insert(c->decl(gen, i));
+      }
+    }
+  } collect(refs);
+  top_down(collect, e);
+  for (auto* ann : anns) {
+    top_down(collect, ann);
+  }
+
+  std::vector<Expression*> free;
+  for (auto* d : collect.used) {
+    if (collect.bound.insert(d).second) {
+      if (d->type().dim() != 0 || d->type().structBT()) {
+        return nullptr;
+      }
+      free.push_back(d);
+    }
+  }
+  // The let constructor records the current value of each declaration
+  auto let = make<Let>(Location().introduce(), free, e);
+  Expression::type(let, Expression::type(e));
+  for (auto* ann : anns) {
+    Expression::addAnnotation(let, ann);
+  }
+  // The recorded values are values or flat variables
+  for (unsigned int i = 0; i < let->letOrig().size(); i++) {
+    Id* ident = Expression::dynamicCast<Id>(let->letOrig()[i]);
+    if (ident != nullptr && ident->decl() != nullptr) {
+      refs.push_back(ident->decl());
+    }
+  }
+  return let;
+}
+}  // namespace
+
+Ref<Let> deferrable_bool_def(EnvI& env, VarDecl* origVd, std::vector<VarDecl*>& refs) {
+  if (origVd->e() == nullptr || origVd->ti()->domain() != nullptr ||
+      Expression::ann(origVd).contains(env.constants.ctx.promise_monotone) ||
+      Expression::ann(origVd).contains(env.constants.ctx.promise_antitone)) {
+    return nullptr;
+  }
+  // The annotations of origVd have to reach the constraints of the definition
+  std::vector<Expression*> anns;
+  for (auto* ann : Expression::ann(origVd)) {
+    if (!Expression::equal(ann, env.constants.ann.output) &&
+        !Expression::equal(ann, env.constants.ann.add_to_output)) {
+      anns.push_back(ann);
+    }
+  }
+  return bind_bool_def(env, origVd->e(), anns, refs);
+}
+
+bool defer_bool_def(EnvI& env, VarDecl* vd, Let* def, std::vector<VarDecl*> refs) {
+  if (vd->e() != nullptr) {
+    // Shared with an earlier definition, or fixed by an earlier pass (update_bounds): flattening
+    // can evaluate it, so its definition has to be flat now
+    return false;
+  }
+  // A definition can use a variable more than once
+  std::sort(refs.begin(), refs.end());
+  refs.erase(std::unique(refs.begin(), refs.end()), refs.end());
+  auto& entry = env.deferredBoolDefs[vd];
+  // Count the uses as occurrences, or the variables are removed as unused before it is flattened
+  Item* item = (*env.flat())[env.varOccurrences.find(vd)];
+  for (auto* u : refs) {
+    env.varOccurrences.add(u, item);
+    // Only the elements of a `var bool` array can have a deferred definition
+    auto* al = u->type().dim() > 0 && u->type().isvar() && u->type().bt() == Type::BT_BOOL
+                   ? Expression::dynamicCast<ArrayLit>(follow_id(u->id()))
+                   : nullptr;
+    if (!has_deferred_bool_def(u) && al == nullptr) {
+      continue;
+    }
+    auto& used = env.deferredBoolDefs[u];
+    if (al != nullptr && used.uses == 0) {
+      // A use of the array can be a use of each element, so the elements wait for the definitions
+      // that use it. One entry per array keeps this linear.
+      for (unsigned int i = 0; i < al->size(); i++) {
+        auto* elem = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al)[i]));
+        if (elem != vd && has_deferred_bool_def(elem)) {
+          env.deferredBoolDefs[elem].uses++;
+          used.used.emplace_back(elem);
+        }
+      }
+      if (used.used.empty()) {
+        // No element waits, so the array needs no entry
+        env.deferredBoolDefs.erase(u);
+        continue;
+      }
+    }
+    used.uses++;
+    entry.used.emplace_back(u);
+  }
+  entry.refs.assign(refs.begin(), refs.end());
+  vd->e(def);
+  return true;
+}
+
+Id* defer_bool_expr(EnvI& env, Expression* e) {
+  std::vector<VarDecl*> refs;
+  Ref<Let> def = bind_bool_def(env, e, {}, refs);
+  if (def == nullptr) {
+    return nullptr;
+  }
+  // Give the variable the path of the element, as flat_exp would
+  CallStackItem csi(env, e);
+  auto ti = make<TypeInst>(Location().introduce(), Type::varbool());
+  Ref<VarDecl> vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, nullptr, false);
+  if (!defer_bool_def(env, vd, def, std::move(refs))) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    (void)flat_exp(env, ctx, e, vd, env.constants.varTrue);
+  }
+  return vd->id();
+}
+
+namespace {
+/// Add context \a c to \a decl, and to \a followed, the declaration that \a decl is an alias of
+void add_ctx_ann_alias(EnvI& env, VarDecl* decl, VarDecl* followed, BCtx c) {
+  env.addCtxAnn(decl, c);
+  if (followed != nullptr && followed != decl) {
+    env.addCtxAnn(followed, c);
+  }
+}
+}  // namespace
+
+void add_ctx_ann_elements(EnvI& env, Expression* array, BCtx c) {
+  if (env.inReverseMapVar || env.deferredBoolDefs.empty() || Expression::type(array).dim() == 0 ||
+      Expression::type(array).bt() != Type::BT_BOOL || !Expression::type(array).isvar()) {
+    return;
+  }
+  Expression* arrayDecl = follow_id_to_decl(array);
+  auto* arrayVd = Expression::dynamicCast<VarDecl>(arrayDecl);
+  auto* al = Expression::dynamicCast<ArrayLit>(arrayVd != nullptr ? arrayVd->e() : arrayDecl);
+  if (al == nullptr) {
+    return;
+  }
+  // The array declaration caches the context it gave, so that a repeated use costs nothing
+  if (arrayVd != nullptr) {
+    BCtx given;
+    bool annotated;
+    std::tie(given, annotated) = env.annToCtx(arrayVd);
+    if (annotated && (given == c || given == C_MIX)) {
+      return;
+    }
+    env.addCtxAnn(arrayVd, c);
+  }
+  // An element that is already flattened has the context of its array expression
+  for (unsigned int i = 0; i < al->size(); i++) {
+    auto* followed = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al)[i]));
+    if (has_deferred_bool_def(followed)) {
+      add_ctx_ann_alias(env, Expression::cast<Id>((*al)[i])->decl(), followed, c);
+    }
+  }
+}
+
+namespace {
+/// Release one use of \a u by a deferred definition. Once \a u waits for nothing, requeue it, or
+/// for an array, release its elements.
+void release_bool_def_use(EnvI& env, VarDecl* u) {
+  auto waiting = env.deferredBoolDefs.find(u);
+  // u can have been removed since
+  if (waiting == env.deferredBoolDefs.end() || --waiting->second.uses > 0) {
+    return;
+  }
+  if (u->type().dim() > 0) {
+    std::vector<Ref<VarDecl>> elements = std::move(waiting->second.used);
+    env.deferredBoolDefs.erase(waiting);
+    for (VarDecl* elem : elements) {
+      release_bool_def_use(env, elem);
+    }
+    return;
+  }
+  // A unified variable has no item to requeue
+  int idx = env.varOccurrences.find(u);
+  if (idx != -1) {
+    env.modifiedVarDecls.push_back(idx);
+  }
+}
+
+/// Drop the deferred definition of \a vd, because it is flattened or \a item is removed. Adds the
+/// variables that become unused to \a toRemove.
+void release_deferred_bool_def(EnvI& env, VarDecl* vd, Item* item,
+                               std::vector<VarDecl*>* toRemove = nullptr) {
+  if (!has_deferred_bool_def(vd)) {
+    return;
+  }
+  auto entry = env.deferredBoolDefs.find(vd);
+  for (VarDecl* u : entry->second.used) {
+    release_bool_def_use(env, u);
+  }
+  for (VarDecl* u : entry->second.refs) {
+    // u can have been unified with another variable since
+    auto occ = env.varOccurrences.itemMap.find(u->id()->decl()->id());
+    if (occ.first) {
+      occ.second->erase(item);
+      if (toRemove != nullptr && occ.second->empty() && CollectDecls::varIsFree(u)) {
+        toRemove->push_back(u);
+      }
+    }
+  }
+  env.deferredBoolDefs.erase(entry);
+  vd->e(nullptr);
+}
+
+/// Flatten the deferred definition of \a vdi in the context of its uses. Returns false if uses are
+/// still unknown. \a force breaks a cycle of definitions that wait for each other: the missing uses
+/// are unknown, so the context is mixed.
+bool flatten_deferred_bool_def(EnvI& env, VarDeclI* vdi, bool force) {
+  VarDecl* vd = vdi->e();
+  if (!has_deferred_bool_def(vd)) {
+    return true;
+  }
+  // defer_bool_def creates the entry
+  if (env.deferredBoolDefs.find(vd)->second.uses > 0) {
+    if (!force) {
+      return false;
+    }
+    env.addCtxAnn(vd, C_MIX);
+  }
+  // Keep the definition alive: release_deferred_bool_def removes it from vd
+  Ref<Let> let = Expression::cast<Let>(vd->e());
+  // Flattening the definition adds its actual occurrences
+  release_deferred_bool_def(env, vd, vdi);
+  CallStackItem csi(env, let);
+  env.setPathSplice(get_recorded_path(env, vd));
+  BCtx usage;
+  bool annotated;
+  std::tie(usage, annotated) = env.annToCtx(vd);
+  Ctx ctx;
+  if (!annotated) {
+    // Unknown uses. The reification of a definition that stays a call is chosen from the
+    // annotation, so it has to say mixed as well.
+    ctx.b = C_MIX;
+    env.addCtxAnn(vd, C_MIX);
+  } else {
+    ctx.b = usage == C_ROOT ? C_POS : usage;
+  }
+  // Restore the recorded bindings, as flatten_let does
+  LetFlatScope lfs(let);
+  LetPushBindings lpb(let);
+  for (auto* local : let->let()) {
+    auto* localVd = Expression::cast<VarDecl>(local);
+    LetFlatScope::bind(localVd, localVd->e());
+  }
+  // A Boolean expression is false where it is undefined (relational semantics), so the
+  // definition itself is never undefined.
+  (void)flat_exp(env, ctx, let->in(), vd, env.constants.varTrue);
+  return true;
+}
+}  // namespace
+
 void add_path_annotation(EnvI& env, Expression* e) {
   if (!(Expression::type(e).isAnn() || Expression::isa<Id>(e)) && Expression::type(e).dim() == 0) {
     Annotation& ann = Expression::ann(e);
@@ -666,6 +954,7 @@ Ref<VarDecl> new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, Va
             vd = make<VarDecl>(get_loc(env, origVd, rhs), ti, get_id(env, origId));
             hasBeenAdded = false;
             update_bounds(env, ovd, vd);
+            reversePathMap.insert(vd, path);
           }
 
           // Check whether ovd was unified in a previous pass
@@ -1253,6 +1542,9 @@ void EnvI::releasePassState() {
 
 void EnvI::flatRemoveExpr(Expression* e, Item* i) {
   std::vector<VarDecl*> toRemove;
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+    release_deferred_bool_def(*this, vd, i, &toRemove);
+  }
   CollectDecls cd(*this, varOccurrences, toRemove, i);
   top_down(cd, e);
 
@@ -1267,6 +1559,7 @@ void EnvI::flatRemoveExpr(Expression* e, Item* i) {
       auto* vdi = flat[*cur_idx.second]->cast<VarDeclI>();
 
       if (!is_output(vdi->e()) && !vdi->removed()) {
+        release_deferred_bool_def(*this, vdi->e(), vdi, &toRemove);
         CollectDecls cd(*this, varOccurrences, toRemove, vdi);
         top_down(cd, vdi->e()->e());
         vdi->remove();
@@ -3119,10 +3412,7 @@ Ref<Expression> bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e) {
       if (auto* e_vd = Expression::dynamicCast<VarDecl>(e)) {
         e = e_vd->id();
         if (!env.inReverseMapVar && ctx.b != C_ROOT && Expression::type(e) == Type::varbool()) {
-          env.addCtxAnn(e_vd, ctx.b);
-          if (e_vd != ident->decl()) {
-            env.addCtxAnn(ident->decl(), ctx.b);
-          }
+          add_ctx_ann_alias(env, ident->decl(), e_vd, ctx.b);
         }
       }
     }
@@ -4505,6 +4795,7 @@ void flatten(Env& e, FlatteningOptions opt) {
     }
 
     // Flatten main model
+    env.deferBoolDefs = true;
     bool hadSolveItem = false;
     FlattenModelVisitor _fv(env, hadSolveItem, timingMap);
     iter_items<FlattenModelVisitor>(_fv, e.model());
@@ -4609,6 +4900,11 @@ void flatten(Env& e, FlatteningOptions opt) {
 
         if (auto* vdi = m[i]->dynamicCast<VarDeclI>()) {
           if (vdi->removed()) {
+            continue;
+          }
+          if (!flatten_deferred_bool_def(env, vdi, doLastProcessing)) {
+            // Requeued once its users are flattened, and forced last if they never are (a cycle)
+            processLast.push_back(i);
             continue;
           }
           /// Look at constraints
@@ -5210,6 +5506,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       startItem = endItem + 1;
       endItem = static_cast<int>(m.size()) - 1;
     }
+    env.deferBoolDefs = false;
 
     // Add redefinitions for output variables that may have been redefined since create_output
     for (unsigned int i = 0; i < env.output->size(); i++) {

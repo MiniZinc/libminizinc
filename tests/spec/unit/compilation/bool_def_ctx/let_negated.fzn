@@ -1,0 +1,12 @@
+
+predicate foo_reif(var int: x,int: i,var bool: r);
+var 0..10: x:: output_var;
+var bool: q:: output_var;
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+constraint bool_clause([q],[X_INTRODUCED_2_]);
+constraint foo_reif(x,1,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
+constraint foo_reif(x,2,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+constraint bool_clause_reif([X_INTRODUCED_0_,X_INTRODUCED_1_],[],X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+solve  satisfy;

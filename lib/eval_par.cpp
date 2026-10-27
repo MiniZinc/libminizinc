@@ -373,7 +373,10 @@ Ref<Expression> EvalBase::flattenCV(EnvI& env, Expression* e) {
   Ctx ctx;
   ctx.i = C_MIX;
   ctx.b = (Expression::type(e).bt() == Type::BT_BOOL) ? C_MIX : C_ROOT;
-  EE ee = flat_exp(env, ctx, e, nullptr, env.constants.varTrue);
+  // Iterating does not use the elements of an array: the generator variable does
+  EE ee = Expression::isa<Id>(e) && Expression::type(e).dim() > 0
+              ? flatten_id(env, ctx, e, nullptr, env.constants.varTrue, false, true)
+              : flat_exp(env, ctx, e, nullptr, env.constants.varTrue);
   return ee.r;
 }
 

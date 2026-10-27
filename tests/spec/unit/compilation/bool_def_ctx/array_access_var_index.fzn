@@ -1,0 +1,12 @@
+
+predicate foo_imp(var int: x,int: i,var bool: r);
+predicate gecode_bool_element(var int: idx,int: idxoffset,array [int] of var bool: x,var bool: c);
+var 0..10: x:: output_var;
+var 1..2: y:: output_var;
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+array [1..2] of var bool: X_INTRODUCED_2_ ::var_is_introduced  = [X_INTRODUCED_0_,X_INTRODUCED_1_];
+constraint gecode_bool_element(y,1,X_INTRODUCED_2_,true);
+constraint foo_imp(x,1,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
+constraint foo_imp(x,2,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+solve  satisfy;
