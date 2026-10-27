@@ -68,6 +68,9 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
+-  Allow multi-dimensional arrays in ``sum`` over optional values, par
+   ``forall``/``exists`` over optional Booleans, ``array2set`` and
+   ``has_element``.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
