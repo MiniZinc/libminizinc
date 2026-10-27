@@ -212,7 +212,13 @@ void OverflowHandler::handle(unsigned int code) {
   // To be used as SEH exception handler on Windows
   switch (code) {
     case EXCEPTION_STACK_OVERFLOW: {
+#ifdef __MINGW32__
+      // Called from an unhandled exception filter, still on the overflowed
+      // stack, where the stack cannot be reset (see wmain).
+      const bool stackReset = false;
+#else
       const bool stackReset = _resetstkoflw() != 0;
+#endif
       const char* msg =
           "MiniZinc error: Memory violation detected (stack overflow).\n"
           "Check for deep (or infinite) recursion in the model.\n";
