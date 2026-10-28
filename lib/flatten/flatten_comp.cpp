@@ -213,6 +213,7 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
       Ref<Expression> new_e;
 
       Call* surround = env.surroundingCall();
+      ASTString surroundId = surround != nullptr ? EnvI::stdlibCallId(surround) : ASTString();
 
       Type ntype = c->type();
 
@@ -225,15 +226,15 @@ EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b
         indexes = nullptr;
       }
 
-      if ((surround != nullptr) && surround->id() == env.constants.ids.forall) {
+      if ((surround != nullptr) && surroundId == env.constants.ids.forall) {
         new_e = make<BinOp>(Location().introduce(), cond, BOT_IMPL, generatedExp);
         Expression::type(new_e, Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if ((surround != nullptr) && surround->id() == env.constants.ids.exists) {
+      } else if ((surround != nullptr) && surroundId == env.constants.ids.exists) {
         new_e = make<BinOp>(Location().introduce(), cond, BOT_AND, generatedExp);
         Expression::type(new_e, Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if ((surround != nullptr) && surround->id() == env.constants.ids.sum) {
+      } else if ((surround != nullptr) && surroundId == env.constants.ids.sum) {
         // If the body of the comprehension is par, turn the whole expression into a linear sum.
         // Otherwise, generate if-then-else expressions.
         Type tt;

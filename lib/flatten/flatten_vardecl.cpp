@@ -91,6 +91,17 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         vd->ti()->type(t);
         vd->type(t);
       }
+      if (vd->e() != nullptr && vd->type().isOpt() && vd->type().dim() == 0 &&
+          Expression::type(vd->e()).isPresent()) {
+        // Flattening the RHS resulted in a non-optional expression (e.g. an if-then-else with a
+        // par condition, or a call to a function with an optional return type). Make the variable
+        // non-optional, since an optional variable is otherwise represented by new occurs and
+        // value variables that would not be connected to the RHS.
+        Type t(vd->ti()->type());
+        t.ot(Type::OT_PRESENT);
+        vd->ti()->type(t);
+        vd->type(t);
+      }
     }
 
     // Flatten the annotations now that the RHS has been bound. This is deferred
