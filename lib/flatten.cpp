@@ -2268,6 +2268,13 @@ Call* EnvI::surroundingCall() const {
   return nullptr;
 }
 
+ASTString EnvI::stdlibCallId(const Call* c) {
+  if (c->decl() != nullptr && c->decl()->isMonomorphised() && c->decl()->fromStdLib()) {
+    return ASTString(demonomorphise_identifier(c->id()));
+  }
+  return c->id();
+}
+
 void EnvI::gatherCycleCandidates(std::initializer_list<Model*> models) {
   for (Model* m : models) {
     if (m != nullptr) {

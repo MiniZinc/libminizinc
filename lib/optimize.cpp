@@ -459,7 +459,13 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
       auto cur_idx = envi.varOccurrences.idx.find(cur->id());
       if (cur_idx.first && !m[*cur_idx.second]->removed()) {
         auto* vdi = m[*cur_idx.second]->cast<VarDeclI>();
-        cur = vdi->e();
+        if (vdi->e() != cur) {
+          // cur has been unified with another variable, so check whether that one can be removed
+          cur = vdi->e();
+          if (!can_remove_fzn_vardecl(envi, cur)) {
+            continue;
+          }
+        }
         if (is_output(cur)) {
           // We have to change the output model if we remove this variable
           Ref<Expression> val = fixed_output_value(cur);

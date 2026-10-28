@@ -470,7 +470,7 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
   // comprehension. At root we can therefore assert it directly, exactly like
   // the builtin `forall(var bool)`, avoiding the reification of every element.
   bool deoptableForall = false;
-  if (cid == env.constants.ids.forall && decl->e() != nullptr) {
+  if (decl->e() != nullptr && EnvI::stdlibCallId(c) == env.constants.ids.forall) {
     if (auto* comp = Expression::dynamicCast<Comprehension>(c->arg(0))) {
       if (comp->type().isOpt() && !Expression::isa<ArrayLit>(comp->e()) &&
           !Expression::type(comp->e()).isOpt()) {
@@ -479,8 +479,10 @@ EE flatten_call(EnvI& env, const Ctx& input_ctx, Expression* e, VarDecl* r, VarD
     }
   }
 
+  // (a specialised `forall' keeps its own identifier, so cid == c->id() means it was not negated)
   if (ctx.b == C_ROOT && (decl->e() == nullptr || deoptableForall) &&
-      cid == env.constants.ids.forall && r == env.constants.varTrue) {
+      (cid == env.constants.ids.forall || (deoptableForall && cid == c->id())) &&
+      r == env.constants.varTrue) {
     ret.b = bind(env, ctx, b, env.constants.literalTrue);
     Ref<Expression> ka;
     ArrayLit* al;

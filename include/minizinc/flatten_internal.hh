@@ -726,6 +726,9 @@ public:
   /// deprecated, use Solns2Out
   std::ostream& evalOutput(std::ostream& os, std::ostream& log);
   Call* surroundingCall() const;
+  /// The identifier of \a c, without the prefix added when specialising a polymorphic standard
+  /// library function (so that e.g. a specialised `forall' can be recognised as `forall')
+  static ASTString stdlibCallId(const Call* c);
 
   void cleanupExceptOutput();
   std::default_random_engine& rndGenerator() { return _g; }

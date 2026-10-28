@@ -68,9 +68,14 @@ Changes:
 
 Bug fixes:
 ^^^^^^^^^^
--  Allow multi-dimensional arrays in ``sum`` over optional values, par
+-  Allow multi-dimensional arrays in ``sum`` over optional values,
    ``forall``/``exists`` over optional Booleans, ``array2set`` and
    ``has_element``.
+-  Fix optional variables whose definition turns out to be non-optional during
+   compilation (for example an if-then-else with a fixed condition) being
+   disconnected from their definition, which could lead to incorrect solutions.
+-  Fix the FlatZinc optimiser removing the definition of a variable that had
+   been unified with another variable, which could lead to incorrect solutions.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
