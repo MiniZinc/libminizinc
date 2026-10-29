@@ -89,6 +89,10 @@ Bug fixes:
 -  Fix a crash when printing an output tuple or record variable whose fields
    are defined in a let expression (or otherwise not top-level variables),
    including when another variable is defined from one of its fields.
+-  Fix the evaluation of if-then-else expressions whose condition is par but
+   depends on variables (e.g. a par function applied to an array of variables
+   defined by a comprehension), which could fail with an evaluation error or
+   crash.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
