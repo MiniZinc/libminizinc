@@ -86,6 +86,9 @@ Bug fixes:
    or record expressions that depend on variables, such as a tuple literal
    containing a par function call with variable arguments, or a field access
    of such a call.
+-  Fix a crash when printing an output tuple or record variable whose fields
+   are defined in a let expression (or otherwise not top-level variables),
+   including when another variable is defined from one of its fields.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could

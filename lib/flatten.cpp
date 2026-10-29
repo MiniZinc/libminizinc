@@ -5517,8 +5517,15 @@ void flatten(Env& e, FlatteningOptions opt) {
         if (vdi->e()->e() == nullptr) {
           auto it = env.reverseMappers.find(vdi->e()->id());
           if (it != env.reverseMappers.end()) {
-            auto rhs = copy(env, env.cmap, it->second).cast<Call>();
-            check_output_par_fn(env, rhs);
+            // The reverse mapper is either a call or a tuple/record literal
+            Ref<Expression> rhs = copy(env, env.cmap, it->second);
+            if (Call* crhs = Expression::dynamicCast<Call>(rhs)) {
+              check_output_par_fn(env, crhs);
+            } else {
+              Type rhs_t(Expression::type(rhs));
+              rhs_t.mkPar(env);
+              Expression::type(rhs, rhs_t);
+            }
             output_vardecls(env, vdi, rhs);
 
             remove_is_output(vdi->e()->flat());
