@@ -77,6 +77,11 @@ Bug fixes:
    disconnected from their definition, which could lead to incorrect solutions.
 -  Fix the FlatZinc optimiser removing the definition of a variable that had
    been unified with another variable, which could lead to incorrect solutions.
+-  Fix a crash in polymorphic functions with a comprehension over an array of
+   tuples or records with an ``any $T`` field (such as ``[x_i.2 | x_i in x]``
+   for ``x`` of type ``array [int] of tuple(int, any $T)``).
+-  Fix an assertion failure when instantiating a polymorphic function whose
+   parameter is a tuple or record with an ``any $T`` field with a par argument.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could

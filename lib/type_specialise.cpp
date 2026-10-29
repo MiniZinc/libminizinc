@@ -444,6 +444,12 @@ public:
           curType.ti(concrete_type.ti());
           curType.cv(concrete_type.cv());
         }
+      } else if (curType.structBT() && Expression::isa<ArrayLit>(ti->domain())) {
+        // Likewise for a struct given by its field types: the declared struct is var if any field
+        // could be var (e.g. an `any $T' field), which need not hold for this instance (e.g. the
+        // par version created for output).
+        curType.ti(Type::TI_PAR);
+        curType.cv(false);
       }
       curType.typeId(concrete_type.typeId());
       ti->type(curType);
