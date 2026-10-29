@@ -82,6 +82,10 @@ Bug fixes:
    for ``x`` of type ``array [int] of tuple(int, any $T)``).
 -  Fix an assertion failure when instantiating a polymorphic function whose
    parameter is a tuple or record with an ``any $T`` field with a par argument.
+-  Fix the evaluation of variables (an assertion failure or crash) in par tuple
+   or record expressions that depend on variables, such as a tuple literal
+   containing a par function call with variable arguments, or a field access
+   of such a call.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could

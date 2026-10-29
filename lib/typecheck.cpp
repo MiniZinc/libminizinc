@@ -1713,6 +1713,7 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
           assert(al->isTuple());
           std::vector<Type> pt(current->size());
           bool allPar = true;
+          bool cv = false;
           for (unsigned int i = 0; i < al->size(); i++) {
             Type elemTy = (*intended)[i];
             elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy);
@@ -1720,6 +1721,7 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
             if (pt[i].isvar()) {
               allPar = false;
             }
+            cv = cv || pt[i].cv();
           }
           if (current->size() > al->size()) {
             // Nested array wrapper
@@ -1729,6 +1731,8 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
           Type st = getStructType(current, pt);
           if (allPar) {
             st.mkPar(env);
+            // A par tuple still contains variables if one of its fields does
+            st.cv(cv);
           }
           c_al->type(st);
         }

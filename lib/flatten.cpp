@@ -4269,7 +4269,10 @@ Ref<Expression> flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         assert(Expression::isa<IntLit>(fa->field()));
         IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));
 
-        Ref<ArrayLit> al = eval_array_lit(env, fa->v());
+        // The struct itself may be cv (e.g. a call with var arguments), so it must not be
+        // evaluated directly
+        Ref<Expression> v = flat_cv_exp(env, ctx, fa->v());
+        Ref<ArrayLit> al = eval_array_lit(env, v);
 
         return flat_cv_exp(env, ctx, (*al)[static_cast<unsigned int>(i.toInt()) - 1]);
       }
