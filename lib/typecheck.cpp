@@ -5572,7 +5572,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       }
     } else if (decl->toplevel() && decl->type().structBT() && decl->e() == nullptr &&
                !ignoreUndefinedParameters && decl->type().contains(env.envi(), [](Type t) {
-                 return !t.structBT() && t.isPar() && !t.isAnn() && !t.isunknown();
+                 return !t.structBT() && t.isPar() && !t.isunknown();
                })) {
       // A var tuple or record with par fields cannot be a decision variable, since the values of
       // its par fields have to be known (arrays of arrays are tuples with an unknown field)
