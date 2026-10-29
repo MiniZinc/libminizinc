@@ -247,6 +247,7 @@ Type Type::commonType(EnvI& env, Type t1, Type t2, bool strictEnums) {
     return t1;
   }
   if (t1 == Type::bot()) {
+    t2.cv(t1.cv() || t2.cv());
     return t2;
   }
 
@@ -303,10 +304,12 @@ Type Type::commonType(EnvI& env, Type t1, Type t2, bool strictEnums) {
   // common supertype with `<>', because `var opt' structs are not supported.)
   if (t1.structBT() && t1.isPar() && t2.isOptBot()) {
     t1.mkOpt();
+    t1.cv(t1.cv() || t2.cv());
     return t1;
   }
   if (t2.structBT() && t2.isPar() && t1.isOptBot()) {
     t2.mkOpt();
+    t2.cv(t1.cv() || t2.cv());
     return t2;
   }
 
