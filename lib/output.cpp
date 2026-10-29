@@ -2144,11 +2144,18 @@ void finalise_output(EnvI& e) {
             } else {
               auto it = e.reverseMappers.find(vd->id());
               if (it != e.reverseMappers.end()) {
-                auto rhs = copy(e, e.cmap, it->second).cast<Call>();
-                check_output_par_fn(e, rhs);
+                // The reverse mapper is either a call or a tuple/record literal
+                Ref<Expression> rhs = copy(e, e.cmap, it->second);
+                if (Call* crhs = Expression::dynamicCast<Call>(rhs)) {
+                  check_output_par_fn(e, crhs);
+                } else {
+                  Type rhs_t(Expression::type(rhs));
+                  rhs_t.mkPar(e);
+                  Expression::type(rhs, rhs_t);
+                }
                 remove_is_output(reallyFlat);
 
-                output_vardecls(e, item, Expression::cast<Call>(it->second));
+                output_vardecls(e, item, it->second);
                 vd->e(rhs);
 
                 if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
@@ -2258,11 +2265,13 @@ void finalise_output(EnvI& e) {
                 }
               }
             }
-            // Remove enum type
-            Type vdt = vd->type();
-            vdt.typeId(0);
-            vd->type(vdt);
-            vd->ti()->type(vdt);
+            // Remove enum type (the type id of a tuple or record type is required)
+            if (!vd->type().structBT()) {
+              Type vdt = vd->type();
+              vdt.typeId(0);
+              vd->type(vdt);
+              vd->ti()->type(vdt);
+            }
           }
           e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), i);
           CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
