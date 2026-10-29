@@ -2708,6 +2708,12 @@ public:
       for (unsigned int j = 0; j < c->numberOfDecls(gen_i); j++) {
         c->decl(gen_i, j)->type(ty_id);
         c->decl(gen_i, j)->ti()->type(ty_id);
+        if (ty_id.structBT() && c->decl(gen_i, j)->ti()->domain() != nullptr) {
+          // When retyping a specialised copy of a polymorphic function, the struct domain is
+          // still the one computed for the polymorphic generator type (see vComprehension).
+          // Typing the TypeInst would then re-register the struct type from those stale fields.
+          c->decl(gen_i, j)->ti()->setStructDomain(_env, ty_id);
+        }
       }
     }
   }
