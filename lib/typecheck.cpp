@@ -3366,6 +3366,16 @@ public:
           ss << "let variable `" << vdi->id()->v() << "' must be initialised";
           throw TypeError(_env, Expression::loc(vdi), ss.str());
         }
+        if (vdi->type().structBT() && vdi->e() == nullptr && vdi->type().contains(_env, [](Type t) {
+              return !t.structBT() && t.isPar() && !t.isunknown();
+            })) {
+          // The values of the par fields of a var tuple or record have to be known (arrays of
+          // arrays are tuples with an unknown field)
+          std::ostringstream ss;
+          ss << "let variable `" << vdi->id()->v()
+             << "' must be initialised, since it has par fields";
+          throw TypeError(_env, Expression::loc(vdi), ss.str());
+        }
         if (vdi->ti()->hasTiVariable()) {
           std::ostringstream ss;
           ss << "type-inst variables not allowed in type-inst for let variable `"
@@ -5560,6 +5570,17 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
            << "' must be defined (did you forget to specify a data file?)";
         typeErrors.emplace_back(env.envi(), Expression::loc(decl), ss.str());
       }
+    } else if (decl->toplevel() && decl->type().structBT() && decl->e() == nullptr &&
+               !ignoreUndefinedParameters && decl->type().contains(env.envi(), [](Type t) {
+                 return !t.structBT() && t.isPar() && !t.isAnn() && !t.isunknown();
+               })) {
+      // A var tuple or record with par fields cannot be a decision variable, since the values of
+      // its par fields have to be known (arrays of arrays are tuples with an unknown field)
+      std::ostringstream ss;
+      ss << "  symbol error: variable `" << decl->id()->str()
+         << "' must be defined, since it has par fields (did you forget to specify a data "
+            "file?)";
+      typeErrors.emplace_back(env.envi(), Expression::loc(decl), ss.str());
     }
     if (decl->ti()->isEnum()) {
       decl->ti()->setIsEnum(false);
