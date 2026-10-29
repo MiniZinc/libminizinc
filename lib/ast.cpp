@@ -1771,8 +1771,8 @@ Type type_from_tmap(EnvI& env, TypeInst* ti,
       ret.typeId(env.registerArrayEnum(enumIds));
     } else {
       ret.typeId(it->second.first.typeId());
-      ret.cv(ret.cv() || it->second.first.cv());
     }
+    ret.cv(ret.cv() || it->second.first.cv());
   }
   if (!rh.empty()) {
     auto it = tmap.find(rh);
