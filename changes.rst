@@ -95,6 +95,9 @@ Bug fixes:
    crash.
 -  Fix the type of ``fix`` (and other functions with a par return type) applied
    to an array of tuples or records with var fields, which kept the fields var.
+-  Report an error for a top-level variable or let variable of a tuple or
+   record type with par fields that is not defined, instead of failing with
+   an obscure evaluation error or output syntax error.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
