@@ -180,10 +180,6 @@ include(cmake/targets/libminizinc_osicbc.cmake)
 include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
 
-if(GECODE_FOUND)
-  target_link_libraries(mzn Gecode::Minimodel Gecode::Support)
-endif()
-
 
 ### Add all necessary files to the install target
 install(

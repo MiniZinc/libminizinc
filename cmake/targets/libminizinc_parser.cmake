@@ -93,7 +93,7 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
-if(NOT GECODE_FOUND)
+if(NOT Gecode_FOUND)
   set(FLEX_RegExLexer_OUTPUTS "")
   set(BISON_RegExParser_OUTPUTS "")
 endif()
@@ -157,7 +157,7 @@ set_target_properties(minizinc_parser PROPERTIES
 # Supply tree_sitter/parser.h to the generated grammars.
 target_link_libraries(minizinc_parser PRIVATE tree_feller::parser_header)
 
-if(GECODE_FOUND)
-  target_include_directories(minizinc_parser PRIVATE "${GECODE_INCLUDE_DIRS}")
+if(Gecode_FOUND)
+  target_include_directories(minizinc_parser PRIVATE "${Gecode_INCLUDE_DIRS}")
   target_compile_definitions(minizinc_parser PRIVATE HAS_GECODE)
 endif()
