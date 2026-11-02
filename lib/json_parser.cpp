@@ -1000,7 +1000,9 @@ Ref<Expression> JSONParser::coerceArray(TypeInst* ti, Ref<ArrayLit> al) {
   }
   args[args.size() - 1] = al;
   ASTString name;
-  if (al->dims() == 1) {
+  if (al->dims() == 1 || (al->empty() && al->dims() != ti->ranges().size())) {
+    // (An empty array in JSON may have fewer dimensions than declared, e.g. [[],[]] for a
+    // three-dimensional array)
     name = ASTString("array" + std::to_string(ti->ranges().size()) + "d");
   } else {
     name = ASTString("array_index_shift");
