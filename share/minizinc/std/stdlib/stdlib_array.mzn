@@ -652,10 +652,14 @@ annotation array_check_form;
 function array [$T] of any $V: arrayXd(array [$T] of any $X: x, array [$U] of any $V: y);
 
 /** @group stdlib.builtins.array Return an index set with the same cardinality as \a s,
-  starting at the minimum value of \a idx.
+  starting at the minimum value of \a idx (or \a idx itself if it is empty).
 */
 function set of $$E: shift_index_set(set of $$E: idx, set of $$F: s) =
-  min(idx)..to_enum(enum_of(idx), enum2int(min(idx))+card(s)-1);
+  if card(idx) = 0 then
+    idx
+  else
+    min(idx)..to_enum(enum_of(idx), enum2int(min(idx))+card(s)-1)
+  endif;
 
 /** @group stdlib.builtins.array Return array \a y with its index set shifted to start at \a idx. */
 function array[$$E] of any $V: array_index_shift(set of $$E: idx, array[$$F] of any $V: y) =

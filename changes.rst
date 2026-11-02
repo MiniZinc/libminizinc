@@ -104,6 +104,9 @@ Bug fixes:
 -  Report an error for a top-level variable or let variable of a tuple or
    record type with par fields that is not defined, instead of failing with
    an obscure evaluation error or output syntax error.
+-  Fix JSON input for multi-dimensional arrays with an empty index set (such
+   as ``array[1..n, 1..0] of bool`` given as ``[[], [], []]``), which failed
+   since version 2.10.0.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
