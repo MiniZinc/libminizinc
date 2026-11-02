@@ -162,6 +162,7 @@ Bug fixes:
    operator precedence error made the prefix sum definitions part of the
    reified condition, which could produce an incorrect value for the control
    variable.
+-  Make MIPdomains process the variables of a clique in a deterministic order.
 
 .. _v2.10.1:
 

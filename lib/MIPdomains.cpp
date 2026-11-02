@@ -966,11 +966,19 @@ private:
                                  // it is a var with eq_encode, ||
                                  // an (integer if any) variable with the least rel. factor
     bool fRef1HasEqEncode = false;
+    /// Orders the clique's vars by their index in _vVarDescr, not by address,
+    /// so that the choice of reference vars and the order of the domain
+    /// constraints (and so the names of the domain flags) are the same on every run
+    struct VarDeclByPayload {
+      bool operator()(const VarDecl* a, const VarDecl* b) const {
+        return a->payload() < b->payload();
+      }
+    };
     /// This map stores the relations y = ax+b of all the clique's vars to y
-    typedef std::unordered_map<VarDecl*, std::pair<double, double>> TMapVars;
+    typedef std::map<VarDecl*, std::pair<double, double>, VarDeclByPayload> TMapVars;
     TMapVars mRef0, mRef1;  // to the main var 0, 1
 
-    class TMatrixVars : public std::unordered_map<VarDecl*, TMapVars> {
+    class TMatrixVars : public std::map<VarDecl*, TMapVars, VarDeclByPayload> {
     public:
       /// Check existing connection
       template <class IVarDecl>
