@@ -26,8 +26,7 @@ protected:
 
 public:
   SignalRaised(int signal) : _signal(signal) {}
-  ~SignalRaised() throw() override {}
-  const char* what() const throw() override { return "signal raised"; }
+  const char* what() const noexcept override { return "signal raised"; }
   int signal() const { return _signal; }
   /// Re-raise this signal
   void raise() const;
@@ -43,8 +42,7 @@ public:
   Exception(std::string msg) { setMsg(std::move(msg)); }
   Exception(const Exception&) noexcept = default;
   Exception& operator=(const Exception&) noexcept = default;
-  ~Exception() throw() override {}
-  const char* what() const throw() override = 0;
+  const char* what() const noexcept override = 0;
   const std::string& msg() const { return *_msg; }
   /// Print human-readable error message
   virtual void print(std::ostream& os) const;
@@ -55,23 +53,20 @@ public:
 class InternalError : public Exception {
 public:
   InternalError(const std::string& msg) : Exception(msg) {}
-  ~InternalError() throw() override {}
-  const char* what() const throw() override { return "internal error"; }
+  const char* what() const noexcept override { return "internal error"; }
   void print(std::ostream& os) const override;
 };
 
 class Error : public Exception {
 public:
   Error(const std::string& msg) : Exception(msg) {}
-  ~Error() throw() override {}
-  const char* what() const throw() override { return "error"; }
+  const char* what() const noexcept override { return "error"; }
 };
 
 class Timeout : public Exception {
 public:
   Timeout() : Exception("time limit reached") {}
-  ~Timeout() throw() override {}
-  const char* what() const throw() override { return "time out"; }
+  const char* what() const noexcept override { return "time out"; }
 };
 
 class BadOption : public Exception {
@@ -80,8 +75,7 @@ protected:
 
 public:
   BadOption(const std::string& msg = "") : Exception(msg) {}
-  ~BadOption() throw() override {}
-  const char* what() const throw() override { return "argument parsing error"; }
+  const char* what() const noexcept override { return "argument parsing error"; }
   void print(std::ostream& os) const override;
 
   void usage(const std::string& usage) { _usage = std::make_shared<const std::string>(usage); }
@@ -94,8 +88,7 @@ public:
 class ArithmeticError : public Exception {
 public:
   ArithmeticError(const std::string& msg) : Exception(msg) {}
-  ~ArithmeticError() throw() override {}
-  const char* what() const throw() override { return "arithmetic error"; }
+  const char* what() const noexcept override { return "arithmetic error"; }
 };
 
 /// Allows throwing multiple errors at once
@@ -108,8 +101,7 @@ protected:
 public:
   MultipleErrors(std::vector<T> errors)
       : Exception(""), _errors(std::make_shared<const std::vector<T>>(std::move(errors))) {}
-  ~MultipleErrors() throw() override {}
-  const char* what() const throw() override { return "multiple errors"; }
+  const char* what() const noexcept override { return "multiple errors"; }
 
   void print(std::ostream& os) const override {
     if (_errors->size() > 1) {
@@ -137,10 +129,8 @@ class PluginError : public Exception {
 public:
   /// Construct with message \a msg
   PluginError(const std::string& msg) : Exception(msg) {}
-  /// Destructor
-  ~PluginError() throw() override {}
   /// Return description
-  const char* what() const throw() override { return "plugin loading error"; }
+  const char* what() const noexcept override { return "plugin loading error"; }
 };
 
 }  // namespace MiniZinc

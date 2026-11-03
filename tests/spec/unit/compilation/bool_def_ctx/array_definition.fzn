@@ -1,0 +1,12 @@
+
+predicate foo_imp(var int: x,int: i,var bool: r);
+var 0..10: x:: output_var;
+var bool: q:: output_var;
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var bool: t:: is_defined_var;
+constraint bool_clause([q,t],[]);
+constraint bool_clause([X_INTRODUCED_0_,X_INTRODUCED_1_],[t]):: defines_var(t);
+constraint foo_imp(x,1,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
+constraint foo_imp(x,2,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+solve  satisfy;

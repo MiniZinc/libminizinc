@@ -50,14 +50,14 @@ ASTStringData::Interner& ASTStringData::interner() {
   return _interner;
 }
 
-ASTStringData::ASTStringData(const std::string& s)
+ASTStringData::ASTStringData(std::string_view s)
     : ASTChunk(s.size() + sizeof(size_t) + 1, ASTNode::NID_STR) {
   // Get a pointer to the start of the data area
   char* dataPtr = _data;  // Access the _data member inherited from ASTChunk
 
   // Compute the hash
   CStringHash hasher;
-  size_t hashValue = hasher(std::make_pair(s.c_str(), s.size()));
+  size_t hashValue = hasher(s);
 
   // Store the hash
   *reinterpret_cast<size_t*>(dataPtr) = hashValue;
@@ -66,26 +66,26 @@ ASTStringData::ASTStringData(const std::string& s)
   char* stringPtr = dataPtr + sizeof(size_t);
 
   // Copy the string into it.
-  std::memcpy(stringPtr, s.c_str(), s.size());
+  std::memcpy(stringPtr, s.data(), s.size());
   stringPtr[s.size()] = 0;  // Null terminate
 }
 
-ASTStringData* ASTStringData::a(const std::string& s) {
+ASTStringData* ASTStringData::a(std::string_view s) {
   if (s.empty()) {
     return nullptr;
   }
-  auto it = interner().find({s.c_str(), s.size()});
+  auto it = interner().find(s);
   if (it != interner().end()) {
     return it->second;
   }
   auto* as = static_cast<ASTStringData*>(alloc(1 + sizeof(size_t) + s.size()));
   new (as) ASTStringData(s);
-  interner().emplace(std::make_pair(as->c_str(), as->size()), as);
+  interner().emplace(as->view(), as);
   return as;
 }
 
 void ASTStringData::unintern(ASTNode* n) {
   auto* s = static_cast<ASTStringData*>(n);
-  interner().erase({s->c_str(), s->size()});
+  interner().erase(s->view());
 }
 }  // namespace MiniZinc

@@ -11,29 +11,29 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
-// Macro so that we can use overloaded wide versions of fstream::open for Windows
-#if defined(_WIN32) && defined(_MSC_VER)
-#define FILE_PATH(path) MiniZinc::FileUtils::utf8_to_wide(path)
-#elif defined(_WIN32)
-// libstdc++ (MinGW) only provides `const wchar_t*` overloads, not std::wstring.
-// The temporary lives until the end of the full-expression that opens the file.
-#define FILE_PATH(path) MiniZinc::FileUtils::utf8_to_wide(path).c_str()
-#else
-#define FILE_PATH(path) (path)
-#endif
+namespace MiniZinc::FileUtils {
 
-namespace MiniZinc {
-namespace FileUtils {
+/// Convert the UTF-8 encoded \a path to a filesystem path (e.g. to open a file stream)
+inline std::filesystem::path to_path(std::string_view path) {
+  return std::filesystem::u8path(path);
+}
+/// Convert \a path to a UTF-8 encoded string
+inline std::string to_utf8(const std::filesystem::path& path) { return path.u8string(); }
 
-/// Return full path to current executable
+/// Return the directory of the current executable
 std::string progpath();
+/// Return the UTF-8 encoded value of environment variable \a env, if it is set
+std::optional<std::string> get_env(const std::string& env);
 /// Test if \a filename exists
-bool file_exists(const std::string& filename);
+bool file_exists(std::string_view filename);
 /// Test if \a dirname exists and is a directory
-bool directory_exists(const std::string& dirname);
+bool directory_exists(std::string_view dirname);
 /// Return the contents of a PATH-like environment variable.
 std::vector<std::string> get_env_list(const std::string& env);
 /// Find executable \a filename relative to basePath if set,
@@ -51,25 +51,20 @@ std::string find_executable(const std::string& filename, const std::string& base
 std::string find_library(const std::string& name, const std::string& basePath = "");
 /// Return full path to file. If \a basePath is not empty, resolve
 /// relative paths with respect to \a basePath.
-std::string file_path(const std::string& filename, const std::string& basePath = std::string());
-/// Return \a name appended to \a dir, separated by a slash
-std::string join_path(const std::string& dir, const std::string& name);
-/// Return directory name containing \a filename
-std::string dir_name(const std::string& filename);
+std::string file_path(std::string_view filename, std::string_view basePath = {});
+/// Return \a name appended to \a dir, with a separator if needed
+std::string join_path(std::string_view dir, std::string_view name);
+/// Return directory name containing \a filename, or "." if it has no directory part
+std::string dir_name(std::string_view filename);
 /// Return base name of \a filename (without dir_name)
-std::string base_name(const std::string& filename);
+std::string base_name(std::string_view filename);
 /// Check whether path is absolute
-bool is_absolute(const std::string& path);
-/// Return list of files with extension \a ext in directory \a dir
-std::vector<std::string> directory_list(const std::string& dir,
-                                        const std::string& ext = std::string("*"));
+bool is_absolute(std::string_view path);
 /// Return share/minizinc directory if present anywhere above the executable
 std::string share_directory();
 /// Return the contents of \a filename, decoding base64-encoded deflate data
 /// when the file starts with "@". Throws errno if the file cannot be read.
 std::string read_file_contents(const std::string& filename);
-/// Return current working directory
-std::string working_directory();
 /// Get global configuration file name (in share/minizinc directory)
 std::string global_config_file();
 /// Get per-user configuration file name (usually in home directory or AppData directory)
@@ -81,35 +76,31 @@ std::vector<std::string> parse_cmd_line(const std::string& s);
 /// Combine individual arguments \a cmd into properly quoted command line
 std::string combine_cmd_line(const std::vector<std::string>& cmd);
 
-/// Create a temporary file
-class TmpFile {
-private:
-  std::string _name;
-#ifdef _WIN32
-  std::vector<std::string> _tmpNames;
-#endif
-#ifndef _WIN32
-  int _tmpfileDesc;
-#endif
-public:
-  // Constructor for file with extension \a ext
-  TmpFile(const std::string& ext);
-  /// Destructor (removes file)
-  ~TmpFile();
-  std::string name() const { return _name; }
-};
-
-/// Create a temporary directory
+/// A new temporary directory, only accessible by the user
 class TmpDir {
 private:
   std::string _name;
 
 public:
-  // Constructor for difrectory
+  /// Create the directory
   TmpDir();
-  /// Destructor (removes directory)
+  /// Remove the directory and its contents
   ~TmpDir();
-  std::string name() const { return _name; }
+  TmpDir(const TmpDir&) = delete;
+  TmpDir& operator=(const TmpDir&) = delete;
+  const std::string& name() const { return _name; }
+};
+
+/// A new empty temporary file, in its own temporary directory
+class TmpFile {
+private:
+  TmpDir _dir;
+  std::string _name;
+
+public:
+  /// Create the file, with extension \a ext
+  explicit TmpFile(const std::string& ext);
+  const std::string& name() const { return _name; }
 };
 
 /// Inflate string \a s
@@ -123,11 +114,8 @@ std::string decode_base64(const std::string& s);
 
 #ifdef _WIN32
 /// Convert UTF-16 string to UTF-8
-std::string wide_to_utf8(const wchar_t* str, int size = -1);
-/// Convert UTF-16 string to UTF-8
 std::string wide_to_utf8(const std::wstring& str);
 /// Convert UTF-8 string to UTF-16
 std::wstring utf8_to_wide(const std::string& str);
 #endif
-}  // namespace FileUtils
-}  // namespace MiniZinc
+}  // namespace MiniZinc::FileUtils

@@ -8,12 +8,6 @@
 
 #define MZN_STATIC_STDLIB_DIR "${MZN_STATIC_STDLIB_DIR}"
 
-#cmakedefine HAS_PIDPATH
-
-#cmakedefine HAS_GETMODULEFILENAME
-
-#cmakedefine HAS_GETFILEATTRIBUTES
-
 #cmakedefine COMPILE_BOOST_MINCUT
 
 #cmakedefine CPLEX_PLUGIN

@@ -20,210 +20,128 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstdint>  // Required on some platforms for miniz
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <optional>
+#include <random>
 #include <sstream>
 #include <string>
 
 #include <minizinc/_thirdparty/miniz.h>
 
-#ifdef HAS_PIDPATH
-#include <cstdio>
-#include <cstdlib>
+#ifdef __APPLE__
 #include <libproc.h>
 #include <unistd.h>
-#elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
+#elif defined(_WIN32)
 #include <windows.h>
 #undef ERROR
+#include <shlobj.h>
 #else
 #include <unistd.h>
 #endif
-#include <sys/stat.h>
-#include <sys/types.h>
 
-#ifdef _WIN32
-#include <shlwapi.h>
-#include <windows.h>
-#ifdef _MSC_VER
-#pragma comment(lib, "Shlwapi.lib")
-#endif
-#include <direct.h>
-#include <shlobj.h>
-#else
-#include <dirent.h>
-#include <ftw.h>
-#include <libgen.h>
-#endif
+namespace MiniZinc::FileUtils {
 
-namespace MiniZinc {
-namespace FileUtils {
+namespace fs = std::filesystem;
 
-#ifdef HAS_PIDPATH
+#ifdef __APPLE__
 std::string progpath() {
-  pid_t pid = getpid();
   char path[PROC_PIDPATHINFO_MAXSIZE];
-  int ret = proc_pidpath(pid, path, sizeof(path));
-  if (ret <= 0) {
+  if (proc_pidpath(getpid(), path, sizeof(path)) <= 0) {
     return "";
   }
-  std::string p(path);
-  size_t slash = p.find_last_of('/');
-  if (slash != std::string::npos) {
-    p = p.substr(0, slash);
-  }
-  return p;
+  return to_utf8(to_path(path).parent_path());
 }
-#elif defined(HAS_GETMODULEFILENAME)
+#elif defined(_WIN32)
 std::string progpath() {
   wchar_t path[MAX_PATH];
-  int ret = GetModuleFileNameW(nullptr, path, MAX_PATH);
-  if (ret <= 0) {
+  if (GetModuleFileNameW(nullptr, path, MAX_PATH) == 0) {
     return "";
   }
-  std::string p = wide_to_utf8(path);
-  size_t slash = p.find_last_of("/\\");
-  if (slash != std::string::npos) {
-    p = p.substr(0, slash);
-  }
-  return p;
+  return to_utf8(fs::path(path).parent_path());
 }
 #else
 std::string progpath() {
-  const int bufsz = 2000;
-  char path[bufsz + 1];
-  ssize_t sz = readlink("/proc/self/exe", path, bufsz);
-  if (sz < 0) {
-    return "";
-  }
-  path[sz] = '\0';
-  std::string p(path);
-  size_t slash = p.find_last_of('/');
-  if (slash != std::string::npos) {
-    p = p.substr(0, slash);
-  }
-  return p;
+  std::error_code ec;
+  auto exe = fs::read_symlink("/proc/self/exe", ec);
+  return ec ? "" : to_utf8(exe.parent_path());
 }
 #endif
 
-bool file_exists(const std::string& filename) {
-#ifdef HAS_GETFILEATTRIBUTES
-  DWORD dwAttrib = GetFileAttributesW(utf8_to_wide(filename).c_str());
-
-  return dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) == 0;
-#else
-  struct stat info;
-  return stat(filename.c_str(), &info) == 0 && ((info.st_mode & S_IFREG) != 0);
-#endif
+bool file_exists(std::string_view filename) {
+  std::error_code ec;
+  return fs::is_regular_file(to_path(filename), ec);
 }
 
-bool directory_exists(const std::string& dirname) {
-#ifdef HAS_GETFILEATTRIBUTES
-  DWORD dwAttrib = GetFileAttributesW(utf8_to_wide(dirname).c_str());
-
-  return dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY) != 0;
-#else
-  struct stat info;
-  return stat(dirname.c_str(), &info) == 0 && ((info.st_mode & S_IFDIR) != 0);
-#endif
+bool directory_exists(std::string_view dirname) {
+  std::error_code ec;
+  return fs::is_directory(to_path(dirname), ec);
 }
 
-std::string file_path(const std::string& filename, const std::string& basePath) {
+std::string file_path(std::string_view filename, std::string_view basePath) {
   // Add base path to relative paths if there is one
-  auto f = !basePath.empty() && !is_absolute(filename) ? basePath + "/" + filename : filename;
-
-  // Get real path of absolute path or resolve relative to current directory
+  auto f = to_path(basePath) / to_path(filename);
+  std::error_code ec;
 #ifdef _WIN32
-  LPWSTR lpFilePart;
-  DWORD nBufferLength = GetFullPathNameW(utf8_to_wide(f).c_str(), 0, nullptr, &lpFilePart);
-  auto* lpBuffer = static_cast<LPWSTR>(LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength));
-  if (lpBuffer == nullptr) {
-    return "";
-  }
-
-  std::string ret;
-  DWORD error = GetFullPathNameW(utf8_to_wide(f).c_str(), nBufferLength, lpBuffer, &lpFilePart);
-
-  if (error == 0) {
-    ret = f;
-  } else {
-    ret = wide_to_utf8(lpBuffer);
-  }
-  LocalFree(lpBuffer);
-  return ret;
+  // Like GetFullPathName: make absolute, but leave links in place
+  auto full = fs::absolute(f, ec);
 #else
-  char* rp = realpath(f.c_str(), nullptr);
-  if (rp == nullptr) {
-    return f;
-  }
-  std::string rp_s(rp);
-  free(rp);
-  return rp_s;
+  // Like realpath: resolve links, and fail if the file does not exist
+  auto full = fs::canonical(f, ec);
 #endif
+  return to_utf8(ec ? f : full);
 }
 
-std::string join_path(const std::string& dir, const std::string& name) {
-  std::string path;
-  path.reserve(dir.size() + 1 + name.size());
-  path.append(dir).append("/").append(name);
-  return path;
+std::string join_path(std::string_view dir, std::string_view name) {
+  return to_utf8(to_path(dir) / to_path(name));
 }
 
-std::string dir_name(const std::string& filename) {
-#ifdef _WIN32
-  size_t pos = filename.find_last_of("\\/");
-  return (pos == std::string::npos) ? "" : filename.substr(0, pos);
-#else
-  char* fn = strdup(filename.c_str());
-  char* dn = dirname(fn);
-  std::string ret(dn);
-  free(fn);
-  return ret;
-#endif
+namespace {
+/// Convert \a filename to a path, ignoring a trailing separator like dirname(3) and basename(3)
+fs::path without_trailing_separator(std::string_view filename) {
+  auto p = to_path(filename);
+  return p.has_filename() ? p : p.parent_path();
+}
+}  // namespace
+
+std::string dir_name(std::string_view filename) {
+  auto dir = without_trailing_separator(filename).parent_path();
+  return dir.empty() ? "." : to_utf8(dir);
 }
 
-std::string base_name(const std::string& filename) {
-#ifdef _WIN32
-  size_t pos = filename.find_last_of("\\/");
-  return (pos == std::string::npos) ? filename : filename.substr(pos + 1);
-#else
-  char* fn = strdup(filename.c_str());
-  char* dn = basename(fn);
-  std::string ret(dn);
-  free(fn);
-  return ret;
-#endif
+std::string base_name(std::string_view filename) {
+  return to_utf8(without_trailing_separator(filename).filename());
 }
 
-bool is_absolute(const std::string& path) {
+bool is_absolute(std::string_view path) {
+  // On Windows, a path such as \foo is rooted on the current drive, so it is
+  // treated as absolute even though it has no drive letter
+  return to_path(path).has_root_directory();
+}
+
+std::optional<std::string> get_env(const std::string& env) {
 #ifdef _WIN32
-  if (path.size() > 2 &&
-      ((path[0] == '\\' && path[1] == '\\') || (path[0] == '/' && path[1] == '/'))) {
-    return true;
+  if (const wchar_t* value = _wgetenv(utf8_to_wide(env).c_str())) {
+    return wide_to_utf8(value);
   }
-  return PathIsRelativeW(utf8_to_wide(path).c_str()) == FALSE;
 #else
-  return path.empty() ? false : (path[0] == '/');
+  if (const char* value = getenv(env.c_str())) {
+    return value;
+  }
 #endif
+  return std::nullopt;
 }
 
 std::vector<std::string> get_env_list(const std::string& env) {
-  std::string path;
 #ifdef _WIN32
-  wchar_t* path_c = _wgetenv(utf8_to_wide(env).c_str());
-  char pathsep = ';';
-  if (path_c != nullptr) {
-    path = wide_to_utf8(path_c);
-  }
+  const char pathsep = ';';
 #else
-  char* path_c = getenv(env.c_str());
-  char pathsep = ':';
-  if (path_c != nullptr) {
-    path = path_c;
-  }
+  const char pathsep = ':';
 #endif
   std::vector<std::string> ret;
   std::string pathItem;
-  std::stringstream pathStream(path);
+  std::stringstream pathStream(get_env(env).value_or(""));
   while (std::getline(pathStream, pathItem, pathsep)) {
     if (!pathItem.empty()) {
       ret.push_back(pathItem);
@@ -345,102 +263,42 @@ std::string find_library(const std::string& name, const std::string& basePath) {
   return "";
 }
 
-std::vector<std::string> directory_list(const std::string& dir, const std::string& ext) {
-  std::vector<std::string> entries;
-#ifdef _WIN32
-  WIN32_FIND_DATAW findData;
-  HANDLE hFind = ::FindFirstFileW(utf8_to_wide(dir + "/*." + ext).c_str(), &findData);
-  if (hFind != INVALID_HANDLE_VALUE) {
-    do {
-      if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-        entries.push_back(wide_to_utf8(findData.cFileName));
-      }
-    } while (::FindNextFileW(hFind, &findData) == TRUE);
-    ::FindClose(hFind);
-  }
-#else
-  DIR* dirp = opendir(dir.c_str());
-  if (dirp != nullptr) {
-    struct dirent* dp;
-    while ((dp = readdir(dirp)) != nullptr) {
-      std::string fileName(dp->d_name);
-      struct stat info;
-      if (stat(((dir + "/").append(fileName)).c_str(), &info) == 0 &&
-          ((info.st_mode & S_IFREG) != 0)) {
-        if (ext == "*") {
-          entries.push_back(fileName);
-        } else {
-          if (fileName.size() > ext.size() + 2 &&
-              fileName.substr(fileName.size() - ext.size() - 1) == "." + ext) {
-            entries.push_back(fileName);
-          }
-        }
-      }
-    }
-    closedir(dirp);
-  }
-#endif
-  return entries;
-}
-
-std::string working_directory() {
-#ifdef _WIN32
-  wchar_t wd[FILENAME_MAX];
-  if (_wgetcwd(wd, FILENAME_MAX) == FALSE) {
-    return "";
-  }
-  return wide_to_utf8(wd);
-#else
-  char wd[FILENAME_MAX];
-  if (getcwd(wd, sizeof(wd)) == nullptr) {
-    return "";
-  }
-  return wd;
-#endif
-}
-
 std::string share_directory() {
-#ifdef _WIN32
-  if (wchar_t* MZNSTDLIBDIR = _wgetenv(L"MZN_STDLIB_DIR")) {
-    return wide_to_utf8(MZNSTDLIBDIR);
+  if (auto stdlibDir = get_env("MZN_STDLIB_DIR")) {
+    return *stdlibDir;
   }
-#else
-  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-    return std::string(MZNSTDLIBDIR);
-  }
-#endif
   // NOLINTNEXTLINE(readability-redundant-string-init)
   std::string static_stdlib_dir(MZN_STATIC_STDLIB_DIR);
   if (FileUtils::file_exists(static_stdlib_dir + "/std/stdlib.mzn")) {
     return static_stdlib_dir;
   }
-  std::string mypath = FileUtils::progpath();
-  int depth = 0;
-  for (char i : mypath) {
-    if (i == '/' || i == '\\') {
-      depth++;
+  auto mypath = to_path(FileUtils::progpath());
+  if (mypath.empty()) {
+    return "";
+  }
+  // Search the directory of the executable and all directories above it
+  for (;; mypath = mypath.parent_path()) {
+    auto share = mypath / "share" / "minizinc";
+    std::error_code ec;
+    if (fs::is_regular_file(share / "std" / "stdlib.mzn", ec)) {
+      return to_utf8(share);
+    }
+    if (mypath == mypath.parent_path()) {
+      return "";
     }
   }
-  for (int i = 0; i <= depth; i++) {
-    if (FileUtils::file_exists(mypath + "/share/minizinc/std/stdlib.mzn")) {
-      return mypath + "/share/minizinc";
-    }
-    mypath += "/..";
-  }
-  return "";
 }
 
 // fastest way to read a file into a string (especially big files)
 // see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
 std::string read_file_contents(const std::string& filename) {
-  std::ifstream in(FILE_PATH(filename), std::ios::binary);
+  std::ifstream in(to_path(filename), std::ios::binary);
   if (in) {
     std::string contents;
     in.seekg(0, std::ios::end);
     contents.resize(static_cast<unsigned int>(in.tellg()));
     in.seekg(0, std::ios::beg);
-    // Warning assume editability of the string underlying storage
-    in.read(const_cast<char*>(contents.data()), static_cast<long>(contents.size()));
+    in.read(contents.data(), static_cast<long>(contents.size()));
     in.close();
     if (!contents.empty() && contents[0] == '@') {
       contents = decode_base64(contents);
@@ -467,8 +325,8 @@ std::string user_config_dir() {
   }
   return "";
 #else
-  if (const char* hd = getenv("HOME")) {
-    return std::string(hd) + "/.minizinc";
+  if (auto home = get_env("HOME"); home && !home->empty()) {
+    return join_path(*home, ".minizinc");
   }
   return "";
 #endif
@@ -484,128 +342,58 @@ std::string global_config_file() {
 
 std::string user_config_file() { return user_config_dir() + "/Preferences.json"; }
 
-TmpFile::TmpFile(const std::string& ext) {
-#ifdef _WIN32
-  WCHAR szTempFileName[MAX_PATH];
-  WCHAR lpTempPathBuffer[MAX_PATH];
-
-  bool didCopy;
-  do {
-    GetTempPathW(MAX_PATH, lpTempPathBuffer);
-    GetTempFileNameW(lpTempPathBuffer, L"tmp_mzn_", 0, szTempFileName);
-
-    _name = wide_to_utf8(szTempFileName);
-    _tmpNames.push_back(_name);
-    didCopy = CopyFileW(szTempFileName, utf8_to_wide(_name + ext).c_str(), TRUE) == TRUE;
-  } while (!didCopy);
-  _name += ext;
-#else
-  _tmpfileDesc = -1;
-  char* temp_dir_p = getenv("TMPDIR");
-  std::string temp_dir;
-  if (temp_dir_p == nullptr || *temp_dir_p == '\0') {
-    temp_dir = "/tmp";
-  } else {
-    temp_dir = temp_dir_p;
-  }
-  _name = temp_dir + "/mznfileXXXXXX" + ext;
-  char* tmpfile = strndup(_name.c_str(), _name.size());
-  _tmpfileDesc = mkstemps(tmpfile, static_cast<int>(ext.size()));
-  if (_tmpfileDesc == -1) {
-    ::free(tmpfile);
-    throw Error("Error occurred when creating temporary file");
-  }
-  _name = std::string(tmpfile);
-  ::free(tmpfile);
-#endif
+namespace {
+/// The directory for temporary files: $TMPDIR (or similar) if it is valid, otherwise /tmp
+fs::path temp_dir() {
+  std::error_code ec;
+  auto dir = fs::temp_directory_path(ec);
+  return ec ? fs::path("/tmp") : dir;
 }
-
-TmpFile::~TmpFile() {
-#ifdef _WIN32
-  _wremove(utf8_to_wide(_name).c_str());  // TODO: Is this necessary?
-  for (auto& n : _tmpNames) {
-    _wremove(utf8_to_wide(n).c_str());
-  }
-#else
-  remove(_name.c_str());
-  if (_tmpfileDesc != -1) {
-    close(_tmpfileDesc);
-  }
-#endif
-}
+}  // namespace
 
 TmpDir::TmpDir() {
 #ifdef _WIN32
-  WCHAR szTempFileName[MAX_PATH];
-  WCHAR lpTempPathBuffer[MAX_PATH];
-
-  GetTempPathW(MAX_PATH, lpTempPathBuffer);
-  GetTempFileNameW(lpTempPathBuffer, L"tmp_mzn_", 0, szTempFileName);
-
-  _name = wide_to_utf8(szTempFileName);
-  DeleteFileW(szTempFileName);
-  CreateDirectoryW(szTempFileName, nullptr);
+  // The temporary directory belongs to the user on Windows, so a new name is enough
+  auto base = temp_dir();
+  // (std::random_device is deterministic in older MinGW versions)
+  std::seed_seq seed{std::random_device{}(), static_cast<unsigned int>(GetCurrentProcessId()),
+                     static_cast<unsigned int>(GetTickCount())};
+  std::mt19937_64 rng(seed);
+  for (int attempt = 0; attempt < 100; ++attempt) {
+    std::ostringstream name;
+    name << "mzn" << std::hex << rng();
+    auto dir = base / name.str();
+    std::error_code ec;
+    // Creating the directory is atomic: it returns false without an error if the name is taken
+    if (fs::create_directory(dir, ec)) {
+      _name = to_utf8(dir);
+      return;
+    }
+    if (ec) {
+      break;
+    }
+  }
 #else
-  char* temp_dir_p = getenv("TMPDIR");
-  std::string temp_dir;
-  if (temp_dir_p == nullptr || *temp_dir_p == '\0') {
-    temp_dir = "/tmp";
-  } else {
-    temp_dir = temp_dir_p;
+  // Shared temporary directories need mkdtemp, which creates the directory accessible only by the
+  // user in one step
+  auto name = to_utf8(temp_dir() / "mznXXXXXX");
+  if (mkdtemp(name.data()) != nullptr) {
+    _name = name;
+    return;
   }
-  _name = temp_dir + "/mzndirXXXXXX";
-  char* tmpfile = strndup(_name.c_str(), _name.size());
-
-  if (mkdtemp(tmpfile) == nullptr) {
-    ::free(tmpfile);
-    throw Error("Error occurred when creating temporary directory");
-  }
-  _name = std::string(tmpfile);
-  ::free(tmpfile);
 #endif
+  throw Error("Error occurred when creating temporary directory");
 }
-
-#ifdef _WIN32
-namespace {
-void remove_dir(const std::string& d) {
-  HANDLE dh;
-  WIN32_FIND_DATAW info;
-  auto dw = utf8_to_wide(d);
-  auto pattern = dw + L"\\*.*";
-  dh = ::FindFirstFileW(pattern.c_str(), &info);
-  if (dh != INVALID_HANDLE_VALUE) {
-    do {
-      if (info.cFileName[0] != L'.') {
-        auto fp = dw + L"\\" + info.cFileName;
-        if ((info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-          remove_dir(wide_to_utf8(fp));
-        } else {
-          ::SetFileAttributesW(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
-          ::DeleteFileW(fp.c_str());
-        }
-      }
-    } while (::FindNextFileW(dh, &info) == TRUE);
-  }
-  ::FindClose(dh);
-  ::SetFileAttributesW(dw.c_str(), FILE_ATTRIBUTE_NORMAL);
-  ::RemoveDirectoryW(dw.c_str());
-}
-}  // namespace
-#else
-namespace {
-int remove_file(const char* fpath, const struct stat* /*s*/, int /*i*/, struct FTW* /*ftw*/) {
-  return unlink(fpath);
-}
-}  // namespace
-#endif
 
 TmpDir::~TmpDir() {
-#ifdef _WIN32
-  remove_dir(_name);
-#else
-  nftw(_name.c_str(), remove_file, 64, FTW_DEPTH | FTW_PHYS);
-  rmdir(_name.c_str());
-#endif
+  std::error_code ec;
+  fs::remove_all(to_path(_name), ec);
+}
+
+TmpFile::TmpFile(const std::string& ext) : _name(join_path(_dir.name(), "mzn" + ext)) {
+  if (!std::ofstream(to_path(_name))) {
+    throw Error("Error occurred when creating temporary file");
+  }
 }
 
 std::vector<std::string> parse_cmd_line(const std::string& s) {
@@ -837,15 +625,14 @@ void inflate_string(std::string& s) {
 
 std::string deflate_string(const std::string& s) {
   mz_ulong compressedLength = compressBound(static_cast<mz_ulong>(s.size()));
-  auto* cmpr = static_cast<unsigned char*>(::malloc(compressedLength * sizeof(unsigned char)));
-  int status = compress(cmpr, &compressedLength, reinterpret_cast<const unsigned char*>(s.data()),
-                        static_cast<mz_ulong>(s.size()));
+  std::string ret(compressedLength, '\0');
+  int status =
+      compress(reinterpret_cast<unsigned char*>(ret.data()), &compressedLength,
+               reinterpret_cast<const unsigned char*>(s.data()), static_cast<mz_ulong>(s.size()));
   if (status != Z_OK) {
-    ::free(cmpr);
     throw status;
   }
-  std::string ret(reinterpret_cast<const char*>(cmpr), compressedLength);
-  ::free(cmpr);
+  ret.resize(compressedLength);
   return ret;
 }
 
@@ -910,17 +697,15 @@ std::string decode_base64(const std::string& s) {
 }
 
 #ifdef _WIN32
-std::string wide_to_utf8(const wchar_t* str, int size) {
-  int buffer_size = WideCharToMultiByte(CP_UTF8, 0, str, size, nullptr, 0, nullptr, nullptr);
+std::string wide_to_utf8(const std::wstring& str) {
+  int buffer_size = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
   if (buffer_size == 0) {
     return "";
   }
   std::string result(buffer_size - 1, '\0');
-  WideCharToMultiByte(CP_UTF8, 0, str, size, &result[0], buffer_size, nullptr, nullptr);
+  WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, result.data(), buffer_size, nullptr, nullptr);
   return result;
 }
-
-std::string wide_to_utf8(const std::wstring& str) { return wide_to_utf8(str.c_str(), -1); }
 
 std::wstring utf8_to_wide(const std::string& str) {
   int buffer_size = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
@@ -928,9 +713,8 @@ std::wstring utf8_to_wide(const std::string& str) {
     return L"";
   }
   std::wstring result(buffer_size - 1, '\0');
-  MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &result[0], buffer_size);
+  MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, result.data(), buffer_size);
   return result;
 }
 #endif
-}  // namespace FileUtils
-}  // namespace MiniZinc
+}  // namespace MiniZinc::FileUtils

@@ -21,10 +21,14 @@
 #include <minizinc/output.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/utils.hh>
 
+#include <algorithm>
+#include <charconv>
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -104,12 +108,12 @@ VarDecl* Scopes::findSimilar(Id* ident) {
   int cur = static_cast<int>(_s.size()) - 1;
   int minEdits = 3;
   for (;;) {
-    for (auto decls : _s[cur].m) {
-      int edits = ident->levenshteinDistance(decls.first);
-      if (edits < minEdits && std::abs(static_cast<int>(ident->v().size()) -
-                                       static_cast<int>(decls.first->v().size())) <= 3) {
+    for (const auto& [id, decl] : _s[cur].m) {
+      int edits = ident->levenshteinDistance(id);
+      if (edits < minEdits &&
+          std::abs(static_cast<int>(ident->v().size()) - static_cast<int>(id->v().size())) <= 3) {
         minEdits = edits;
-        mostSimilar = decls.second;
+        mostSimilar = decl;
       }
     }
     if (_s[cur].toplevel()) {
@@ -238,15 +242,14 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       }
     } else if (auto* binop = Expression::dynamicCast<BinOp>(vde)) {
       if (binop->op() != BinOpType::BOT_PLUSPLUS) {
-        throw TypeError(
-            env, Expression::loc(vde),
-            std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
+        throw TypeError(env, Expression::loc(vde),
+                        "invalid initialisation for enum `" + std::string(ident->v()) + "'");
       }
       stack.push_back(binop->rhs());
       stack.push_back(binop->lhs());
     } else {
       throw TypeError(env, Expression::loc(vd->e()),
-                      std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
+                      "invalid initialisation for enum `" + std::string(ident->v()) + "'");
     }
   }
 
@@ -256,9 +259,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
       Ref<Expression> prevCardinality = partCardinality.empty() ? nullptr : partCardinality.back();
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         if (!Expression::isa<Id>(sl->v()[i])) {
-          throw TypeError(
-              env, Expression::locDefault(sl->v()[i], sl),
-              std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
+          throw TypeError(env, Expression::locDefault(sl->v()[i], sl),
+                          "invalid initialisation for enum `" + std::string(ident->v()) + "'");
         }
         auto ti_id = make<TypeInst>(Expression::loc(sl->v()[i]), Type::parenum(enumId));
 
@@ -388,9 +390,8 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
         Ref<ITE> sl_absent = make<ITE>(
             Location().introduce(), std::vector<Expression*>{vd_aj->id(), sl_null}, sl_absent_dzn);
 
-        auto sl_dzn =
-            make<StringLit>(Location().introduce(),
-                            ASTString(std::string("to_enum(") + ident->str().c_str() + ","));
+        auto sl_dzn = make<StringLit>(Location().introduce(),
+                                      ASTString("to_enum(" + std::string(ident->str()) + ","));
 
         Ref<Expression> enumCard;
         if (c->id() == env.constants.ids.anon_enum) {
@@ -413,7 +414,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                                   BOT_PLUSPLUS, closing_bracket);
 
         auto sl = make<StringLit>(Location().introduce(),
-                                  ASTString("to_enum(" + std::string(ident->str().c_str()) + ","));
+                                  ASTString("to_enum(" + std::string(ident->str()) + ","));
         auto construct_string0 = make<BinOp>(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
         auto construct_string = make<BinOp>(Location().introduce(), construct_string0, BOT_PLUSPLUS,
                                             make<StringLit>(Location().introduce(), ")"));
@@ -703,7 +704,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
                                  std::vector<Expression*>{isContiguous, toEfn_then}, toEfn_else);
             Expression::addAnnotation(ite, env.constants.ann.mzn_evaluate_once);
 
-            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id()) + "⁻¹");
             auto toEfn = make<FunctionI>(Location().introduce(), Cinv_id, toEfn_ti,
                                          std::vector<VarDecl*>{vd_x}, ite);
             enumItems->addItem(toEfn);
@@ -718,7 +719,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             argT.typeId(enumId);
             auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, vd->id());
             auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
-            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id()) + "⁻¹");
             vd_x->toplevel(false);
             auto occurs = Call::a(Location().introduce(), env.constants.ids.occurs, {vd_x->id()});
             auto deopt = Call::a(Location().introduce(), env.constants.ids.deopt, {vd_x->id()});
@@ -742,7 +743,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
             auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, vd->id());
             auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
             vd_x->toplevel(false);
-            ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+            ASTString Cinv_id(std::string(c->id()) + "⁻¹");
             auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
             auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
             s->toplevel(false);
@@ -772,7 +773,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
               auto Cfn_x_ti = make<TypeInst>(Location().introduce(), argT, ranges, vd->id());
               auto vd_x = make<VarDecl>(Location().introduce(), Cfn_x_ti, env.genId());
               vd_x->toplevel(false);
-              ASTString Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+              ASTString Cinv_id(std::string(c->id()) + "⁻¹");
               auto s_ti = make<TypeInst>(Location().introduce(), Type::parint());
               auto s = make<VarDecl>(Location().introduce(), s_ti, env.genId());
               s->toplevel(false);
@@ -815,7 +816,7 @@ void create_enum_mapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, M
           auto vd_aj = make<VarDecl>(Location().introduce(), ti_aj, env.genId());
           vd_aj->toplevel(false);
 
-          std::string Cinv_id(std::string(c->id().c_str()) + "⁻¹");
+          std::string Cinv_id(std::string(c->id()) + "⁻¹");
           Ref<Call> invCall = Call::a(Location().introduce(), Cinv_id, {vd_aa->id()});
 
           Ref<Call> if_absent = Call::a(Location().introduce(), "absent", {vd_aa->id()});
@@ -1620,7 +1621,7 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
             FunctionI* nfi = m->matchFn(env, newOpenIntervalCall, false);
             if (nfi == nullptr) {
               throw TypeError(env, Expression::locDefault(e, loc_default),
-                              "missing builtin " + std::string(openIntervalCall->id().c_str()));
+                              "missing builtin " + std::string(openIntervalCall->id()));
             }
             newOpenIntervalCall->type(nfi->rtype(env, {origIdxset}, nullptr, false));
             newOpenIntervalCall->decl(nfi);
@@ -1712,6 +1713,7 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
           assert(al->isTuple());
           std::vector<Type> pt(current->size());
           bool allPar = true;
+          bool cv = false;
           for (unsigned int i = 0; i < al->size(); i++) {
             Type elemTy = (*intended)[i];
             elem[i] = add_coercion(env, m, (*al)[i], Expression::loc(al), elemTy);
@@ -1719,6 +1721,7 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
             if (pt[i].isvar()) {
               allPar = false;
             }
+            cv = cv || pt[i].cv();
           }
           if (current->size() > al->size()) {
             // Nested array wrapper
@@ -1728,6 +1731,8 @@ Ref<Expression> add_coercion(EnvI& env, Model* m, Expression* e0, const Location
           Type st = getStructType(current, pt);
           if (allPar) {
             st.mkPar(env);
+            // A par tuple still contains variables if one of its fields does
+            st.cv(cv);
           }
           c_al->type(st);
         }
@@ -2350,13 +2355,13 @@ public:
       } else {
         ASTString name = Expression::cast<Id>(fa->field())->str();
         auto find = rt->findField(name);
-        if (!find.first) {
+        if (!find) {
           std::ostringstream oss;
           oss << "expression of type `" << fa_v_t.toString(_env)
               << "' does not have a field named `" << name << "'.";
           throw TypeError(_env, Expression::loc(fa), oss.str());
         }
-        loc = find.second;
+        loc = *find;
         // Replace Id with IntLit
         Ref<IntLit> nf = IntLit::a(static_cast<long long>(loc + 1));
         fa->field(nf);
@@ -2707,6 +2712,12 @@ public:
       for (unsigned int j = 0; j < c->numberOfDecls(gen_i); j++) {
         c->decl(gen_i, j)->type(ty_id);
         c->decl(gen_i, j)->ti()->type(ty_id);
+        if (ty_id.structBT() && c->decl(gen_i, j)->ti()->domain() != nullptr) {
+          // When retyping a specialised copy of a polymorphic function, the struct domain is
+          // still the one computed for the polymorphic generator type (see vComprehension).
+          // Typing the TypeInst would then re-register the struct type from those stale fields.
+          c->decl(gen_i, j)->ti()->setStructDomain(_env, ty_id);
+        }
       }
     }
   }
@@ -3125,9 +3136,9 @@ public:
         for (unsigned int i = k; i < fi->paramCount(); i++) {
           ASTString pname = fi->param(i)->id()->v();
           newArgs[i] = nullptr;
-          for (const auto& np : named) {
-            if (np.first == pname) {
-              newArgs[i] = np.second;
+          for (const auto& [name, arg] : named) {
+            if (name == pname) {
+              newArgs[i] = arg;
               break;
             }
           }
@@ -3353,6 +3364,16 @@ public:
         if (vdi->type().isPar() && (vdi->e() == nullptr)) {
           std::ostringstream ss;
           ss << "let variable `" << vdi->id()->v() << "' must be initialised";
+          throw TypeError(_env, Expression::loc(vdi), ss.str());
+        }
+        if (vdi->type().structBT() && vdi->e() == nullptr && vdi->type().contains(_env, [](Type t) {
+              return !t.structBT() && t.isPar() && !t.isunknown();
+            })) {
+          // The values of the par fields of a var tuple or record have to be known (arrays of
+          // arrays are tuples with an unknown field)
+          std::ostringstream ss;
+          ss << "let variable `" << vdi->id()->v()
+             << "' must be initialised, since it has par fields";
           throw TypeError(_env, Expression::loc(vdi), ss.str());
         }
         if (vdi->ti()->hasTiVariable()) {
@@ -3722,7 +3743,7 @@ public:
 void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bottomUpTyper) {
   // Create a par version of each function that returns par and
   // that has a body that can be made par
-  std::unique_ptr<Model> nonPolyFns(new Model);
+  auto nonPolyFns = std::make_unique<Model>();
   std::vector<FunctionI*> fns;
   std::unordered_map<FunctionI*, std::pair<bool, std::vector<FunctionI*>>> fnsToMakePar;
   for (auto& f : m->functions()) {
@@ -3856,10 +3877,10 @@ void create_par_versions(Env& env, Model* m, BottomUpIterator<Typer<true>>& bott
     didRemove = false;
     std::vector<FunctionI*> toRemove;
     // NOLINTNEXTLINE(bugprone-nondeterministic-pointer-iteration-order)
-    for (auto& p : fnsToMakePar) {
-      for (auto* dep : p.second.second) {
+    for (auto& [fi, info] : fnsToMakePar) {
+      for (auto* dep : info.second) {
         if (fnsToMakePar.find(dep) == fnsToMakePar.end()) {
-          toRemove.push_back(p.first);
+          toRemove.push_back(fi);
         }
       }
     }
@@ -4559,8 +4580,8 @@ static void generate_missing_to_string_functions(
     Env& env, Model* m, IdMap<bool>& needToString,
     std::unordered_map<ASTString, std::vector<FunctionI*>>& overload_map,
     std::vector<FunctionI*>& functionItems) {
-  for (auto& nts : needToString) {
-    ASTString nts_id(create_enum_to_string_name(nts.first, "_toString_"));
+  for (auto& [ident, needed] : needToString) {
+    ASTString nts_id(create_enum_to_string_name(ident, "_toString_"));
     if (!env.model()->fnExists(env.envi(), nts_id) &&
         overload_map.find(nts_id) == overload_map.end()) {
       // Assumption: any _toString_ function that hasn't been generated by now
@@ -4710,7 +4731,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
-  std::unique_ptr<Model> annotatedExpressionItems(new Model);
+  auto annotatedExpressionItems = std::make_unique<Model>();
   auto* enumItems = new Model;
 
   class TSVFuns : public ItemVisitor {
@@ -4813,20 +4834,15 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       // initialise new identifier counter to be larger than existing identifier
       if (i->e()->id()->idn() >= 0) {
         env.minId(i->e()->id()->idn());
-      } else if (i->e()->id()->v().beginsWith("X_INTRODUCED_") && i->e()->id()->v().endsWith("_")) {
-        std::string numId = i->e()->id()->v().substr(std::string("X_INTRODUCED_").size());
-        if (!numId.empty()) {
-          numId = numId.substr(0, numId.size() - 1);
-          if (!numId.empty()) {
-            int vId = -1;
-            try {
-              vId = std::stoi(numId);
-            } catch (std::exception&) {
-              vId = -1;
-            }
-            if (vId >= 0) {
-              env.minId(vId);
-            }
+      } else if (constexpr std::string_view prefix = "X_INTRODUCED_";
+                 i->e()->id()->v().beginsWith(prefix) && i->e()->id()->v().endsWith("_")) {
+        std::string_view numId = i->e()->id()->v().substr(prefix.size());
+        if (numId.size() > 1) {
+          numId.remove_suffix(1);
+          int vId = -1;
+          auto [ptr, ec] = std::from_chars(numId.data(), numId.data() + numId.size(), vId);
+          if (ec == std::errc() && vId >= 0) {
+            env.minId(vId);
           }
         }
       }
@@ -5384,8 +5400,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         checkTIId = [&ti_map, this, &checkTIId](TypeInst* ti, TIVarType t) {
           if (Ref<TIId> tiid = Expression::dynamicCast<TIId>(ti->domain())) {
             if (!tiid->isEnum()) {
-              auto lookup = ti_map.insert({tiid->v(), t});
-              if (!lookup.second && lookup.first->second != t) {
+              auto [it, inserted] = ti_map.insert({tiid->v(), t});
+              if (!inserted && it->second != t) {
                 std::ostringstream ss;
                 ss << "type-inst variable $" << tiid->v()
                    << " used in both array and non-array position";
@@ -5554,6 +5570,17 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
            << "' must be defined (did you forget to specify a data file?)";
         typeErrors.emplace_back(env.envi(), Expression::loc(decl), ss.str());
       }
+    } else if (decl->toplevel() && decl->type().structBT() && decl->e() == nullptr &&
+               !ignoreUndefinedParameters && decl->type().contains(env.envi(), [](Type t) {
+                 return !t.structBT() && t.isPar() && !t.isunknown();
+               })) {
+      // A var tuple or record with par fields cannot be a decision variable, since the values of
+      // its par fields have to be known (arrays of arrays are tuples with an unknown field)
+      std::ostringstream ss;
+      ss << "  symbol error: variable `" << decl->id()->str()
+         << "' must be defined, since it has par fields (did you forget to specify a data "
+            "file?)";
+      typeErrors.emplace_back(env.envi(), Expression::loc(decl), ss.str());
     }
     if (decl->ti()->isEnum()) {
       decl->ti()->setIsEnum(false);
@@ -5722,6 +5749,16 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
   output_var_desc_json(env, vd->ti(), os, extra);
 }
 
+namespace {
+/// Whether the file included by \a ii is in one of \a skipDirs
+bool in_skip_dirs(const IncludeI* ii, const std::vector<std::string>& skipDirs) {
+  const ASTString& path = ii->m()->filepath();
+  std::string_view dir = path.substr(0, path.size() - ii->f().size());
+  return std::any_of(skipDirs.begin(), skipDirs.end(),
+                     [&](const std::string& skipDir) { return beginswith(dir, skipDir); });
+}
+}  // namespace
+
 void output_model_variable_types(Env& env, Model* m, std::ostream& os,
                                  const std::vector<std::string>& skipDirs) {
   class VInfVisitor : public ItemVisitor {
@@ -5736,12 +5773,8 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
         : env(env0), skipDirs(skipDirs0), hadVar(false), hadEnum(false) {}
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
-        std::string prefix =
-            ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
-        for (const auto& skip_dir : skipDirs) {
-          if (prefix.substr(0, skip_dir.size()) == skip_dir) {
-            return false;
-          }
+        if (in_skip_dirs(ii, skipDirs)) {
+          return false;
         }
       }
       return true;
@@ -5783,10 +5816,10 @@ std::set<std::string> model_globals(Model* m, const std::vector<std::string>& sk
         // the standard library path
         ASTString filename = c->decl()->loc().filename();
         if (!filename.empty()) {
-          const auto filedir = FileUtils::file_path(FileUtils::dir_name(filename.c_str()));
+          const auto filedir = FileUtils::file_path(FileUtils::dir_name(filename));
           for (const auto& skip_dir : skipDirs) {
             const auto& comp_dir = FileUtils::dir_name(skip_dir);
-            if (filedir.substr(0, comp_dir.size()) == comp_dir) {
+            if (beginswith(filedir, comp_dir)) {
               globals.insert(demonomorphise_identifier(c->id()));
               break;
             }
@@ -5807,12 +5840,8 @@ std::set<std::string> model_globals(Model* m, const std::vector<std::string>& sk
 
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
-        std::string prefix =
-            ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
-        for (const auto& skip_dir : skipDirs) {
-          if (prefix.substr(0, skip_dir.size()) == skip_dir) {
-            return false;
-          }
+        if (in_skip_dirs(ii, skipDirs)) {
+          return false;
         }
       }
       return true;
@@ -5854,12 +5883,8 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
         : env(env0), skipDirs(skipDirs0), hadInput(false), hadIncludedFiles(false), method("sat") {}
     bool enter(Item* i) {
       if (auto* ii = i->dynamicCast<IncludeI>()) {
-        std::string prefix =
-            ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
-        for (const auto& skip_dir : skipDirs) {
-          if (prefix.substr(0, skip_dir.size()) == skip_dir) {
-            return false;
-          }
+        if (in_skip_dirs(ii, skipDirs)) {
+          return false;
         }
         if (hadIncludedFiles) {
           ossIncludedFiles << ", ";

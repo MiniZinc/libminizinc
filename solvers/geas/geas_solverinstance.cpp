@@ -300,10 +300,10 @@ void GeasSolverInstance::processFlatZinc() {
   if (si->e() != nullptr) {
     _objType = si->st();
     if (_objType == SolveI::ST_MIN) {
-      _objVar = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
+      _objVar = std::make_unique<GeasTypes::Variable>(resolveVar(si->e()));
     } else if (_objType == SolveI::ST_MAX) {
       _objType = SolveI::ST_MIN;
-      _objVar = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(-asIntVar(si->e())));
+      _objVar = std::make_unique<GeasTypes::Variable>(-asIntVar(si->e()));
     }
   }
   if (!si->ann().isEmpty()) {

@@ -2427,12 +2427,12 @@ Ref<Expression> b_output(EnvI& env, Call* call) {
           }
           break;
         case Expression::E_BINOP: {
-          std::string quotedOp(Expression::cast<BinOp>(e)->opToString().c_str());
+          ASTString quotedOp = Expression::cast<BinOp>(e)->opToString();
           oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
           break;
         }
         case Expression::E_UNOP: {
-          std::string quotedOp(Expression::cast<UnOp>(e)->opToString().c_str());
+          ASTString quotedOp = Expression::cast<UnOp>(e)->opToString();
           oss << sep << quotedOp.substr(1, quotedOp.size() - 2);
           break;
         }
@@ -3018,16 +3018,14 @@ std::string b_show_float(EnvI& env, Call* call) {
 }
 
 std::string b_file_path(EnvI& /*env*/, Call* call) {
-  return FileUtils::file_path(std::string(Expression::loc(call).filename().c_str(),
-                                          Expression::loc(call).filename().size()));
+  return FileUtils::file_path(Expression::loc(call).filename());
 }
 
 std::string b_resolve_blackbox_source(EnvI& env, Call* call) {
   std::string name = eval_string(env, call->arg(0));
   const bool isLib = eval_bool(env, call->arg(1));
   // Resolve relative to the file containing the (source-annotation) call.
-  const std::string baseDir = FileUtils::dir_name(std::string(
-      Expression::loc(call).filename().c_str(), Expression::loc(call).filename().size()));
+  const std::string baseDir = FileUtils::dir_name(Expression::loc(call).filename());
   std::string resolved = isLib ? FileUtils::find_library(name, baseDir)
                                : FileUtils::find_executable(name, baseDir, {baseDir});
   if (!resolved.empty()) {
@@ -3577,8 +3575,7 @@ IntVal b_discrete_distribution(EnvI& env, Call* call) {
   std::discrete_distribution<long long int> distribution(weights.begin(), weights.end());
 #endif
   // return a sample from the distribution
-  IntVal iv = IntVal(distribution(env.rndGenerator()));
-  return iv;
+  return IntVal(distribution(env.rndGenerator()));
 }
 
 bool b_bernoulli(EnvI& env, Call* call) {
@@ -3814,9 +3811,9 @@ Ref<Expression> b_regular_from_string(EnvI& env, Call* call) {
       if (id_re_it == std::sregex_token_iterator()) {
         break;
       }
-      ASTString id1(*id_re_it);
+      ASTString id1(id_re_it->str());
       ++id_re_it;
-      ASTString id2(*id_re_it);
+      ASTString id2(id_re_it->str());
       ++id_re_it;
       std::string val3 = *id_re_it;
       ++id_re_it;
@@ -3876,7 +3873,7 @@ Ref<Expression> b_regular_from_string(EnvI& env, Call* call) {
       if (id_re_it == std::sregex_token_iterator()) {
         break;
       }
-      ASTString id1(*id_re_it);
+      ASTString id1(id_re_it->str());
       ++id_re_it;
       auto it = env.reverseEnum.find(id1);
       if (it == env.reverseEnum.end()) {

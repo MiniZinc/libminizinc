@@ -14,7 +14,7 @@
 #include <minizinc/chain_compressor.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/optimize.hh>
@@ -129,9 +129,9 @@ std::pair<int, bool> VarOccurrences::usages(VarDecl* v) {
     auto* vd = i->dynamicCast<VarDeclI>();
     if ((vd != nullptr) && (vd->e() != nullptr) && (vd->e()->e() != nullptr) &&
         (Expression::isa<ArrayLit>(vd->e()->e()) || Expression::isa<SetLit>(vd->e()->e()))) {
-      auto u = usages(vd->e());
-      is_output = is_output || u.second;
-      count += u.first;
+      auto [uCount, uOutput] = usages(vd->e());
+      is_output = is_output || uOutput;
+      count += uCount;
     } else {
       count++;
     }
@@ -308,10 +308,8 @@ void unify(EnvI& env, std::vector<VarDecl*>& deletedVarDecls, Id* id0, Id* id1) 
     // Compute intersection of domains
     std::vector<std::pair<TypeInst*, TypeInst*>> todo({{id0->decl()->ti(), id1->decl()->ti()}});
     while (!todo.empty()) {
-      auto it = todo.back();
+      auto [ti0, ti1] = todo.back();
       todo.pop_back();
-      auto* ti0 = it.first;
-      auto* ti1 = it.second;
       if (ti0->domain() != nullptr) {
         if (ti1->domain() != nullptr) {
           if (ti0->type().structBT()) {
@@ -459,7 +457,13 @@ void remove_deleted_items(EnvI& envi, std::vector<VarDecl*>& deletedVarDecls) {
       auto cur_idx = envi.varOccurrences.idx.find(cur->id());
       if (cur_idx.first && !m[*cur_idx.second]->removed()) {
         auto* vdi = m[*cur_idx.second]->cast<VarDeclI>();
-        cur = vdi->e();
+        if (vdi->e() != cur) {
+          // cur has been unified with another variable, so check whether that one can be removed
+          cur = vdi->e();
+          if (!can_remove_fzn_vardecl(envi, cur)) {
+            continue;
+          }
+        }
         if (is_output(cur)) {
           // We have to change the output model if we remove this variable
           Ref<Expression> val = fixed_output_value(cur);
@@ -964,10 +968,10 @@ void optimize(Env& env, bool chain_compression) {
                                        toRemove, deletedVarDecls, nonFixedLiteralCount,
                                        toUnsubscribe);
             }
-            for (auto& unsubscribe : toUnsubscribe) {
-              auto it = envi.varOccurrences.itemMap.find(unsubscribe.first);
+            for (auto& [ident, item] : toUnsubscribe) {
+              auto it = envi.varOccurrences.itemMap.find(ident);
               if (it.first) {
-                it.second->erase(unsubscribe.second);
+                it.second->erase(item);
               }
             }
           }

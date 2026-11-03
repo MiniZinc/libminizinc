@@ -14,6 +14,8 @@
 #include <minizinc/ast.hh>
 #include <minizinc/exception.hh>
 
+#include <cstddef>
+#include <iterator>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -127,7 +129,7 @@ protected:
   std::vector<bool> _ip;
 
 public:
-  class DenseIdMapIterator : public std::iterator<std::forward_iterator_tag, T> {
+  class DenseIdMapIterator {
   private:
     typename string_map::iterator _smi;
     typename string_map::iterator _smiEnd;
@@ -149,8 +151,11 @@ public:
       }
     }
 
-    typedef T* pointer;
-    typedef T& reference;
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
 
     reference operator*() {
       if (_smi != _smiEnd) {
@@ -314,8 +319,8 @@ public:
     }
   }
   void clear() {
-    for (auto& it : _m) {
-      RC::dec(it.first);
+    for (auto& [e, t] : _m) {
+      RC::dec(e);
     }
     _m.clear();
   }

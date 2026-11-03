@@ -1,6 +1,6 @@
 ### MiniZinc Gecode Solver Target
 
-if(GECODE_FOUND)
+if(Gecode_FOUND)
 
   ### Compile target for the Gecode interface
   add_library(minizinc_gecode OBJECT
@@ -16,16 +16,14 @@ if(GECODE_FOUND)
     include/minizinc/solvers/gecode/gecode_constraints.hh
     include/minizinc/solvers/gecode_solverinstance.hh
   )
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_INCLUDE_DIRS}")
+  target_include_directories(minizinc_gecode PRIVATE "${Gecode_INCLUDE_DIRS}")
   add_dependencies(minizinc_gecode minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_GECODE)
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_gecode>)
 
-  target_link_libraries(mzn Gecode::Driver Gecode::Float Gecode::Int Gecode::Kernel Gecode::Search Gecode::Set)
-  if(WIN32 AND GECODE_HAS_GIST)
-    target_link_libraries(mzn Gecode::Gist)
-  endif()
+  # Gecode's own targets pull in the libraries they depend on
+  target_link_libraries(mzn Gecode::gecodedriver Gecode::gecodefloat Gecode::gecodeset)
 
 endif()

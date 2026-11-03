@@ -15,6 +15,7 @@
 
 #include <minizinc/builtins.hh>
 #include <minizinc/eval_par.hh>
+#include <minizinc/file_utils.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/pathfileprinter.hh>
 #include <minizinc/prettyprinter.hh>
@@ -25,8 +26,7 @@
 
 #include <cstdio>
 #include <fstream>
-
-using namespace std;
+#include <memory>
 
 namespace MiniZinc {
 
@@ -42,18 +42,18 @@ FZNSolverFactory::FZNSolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string FZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
-  string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
+std::string FZNSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+  std::string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string FZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+std::string FZNSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string FZNSolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
+std::string FZNSolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
 
-void FZNSolverFactory::printHelp(ostream& os) {
+void FZNSolverFactory::printHelp(std::ostream& os) {
   os << "MZN-FZN plugin options:\n"
      << "  --fzn-cmd , --flatzinc-cmd <exe>\n     the backend solver filename.\n"
      << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to "
@@ -109,7 +109,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                      const std::string& workingDir) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
-  string buffer;
+  std::string buffer;
   int nn = -1;
 
   if (cop.getOption("--fzn-cmd --flatzinc-cmd", &buffer)) {
@@ -147,7 +147,7 @@ bool FZNSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.allOptimal = true;
   } else if (cop.getOption("-p --parallel", &nn)) {
     if (_opt.supportsP) {
-      _opt.parallel = to_string(nn);
+      _opt.parallel = std::to_string(nn);
     }
   } else if (cop.getOption("-k --keep-files")) {
     // Deprecated option! Does nothing.
@@ -240,9 +240,9 @@ SolverInstance::Status FZNSolverInstance::solve() {
     throw Error("FlatZinc does not contain a solve item");
   }
   /// Passing options to solver
-  vector<string> cmd_line;
+  std::vector<std::string> cmd_line;
   cmd_line.push_back(opt.fznSolver);
-  string sBE = opt.backend;
+  std::string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
   for (auto& f : opt.fznFlags) {
     cmd_line.push_back(f);
@@ -256,19 +256,19 @@ SolverInstance::Status FZNSolverInstance::solve() {
   }
   if (static_cast<int>(opt.numOptimal) != 1 && !is_sat) {
     cmd_line.emplace_back("-n-o");
-    ostringstream oss;
+    std::ostringstream oss;
     oss << opt.numOptimal;
     cmd_line.push_back(oss.str());
   }
   if (opt.numSols != 1 && is_sat) {
     cmd_line.emplace_back("-n");
-    ostringstream oss;
+    std::ostringstream oss;
     oss << opt.numSols;
     cmd_line.push_back(oss.str());
   }
   if (!opt.parallel.empty()) {
     cmd_line.emplace_back("-p");
-    ostringstream oss;
+    std::ostringstream oss;
     oss << opt.parallel;
     cmd_line.push_back(oss.str());
   }
@@ -295,9 +295,9 @@ SolverInstance::Status FZNSolverInstance::solve() {
     }
     std::cerr << "Using FZN solver " << cmd_line[0] << " for solving, parameters: ";
     for (int i = 1; i < cmd_line.size(); ++i) {
-      cerr << "" << cmd_line[i] << " ";
+      std::cerr << "" << cmd_line[i] << " ";
     }
-    cerr << '\n';
+    std::cerr << '\n';
   }
 
   bool sigint = opt.fznSigint;
@@ -306,8 +306,8 @@ SolverInstance::Status FZNSolverInstance::solve() {
   std::unique_ptr<FileUtils::TmpFile> fznFile;
   if (opt.fznFormat == FZNSolverOptions::FF_FZN) {
     {  // Context to print FZN file, close file descriptor afterwards
-      fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fzn"));
-      std::ofstream os(FILE_PATH(fznFile->name()));
+      fznFile = std::make_unique<FileUtils::TmpFile>(".fzn");
+      std::ofstream os(FileUtils::to_path(fznFile->name()));
       Printer p(os, 0, true, &_env.envi());
       for (FunctionIterator it = _fzn->functions().begin(); it != _fzn->functions().end(); ++it) {
         if (!it->removed()) {
@@ -332,8 +332,8 @@ SolverInstance::Status FZNSolverInstance::solve() {
     }
   } else {
     assert(opt.fznFormat == FZNSolverOptions::FF_JSON);
-    fznFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".fzn.json"));
-    std::ofstream os(FILE_PATH(fznFile->name()));
+    fznFile = std::make_unique<FileUtils::TmpFile>(".fzn.json");
+    std::ofstream os(FileUtils::to_path(fznFile->name()));
     FznJSONPrinter p(os, _env.envi());
     p.print(_fzn);
   }
@@ -341,8 +341,8 @@ SolverInstance::Status FZNSolverInstance::solve() {
 
   std::unique_ptr<FileUtils::TmpFile> pathsFile;
   if (opt.fznNeedsPaths) {
-    pathsFile = std::unique_ptr<FileUtils::TmpFile>(new FileUtils::TmpFile(".paths"));
-    std::ofstream ofs(FILE_PATH(pathsFile->name()));
+    pathsFile = std::make_unique<FileUtils::TmpFile>(".paths");
+    std::ofstream ofs(FileUtils::to_path(pathsFile->name()));
     PathFilePrinter pfp(ofs, _env.envi());
     pfp.print(_fzn);
 

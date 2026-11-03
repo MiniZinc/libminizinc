@@ -1,12 +1,9 @@
-predicate fzn_count_eq(array [int] of var int: xs,var int: value,var int: n);
-array [1..2] of int: X_INTRODUCED_4_ = [-1,1];
+predicate gecode_count_int_fzn(array [int] of var int: x,var int: value,int: relation,var int: n);
 var 1..10: X_INTRODUCED_0_;
 var 1..10: X_INTRODUCED_1_;
 var 1..10: X_INTRODUCED_2_;
 var 1..10: y:: output_var;
 var 1..3: c:: output_var;
-var 0..3: X_INTRODUCED_3_ ::var_is_introduced :: is_defined_var;
 array [1..3] of var int: x:: output_array([1..3]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_];
-constraint fzn_count_eq(x,y,X_INTRODUCED_3_):: defines_var(X_INTRODUCED_3_);
-constraint int_lin_le(X_INTRODUCED_4_,[X_INTRODUCED_3_,c],0);
+constraint gecode_count_int_fzn(x,y,5,c);
 solve  satisfy;

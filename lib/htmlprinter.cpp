@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <map>
 #include <sstream>
+#include <string_view>
 #include <utility>
 
 namespace MiniZinc {
@@ -694,7 +695,7 @@ public:
   PrintHtmlVisitor(EnvI& env, HtmlDocOutput::Group& mg, bool includeStdLib)
       : _env(env), _maingroup(mg), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
+    if (!_includeStdLib && FileUtils::base_name(m->filename()) == "stdlib.mzn") {
       return false;
     }
     const std::string& dc = m->docComment();
@@ -785,12 +786,12 @@ public:
       for (auto& arg : args) {
         allArgs.insert(arg);
       }
-      for (auto& param : params) {
-        allArgs.insert(param.first);
+      for (auto& [name, doc] : params) {
+        allArgs.insert(name);
       }
 
       for (unsigned int i = 0; i < fi->paramCount(); i++) {
-        std::string param(fi->param(i)->id()->str().c_str(), fi->param(i)->id()->str().size());
+        std::string param(fi->param(i)->id()->str());
         if (allArgs.find(param) == allArgs.end()) {
           std::cerr << "Warning: parameter " << *fi->param(i)->id()
                     << " not documented for function " << fi->id() << " at location " << fi->loc()
@@ -887,12 +888,7 @@ public:
           Printer p(body_os, 70);
           p.print(f_body->e());
 
-          std::string filename =
-              std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
-          size_t lastSlash = filename.find_last_of('/');
-          if (lastSlash != std::string::npos) {
-            filename = filename.substr(lastSlash + 1, std::string::npos);
-          }
+          std::string filename = FileUtils::base_name(f_body->loc().filename());
           os << "<span class='mzn-fundecl-equals'> =</span>";
           os << "\n<div class='mzn-fundecl-more-code'>";
           os << "<div class='mzn-fundecl-body'>";
@@ -906,9 +902,8 @@ public:
 
       os << "</div>\n<div class='mzn-fundecl-doc'>\n";
 
-      if (fi->id().c_str()[0] == '\'') {
-        std::string op = fi->id().substr(1, fi->id().size() - 2);
-        ;
+      if (fi->id().beginsWith("'")) {
+        std::string_view op = fi->id().substr(1, fi->id().size() - 2);
         const char* space = (op[0] >= 'a' ? " " : "");
         if (fi->paramCount() == 2) {
           os << "<p>Usage: <span class=\"mzn-arg\">" << *fi->param(0)->id() << space << op << space
@@ -925,9 +920,8 @@ public:
       if (!params.empty()) {
         os << "<div class='mzn-fundecl-params-heading'>Constants</div>\n";
         os << "<ul class='mzn-fundecl-params'>\n";
-        for (auto& param : params) {
-          os << "<li><span class='mzn-arg'>" << param.first << "</span>: " << param.second
-             << "</li>\n";
+        for (auto& [name, doc] : params) {
+          os << "<li><span class='mzn-arg'>" << name << "</span>: " << doc << "</li>\n";
         }
         os << "</ul>\n";
       }
@@ -1291,7 +1285,7 @@ public:
                   bool includeStdLib)
       : _env(env), _maingroup(mg), _groupFunMap(groupFunMap), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && FileUtils::base_name(m->filename().c_str()) == "stdlib.mzn") {
+    if (!_includeStdLib && FileUtils::base_name(m->filename()) == "stdlib.mzn") {
       return false;
     }
     const std::string& dc = m->docComment();
@@ -1572,17 +1566,17 @@ public:
         group = HtmlDocOutput::extract_arg_word(ds, group_idx);
       }
       auto& groupMap = _groupFunMap.emplace(group, RSTFunMap()).first->second;
-      auto& funs = groupMap.emplace(fi->id().c_str(), std::vector<FunctionI*>()).first->second;
+      auto& funs = groupMap.emplace(std::string(fi->id()), std::vector<FunctionI*>()).first->second;
       funs.push_back(fi);
     }
   }
 
   void outputFunctions() {
-    for (const auto& g : _groupFunMap) {
-      for (const auto& f : g.second) {
+    for (const auto& [groupName, funMap] : _groupFunMap) {
+      for (const auto& [funName, funs] : funMap) {
         std::vector<FunDoc> funDocs;
         bool isAnn = true;
-        for (auto* fi : f.second) {
+        for (auto* fi : funs) {
           isAnn = isAnn && fi->ti()->type() == Type::ann() && fi->e() == nullptr;
           Expression* ann = get_annotation(fi->ann(), _env.constants.ann.doc_comment);
           if (Call* docstring = Expression::dynamicCast<Call>(ann)) {
@@ -1606,13 +1600,12 @@ public:
             for (auto& arg : args) {
               allArgs.insert(arg);
             }
-            for (auto& param : params) {
-              allArgs.insert(param.first);
+            for (auto& [name, doc] : params) {
+              allArgs.insert(name);
             }
 
             for (unsigned int i = 0; i < fi->paramCount(); i++) {
-              if (allArgs.find(std::string(fi->param(i)->id()->str().c_str(),
-                                           fi->param(i)->id()->str().size())) == allArgs.end()) {
+              if (allArgs.find(std::string(fi->param(i)->id()->str())) == allArgs.end()) {
                 std::cerr << "Warning: parameter " << *fi->param(i)->id()
                           << " not documented for function " << fi->id() << " at location "
                           << fi->loc() << "\n";
@@ -1682,8 +1675,8 @@ public:
             os_sig << ")";
 
             os_doc << HtmlDocOutput::trim(ds) << "\n\n";
-            if (fi->id().c_str()[0] == '\'') {
-              std::string op = fi->id().substr(1, fi->id().size() - 2);
+            if (fi->id().beginsWith("'")) {
+              std::string_view op = fi->id().substr(1, fi->id().size() - 2);
               if (fi->paramCount() == 2) {
                 os_doc << "Usage: ``" << *fi->param(0)->id() << " " << op << " "
                        << *fi->param(1)->id() << "``\n\n";
@@ -1694,8 +1687,8 @@ public:
 
             if (!params.empty()) {
               os_doc << "Parameters:\n\n";
-              for (auto& param : params) {
-                os_doc << "- ``" << param.first << "``: " << param.second << "\n";
+              for (auto& [name, doc] : params) {
+                os_doc << "- ``" << name << "``: " << doc << "\n";
               }
               os_doc << "\n";
             }
@@ -1726,22 +1719,22 @@ public:
         }
 
         std::ostringstream os;
-        std::string myMainGroup = g.first.substr(0, g.first.find_first_of('.'));
+        std::string myMainGroup = groupName.substr(0, groupName.find_first_of('.'));
         auto it = _maingroup.subgroups.find(myMainGroup);
         os << ".. index::\n";
         if (it != _maingroup.subgroups.m.end()) {
-          os << "   pair: " << (*it)->htmlName << "; " << f.first << "\n\n";
+          os << "   pair: " << (*it)->htmlName << "; " << funName << "\n\n";
         } else {
           std::cerr << "did not find " << myMainGroup << "\n";
-          os << "   single: " << f.first << "\n\n";
+          os << "   single: " << funName << "\n\n";
         }
 
-        std::string codeblock = outputFuncDocs(funDocs, g.first, f.first);
+        std::string codeblock = outputFuncDocs(funDocs, groupName, funName);
         HtmlDocOutput::DocItem::DocType dt =
             isAnn ? HtmlDocOutput::DocItem::T_ANN : HtmlDocOutput::DocItem::T_FUN;
 
-        HtmlDocOutput::DocItem di(dt, f.first, funDocs.front().sig, codeblock);
-        HtmlDocOutput::add_to_group(_maingroup, g.first, di);
+        HtmlDocOutput::DocItem di(dt, funName, funDocs.front().sig, codeblock);
+        HtmlDocOutput::add_to_group(_maingroup, groupName, di);
       }
     }
   }

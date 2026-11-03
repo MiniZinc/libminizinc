@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode, chuffed]
+solvers: [chuffed]
 expected:
 - !Result
   solution: !Solution

@@ -35,13 +35,11 @@
 #include <coin/ClpConfig.h>
 #include <coin/CoinSignal.hpp>
 
-using namespace std;
-
 #define WANT_SOLUTION
 
-string MIPosicbcWrapper::getDescription(FactoryOptions& factoryOpt,
-                                        MiniZinc::SolverInstanceBase::Options* /*opt*/) {
-  string v = "MIP wrapper for COIN-BC ";
+std::string MIPosicbcWrapper::getDescription(FactoryOptions& factoryOpt,
+                                             MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+  std::string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;  // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
   v += CLP_VERSION;
@@ -49,22 +47,22 @@ string MIPosicbcWrapper::getDescription(FactoryOptions& factoryOpt,
   return v;
 }
 
-string MIPosicbcWrapper::getVersion(FactoryOptions& factoryOpt,
-                                    MiniZinc::SolverInstanceBase::Options* /*opt*/) {
-  return string(CBC_VERSION) + "/" + string(CLP_VERSION);
+std::string MIPosicbcWrapper::getVersion(FactoryOptions& factoryOpt,
+                                         MiniZinc::SolverInstanceBase::Options* /*opt*/) {
+  return std::string(CBC_VERSION) + "/" + std::string(CLP_VERSION);
 }
 
-string MIPosicbcWrapper::getId() { return "coin-bc"; }
+std::string MIPosicbcWrapper::getId() { return "coin-bc"; }
 
-string MIPosicbcWrapper::getName() { return "COIN-BC"; }
+std::string MIPosicbcWrapper::getName() { return "COIN-BC"; }
 
-vector<string> MIPosicbcWrapper::getTags() {
+std::vector<std::string> MIPosicbcWrapper::getTags() {
   return {"mip", "float", "api", "osicbc", "coinbc", "cbc"};
 }
 
-vector<string> MIPosicbcWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
+std::vector<std::string> MIPosicbcWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-void MIPosicbcWrapper::Options::printHelp(ostream& os) {
+void MIPosicbcWrapper::Options::printHelp(std::ostream& os) {
   os << "COIN-BC MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read OSICBC parameters from file
@@ -103,8 +101,8 @@ bool MIPosicbcWrapper::Options::processOption(int& i, std::vector<std::string>& 
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f" ||
-             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "-f" ||
+             std::string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--writeModel", &buffer)) {
     sExportModel = MiniZinc::FileUtils::file_path(buffer, workingDir);
@@ -210,27 +208,27 @@ std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPosicbcWrapper::getExtraFlags(
   return res;
 }
 
-void MIPosicbcWrapper::wrapAssert(bool cond, const string& msg) {
+void MIPosicbcWrapper::wrapAssert(bool cond, const std::string& msg) {
   if (!cond) {
-    string msgAll = ("  MIPosicbcWrapper runtime error:  " + msg + "  " + _osicbcBuffer);
+    std::string msgAll = ("  MIPosicbcWrapper runtime error:  " + msg + "  " + _osicbcBuffer);
     throw MiniZinc::Error(msgAll);
   }
 }
 
 void MIPosicbcWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                 MIPWrapper::VarType* vt, string* names) {
+                                 MIPWrapper::VarType* vt, std::string* names) {
   /// Convert var types:
   //   vector<char> ctype(n);
   //   vector<char*> pcNames(n);
   CoinPackedVector cpv;
-  vector<CoinPackedVectorBase*> pCpv(n, &cpv);
+  std::vector<CoinPackedVectorBase*> pCpv(n, &cpv);
   _osi.addCols(static_cast<int>(n), pCpv.data(), lb, ub, obj);  // setting integer & names later
   //   status = CBCnewcols (env, lp, n, obj, lb, ub, ctype.data(), pcNames.data());
   //   wrapAssert( !status,  "Failed to declare variables." );
 }
 
 void MIPosicbcWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
-                              double rhs, int mask, const string& rowName) {
+                              double rhs, int mask, const std::string& rowName) {
   /// Convert var types:
   double rlb = rhs;
   double rub = rhs;
@@ -514,20 +512,21 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
           _ui.pCbui->pOutput->x = bestSolution;
         }
         if (_ui.pCbui->fVerb) {
-          cerr << " % OBJ VAL RAW: " << model_->getObjValue() << "  OBJ VAL ORIG(?): " << objVal
-               << " % BND RAW: " << model_->getBestPossibleObjValue() << "  BND ORIG(?): "
-               << bestBnd
-               //         << "  &prepro: " << cbcPreProcessPointer
-               //         << "  &model_._solver(): " << model_->solver()
-               << "  orig NCols: " << _ui.pCbui->pOutput->nCols
-               << "  prepro NCols:  " << model_->getNumCols();
+          std::cerr << " % OBJ VAL RAW: " << model_->getObjValue()
+                    << "  OBJ VAL ORIG(?): " << objVal
+                    << " % BND RAW: " << model_->getBestPossibleObjValue() << "  BND ORIG(?): "
+                    << bestBnd
+                    //         << "  &prepro: " << cbcPreProcessPointer
+                    //         << "  &model_._solver(): " << model_->solver()
+                    << "  orig NCols: " << _ui.pCbui->pOutput->nCols
+                    << "  prepro NCols:  " << model_->getNumCols();
         }
         assert(origModel->getNumCols() == _ui.pCbui->pOutput->nCols);
         if (_ui.pCbui->fVerb) {
           if (_ui.pCbui->pOutput->nObjVarIndex >= 0) {
-            cerr << "  objVAR: " << _ui.pCbui->pOutput->x[_ui.pCbui->pOutput->nObjVarIndex];
+            std::cerr << "  objVAR: " << _ui.pCbui->pOutput->x[_ui.pCbui->pOutput->nObjVarIndex];
           }
-          cerr << '\n';
+          std::cerr << '\n';
         }
         _ui.pCbui->pOutput->objVal = objVal;
         //         origModel->getObjValue();
@@ -642,7 +641,7 @@ MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus(CbcModel* pModel) {
     output.statusName = "Dual infeasible";
     //        s = Status::UNSATorUNBND;
   } else if  // wrong: (pModel->getColSolution())
-      (fabs(pModel->getObjValue()) < 1e50) {
+      (std::fabs(pModel->getObjValue()) < 1e50) {
     s = Status::SAT;
     output.statusName = "Feasible";
   } else if (pModel->isAbandoned()) {  // AFTER feas-ty
@@ -672,10 +671,10 @@ MIPosicbcWrapper::Status MIPosicbcWrapper::convertStatus() {
     s = Status::ERROR_STATUS;
     output.statusName = "Abandoned";
   } else if  // wrong: (pModel->getColSolution())
-      (fabs(_osi.getObjValue()) < _osi.getInfinity()) {
+      (std::fabs(_osi.getObjValue()) < _osi.getInfinity()) {
     s = Status::SAT;
     output.statusName = "Feasible";
-    cout << " getSolverObjValue(as minim) == " << _osi.getObjValue() << '\n';
+    std::cout << " getSolverObjValue(as minim) == " << _osi.getObjValue() << '\n';
   } else {
     s = Status::UNKNOWN;
     output.statusName = "Unknown";
@@ -692,9 +691,9 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     /// So:
     MIPWrapper::addPhase1Vars();  // only now
     if (fVerbose) {
-      cerr << "  MIPosicbcWrapper: adding constraints physically..." << flush;
+      std::cerr << "  MIPosicbcWrapper: adding constraints physically..." << std::flush;
     }
-    vector<CoinPackedVectorBase*> pRows(_rowlb.size());
+    std::vector<CoinPackedVectorBase*> pRows(_rowlb.size());
     for (int i = 0; i < _rowlb.size(); ++i) {
       pRows[i] = &_rows[i];
     }
@@ -707,7 +706,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     _rowlb.clear();
     _rowub.clear();
     if (fVerbose) {
-      cerr << " done.\n";
+      std::cerr << " done.\n";
     }
     /////////////// Last-minute solver options //////////////////
     //       osi->loadProblem(*matrix,
@@ -725,7 +724,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     if (!_options->sExportModel.empty()) {
       // Not implemented for OsiClp:
       //       _osi.setColNames(colNames, 0, colObj.size(), 0);
-      vector<const char*> colN(colObj.size());
+      std::vector<const char*> colN(colObj.size());
       for (int j = 0; j < colNames.size(); ++j) {
         colN[j] = colNames[j].c_str();
       }
@@ -749,13 +748,13 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     //     control.fillValuesInSolver();
     //     CbcModel * pModel = control.model();
     if (fVerbose) {
-      cerr << " Model creation...\n";
+      std::cerr << " Model creation...\n";
     }
 
     // #define MZN_USE_CbcSolver  -- not linked rev2274
     /// FOR WARMSTART
-    for (const auto& vv : _warmstart) {
-      _osi.setColName(vv.first, colNames[vv.first]);
+    for (const auto& [col, val] : _warmstart) {
+      _osi.setColName(col, colNames[col]);
     }
 #ifdef MZN_USE_CbcSolver
     CbcSolver control(osi);
@@ -782,8 +781,8 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     {
       std::vector<std::pair<std::string, double> > mipstart;
       mipstart.reserve(_warmstart.size());
-      for (const auto& vv : _warmstart) {
-        mipstart.emplace_back(colNames[vv.first], vv.second);
+      for (const auto& [col, val] : _warmstart) {
+        mipstart.emplace_back(colNames[col], val);
       }
       _warmstart.clear();
       model.setMIPStart(mipstart);
@@ -793,7 +792,7 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 
     class StderrCoinMessageHandler : public CoinMessageHandler {
       int print() override {
-        cerr << messageBuffer_ << '\n';
+        std::cerr << messageBuffer_ << '\n';
         return 0;
       }
       void checkSeverity() override {}
@@ -894,14 +893,14 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
     }
 
     // Process extra flags options
-    for (const auto& it : _options->extraParams) {
-      _options->cbcCmdOptions.push_back(it.first.substr(5));
-      _options->cbcCmdOptions.push_back(it.second);
+    for (const auto& [key, value] : _options->extraParams) {
+      _options->cbcCmdOptions.push_back(key.substr(5));
+      _options->cbcCmdOptions.push_back(value);
     }
 
     if (1 < _options->nThreads) {
       _options->cbcCmdOptions.emplace_back("-threads");
-      ostringstream oss;
+      std::ostringstream oss;
       oss << _options->nThreads;
       _options->cbcCmdOptions.push_back(oss.str());
     }
@@ -930,17 +929,17 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
 #ifdef MZN_USE_CbcSolver
     if (fVerbose)
-      cerr << "  Calling control.solve() with options '" << options->cbcCmdOptions << "'...\n";
+      std::cerr << "  Calling control.solve() with options '" << options->cbcCmdOptions << "'...\n";
     control.solve(options->cbcCmdOptions.c_str(), 1);
 #else
 #define MZN_USE_callCbc1
 #ifdef MZN_USE_callCbc1
     if (fVerbose) {
-      cerr << "  Calling CbcMain with command 'cbc";
+      std::cerr << "  Calling CbcMain with command 'cbc";
       for (const auto& arg : _options->cbcCmdOptions) {
-        cerr << " " << arg;
+        std::cerr << " " << arg;
       }
-      cerr << "'...\n";
+      std::cerr << "'...\n";
     }
     CbcMain(static_cast<int>(cbc_argc), cbc_argv.data(), model);
     // callCbc(_options->cbcCmdOptions, model);
@@ -957,14 +956,14 @@ void MIPosicbcWrapper::solve() {  // Move into ancestor?
        Could copy arguments and add -quit at end to be safe
        but this will do
     */
-    vector<string> argvS;
+    std::vector<std::string> argvS;
     MiniZinc::split(cbcCmdOptions, argvS);
-    vector<const char*> argv;
+    std::vector<const char*> argv;
     argv.reserve(argvS.size());
     for (const auto& s : argvS) {
       argv.push_back(s.c_str());
     }
-    if (fVerbose) cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'...\n";
+    if (fVerbose) std::cerr << "  Calling CbcMain1 with options '" << cbcCmdOptions << "'...\n";
     CbcMain1(argv.size(), argv.data(), model, callBack);
 #endif
 #endif

@@ -32,6 +32,7 @@ add_library(mzn
   lib/flatten/flatten_id.cpp
   lib/flatten/flatten_ite.cpp
   lib/flatten/flatten_let.cpp
+  lib/flatten/flatten_linear.cpp
   lib/flatten/flatten_par.cpp
   lib/flatten/flatten_setlit.cpp
   lib/flatten/flatten_unop.cpp
@@ -88,6 +89,7 @@ add_library(mzn
   include/minizinc/flat_exp.hh
   include/minizinc/flatten.hh
   include/minizinc/flatten_internal.hh
+  include/minizinc/flatten_linear.hh
   include/minizinc/flattener.hh
   include/minizinc/memory.hh
   include/minizinc/hash.hh
@@ -142,7 +144,7 @@ target_include_directories(mzn PRIVATE
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CMAKE_DL_LIBS})
 if(WIN32)
   # MSVC links these implicitly (default libs and #pragma comment), MinGW does not.
-  target_link_libraries(mzn shlwapi shell32 ole32 uuid)
+  target_link_libraries(mzn shell32 ole32 uuid)
 endif()
 
 if(MZN_RC_CHECK)
@@ -177,10 +179,6 @@ include(cmake/targets/libminizinc_highs.cmake)
 include(cmake/targets/libminizinc_osicbc.cmake)
 include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
-
-if(GECODE_FOUND)
-  target_link_libraries(mzn Gecode::Minimodel Gecode::Support)
-endif()
 
 
 ### Add all necessary files to the install target

@@ -1,0 +1,16 @@
+
+predicate foo_reif(var int: x,int: i,var bool: r);
+var 0..10: x:: output_var;
+var bool: q:: output_var;
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_3_ ::var_is_introduced :: is_defined_var;
+array [1..3] of var bool: X_INTRODUCED_4_ ::var_is_introduced  = [X_INTRODUCED_3_,X_INTRODUCED_1_,X_INTRODUCED_0_];
+constraint bool_clause([q,X_INTRODUCED_1_],[]);
+constraint bool_clause([q,X_INTRODUCED_2_],[]);
+constraint array_bool_xor(X_INTRODUCED_4_):: defines_var(X_INTRODUCED_3_);
+constraint bool_not(X_INTRODUCED_3_,X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+constraint foo_reif(x,2,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
+constraint foo_reif(x,1,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+solve  satisfy;

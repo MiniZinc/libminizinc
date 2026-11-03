@@ -21,8 +21,6 @@
 #include <string>
 #include <utility>
 
-using namespace std;
-
 namespace MiniZinc {
 
 class JSONParser::Token {
@@ -50,7 +48,7 @@ public:
   static Token colon() { return Token(T_COLON); }
   static Token eof() { return Token(T_EOF); }
   static Token null() { return Token(T_NULL); }
-  string toString() const {
+  std::string toString() const {
     switch (t) {
       case T_LIST_OPEN:
         return "[";
@@ -159,8 +157,8 @@ bool JSONParser::collectRecordFields(TypeInst* ti, std::vector<VarDecl*>& fields
   return true;
 }
 
-JSONParser::Token JSONParser::readToken(istream& is) {
-  string result;
+JSONParser::Token JSONParser::readToken(std::istream& is) {
+  std::string result;
   char buf[1];
   enum { S_NOTHING, S_STRING, S_STRING_ESCAPE, S_INT, S_FLOAT, S_FLOAT_EXPONENT } state;
   state = S_NOTHING;
@@ -181,7 +179,8 @@ JSONParser::Token JSONParser::readToken(istream& is) {
       }
     }
     if (!is.good() || !(next[0] >= '0' && next[0] <= '9')) {
-      throw JSONError(_env, errLocation(), "unexpected token `" + string(next, is.gcount()) + "'");
+      throw JSONError(_env, errLocation(),
+                      "unexpected token `" + std::string(next, is.gcount()) + "'");
     }
     result += next[0];
   };
@@ -228,7 +227,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
             _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "rue", 3) != 0) {
               throw JSONError(_env, errLocation(),
-                              "unexpected token `" + string(rest, is.gcount()) + "'");
+                              "unexpected token `" + std::string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token(true);
@@ -239,7 +238,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
             _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "alse", 4) != 0) {
               throw JSONError(_env, errLocation(),
-                              "unexpected token `" + string(rest, is.gcount()) + "'");
+                              "unexpected token `" + std::string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token(false);
@@ -250,7 +249,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
             _column += static_cast<int>(is.gcount());
             if (!is.good() || std::strncmp(rest, "ull", 3) != 0) {
               throw JSONError(_env, errLocation(),
-                              "unexpected token `" + string(rest, is.gcount()) + "'");
+                              "unexpected token `" + std::string(rest, is.gcount()) + "'");
             }
             state = S_NOTHING;
             return Token::null();
@@ -260,7 +259,8 @@ JSONParser::Token JSONParser::readToken(istream& is) {
               result = buf[0];
               state = S_INT;
             } else {
-              throw JSONError(_env, errLocation(), "unexpected token `" + string(1, buf[0]) + "'");
+              throw JSONError(_env, errLocation(),
+                              "unexpected token `" + std::string(1, buf[0]) + "'");
             }
             break;
         }
@@ -291,7 +291,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
             }
             if (!is.good()) {
               throw JSONError(_env, errLocation(),
-                              "unexpected token `" + string(rest, is.gcount()) + "'");
+                              "unexpected token `" + std::string(rest, is.gcount()) + "'");
             }
             std::stringstream ss;
             ss << std::hex << std::string(rest, is.gcount());
@@ -299,7 +299,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
             ss >> codepoint;
             if (ss.fail()) {
               throw JSONError(_env, errLocation(),
-                              "unexpected token `" + string(rest, is.gcount()) + "'");
+                              "unexpected token `" + std::string(rest, is.gcount()) + "'");
             }
             if (codepoint >= 0xD800 && codepoint <= 0xDBFF) {
               // high surrogate, should follow with low surrogate
@@ -311,7 +311,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
               }
               if (!is.good() || std::strncmp(rest, "\\u", 2) != 0) {
                 throw JSONError(_env, errLocation(),
-                                "unexpected token `" + string(rest, is.gcount()) + "'");
+                                "unexpected token `" + std::string(rest, is.gcount()) + "'");
               }
               std::stringstream ss;
               ss << std::hex << std::string(&rest[2], 4);
@@ -319,7 +319,7 @@ JSONParser::Token JSONParser::readToken(istream& is) {
               ss >> lowSurrogate;
               if (ss.fail() || lowSurrogate < 0xDC00 || lowSurrogate > 0xDFFF) {
                 throw JSONError(_env, errLocation(),
-                                "unexpected token `" + string(rest, is.gcount()) + "'");
+                                "unexpected token `" + std::string(rest, is.gcount()) + "'");
               }
               codepoint = (((codepoint - 0xD800) << 10) | (lowSurrogate - 0xDC00)) | 0x10000;
             }
@@ -415,17 +415,17 @@ JSONParser::Token JSONParser::readToken(istream& is) {
     // EOF
     return Token();
   }
-  throw JSONError(_env, errLocation(), "unexpected token `" + string(result) + "'");
+  throw JSONError(_env, errLocation(), "unexpected token `" + std::string(result) + "'");
 }
 
-void JSONParser::expectToken(istream& is, JSONParser::TokenT t) {
+void JSONParser::expectToken(std::istream& is, JSONParser::TokenT t) {
   Token rt = readToken(is);
   if (rt.t != t) {
     throw JSONError(_env, errLocation(), "unexpected token");
   }
 }
 
-string JSONParser::expectString(istream& is) {
+std::string JSONParser::expectString(std::istream& is) {
   Token rt = readToken(is);
   if (rt.t != T_STRING) {
     throw JSONError(_env, errLocation(), "unexpected token, expected string");
@@ -433,7 +433,7 @@ string JSONParser::expectString(istream& is) {
   return rt.s;
 }
 
-int JSONParser::expectInt(istream& is) {
+int JSONParser::expectInt(std::istream& is) {
   Token rt = readToken(is);
   if (rt.t != T_INT) {
     throw JSONError(_env, errLocation(), "unexpected token, expected int");
@@ -441,7 +441,7 @@ int JSONParser::expectInt(istream& is) {
   return rt.i;
 }
 
-void JSONParser::expectEof(istream& is) {
+void JSONParser::expectEof(std::istream& is) {
   Token rt = readToken(is);
   if (rt.t != T_EOF) {
     throw JSONError(_env, errLocation(), "unexpected token, expected end of file");
@@ -450,8 +450,8 @@ void JSONParser::expectEof(istream& is) {
 
 Ref<Expression> JSONParser::parseEnumDef(std::istream& is) {
   // precondition: opening bracket has been read
-  vector<Ref<Expression>> constructors;
-  vector<Ref<Expression>> literals;
+  std::vector<Ref<Expression>> constructors;
+  std::vector<Ref<Expression>> literals;
   for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
     switch (next.t) {
       case T_COMMA:
@@ -605,12 +605,12 @@ Ref<Expression> JSONParser::parseEnumObject(std::istream& is, const std::string&
   }
 }
 
-Ref<Expression> JSONParser::parseSet(istream& is, TypeInst* ti) {
+Ref<Expression> JSONParser::parseSet(std::istream& is, TypeInst* ti) {
   Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
   ti = resolvedTi;
   expectToken(is, T_LIST_OPEN);
-  vector<Ref<Expression>> exprs;
-  vector<pair<Token, Token>> ranges;
+  std::vector<Ref<Expression>> exprs;
+  std::vector<std::pair<Token, Token>> ranges;
   TokenT listT = T_COLON;  // dummy marker
   for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
     switch (next.t) {
@@ -703,8 +703,8 @@ Ref<Expression> JSONParser::parseSet(istream& is, TypeInst* ti) {
 
   if (listT == T_INT) {
     auto res = IntSetVal::a();
-    for (const auto& range : ranges) {
-      auto isv = IntSetVal::a(range.first.i, range.second.i);
+    for (const auto& [range_min, range_max] : ranges) {
+      auto isv = IntSetVal::a(range_min.i, range_max.i);
       IntSetRanges isr(isv);
       IntSetRanges r(res);
       Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
@@ -714,8 +714,8 @@ Ref<Expression> JSONParser::parseSet(istream& is, TypeInst* ti) {
   }
   if (listT == T_FLOAT) {
     auto res = FloatSetVal::a();
-    for (const auto& range : ranges) {
-      auto fsv = FloatSetVal::a(range.first.d, range.second.d);
+    for (const auto& [range_min, range_max] : ranges) {
+      auto fsv = FloatSetVal::a(range_min.d, range_max.d);
       FloatSetRanges fsr(fsv);
       FloatSetRanges r(res);
       Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);
@@ -727,7 +727,7 @@ Ref<Expression> JSONParser::parseSet(istream& is, TypeInst* ti) {
   return make<SetLit>(Location().introduce(), exprs);
 }
 
-Ref<Expression> JSONParser::parseObject(istream& is, TypeInst* ti) {
+Ref<Expression> JSONParser::parseObject(std::istream& is, TypeInst* ti) {
   // precondition: found T_OBJ_OPEN
   Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
   ti = resolvedTi;
@@ -765,7 +765,7 @@ Ref<Expression> JSONParser::parseObject(istream& is, TypeInst* ti) {
       if (!fields.empty()) {
         throw JSONError(_env, errLocation(), "invalid enum object");
       }
-      return parseEnumObject(is, std::string(key.c_str(), key.size()));
+      return parseEnumObject(is, std::string(key));
     }
 
     auto it = fieldTIs.find(key);
@@ -796,7 +796,7 @@ Ref<Expression> JSONParser::parseArray(std::istream& is, TypeInst* ti, size_t ra
   // precondition: opening parenthesis has been read
   Ref<TypeInst> resolvedTi = resolveAlias(ti);  // owner of a composed alias
   ti = resolvedTi;
-  vector<Ref<Expression>> exps;
+  std::vector<Ref<Expression>> exps;
   Token next = readToken(is);
 
   while (next.t != T_LIST_CLOSE) {
@@ -917,7 +917,7 @@ Ref<Expression> JSONParser::coerceArray(TypeInst* ti, Ref<ArrayLit> al) {
   if (ti->type().dim() > 1 && Expression::isa<ArrayLit>((*al)[0])) {
     std::vector<Ref<Expression>> elements;
     std::vector<std::pair<size_t, ArrayLit*>> it({{0, al}});
-    vector<pair<int, int>> dims;
+    std::vector<std::pair<int, int>> dims;
     dims.emplace_back(1, al->size());
     while (!it.empty()) {
       if (it.size() == ti->type().dim()) {
@@ -1034,7 +1034,7 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
     iter_items(_varDecls, m);
   }
   for (;;) {
-    string ident = expectString(is);
+    std::string ident = expectString(is);
     ASTString ast_ident(ident);
     expectToken(is, T_COLON);
     auto it = knownIds.find(ast_ident);
@@ -1066,7 +1066,7 @@ void JSONParser::parseModel(Model* m, std::istream& is, bool isData) {
 
 void JSONParser::parse(Model* m, const std::string& filename0, bool isData) {
   _filename = filename0;
-  ifstream is(FILE_PATH(_filename), ios::in);
+  std::ifstream is(FileUtils::to_path(_filename), std::ios::in);
   if (!is.good()) {
     throw JSONError(_env, Location().introduce(), "cannot open file " + _filename);
   }
@@ -1078,7 +1078,7 @@ void JSONParser::parse(Model* m, const std::string& filename0, bool isData) {
 }
 
 void JSONParser::parseFromString(Model* m, const std::string& data, bool isData) {
-  istringstream iss(data);
+  std::istringstream iss(data);
   _line = 0;
   _column = 0;
   expectToken(iss, T_OBJ_OPEN);
@@ -1108,7 +1108,7 @@ bool JSONParser::stringIsJSON(const std::string& data) {
 }
 
 bool JSONParser::fileIsJSON(const std::string& filename) {
-  ifstream is(FILE_PATH(filename), ios::in);
+  std::ifstream is(FileUtils::to_path(filename), std::ios::in);
   return is_json(is);
 }
 

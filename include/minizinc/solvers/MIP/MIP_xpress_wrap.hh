@@ -18,8 +18,6 @@
 
 #include <minizinc/_thirdparty/xpress_interface.h>
 
-using namespace std;
-
 // Callback payloads (defined in MIP_xpress_wrap.cpp); held by unique_ptr members below so
 // they outlive the solve and are freed with the wrapper rather than leaked.
 struct UserSolutionCallbackData;
@@ -207,9 +205,9 @@ private:
 
 public:
   void doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
-                 string* names) override;
+                 std::string* names) override;
   void addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-              int mask = MaskConsType_Normal, const string& rowName = "") override;
+              int mask = MaskConsType_Normal, const std::string& rowName = "") override;
   void setObjSense(int s) override;
   void solve() override;
   void setVarLB(int iVar, double lb) override;

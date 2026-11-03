@@ -17,7 +17,7 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten.hh>
-#include <minizinc/flatten_internal.hh>
+#include <minizinc/flatten_linear.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/memory.hh>
@@ -318,9 +318,7 @@ Id* EnvI::ctxToAnn(BCtx c) const {
 
 void EnvI::addCtxAnn(VarDecl* vd, const BCtx& c) const {
   if (vd != nullptr) {
-    BCtx nc;
-    bool annotated;
-    std::tie(nc, annotated) = annToCtx(vd);
+    auto [nc, annotated] = annToCtx(vd);
     // If previously annotated
     if (annotated) {
       // Early exit
@@ -553,6 +551,289 @@ PathStore::Path get_recorded_path(EnvI& env, const Expression* e) {
   return best;
 }
 
+namespace {
+/// Whether \a vd has a deferred definition. A flat right-hand side is never a let, so a let marks
+/// it.
+bool has_deferred_bool_def(VarDecl* vd) {
+  return vd != nullptr && vd->e() != nullptr && Expression::isa<Let>(vd->e());
+}
+
+/// A let closure over \a e that keeps the current values of its local variables, so that \a e can
+/// be flattened after they are out of scope. It shares \a e, because copies cost too much memory,
+/// and carries \a anns, so that they reach the constraints of \a e. Returns nullptr if \a e cannot
+/// be deferred. Adds the flat variables that \a e uses to \a refs.
+Ref<Let> bind_bool_def(EnvI& env, Expression* e, const std::vector<Expression*>& anns,
+                       std::vector<VarDecl*>& refs) {
+  if (!env.deferBoolDefs || !Expression::type(e).isvarbool() || Expression::isa<Id>(e)) {
+    return nullptr;
+  }
+  class Collect : public EVisitor {
+  public:
+    std::vector<VarDecl*>& refs;
+    std::vector<VarDecl*> used;
+    std::unordered_set<VarDecl*> bound;
+    Collect(std::vector<VarDecl*>& refs0) : refs(refs0) {}
+    void vId(Id* ident) {
+      if (ident->decl() == nullptr) {
+        return;
+      }
+      if (!ident->decl()->toplevel()) {
+        used.push_back(ident->decl());
+      } else if (ident->decl()->flat() != nullptr) {
+        // A model declaration points to its flat variable, and a flat variable to itself
+        refs.push_back(ident->decl()->flat());
+      }
+    }
+    void vVarDecl(VarDecl* vd) { bound.insert(vd); }
+    void vComprehensionGenerator(Comprehension* c, int gen) {
+      for (unsigned int i = 0; i < c->numberOfDecls(gen); i++) {
+        bound.insert(c->decl(gen, i));
+      }
+    }
+  } collect(refs);
+  top_down(collect, e);
+  for (auto* ann : anns) {
+    top_down(collect, ann);
+  }
+
+  std::vector<Expression*> free;
+  for (auto* d : collect.used) {
+    if (collect.bound.insert(d).second) {
+      if (d->type().dim() != 0 || d->type().structBT()) {
+        return nullptr;
+      }
+      free.push_back(d);
+    }
+  }
+  // The let constructor records the current value of each declaration
+  auto let = make<Let>(Location().introduce(), free, e);
+  Expression::type(let, Expression::type(e));
+  for (auto* ann : anns) {
+    Expression::addAnnotation(let, ann);
+  }
+  // The recorded values are values or flat variables
+  for (unsigned int i = 0; i < let->letOrig().size(); i++) {
+    Id* ident = Expression::dynamicCast<Id>(let->letOrig()[i]);
+    if (ident != nullptr && ident->decl() != nullptr) {
+      refs.push_back(ident->decl());
+    }
+  }
+  return let;
+}
+}  // namespace
+
+Ref<Let> deferrable_bool_def(EnvI& env, VarDecl* origVd, std::vector<VarDecl*>& refs) {
+  if (origVd->e() == nullptr || origVd->ti()->domain() != nullptr ||
+      Expression::ann(origVd).contains(env.constants.ctx.promise_monotone) ||
+      Expression::ann(origVd).contains(env.constants.ctx.promise_antitone)) {
+    return nullptr;
+  }
+  // The annotations of origVd have to reach the constraints of the definition
+  std::vector<Expression*> anns;
+  for (auto* ann : Expression::ann(origVd)) {
+    if (!Expression::equal(ann, env.constants.ann.output) &&
+        !Expression::equal(ann, env.constants.ann.add_to_output)) {
+      anns.push_back(ann);
+    }
+  }
+  return bind_bool_def(env, origVd->e(), anns, refs);
+}
+
+bool defer_bool_def(EnvI& env, VarDecl* vd, Let* def, std::vector<VarDecl*> refs) {
+  if (vd->e() != nullptr) {
+    // Shared with an earlier definition, or fixed by an earlier pass (update_bounds): flattening
+    // can evaluate it, so its definition has to be flat now
+    return false;
+  }
+  // A definition can use a variable more than once
+  std::sort(refs.begin(), refs.end());
+  refs.erase(std::unique(refs.begin(), refs.end()), refs.end());
+  auto& entry = env.deferredBoolDefs[vd];
+  // Count the uses as occurrences, or the variables are removed as unused before it is flattened
+  Item* item = (*env.flat())[env.varOccurrences.find(vd)];
+  for (auto* u : refs) {
+    env.varOccurrences.add(u, item);
+    // Only the elements of a `var bool` array can have a deferred definition
+    auto* al = u->type().dim() > 0 && u->type().isvar() && u->type().bt() == Type::BT_BOOL
+                   ? Expression::dynamicCast<ArrayLit>(follow_id(u->id()))
+                   : nullptr;
+    if (!has_deferred_bool_def(u) && al == nullptr) {
+      continue;
+    }
+    auto& used = env.deferredBoolDefs[u];
+    if (al != nullptr && used.uses == 0) {
+      // A use of the array can be a use of each element, so the elements wait for the definitions
+      // that use it. One entry per array keeps this linear.
+      for (unsigned int i = 0; i < al->size(); i++) {
+        auto* elem = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al)[i]));
+        if (elem != vd && has_deferred_bool_def(elem)) {
+          env.deferredBoolDefs[elem].uses++;
+          used.used.emplace_back(elem);
+        }
+      }
+      if (used.used.empty()) {
+        // No element waits, so the array needs no entry
+        env.deferredBoolDefs.erase(u);
+        continue;
+      }
+    }
+    used.uses++;
+    entry.used.emplace_back(u);
+  }
+  entry.refs.assign(refs.begin(), refs.end());
+  vd->e(def);
+  return true;
+}
+
+Id* defer_bool_expr(EnvI& env, Expression* e) {
+  std::vector<VarDecl*> refs;
+  Ref<Let> def = bind_bool_def(env, e, {}, refs);
+  if (def == nullptr) {
+    return nullptr;
+  }
+  // Give the variable the path of the element, as flat_exp would
+  CallStackItem csi(env, e);
+  auto ti = make<TypeInst>(Location().introduce(), Type::varbool());
+  Ref<VarDecl> vd = new_vardecl(env, Ctx(), ti, nullptr, nullptr, nullptr, false);
+  if (!defer_bool_def(env, vd, def, std::move(refs))) {
+    Ctx ctx;
+    ctx.b = C_MIX;
+    (void)flat_exp(env, ctx, e, vd, env.constants.varTrue);
+  }
+  return vd->id();
+}
+
+namespace {
+/// Add context \a c to \a decl, and to \a followed, the declaration that \a decl is an alias of
+void add_ctx_ann_alias(EnvI& env, VarDecl* decl, VarDecl* followed, BCtx c) {
+  env.addCtxAnn(decl, c);
+  if (followed != nullptr && followed != decl) {
+    env.addCtxAnn(followed, c);
+  }
+}
+}  // namespace
+
+void add_ctx_ann_elements(EnvI& env, Expression* array, BCtx c) {
+  if (env.inReverseMapVar || env.deferredBoolDefs.empty() || Expression::type(array).dim() == 0 ||
+      Expression::type(array).bt() != Type::BT_BOOL || !Expression::type(array).isvar()) {
+    return;
+  }
+  Expression* arrayDecl = follow_id_to_decl(array);
+  auto* arrayVd = Expression::dynamicCast<VarDecl>(arrayDecl);
+  auto* al = Expression::dynamicCast<ArrayLit>(arrayVd != nullptr ? arrayVd->e() : arrayDecl);
+  if (al == nullptr) {
+    return;
+  }
+  // The array declaration caches the context it gave, so that a repeated use costs nothing
+  if (arrayVd != nullptr) {
+    auto [given, annotated] = env.annToCtx(arrayVd);
+    if (annotated && (given == c || given == C_MIX)) {
+      return;
+    }
+    env.addCtxAnn(arrayVd, c);
+  }
+  // An element that is already flattened has the context of its array expression
+  for (unsigned int i = 0; i < al->size(); i++) {
+    auto* followed = Expression::dynamicCast<VarDecl>(follow_id_to_decl((*al)[i]));
+    if (has_deferred_bool_def(followed)) {
+      add_ctx_ann_alias(env, Expression::cast<Id>((*al)[i])->decl(), followed, c);
+    }
+  }
+}
+
+namespace {
+/// Release one use of \a u by a deferred definition. Once \a u waits for nothing, requeue it, or
+/// for an array, release its elements.
+void release_bool_def_use(EnvI& env, VarDecl* u) {
+  auto waiting = env.deferredBoolDefs.find(u);
+  // u can have been removed since
+  if (waiting == env.deferredBoolDefs.end() || --waiting->second.uses > 0) {
+    return;
+  }
+  if (u->type().dim() > 0) {
+    std::vector<Ref<VarDecl>> elements = std::move(waiting->second.used);
+    env.deferredBoolDefs.erase(waiting);
+    for (VarDecl* elem : elements) {
+      release_bool_def_use(env, elem);
+    }
+    return;
+  }
+  // A unified variable has no item to requeue
+  int idx = env.varOccurrences.find(u);
+  if (idx != -1) {
+    env.modifiedVarDecls.push_back(idx);
+  }
+}
+
+/// Drop the deferred definition of \a vd, because it is flattened or \a item is removed. Adds the
+/// variables that become unused to \a toRemove.
+void release_deferred_bool_def(EnvI& env, VarDecl* vd, Item* item,
+                               std::vector<VarDecl*>* toRemove = nullptr) {
+  if (!has_deferred_bool_def(vd)) {
+    return;
+  }
+  auto entry = env.deferredBoolDefs.find(vd);
+  for (VarDecl* u : entry->second.used) {
+    release_bool_def_use(env, u);
+  }
+  for (VarDecl* u : entry->second.refs) {
+    // u can have been unified with another variable since
+    if (auto [found, items] = env.varOccurrences.itemMap.find(u->id()->decl()->id()); found) {
+      items->erase(item);
+      if (toRemove != nullptr && items->empty() && CollectDecls::varIsFree(u)) {
+        toRemove->push_back(u);
+      }
+    }
+  }
+  env.deferredBoolDefs.erase(entry);
+  vd->e(nullptr);
+}
+
+/// Flatten the deferred definition of \a vdi in the context of its uses. Returns false if uses are
+/// still unknown. \a force breaks a cycle of definitions that wait for each other: the missing uses
+/// are unknown, so the context is mixed.
+bool flatten_deferred_bool_def(EnvI& env, VarDeclI* vdi, bool force) {
+  VarDecl* vd = vdi->e();
+  if (!has_deferred_bool_def(vd)) {
+    return true;
+  }
+  // defer_bool_def creates the entry
+  if (env.deferredBoolDefs.find(vd)->second.uses > 0) {
+    if (!force) {
+      return false;
+    }
+    env.addCtxAnn(vd, C_MIX);
+  }
+  // Keep the definition alive: release_deferred_bool_def removes it from vd
+  Ref<Let> let = Expression::cast<Let>(vd->e());
+  // Flattening the definition adds its actual occurrences
+  release_deferred_bool_def(env, vd, vdi);
+  CallStackItem csi(env, let);
+  env.setPathSplice(get_recorded_path(env, vd));
+  auto [usage, annotated] = env.annToCtx(vd);
+  Ctx ctx;
+  if (!annotated) {
+    // Unknown uses. The reification of a definition that stays a call is chosen from the
+    // annotation, so it has to say mixed as well.
+    ctx.b = C_MIX;
+    env.addCtxAnn(vd, C_MIX);
+  } else {
+    ctx.b = usage == C_ROOT ? C_POS : usage;
+  }
+  // Restore the recorded bindings, as flatten_let does
+  LetFlatScope lfs(let);
+  LetPushBindings lpb(let);
+  for (auto* local : let->let()) {
+    auto* localVd = Expression::cast<VarDecl>(local);
+    LetFlatScope::bind(localVd, localVd->e());
+  }
+  // A Boolean expression is false where it is undefined (relational semantics), so the
+  // definition itself is never undefined.
+  (void)flat_exp(env, ctx, let->in(), vd, env.constants.varTrue);
+  return true;
+}
+}  // namespace
+
 void add_path_annotation(EnvI& env, Expression* e) {
   if (!(Expression::type(e).isAnn() || Expression::isa<Id>(e)) && Expression::type(e).dim() == 0) {
     Annotation& ann = Expression::ann(e);
@@ -666,6 +947,7 @@ Ref<VarDecl> new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, Va
             vd = make<VarDecl>(get_loc(env, origVd, rhs), ti, get_id(env, origId));
             hasBeenAdded = false;
             update_bounds(env, ovd, vd);
+            reversePathMap.insert(vd, path);
           }
 
           // Check whether ovd was unified in a previous pass
@@ -824,11 +1106,11 @@ void OutputSectionStore::add(EnvI& env, const ASTString& section, Expression* e,
   }
 
   _blank = false;
-  auto ret = _idx.emplace(section, _sections.size());
-  if (ret.second) {
+  auto [it, inserted] = _idx.emplace(section, _sections.size());
+  if (inserted) {
     _sections.emplace_back(section, e, false);
   } else {
-    auto idx = ret.first->second;
+    auto idx = it->second;
     Ref<Expression> orig = _sections[idx].e;
     auto bo = make<BinOp>(Location().introduce(), orig, BOT_PLUSPLUS, e);
     Expression::type(bo, Type::parstring(1));
@@ -893,7 +1175,7 @@ RecordType::RecordType(const std::vector<std::pair<ASTString, Type>>& fields) {
   }
   _fieldNames.reserve(str_size);
   for (size_t i = 0; i < _size; ++i) {
-    _fieldNames.append(std::string(fields[i].first.c_str()));
+    _fieldNames.append(fields[i].first);
   }
 }
 RecordType::RecordType(const RecordType& orig) {
@@ -1018,20 +1300,29 @@ EnvI::~EnvI() {
   delete originalModel;
 }
 long long int EnvI::genId() { return _ids++; }
+namespace {
+/// The common subexpression map keys a commutative call by its normalised
+/// form. Returns that form, or nullptr if \a e is not such a call.
+Ref<Call> cse_commutative_key(EnvI& env, Expression* e) {
+  Call* c = Expression::dynamicCast<Call>(e);
+  if ((c != nullptr) && c->decl() != nullptr &&
+      c->decl()->ann().contains(env.constants.ann.promise_commutative)) {
+    return Call::commutativeNormalized(env, c);
+  }
+  return nullptr;
+}
+}  // namespace
 void EnvI::cseMapInsert(Expression* e, const EE& ee) {
   if (Expression::type(e).isPar() && !Expression::isa<ArrayLit>(e)) {
     return;
   }
   Call* c = Expression::dynamicCast<Call>(e);
-  Ref<Call> normalized;
-  if ((c != nullptr) && c->decl() != nullptr) {
-    if (c->decl()->ann().contains(constants.ann.no_cse)) {
-      return;
-    }
-    if (c->decl()->ann().contains(constants.ann.promise_commutative)) {
-      normalized = Call::commutativeNormalized(*this, c);
-      e = normalized;
-    }
+  if ((c != nullptr) && c->decl() != nullptr && c->decl()->ann().contains(constants.ann.no_cse)) {
+    return;
+  }
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  if (normalized != nullptr) {
+    e = normalized;
   }
 
   _cseMap.insert(e, WW(ee.r, ee.b));
@@ -1067,16 +1358,14 @@ EnvI::CSEMap::iterator EnvI::cseMapFind(Expression* e) {
     return it;
   };
 
-  Call* c = Expression::dynamicCast<Call>(e);
-  if ((c != nullptr) && c->decl() != nullptr &&
-      c->decl()->ann().contains(constants.ann.promise_commutative)) {
-    // The normalised Call lives in a local Ref for the whole lookup
-    auto normalized = Call::commutativeNormalized(*this, c);
-    return lookup(normalized);
-  }
-  return lookup(e);
+  // The normalised Call lives in a local Ref for the whole lookup
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  return lookup(normalized != nullptr ? normalized : e);
 }
-void EnvI::cseMapRemove(Expression* e) { _cseMap.remove(e); }
+void EnvI::cseMapRemove(Expression* e) {
+  Ref<Call> normalized = cse_commutative_key(*this, e);
+  _cseMap.remove(normalized != nullptr ? normalized : e);
+}
 EnvI::CSEMap::iterator EnvI::cseMapEnd() { return _cseMap.end(); }
 void EnvI::dump() {
   struct EED {
@@ -1253,6 +1542,9 @@ void EnvI::releasePassState() {
 
 void EnvI::flatRemoveExpr(Expression* e, Item* i) {
   std::vector<VarDecl*> toRemove;
+  if (auto* vd = Expression::dynamicCast<VarDecl>(e)) {
+    release_deferred_bool_def(*this, vd, i, &toRemove);
+  }
   CollectDecls cd(*this, varOccurrences, toRemove, i);
   top_down(cd, e);
 
@@ -1267,6 +1559,7 @@ void EnvI::flatRemoveExpr(Expression* e, Item* i) {
       auto* vdi = flat[*cur_idx.second]->cast<VarDeclI>();
 
       if (!is_output(vdi->e()) && !vdi->removed()) {
+        release_deferred_bool_def(*this, vdi->e(), vdi, &toRemove);
         CollectDecls cd(*this, varOccurrences, toRemove, vdi);
         top_down(cd, vdi->e()->e());
         vdi->remove();
@@ -1782,8 +2075,7 @@ unsigned int EnvI::registerRecordType(ArrayLit* rec) {
     field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
     if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
       std::ostringstream oss;
-      oss << "record contains multiple fields with the name `" << field_pairs[i].first.c_str()
-          << "'.";
+      oss << "record contains multiple fields with the name `" << field_pairs[i].first << "'.";
       throw TypeError(*this, Expression::loc(rec), oss.str());
     }
   }
@@ -1835,8 +2127,8 @@ unsigned int EnvI::registerRecordType(TypeInst* ti) {
       field_pairs[i] = {fields[i]->id()->str(), fields[i]->type()};
       if (i > 0 && field_pairs[i - 1].first == field_pairs[i].first) {
         std::ostringstream oss;
-        oss << "record type contains multiple fields with the name `"
-            << field_pairs[i].first.c_str() << "'.";
+        oss << "record type contains multiple fields with the name `" << field_pairs[i].first
+            << "'.";
         throw TypeError(*this, Expression::loc(ti), oss.str());
       }
     }
@@ -1975,6 +2267,13 @@ Call* EnvI::surroundingCall() const {
   return nullptr;
 }
 
+ASTString EnvI::stdlibCallId(const Call* c) {
+  if (c->decl() != nullptr && c->decl()->isMonomorphised() && c->decl()->fromStdLib()) {
+    return ASTString(demonomorphise_identifier(c->id()));
+  }
+  return c->id();
+}
+
 void EnvI::gatherCycleCandidates(std::initializer_list<Model*> models) {
   for (Model* m : models) {
     if (m != nullptr) {
@@ -1996,8 +2295,9 @@ void EnvI::cleanupExceptOutput() {
 }
 
 bool EnvI::outputSectionEnabled(const ASTString& section) const {
-  return fopts.notSections.count(section.c_str()) == 0 &&
-         (fopts.onlySections.empty() || fopts.onlySections.count(section.c_str()) > 0);
+  std::string name(section);
+  return fopts.notSections.count(name) == 0 &&
+         (fopts.onlySections.empty() || fopts.onlySections.count(name) > 0);
 }
 
 std::string EnvI::show(Expression* e) {
@@ -2158,7 +2458,7 @@ PathStore::Path EnvI::currentPath(bool force) {
     if (Expression::eid(e) == Expression::E_STRINGLIT && loc.firstLine() == 0U &&
         loc.firstColumn() == 0U && loc.lastLine() == 0U && loc.lastColumn() == 0U) {
       ASTString text = Expression::cast<StringLit>(e)->v();
-      path = paths.extend(path, std::string(text.c_str(), text.size()));
+      path = paths.extend(path, std::string(text));
       entry.path = path;
       continue;
     }
@@ -2490,7 +2790,7 @@ void check_index_sets(EnvI& env, VarDecl* vd, Expression* e, bool isArg) {
         }
         if (f.structType.isrecord()) {
           RecordType* rt = env.getRecordType(f.structType);
-          auto field = make<Id>(Location().introduce(), rt->fieldName(f.idx), nullptr);
+          auto field = make<Id>(Location().introduce(), ASTString(rt->fieldName(f.idx)), nullptr);
           acc = make<FieldAccess>(Location().introduce(), acc, field);
         } else {
           acc = make<FieldAccess>(Location().introduce(), acc, IntLit::a(f.idx + 1));
@@ -2822,66 +3122,61 @@ Ref<Expression> mk_domain_constraint(EnvI& env, Expression* expr, Expression* do
   return c;
 }
 
-/// Turn \a c into domain constraints if possible.
-/// Return whether \a c is still required in the model.
 bool check_domain_constraints(EnvI& env, Call* c) {
   if (env.fopts.recordDomainChanges) {
     return true;
   }
-  if (c->id() == env.constants.ids.int_.le) {
-    Expression* e0 = c->arg(0);
-    Expression* e1 = c->arg(1);
-    if (Expression::type(e0).isPar() && Expression::isa<Id>(e1)) {
-      // greater than
-      Id* id = Expression::cast<Id>(e1);
-      IntVal lb = eval_int(env, e0);
-      if (id->decl()->ti()->domain() != nullptr) {
-        Ref<IntSetVal> domain = eval_intset(env, id->decl()->ti()->domain());
-        assert(!domain->empty());
-        if (domain->min() >= lb) {
-          return false;
-        }
-        if (domain->max() < lb) {
-          env.fail();
-          return false;
-        }
-        IntSetRanges dr(domain);
-        Ranges::Const<IntVal> cr(lb, IntVal::infinity());
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
-        Ref<IntSetVal> newibv = IntSetVal::ai(i);
-        id->decl()->ti()->domain(make<SetLit>(Location().introduce(), newibv));
-        id->decl()->ti()->setComputedDomain(false);
-      } else {
-        id->decl()->ti()->domain(
-            make<SetLit>(Location().introduce(), IntSetVal::a(lb, IntVal::infinity())));
+  const auto& ids = env.constants.ids;
+  std::optional<BinOpType> bot;
+  if (c->id() == ids.int_.le) {
+    bot = BOT_LQ;
+  } else if (c->id() == ids.int_.lt) {
+    bot = BOT_LE;
+  } else if (c->id() == ids.int_.eq) {
+    bot = BOT_EQ;
+  } else if (c->id() == ids.int_.ne) {
+    bot = BOT_NQ;
+  }
+  if (bot) {
+    // Fold scalar comparisons with constants into the variable's domain.
+    Id* id = nullptr;
+    IntVal v;
+    if (Expression::type(c->arg(0)).isPar() && Expression::isa<Id>(c->arg(1))) {
+      // `v op x` is `x op' v` with the operator mirrored.
+      id = Expression::cast<Id>(c->arg(1));
+      v = eval_int(env, c->arg(0));
+      if (*bot == BOT_LQ) {
+        bot = BOT_GQ;
+      } else if (*bot == BOT_LE) {
+        bot = BOT_GR;
       }
+    } else if (Expression::type(c->arg(1)).isPar() && Expression::isa<Id>(c->arg(0))) {
+      id = Expression::cast<Id>(c->arg(0));
+      v = eval_int(env, c->arg(1));
+    } else {
+      return true;
+    }
+    VarDecl* vd = id->decl();
+    if (vd->ti()->domain() == nullptr && *bot == BOT_NQ) {
+      // A finite domain is needed to represent the excluded value as a hole.
+      return true;
+    }
+    Ref<IntSetVal> domain = vd->ti()->domain() != nullptr
+                                ? eval_intset(env, vd->ti()->domain())
+                                : IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+    Ref<IntSetVal> ndomain = *bot == BOT_EQ ? LinearTraits<IntLit>::intersectDomain(domain, v, v)
+                                            : LinearTraits<IntLit>::limitDomain(*bot, domain, v);
+    if (ndomain->empty()) {
+      env.fail();
       return false;
     }
-    if (Expression::type(e1).isPar() && Expression::isa<Id>(e0)) {
-      // less than
-      Id* id = Expression::cast<Id>(e0);
-      IntVal ub = eval_int(env, e1);
-      if (id->decl()->ti()->domain() != nullptr) {
-        Ref<IntSetVal> domain = eval_intset(env, id->decl()->ti()->domain());
-        if (domain->max() <= ub) {
-          return false;
-        }
-        if (domain->min() > ub) {
-          env.fail();
-          return false;
-        }
-        IntSetRanges dr(domain);
-        Ranges::Const<IntVal> cr(-IntVal::infinity(), ub);
-        Ranges::Inter<IntVal, IntSetRanges, Ranges::Const<IntVal>> i(dr, cr);
-        Ref<IntSetVal> newibv = IntSetVal::ai(i);
-        id->decl()->ti()->domain(make<SetLit>(Location().introduce(), newibv));
-        id->decl()->ti()->setComputedDomain(false);
-      } else {
-        id->decl()->ti()->domain(
-            make<SetLit>(Location().introduce(), IntSetVal::a(-IntVal::infinity(), ub)));
-      }
+    if (!ndomain->equal(domain)) {
+      vd->ti()->domain(LinearTraits<IntLit>::newDomain(ndomain));
+      vd->ti()->setComputedDomain(false);
     }
-  } else if (c->id() == env.constants.ids.int_.lin_le) {
+    return false;
+  }
+  if (c->id() == env.constants.ids.int_.lin_le) {
     auto* al_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
     if (al_c->size() == 1) {
       auto* al_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
@@ -3119,10 +3414,7 @@ Ref<Expression> bind(EnvI& env, const Ctx& ctx, VarDecl* vd, Expression* e) {
       if (auto* e_vd = Expression::dynamicCast<VarDecl>(e)) {
         e = e_vd->id();
         if (!env.inReverseMapVar && ctx.b != C_ROOT && Expression::type(e) == Type::varbool()) {
-          env.addCtxAnn(e_vd, ctx.b);
-          if (e_vd != ident->decl()) {
-            env.addCtxAnn(ident->decl(), ctx.b);
-          }
+          add_ctx_ann_alias(env, ident->decl(), e_vd, ctx.b);
         }
       }
     }
@@ -3979,7 +4271,10 @@ Ref<Expression> flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
         assert(Expression::isa<IntLit>(fa->field()));
         IntVal i = IntLit::v(Expression::cast<IntLit>(fa->field()));
 
-        Ref<ArrayLit> al = eval_array_lit(env, fa->v());
+        // The struct itself may be cv (e.g. a call with var arguments), so it must not be
+        // evaluated directly
+        Ref<Expression> v = flat_cv_exp(env, ctx, fa->v());
+        Ref<ArrayLit> al = eval_array_lit(env, v);
 
         return flat_cv_exp(env, ctx, (*al)[static_cast<unsigned int>(i.toInt()) - 1]);
       }
@@ -4474,7 +4769,7 @@ void flatten(Env& e, FlatteningOptions opt) {
 
     // Statically evaluate some function bodies
     {
-      std::unique_ptr<Model> toAdd(new Model);
+      auto toAdd = std::make_unique<Model>();
       SimplifyFunctionBodiesVisitor _ffbv(env, *toAdd);
       iter_items<SimplifyFunctionBodiesVisitor>(_ffbv, e.model());
       for (auto* it : *toAdd) {
@@ -4504,7 +4799,14 @@ void flatten(Env& e, FlatteningOptions opt) {
       halfReifyClause = eval_bool(e.envi(), check_hr_clause);
     }
 
+    Ref<Call> check_agg = Call::a(Location(), "mzn_check_eager_linear_aggregation", {});
+    check_agg->type(Type::parbool());
+    check_agg->decl(env.model->matchFn(e.envi(), check_agg, false));
+    env.fopts.eagerLinearAggregation = eval_bool(e.envi(), check_agg);
+    env.deferLinearRelations = !env.fopts.eagerLinearAggregation;
+
     // Flatten main model
+    env.deferBoolDefs = true;
     bool hadSolveItem = false;
     FlattenModelVisitor _fv(env, hadSolveItem, timingMap);
     iter_items<FlattenModelVisitor>(_fv, e.model());
@@ -4530,25 +4832,15 @@ void flatten(Env& e, FlatteningOptions opt) {
     int startItem = 0;
     int endItem = static_cast<int>(m.size()) - 1;
 
-    FunctionI* int_lin_eq;
-    {
-      std::vector<Type> int_lin_eq_t(3);
-      int_lin_eq_t[0] = Type::parint(1);
-      int_lin_eq_t[1] = Type::varint(1);
-      int_lin_eq_t[2] = Type::parint(0);
-      FunctionI* fi = env.model->matchFn(env, env.constants.ids.int_.lin_eq, int_lin_eq_t, false);
-      int_lin_eq = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-    }
-    FunctionI* float_lin_eq;
-    {
-      std::vector<Type> float_lin_eq_t(3);
-      float_lin_eq_t[0] = Type::parfloat(1);
-      float_lin_eq_t[1] = Type::varfloat(1);
-      float_lin_eq_t[2] = Type::parfloat(0);
-      FunctionI* fi =
-          env.model->matchFn(env, env.constants.ids.float_.lin_eq, float_lin_eq_t, false);
-      float_lin_eq = ((fi != nullptr) && (fi->e() != nullptr)) ? fi : nullptr;
-    }
+    // Eager aggregation only rewrites a definition into lin_eq if lin_eq is redefined.
+    auto lin_eq_redefinition = [&](const ASTString& id, Type coeffs, Type vars, Type constant) {
+      FunctionI* fi = env.model->matchFn(env, id, {coeffs, vars, constant}, false);
+      return (fi != nullptr) && (fi->e() != nullptr) ? fi : nullptr;
+    };
+    FunctionI* int_lin_eq = lin_eq_redefinition(env.constants.ids.int_.lin_eq, Type::parint(1),
+                                                Type::varint(1), Type::parint(0));
+    FunctionI* float_lin_eq = lin_eq_redefinition(
+        env.constants.ids.float_.lin_eq, Type::parfloat(1), Type::varfloat(1), Type::parfloat(0));
     FunctionI* array_bool_and;
     FunctionI* array_bool_and_imp;
     FunctionI* array_bool_clause;
@@ -4611,6 +4903,11 @@ void flatten(Env& e, FlatteningOptions opt) {
           if (vdi->removed()) {
             continue;
           }
+          if (!flatten_deferred_bool_def(env, vdi, doLastProcessing)) {
+            // Requeued once its users are flattened, and forced last if they never are (a cycle)
+            processLast.push_back(i);
+            continue;
+          }
           /// Look at constraints
           if (!is_output(vdi->e())) {
             if (0 < env.varOccurrences.occurrences(vdi->e())) {
@@ -4652,6 +4949,8 @@ void flatten(Env& e, FlatteningOptions opt) {
                   env.flatAddItem(ci);
                 } else if (vdi->e()->type().isPar() || vdi->e()->ti()->computedDomain()) {
                   env.flatRemoveItem(vdi);
+                  continue;
+                } else if (release_linear_definition(env, vdi)) {
                   continue;
                 }
               } else {
@@ -4811,56 +5110,34 @@ void flatten(Env& e, FlatteningOptions opt) {
                              Expression::equal(vd->ti()->domain(), env.constants.literalTrue);
             if (Ref<Call> c = Expression::dynamicCast<Call>(vd->e())) {
               Ref<Call> nc;
+              LinearRelation relation = linear_relation(env, c, true);
+              if (relation.comparison != nullptr) {
+                rebuild_linear(env, vdi, c, relation.comparison, relation.reifiedInto,
+                               relation.halfReified);
+                continue;
+              }
               if (c->id() == env.constants.ids.lin_exp) {
-                if (c->type().isfloat() && (float_lin_eq != nullptr)) {
-                  std::vector<Ref<Expression>> args(c->argCount());
-                  auto* le_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
-                  std::vector<Ref<Expression>> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
-                    nc_c[ii] = (*le_c)[ii];
+                if (env.fopts.eagerLinearAggregation) {
+                  // Eager aggregation keeps a definition until output, as later
+                  // passes such as MIPdomains read it, unless lin_eq is redefined.
+                  FunctionI* lin_eq = c->type().isint() ? int_lin_eq : float_lin_eq;
+                  if (lin_eq != nullptr) {
+                    nc = linear_definition_call(vd, c);
+                    nc->decl(lin_eq);
                   }
-                  nc_c.emplace_back(FloatLit::a(-1));
-                  args[0] = make<ArrayLit>(Location().introduce(), nc_c);
-                  Expression::type(args[0], Type::parfloat(1));
-                  auto* le_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
-                  std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
-                    nx[ii] = (*le_x)[ii];
+                } else if (!doLastProcessing) {
+                  // Reader counts are final only after the main agenda is empty.
+                  processLast.push_back(i);
+                } else {
+                  if (!linear_keeps_name(env, vd, c)) {
+                    // Unsupported readers leave the definition for the fallback below.
+                    inline_linear_definition(env, vdi);
+                    if (env.varOccurrences.occurrences(vd) == 0) {
+                      continue;
+                    }
                   }
-                  nx.push_back(vd->id());
-                  args[1] = make<ArrayLit>(Location().introduce(), nx);
-                  Expression::type(args[1], Type::varfloat(1));
-                  FloatVal d = FloatLit::v(Expression::cast<FloatLit>(c->arg(2)));
-                  args[2] = FloatLit::a(-d);
-                  Expression::type(args[2], Type::parfloat(0));
-                  nc = Call::a(Expression::loc(c).introduce(), ASTString("float_lin_eq"), args);
-                  nc->type(Type::varbool());
-                  nc->decl(float_lin_eq);
-                } else if (int_lin_eq != nullptr) {
-                  assert(c->type().isint());
-                  std::vector<Ref<Expression>> args(c->argCount());
-                  auto* le_c = Expression::cast<ArrayLit>(follow_id(c->arg(0)));
-                  std::vector<Ref<Expression>> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
-                    nc_c[ii] = (*le_c)[ii];
-                  }
-                  nc_c.emplace_back(IntLit::a(-1));
-                  args[0] = make<ArrayLit>(Location().introduce(), nc_c);
-                  Expression::type(args[0], Type::parint(1));
-                  auto* le_x = Expression::cast<ArrayLit>(follow_id(c->arg(1)));
-                  std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
-                    nx[ii] = (*le_x)[ii];
-                  }
-                  nx.push_back(vd->id());
-                  args[1] = make<ArrayLit>(Location().introduce(), nx);
-                  Expression::type(args[1], Type::varint(1));
-                  IntVal d = IntLit::v(Expression::cast<IntLit>(c->arg(2)));
-                  args[2] = IntLit::a(-d);
-                  Expression::type(args[2], Type::parint(0));
-                  nc = Call::a(Expression::loc(c).introduce(), ASTString("int_lin_eq"), args);
-                  nc->type(Type::varbool());
-                  nc->decl(int_lin_eq);
+                  nc = linear_definition_call(vd, c);
+                  nc->decl(env.model->matchFn(env, nc, false));
                 }
               } else if (c->id() == env.constants.ids.exists) {
                 if (isTrueVar && array_bool_clause != nullptr) {
@@ -5018,6 +5295,12 @@ void flatten(Env& e, FlatteningOptions opt) {
                           env.model->matchReification(env, c->id(), raw(args), canHalfReify, false);
                     }
 
+                    if (decl == nullptr && (c->decl() != nullptr) && (c->decl()->e() != nullptr)) {
+                      // A deferred relation without a reified builtin, such as a
+                      // comparison of optional values: use its redefinition.
+                      rebuild_linear(env, vdi, c, c, nullptr, false);
+                      continue;
+                    }
                     if (decl == nullptr) {
                       std::ostringstream ss;
                       ss << "'" << demonomorphise_identifier(c->id())
@@ -5117,6 +5400,12 @@ void flatten(Env& e, FlatteningOptions opt) {
         } else if (auto* ci = m[i]->dynamicCast<ConstraintI>()) {
           if (Call* c = Expression::dynamicCast<Call>(ci->e())) {
             Ref<Call> nc;
+            LinearRelation relation = linear_relation(env, c, true);
+            if (relation.comparison != nullptr) {
+              rebuild_linear(env, ci, c, relation.comparison, relation.reifiedInto,
+                             relation.halfReified);
+              continue;
+            }
             if (c->id() == env.constants.ids.exists) {
               if (array_bool_clause != nullptr) {
                 std::vector<Expression*> args(2);
@@ -5180,6 +5469,11 @@ void flatten(Env& e, FlatteningOptions opt) {
             } else {
               FunctionI* decl = env.model->matchFn(env, c, false);
               if ((decl != nullptr) && (decl->e() != nullptr)) {
+                if (env.linearRelationIds.count(c->id()) != 0) {
+                  // A delayed relation is in the CSE map, which would stop its body
+                  // from being flattened.
+                  env.cseMapRemove(c);
+                }
                 nc = c;
                 nc->decl(decl);
               }
@@ -5210,6 +5504,9 @@ void flatten(Env& e, FlatteningOptions opt) {
       startItem = endItem + 1;
       endItem = static_cast<int>(m.size()) - 1;
     }
+    // Later output and reverse-map expressions are built directly.
+    env.deferBoolDefs = false;
+    env.deferLinearRelations = false;
 
     // Add redefinitions for output variables that may have been redefined since create_output
     for (unsigned int i = 0; i < env.output->size(); i++) {
@@ -5217,8 +5514,15 @@ void flatten(Env& e, FlatteningOptions opt) {
         if (vdi->e()->e() == nullptr) {
           auto it = env.reverseMappers.find(vdi->e()->id());
           if (it != env.reverseMappers.end()) {
-            auto rhs = copy(env, env.cmap, it->second).cast<Call>();
-            check_output_par_fn(env, rhs);
+            // The reverse mapper is either a call or a tuple/record literal
+            Ref<Expression> rhs = copy(env, env.cmap, it->second);
+            if (Call* crhs = Expression::dynamicCast<Call>(rhs)) {
+              check_output_par_fn(env, crhs);
+            } else {
+              Type rhs_t(Expression::type(rhs));
+              rhs_t.mkPar(env);
+              Expression::type(rhs, rhs_t);
+            }
             output_vardecls(env, vdi, rhs);
 
             remove_is_output(vdi->e()->flat());
@@ -5285,18 +5589,16 @@ void flatten(Env& e, FlatteningOptions opt) {
       auto& os = e.envi().outstream;
       os << "{\"type\": \"profiling\", \"entries\": [";
       bool first = true;
-      for (auto& entry : *timingMap) {
-        std::chrono::milliseconds time_taken =
-            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+      for (auto& [loc, elapsed] : *timingMap) {
+        auto time_taken = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
         if (time_taken > std::chrono::milliseconds(0)) {
           if (first) {
             first = false;
           } else {
             os << ", ";
           }
-          os << "{\"filename\": \"" << Printer::escapeStringLit(entry.first.first)
-             << "\", \"line\": " << entry.first.second << ", \"time\": " << time_taken.count()
-             << "}";
+          os << "{\"filename\": \"" << Printer::escapeStringLit(loc.first)
+             << "\", \"line\": " << loc.second << ", \"time\": " << time_taken.count() << "}";
         }
       }
       os << "]}\n";
@@ -5309,13 +5611,11 @@ void flatten(Env& e, FlatteningOptions opt) {
         e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to "
                               "toplevel items)\n";
       }
-      for (auto& entry : *timingMap) {
-        std::chrono::milliseconds time_taken =
-            std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+      for (auto& [loc, elapsed] : *timingMap) {
+        auto time_taken = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
         if (time_taken > std::chrono::milliseconds(0)) {
           std::ostringstream oss;
-          oss << "[\"" << entry.first.first << "\"," << entry.first.second << ","
-              << time_taken.count() << "]";
+          oss << "[\"" << loc.first << "\"," << loc.second << "," << time_taken.count() << "]";
           ss.addRaw("profiling", oss.str());
         }
       }
@@ -5513,43 +5813,11 @@ std::vector<Ref<Expression>> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* 
         std::vector<Ref<Expression>> args(cc->argCount());
         ASTString cid;
         if (cc->id() == env.constants.ids.lin_exp) {
-          // a = lin_exp([1],[b],5) => int_lin_eq([1,-1],[b,a],-5):: defines_var(a)
-          auto* le_c = Expression::cast<ArrayLit>(follow_id(cc->arg(0)));
-          std::vector<Ref<Expression>> nc(le_c->size());
-          for (auto i = static_cast<unsigned int>(nc.size()); (i--) != 0U;) {
-            nc[i] = (*le_c)[i];
-          }
-          if (le_c->type().bt() == Type::BT_INT) {
-            cid = env.constants.ids.int_.lin_eq;
-            nc.emplace_back(IntLit::a(-1));
-            args[0] = make<ArrayLit>(Location().introduce(), nc);
-            Expression::type(args[0], Type::parint(1));
-            auto* le_x = Expression::cast<ArrayLit>(follow_id(cc->arg(1)));
-            std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
-              nx[i] = (*le_x)[i];
-            }
-            nx.push_back(vd->id());
-            args[1] = make<ArrayLit>(Location().introduce(), nx);
-            Expression::type(args[1], le_x->type());
-            IntVal d = IntLit::v(Expression::cast<IntLit>(cc->arg(2)));
-            args[2] = IntLit::a(-d);
-          } else {
-            // float
-            cid = env.constants.ids.float_.lin_eq;
-            nc.emplace_back(FloatLit::a(-1.0));
-            args[0] = make<ArrayLit>(Location().introduce(), nc);
-            Expression::type(args[0], Type::parfloat(1));
-            auto* le_x = Expression::cast<ArrayLit>(follow_id(cc->arg(1)));
-            std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
-              nx[i] = (*le_x)[i];
-            }
-            nx.push_back(vd->id());
-            args[1] = make<ArrayLit>(Location().introduce(), nx);
-            Expression::type(args[1], le_x->type());
-            FloatVal d = FloatLit::v(Expression::cast<FloatLit>(cc->arg(2)));
-            args[2] = FloatLit::a(-d);
+          Ref<Call> def = linear_definition_call(vd, cc);
+          cid = def->id();
+          args.resize(def->argCount());
+          for (unsigned int i = 0; i < def->argCount(); i++) {
+            args[i] = def->arg(i);
           }
         } else {
           if (cc->id() == env.constants.ids.card) {
@@ -6193,9 +6461,7 @@ void cse_result_change_ctx(EnvI& env, Expression* cseRes, BCtx newCtx) {
       } else if (auto* redirect = Expression::dynamicCast<Id>(ident->decl()->e())) {
         stack.push_back(redirect);
       } else if (auto* c = Expression::dynamicCast<Call>(ident->decl()->e())) {
-        BCtx vdCtx;
-        bool annotated;
-        std::tie(vdCtx, annotated) = env.annToCtx(ident->decl());
+        BCtx vdCtx = std::get<0>(env.annToCtx(ident->decl()));
         if ((!first || vdCtx != newCtx) && vdCtx != C_ROOT && vdCtx != C_MIX) {
           env.addCtxAnn(ident->decl(), (first && newCtx == C_ROOT) ? C_ROOT : C_MIX);
           for (unsigned int i = 0; i < c->argCount(); i++) {

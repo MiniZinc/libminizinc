@@ -16,6 +16,7 @@
 #include <minizinc/warning.hh>
 
 #include <iterator>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -131,8 +132,8 @@ protected:
 
   /// Store some declarations
   struct FnDecls {
-    using TCheckedDecl = std::pair<bool, FunctionI*>;  // bool means that it was checked
-    TCheckedDecl boundsDisj = {false, nullptr};        // SCIP's bound disjunction
+    // SCIP's bound disjunction, once looked up (nullptr if it is not declared)
+    std::optional<FunctionI*> boundsDisj;
   } _fnDecls;
 
 public:
@@ -157,9 +158,9 @@ public:
   }
 
   /// Get file name
-  ASTString filename() const { return _filename; }
+  const ASTString& filename() const { return _filename; }
   /// Get file path
-  ASTString filepath() const { return _filepath; }
+  const ASTString& filepath() const { return _filepath; }
   /// Set file name
   void setFilename(const std::string& f) {
     assert(_filename.empty());

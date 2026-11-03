@@ -281,9 +281,9 @@ inline long long int Id::idn() const {
   if (hasStr()) {
     return -1;
   }
-  auto i_u = reinterpret_cast<mzn_uintptr_t>(_vOrIdn.idn) & ~static_cast<mzn_uintptr_t>(1);
-  if (static_cast<mzn_intptr_t>(i_u) < 0) {
-    auto ret = static_cast<mzn_intptr_t>(~(~i_u >> 1));
+  auto i_u = reinterpret_cast<std::uintptr_t>(_vOrIdn.idn) & ~static_cast<std::uintptr_t>(1);
+  if (static_cast<std::intptr_t>(i_u) < 0) {
+    auto ret = static_cast<std::intptr_t>(~(~i_u >> 1));
     return static_cast<long long int>(ret);
   }
   return static_cast<long long int>(i_u >> 1);
@@ -489,7 +489,7 @@ inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
 }
 
 inline bool Call::hasId() const {
-  return (reinterpret_cast<mzn_uintptr_t>(_uId.decl) & static_cast<mzn_uintptr_t>(1)) == 0;
+  return (reinterpret_cast<std::uintptr_t>(_uId.decl) & static_cast<std::uintptr_t>(1)) == 0;
 }
 
 inline const ASTString& Call::id() const { return hasId() ? _uId.id : decl()->id(); }
@@ -507,16 +507,17 @@ inline void Call::id(const ASTString& i) {
 
 inline FunctionI* Call::decl() const {
   return hasId() ? nullptr
-                 : reinterpret_cast<FunctionI*>(reinterpret_cast<mzn_uintptr_t>(_uId.decl) &
-                                                ~static_cast<mzn_uintptr_t>(1));
+                 : reinterpret_cast<FunctionI*>(reinterpret_cast<std::uintptr_t>(_uId.decl) &
+                                                ~static_cast<std::uintptr_t>(1));
 }
 
 inline void Call::decl(Arg<FunctionI> f) {
   assert(f != nullptr);
   RC::inc(f);
   ASTNode* old = uIdNode();
-  _uId.decl = reinterpret_cast<FunctionI*>(
-      reinterpret_cast<mzn_uintptr_t>(static_cast<FunctionI*>(f)) | static_cast<mzn_uintptr_t>(1));
+  _uId.decl =
+      reinterpret_cast<FunctionI*>(reinterpret_cast<std::uintptr_t>(static_cast<FunctionI*>(f)) |
+                                   static_cast<std::uintptr_t>(1));
   RC::dec(old);
 }
 

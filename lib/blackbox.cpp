@@ -165,7 +165,7 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
 
         // Reason: use the user-defined `<name>_reason` if there is one, otherwise the conservative
         // default reason over all input bounds.
-        const ASTString reasonId(std::string(fi->id().c_str()) + "_reason");
+        const ASTString reasonId(std::string(fi->id()) + "_reason");
         Ref<Expression> reason;
         if (m->matchFn(env, reasonId, allArgTypes, true) != nullptr) {
           reason = Call::a(loc, reasonId, allArgs);
@@ -209,7 +209,7 @@ void synthesize_blackbox_bodies(EnvI& env, Model* m, const std::vector<FunctionI
         if (parFn == nullptr || !parFn->ti()->type().isPar()) {
           typeErrors.emplace_back(
               env, fi->loc(),
-              "a functional black-box propagator `" + std::string(fi->id().c_str()) +
+              "a functional black-box propagator `" + std::string(fi->id()) +
                   "' requires a `par` overload defining the propagation function "
                   "(used to determine the length of its output)");
           continue;

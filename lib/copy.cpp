@@ -566,8 +566,8 @@ Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
     c->addItem(copy(env, cm, i, false, true));
   }
 
-  for (auto& it : m->_fnmap) {
-    for (auto& i : it.second) {
+  for (auto& [name, entries] : m->_fnmap) {
+    for (auto& i : entries) {
       c->registerFn(env, copy(env, cm, i.fi, false, true, isFlatModel)->cast<FunctionI>());
     }
   }

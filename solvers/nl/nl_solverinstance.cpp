@@ -17,8 +17,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
-
-using namespace std;
+#include <memory>
 
 namespace MiniZinc {
 
@@ -38,18 +37,18 @@ NLSolverFactory::NLSolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string NLSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
-  string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
+std::string NLSolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
+  std::string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string NLSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+std::string NLSolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return MZN_VERSION_MAJOR;
 }
 
-string NLSolverFactory::getId() { return "org.minizinc.mzn-nl"; }
+std::string NLSolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 
-void NLSolverFactory::printHelp(ostream& os) {
+void NLSolverFactory::printHelp(std::ostream& os) {
   os << "MZN-NL plugin options\n"
      << "  --nl-cmd , --nonlinear-cmd <exe>\n     The backend solver filename.\n"
      << "  --nl-flags <options>, --backend-flags <options>\n"
@@ -81,7 +80,7 @@ bool NLSolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                     std::vector<std::string>& argv, const std::string& workingDir) {
   auto& _opt = static_cast<NLSolverOptions&>(*opt);
   CLOParser cop(i, argv);
-  string buffer;
+  std::string buffer;
 
   int nn = -1;
   if (cop.getOption("--nl-cmd --nonlinear-cmd", &buffer)) {
@@ -138,8 +137,8 @@ SolverInstance::Status NLSolverInstance::solve() {
   auto& opt = static_cast<NLSolverOptions&>(*_options);
 
   // --- --- --- Prepare the files
-  string file_nl;   // Output for the NL, will be the input for the solver
-  string file_sol;  // Ouput of the solver
+  std::string file_nl;   // Output for the NL, will be the input for the solver
+  std::string file_sol;  // Ouput of the solver
   std::unique_ptr<FileUtils::TmpDir> tmpdir;
 
   if (opt.doKeepfile) {
@@ -147,21 +146,21 @@ SolverInstance::Status NLSolverInstance::solve() {
     ASTString file_mzn = _env.envi().originalModel != nullptr
                              ? _env.envi().originalModel->filepath()
                              : _env.envi().model->filepath();
-    string file_base = std::string(file_mzn.substr(0, file_mzn.findLastOf('.')));
+    std::string file_base = std::string(file_mzn.substr(0, file_mzn.findLastOf('.')));
     file_nl = file_base + ".nl";
     file_sol = file_base + ".sol";
   } else {
     // Don't keep file: create a temp directory
-    tmpdir = std::unique_ptr<FileUtils::TmpDir>(new FileUtils::TmpDir());
+    tmpdir = std::make_unique<FileUtils::TmpDir>();
     file_nl = tmpdir->name() + "/model.nl";
     file_sol = tmpdir->name() + "/model.sol";
   }
-  std::ofstream outfile(FILE_PATH(file_nl));
+  std::ofstream outfile(FileUtils::to_path(file_nl));
   // Configure floating point output
   if (opt.doHexafloat) {
-    outfile << hexfloat;
+    outfile << std::hexfloat;
   } else {
-    outfile.precision(numeric_limits<double>::digits10 + 2);
+    outfile.precision(std::numeric_limits<double>::digits10 + 2);
   }
 
   // --- --- --- Result of the try/catch block
@@ -197,7 +196,7 @@ SolverInstance::Status NLSolverInstance::solve() {
 
     // --- --- --- Call the solver
     NLSolns2Out s2o = NLSolns2Out(out, _nlFile, opt.verbose);
-    vector<string> cmd_line;
+    std::vector<std::string> cmd_line;
 
     if (opt.nlSolver.empty()) {
       outfile.close();

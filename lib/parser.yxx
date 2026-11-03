@@ -24,12 +24,11 @@
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
 /// Hand a new node to the parser state, which owns it until a parent node or the model does
 #define KEEP(e) static_cast<ParserState*>(parm)->owned.keep(e)
+#include <charconv>
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <map>
 #include <cerrno>
-#include <regex>
 
 namespace MiniZinc{ class ParserLocation; }
 #define YYLTYPE MiniZinc::ParserLocation
@@ -45,7 +44,6 @@ namespace MiniZinc{ class ParserLocation; }
 #include <minizinc/file_utils.hh>
 #include <minizinc/prettyprinter.hh>
 
-using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
@@ -76,7 +74,7 @@ extern int yydebug;
 
 namespace MiniZinc {
 
-void yyerror(YYLTYPE* location, void* parm, const string& str) {
+void yyerror(YYLTYPE* location, void* parm, const std::string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   Model* m = pp->model;
   std::vector<ASTString> includeStack;
@@ -89,7 +87,7 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
   pp->syntaxErrors.emplace_back(Location(*location), currentLine, includeStack, str);
 }
 
-void yywarn(YYLTYPE* location, void* parm, const string& str) {
+void yywarn(YYLTYPE* location, void* parm, const std::string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   pp->addWarning(Location(*location), str);
 }
@@ -101,7 +99,7 @@ void warnDoubleEqualsAssignment(YYLTYPE* location, void* parm, bool doubled) {
   }
 }
 
-bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
+bool notInDatafile(YYLTYPE* location, void* parm, const std::string& item) {
   ParserState* pp = static_cast<ParserState*>(parm);
   if (pp->isDatafile) {
     yyerror(location,parm,item+" item not allowed in data file");
@@ -136,19 +134,6 @@ Expression* createAccess(const ParserLocation& loc, Expression* e, const std::ve
     ret = expr;
   }
   return ret;
-}
-
-// Variant of definition in lexer.lxx
-IntVal fast_strtointval(const std::string& s) {
-  MiniZinc::IntVal x = 0;
-  try {
-    for (size_t i = 0; i < s.size(); ++i) {
-      x = (x*10) + (s[i] - '0');
-    }
-  } catch (MiniZinc::ArithmeticError&) {
-    return false;
-  }
-  return x;
 }
 
 void parseFieldTail(void* parm, const ParserLocation& loc, std::vector<Expression*>& parsed, const std::string& tail) {
@@ -187,7 +172,9 @@ void parseFieldTail(void* parm, const ParserLocation& loc, std::vector<Expressio
     // emit field
     Expression* field_expr = nullptr;
     if (is_num) {
-      IntVal fieldVal = MiniZinc::fast_strtointval(field);
+      // An out of range field number becomes 0, which is not a valid field
+      long long int fieldVal = 0;
+      std::from_chars(field.data(), field.data() + field.size(), fieldVal);
       field_expr = KEEP(IntLit::a(fieldVal));
     } else {
       field_expr = KEEP(make<Id>(loc, field, nullptr));
@@ -506,20 +493,17 @@ error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_OUTPUT
 include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
       { ParserState* pp = static_cast<ParserState*>(parm);
-        string canonicalName=pp->canonicalFilename($2);
-        map<string,Model*>::iterator ret = pp->seenModels.find(canonicalName);
+        std::string canonicalName=pp->canonicalFilename($2);
+        auto ret = pp->seenModels.find(canonicalName);
         IncludeI* ii = KEEP(make<IncludeI>(@$,ASTString($2)));
         $$ = ii;
         if (ret == pp->seenModels.end()) {
           Model* im = new Model;
           im->setParent(pp->model);
           im->setFilename(canonicalName);
-          string fpath = FileUtils::dir_name(pp->filename);
-          if (fpath=="")
-            fpath="./";
-          pp->files.emplace_back(im, ii, fpath, canonicalName, pp->isSTDLib);
+          pp->files.emplace_back(im, ii, FileUtils::dir_name(pp->filename), canonicalName, pp->isSTDLib);
           ii->m(im);
-          pp->seenModels.insert(pair<string,Model*>(canonicalName,im));
+          pp->seenModels.emplace(canonicalName, im);
         } else {
           ii->m(ret->second, false);
         }
@@ -585,7 +569,7 @@ vardecl_item :
       { warnDoubleEqualsAssignment(&@4, parm, $4);
         TypeInst* ti = KEEP(make<TypeInst>(@$,Type::parsetint()));
         ti->setIsEnum(true);
-        vector<Expression*> args;
+        std::vector<Expression*> args;
         args.push_back(KEEP(make<ArrayLit>(@$,*$6)));
         Call* sl = KEEP(Call::a(@$, Constants::constants().ids.anonEnumFromStrings, args));
         VarDecl* vd = KEEP(make<VarDecl>(@$,ti,$2,sl));
@@ -628,7 +612,7 @@ enum_construct :
       }
     | MZN_IDENTIFIER '(' expr ')'
       {
-        vector<Expression*> args({$3});
+        std::vector<Expression*> args({$3});
         $$ = KEEP(Call::a(@$, ASTString($1), args));
         free($1);
       }
@@ -881,29 +865,29 @@ operation_item_tail :
 fn_params :
       /* empty */
       { yywarn(&@$, parm, "declaring an operation without a parameter list is deprecated; write `()' instead");
-        $$=new vector<VarDecl*>(); }
+        $$=new std::vector<VarDecl*>(); }
     | '(' params_list ')'
       { $$=$2; }
     | '(' error ')'
-      { $$=new vector<VarDecl*>(); }
+      { $$=new std::vector<VarDecl*>(); }
 
 params :
       /* empty */
-      { $$=new vector<VarDecl*>(); }
+      { $$=new std::vector<VarDecl*>(); }
     | '(' params_list ')'
       { $$=$2; }
     | '(' error ')'
-      { $$=new vector<VarDecl*>(); }
+      { $$=new std::vector<VarDecl*>(); }
 
 params_list :
         /* empty */
-      { $$=new vector<VarDecl*>(); }
+      { $$=new std::vector<VarDecl*>(); }
     | params_list_head comma_or_none
       { $$=$1; }
 
 params_list_head :
       ti_expr_and_id_or_anon
-      { $$=new vector<VarDecl*>();
+      { $$=new std::vector<VarDecl*>();
         if ($1) {
           if (Expression::type($1->ti()).any() && $1->ti()->domain() == nullptr) {
             // This is an any type, not allowed in parameter list
@@ -963,7 +947,7 @@ ti_expr_and_id_list : ti_expr_and_id_list_head comma_or_none
 
 ti_expr_and_id_list_head :
       ti_expr_and_id
-      { $$=new vector<VarDecl*>(); $$->push_back($1); }
+      { $$=new std::vector<VarDecl*>(); $$->push_back($1); }
     | ti_expr_and_id_list_head ',' ti_expr_and_id
       { $$=$1; if ($1 && $3) $1->push_back($3); }
 
@@ -972,7 +956,7 @@ ti_expr_list : ti_expr_list_head comma_or_none
 
 ti_expr_list_head :
       ti_expr
-      { $$=new vector<TypeInst*>(); $$->push_back($1); }
+      { $$=new std::vector<TypeInst*>(); $$->push_back($1); }
     | ti_expr_list_head ',' ti_expr
       { $$=$1; if ($1 && $3) $1->push_back($3); }
 
@@ -981,7 +965,7 @@ array_index_list : array_index_list_head comma_or_none
 
 array_index_list_head :
       array_index_entry
-      { $$=new vector<TypeInst*>(); $$->push_back($1); }
+      { $$=new std::vector<TypeInst*>(); $$->push_back($1); }
     | array_index_list_head ',' array_index_entry
       { $$=$1; if ($1 && $3) $1->push_back($3); }
 
@@ -1337,48 +1321,48 @@ set_expr :
     | set_expr MZN_POW set_expr
       { $$=KEEP(make<BinOp>(@$, $1, BOT_POW, $3)); }
     | set_expr MZN_WEAK_PLUS set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~+"), args));
       }
     | set_expr MZN_WEAK_MINUS set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~-"), args));
       }
     | set_expr MZN_WEAK_MULT set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~*"), args));
       }
     | set_expr MZN_WEAK_DIV set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~/"), args));
       }
     | set_expr MZN_WEAK_IDIV set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~div"), args));
       }
     | set_expr MZN_WEAK_EQ set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~="), args));
       }
     | set_expr MZN_WEAK_NQ set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~!="), args));
       }
     | set_expr MZN_DEFAULT set_expr
       {
-        vector<Expression*> args;
+        std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("default"), args));
       }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, $2, args));
         free($2);
@@ -1512,47 +1496,47 @@ expr :
     | expr MZN_POW expr
       { $$=KEEP(make<BinOp>(@$, $1, BOT_POW, $3)); }
     | expr MZN_WEAK_PLUS expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~+"), args));
       }
     | expr MZN_WEAK_MINUS expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~-"), args));
       }
     | expr MZN_WEAK_MULT expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~*"), args));
       }
     | expr MZN_WEAK_DIV expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~/"), args));
       }
     | expr MZN_WEAK_IDIV expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~div"), args));
       }
     | expr MZN_WEAK_EQ expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~="), args));
       }
     | expr MZN_WEAK_NQ expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("~!="), args));
       }
     | expr MZN_DEFAULT expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, ASTString("default"), args));
       }
     | expr MZN_QUOTED_IDENTIFIER expr
-      { vector<Expression*> args;
+      { std::vector<Expression*> args;
         args.push_back($1); args.push_back($3);
         $$=KEEP(Call::a(@$, $2, args));
         free($2);
@@ -1918,7 +1902,7 @@ record_literal :
 
 record_field_list_head :
       record_field
-      { $$ = new vector<Expression*>(1); (*$$)[0] = $1; }
+      { $$ = new std::vector<Expression*>(1); (*$$)[0] = $1; }
     | record_field_list_head ',' record_field
       { $$=$1; $$->push_back($3); }
 
@@ -2080,9 +2064,8 @@ simple_array_literal_2d :
             if (i >= static_cast<unsigned int>(hadHeaderRow) && !(*$2)[i].first.empty()) {
               rowHeader.push_back((*$2)[i].first[0]);
             }
-            for (unsigned int j = 0; j < (*$2)[i].second.size(); j++) {
-              v[i - hadHeaderRow].push_back((*$2)[i].second[j]);
-            }
+            const auto& row = (*$2)[i].second;
+            v[i - hadHeaderRow].insert(v[i - hadHeaderRow].end(), row.begin(), row.end());
           }
           if (columnHeader.empty() && rowHeader.empty()) {
             $$=KEEP(make<ArrayLit>(@$, v));
@@ -2117,16 +2100,16 @@ simple_array_literal_2d :
     {
       if ($2) {
         std::vector<std::pair<int,int> > dims(3);
-        dims[0] = std::pair<int,int>(1,static_cast<int>($2->size()));
+        dims[0] = {1, static_cast<int>($2->size())};
         if ($2->size()==0) {
-          dims[1] = std::pair<int,int>(1,0);
-          dims[2] = std::pair<int,int>(1,0);
+          dims[1] = {1, 0};
+          dims[2] = {1, 0};
         } else {
-          dims[1] = std::pair<int,int>(1,static_cast<int>((*$2)[0].size()));
+          dims[1] = {1, static_cast<int>((*$2)[0].size())};
           if ((*$2)[0].size()==0) {
-            dims[2] = std::pair<int,int>(1,0);
+            dims[2] = {1, 0};
           } else {
-            dims[2] = std::pair<int,int>(1,static_cast<int>((*$2)[0][0].size()));
+            dims[2] = {1, static_cast<int>((*$2)[0][0].size())};
           }
         }
         std::vector<Expression*> a;
@@ -2320,28 +2303,18 @@ comp_expr_list_head :
 if_then_else_expr :
       MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {
-        std::vector<Expression*> iexps;
-        iexps.push_back($2);
-        iexps.push_back($4);
+        std::vector<Expression*> iexps{$2, $4};
         if ($5) {
-          for (unsigned int i=0; i<$5->size(); i+=2) {
-            iexps.push_back((*$5)[i]);
-            iexps.push_back((*$5)[i+1]);
-          }
+          iexps.insert(iexps.end(), $5->begin(), $5->end());
         }
         $$=KEEP(make<ITE>(@$, iexps,$7));
         delete $5;
       }
   | MZN_IF expr MZN_THEN expr elseif_list MZN_ENDIF
     {
-      std::vector<Expression*> iexps;
-      iexps.push_back($2);
-      iexps.push_back($4);
+      std::vector<Expression*> iexps{$2, $4};
       if ($5) {
-        for (unsigned int i=0; i<$5->size(); i+=2) {
-          iexps.push_back((*$5)[i]);
-          iexps.push_back((*$5)[i+1]);
-        }
+        iexps.insert(iexps.end(), $5->begin(), $5->end());
       }
       $$=KEEP(make<ITE>(@$, iexps, nullptr));
       delete $5;
@@ -2461,13 +2434,13 @@ call_expr :
         if ($3!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
-          for (unsigned int i=0; i<$3->size(); i++) {
-            if ((*$3)[i].second) {
+          for (auto [arg, where] : *$3) {
+            if (where) {
               yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
               $$=nullptr;
             }
-            args.push_back((*$3)[i].first);
+            args.push_back(arg);
           }
           if (!hadWhere) {
             $$=KEEP(Call::a(@$, $1, args));
@@ -2480,38 +2453,38 @@ call_expr :
       }
     | MZN_IDENTIFIER '(' comp_or_expr ')' '(' expr ')'
       {
-        vector<Generator> gens;
-        vector<Id*> ids;
+        std::vector<Generator> gens;
+        std::vector<Id*> ids;
         if ($3) {
-          for (unsigned int i=0; i<$3->size(); i++) {
-            if (Id* id = Expression::dynamicCast<Id>((*$3)[i].first)) {
-              if ((*$3)[i].second) {
-                ParserLocation loc = Expression::loc((*$3)[i].second).parserLocation();
+          for (auto [arg, where] : *$3) {
+            if (Id* id = Expression::dynamicCast<Id>(arg)) {
+              if (where) {
+                ParserLocation loc = Expression::loc(where).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dynamicCast<BinOp>((*$3)[i].first)) {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>(arg)) {
                 if (boe->lhs() && boe->rhs()) {
                   Id* id = Expression::dynamicCast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,boe->rhs(),(*$3)[i].second));
-                    ids = vector<Id*>();
+                    gens.emplace_back(ids,boe->rhs(),where);
+                    ids.clear();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
-                    if ((*$3)[i].second) {
-                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$3)[i].second));
+                    gens.emplace_back(ids,nullptr,boe->rhs());
+                    if (where) {
+                      gens.emplace_back(static_cast<int>(gens.size()),where);
                     }
-                    ids = vector<Id*>();
+                    ids.clear();
                   } else {
-                    ParserLocation loc = Expression::loc((*$3)[i].first).parserLocation();
+                    ParserLocation loc = Expression::loc(arg).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = Expression::loc((*$3)[i].first).parserLocation();
+                ParserLocation loc = Expression::loc(arg).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -2526,9 +2499,9 @@ call_expr :
         if (pp->hadError) {
           $$=nullptr;
         } else {
-          Generators g; g.g = gens;
+          Generators g; g.g = std::move(gens);
           Comprehension* ac = KEEP(make<Comprehension>(@$, $6,g,false));
-          vector<Expression*> args; args.push_back(ac);
+          std::vector<Expression*> args{ac};
           $$=KEEP(Call::a(@$, $1, args));
         }
         free($1);
@@ -2539,13 +2512,13 @@ call_expr :
         if ($4!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
-          for (unsigned int i=0; i<$4->size(); i++) {
-            if ((*$4)[i].second) {
+          for (auto [arg, where] : *$4) {
+            if (where) {
               yyerror(&@4, parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
               $$=nullptr;
             }
-            args.push_back((*$4)[i].first);
+            args.push_back(arg);
           }
           if (!hadWhere) {
             $$=KEEP(Call::a(@$, std::string($1)+"⁻¹", args));
@@ -2558,38 +2531,38 @@ call_expr :
       }
     | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')' '(' expr ')'
       {
-        vector<Generator> gens;
-        vector<Id*> ids;
+        std::vector<Generator> gens;
+        std::vector<Id*> ids;
         if ($4) {
-          for (unsigned int i=0; i<$4->size(); i++) {
-            if (Id* id = Expression::dynamicCast<Id>((*$4)[i].first)) {
-              if ((*$4)[i].second) {
-                ParserLocation loc = Expression::loc((*$4)[i].second).parserLocation();
+          for (auto [arg, where] : *$4) {
+            if (Id* id = Expression::dynamicCast<Id>(arg)) {
+              if (where) {
+                ParserLocation loc = Expression::loc(where).parserLocation();
                 yyerror(&loc, parm, "illegal where expression in generator call");
               }
               ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dynamicCast<BinOp>((*$4)[i].first)) {
+              if (BinOp* boe = Expression::dynamicCast<BinOp>(arg)) {
                 if (boe->lhs() && boe->rhs()) {
                   Id* id = Expression::dynamicCast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,boe->rhs(),(*$4)[i].second));
-                    ids = vector<Id*>();
+                    gens.emplace_back(ids,boe->rhs(),where);
+                    ids.clear();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
-                    if ((*$4)[i].second) {
-                      gens.push_back(Generator(static_cast<int>(gens.size()),(*$4)[i].second));
+                    gens.emplace_back(ids,nullptr,boe->rhs());
+                    if (where) {
+                      gens.emplace_back(static_cast<int>(gens.size()),where);
                     }
-                    ids = vector<Id*>();
+                    ids.clear();
                   } else {
-                    ParserLocation loc = Expression::loc((*$4)[i].first).parserLocation();
+                    ParserLocation loc = Expression::loc(arg).parserLocation();
                     yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                ParserLocation loc = Expression::loc((*$4)[i].first).parserLocation();
+                ParserLocation loc = Expression::loc(arg).parserLocation();
                 yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
@@ -2604,9 +2577,9 @@ call_expr :
         if (pp->hadError) {
           $$=nullptr;
         } else {
-          Generators g; g.g = gens;
+          Generators g; g.g = std::move(gens);
           Comprehension* ac = KEEP(make<Comprehension>(@$, $7,g,false));
-          vector<Expression*> args; args.push_back(ac);
+          std::vector<Expression*> args{ac};
           $$=KEEP(Call::a(@$, std::string($1)+"⁻¹", args));
         }
         free($1);
@@ -2617,15 +2590,15 @@ comp_or_expr : comp_or_expr_head comma_or_none
 
 comp_or_expr_head :
       expr
-      { $$=new vector<pair<Expression*,Expression*> >;
+      { $$=new std::vector<std::pair<Expression*,Expression*> >;
         if ($1) {
-          $$->push_back(pair<Expression*,Expression*>($1,nullptr));
+          $$->emplace_back($1,nullptr);
         }
       }
     | expr MZN_WHERE expr
-      { $$=new vector<pair<Expression*,Expression*> >;
+      { $$=new std::vector<std::pair<Expression*,Expression*> >;
         if ($1 && $3) {
-          $$->push_back(pair<Expression*,Expression*>($1,$3));
+          $$->emplace_back($1,$3);
         }
       }
     | MZN_IDENTIFIER ':' expr
@@ -2635,17 +2608,17 @@ comp_or_expr_head :
           oss << "and cannot be used as a named argument (pass it positionally)";
           yyerror(&@1, parm, oss.str());
         }
-        $$=new vector<pair<Expression*,Expression*> >;
+        $$=new std::vector<std::pair<Expression*,Expression*> >;
         if ($3) {
           VarDecl* vd = KEEP(make<VarDecl>(@$, KEEP(make<TypeInst>(@$, Type())), $1, $3));
-          $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
+          $$->emplace_back(vd,nullptr);
         }
         free($1);
       }
     | comp_or_expr_head ',' expr
-      { $$=$1; if ($$ && $3) $$->push_back(pair<Expression*,Expression*>($3,nullptr)); }
+      { $$=$1; if ($$ && $3) $$->emplace_back($3,nullptr); }
     | comp_or_expr_head ',' expr MZN_WHERE expr
-      { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
+      { $$=$1; if ($$ && $3 && $5) $$->emplace_back($3,$5); }
     | comp_or_expr_head ',' MZN_IDENTIFIER ':' expr
       { if ($3 && $3[0]=='_') {
           std::ostringstream oss;
@@ -2656,7 +2629,7 @@ comp_or_expr_head :
         $$=$1;
         if ($$ && $5) {
           VarDecl* vd = KEEP(make<VarDecl>(@$, KEEP(make<TypeInst>(@$, Type())), $3, $5));
-          $$->push_back(pair<Expression*,Expression*>(vd,nullptr));
+          $$->emplace_back(vd,nullptr);
         }
         free($3);
       }
@@ -2681,9 +2654,9 @@ let_expr :
 
 let_vardecl_item_list :
       let_vardecl_item
-      { $$=new vector<Expression*>; $$->push_back($1); }
+      { $$=new std::vector<Expression*>; $$->push_back($1); }
     | constraint_item
-      { $$=new vector<Expression*>;
+      { $$=new std::vector<Expression*>;
         if ($1) {
           ConstraintI* ce = $1->cast<ConstraintI>();
           // Take the expression over from the constraint item, which is dropped

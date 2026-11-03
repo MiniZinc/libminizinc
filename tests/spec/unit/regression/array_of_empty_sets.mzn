@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode]
+solvers: [chuffed]
 options:
   all_solutions: true
 expected: !Result

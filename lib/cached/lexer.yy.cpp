@@ -1,5 +1,7 @@
 #line 18 "/Users/dekker1/Code/github.com/minizinc/libminizinc/lib/lexer.lxx"
+#include <charconv>
 #include <cstdint>
+#include <cstring>
 
 
 
@@ -1379,29 +1381,11 @@ namespace MiniZinc {
 
 namespace MiniZinc {
 
-  bool hexstrtointval(const char* s, long long int& v) {
-    std::istringstream iss(s);
-    iss >> std::hex >> v;
-    return !iss.fail();
-  }
-
-  bool octstrtointval(const char* s, long long int& v) {
-    std::istringstream iss(s);
-    iss >> std::oct >> v;
-    return !iss.fail();
-  }
-
-  bool fast_strtointval(const char* s, long long int& v) {
-    MiniZinc::IntVal x = 0;
-    try {
-      for (; *s != '\0'; ++s) {
-        x = (x*10) + (*s - '0');
-      }
-    } catch (MiniZinc::ArithmeticError&) {
-      return false;
-    }
-    v = x.toInt();
-    return true;
+  /// Parse all of \a s as an integer in \a base, or return false if it is out of range
+  bool strtointval(const char* s, long long int& v, int base = 10) {
+    const char* end = s + std::strlen(s);
+    auto [ptr, ec] = std::from_chars(s, end, v, base);
+    return ec == std::errc() && ptr == end;
   }
 
   bool strtofloatval(void* parm, const char* s, double& val) {
@@ -1442,7 +1426,7 @@ namespace MiniZinc {
   void clearBuffer(void* parm) {
     MiniZinc::ParserState* pp =
       static_cast<MiniZinc::ParserState*>(parm);
-    pp->stringBuffer = "";
+    pp->stringBuffer.clear();
   }
 
   void appendBufferString(void* parm, const char* s) {
@@ -2081,7 +2065,7 @@ YY_RULE_SETUP
 case 27:
 YY_RULE_SETUP
 {
-                    if (::MiniZinc::hexstrtointval(yytext+2, yylval->iValue))
+                    if (::MiniZinc::strtointval(yytext+2, yylval->iValue, 16))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
@@ -2090,7 +2074,7 @@ YY_RULE_SETUP
 case 28:
 YY_RULE_SETUP
 {
-                  if (::MiniZinc::octstrtointval(yytext+2, yylval->iValue))
+                  if (::MiniZinc::strtointval(yytext+2, yylval->iValue, 8))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -2105,7 +2089,7 @@ YY_RULE_SETUP
 case 30:
 YY_RULE_SETUP
 {
-                  if (::MiniZinc::fast_strtointval(yytext, yylval->iValue))
+                  if (::MiniZinc::strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -2765,7 +2749,7 @@ case 185:
 YY_RULE_SETUP
 {
   long long int hexVal;
-  if (::MiniZinc::hexstrtointval(yytext+2, hexVal)) {
+  if (::MiniZinc::strtointval(yytext+2, hexVal, 16)) {
     ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(hexVal));
   } else {
     return MZN_INVALID_STRING_LITERAL;
@@ -2776,7 +2760,7 @@ case 186:
 YY_RULE_SETUP
 {
   long long int octVal;
-  if (::MiniZinc::octstrtointval(yytext+1, octVal)) {
+  if (::MiniZinc::strtointval(yytext+1, octVal, 8)) {
     ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), static_cast<char>(octVal));
   } else {
     return MZN_INVALID_STRING_LITERAL;
@@ -2809,7 +2793,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 192:
 YY_RULE_SETUP
-{ return (unsigned char)yytext[0]; }
+{ return static_cast<unsigned char>(yytext[0]); }
 	YY_BREAK
 case 193:
 /* rule 193 can match eol */
@@ -2829,7 +2813,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 195:
 YY_RULE_SETUP
-{ return (unsigned char)yytext[0]; }
+{ return static_cast<unsigned char>(yytext[0]); }
 	YY_BREAK
 case 196:
 YY_RULE_SETUP

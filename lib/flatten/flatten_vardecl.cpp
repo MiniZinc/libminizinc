@@ -43,10 +43,9 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         }
       }
     }
-    bool reuseVarId =
-        v->type().isAnn() ||
-        (v->toplevel() && v->id()->idn() == -1 && v->type().dim() <= 1 &&
-         Printer::quoteId(v->id()->v()).c_str()[0] != '\'' && v->id()->v().c_str()[0] != '_');
+    bool reuseVarId = v->type().isAnn() ||
+                      (v->toplevel() && v->id()->idn() == -1 && v->type().dim() <= 1 &&
+                       Printer::quoteId(v->id()->v())[0] != '\'' && !v->id()->v().beginsWith("_"));
     if (reuseVarId && v->type().dim() == 1) {
       auto* arrayRanges = ti->ranges()[0]->domain();
       if (arrayRanges == nullptr || !Expression::isa<SetLit>(arrayRanges) ||
@@ -59,7 +58,10 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
     Ref<VarDecl> vd =
         new_vardecl(env, Ctx(), ti, reuseVarId ? v->id() : nullptr, v, nullptr, false);
     v->flat(vd);
-    if (v->e() != nullptr) {
+    std::vector<VarDecl*> refs;
+    Ref<Let> def = deferrable_bool_def(env, v, refs);
+    bool deferredDef = def != nullptr && defer_bool_def(env, vd, def, std::move(refs));
+    if (!deferredDef && v->e() != nullptr) {
       Ctx nctx;
       if (Expression::type(v->e()).isbool()) {
         nctx.b = C_MIX;
@@ -85,6 +87,17 @@ EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl
         // Flattening the RHS resulted in a par expression. Make the variable par.
         Type t(vd->ti()->type());
         t.mkPar(env);
+        vd->ti()->type(t);
+        vd->type(t);
+      }
+      if (vd->e() != nullptr && vd->type().isOpt() && vd->type().dim() == 0 &&
+          Expression::type(vd->e()).isPresent()) {
+        // Flattening the RHS resulted in a non-optional expression (e.g. an if-then-else with a
+        // par condition, or a call to a function with an optional return type). Make the variable
+        // non-optional, since an optional variable is otherwise represented by new occurs and
+        // value variables that would not be connected to the RHS.
+        Type t(vd->ti()->type());
+        t.ot(Type::OT_PRESENT);
         vd->ti()->type(t);
         vd->type(t);
       }

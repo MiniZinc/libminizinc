@@ -9,8 +9,6 @@
 
 #include <utility>
 
-using namespace std;
-
 namespace MiniZinc {
 
 /* *** *** *** NLBound *** *** *** */
@@ -155,7 +153,7 @@ void NLBound::updateEq(double new_eq) {
 }
 
 /** Printing with a name. */
-ostream& NLBound::printToStream(ostream& os, const string& vname) const {
+std::ostream& NLBound::printToStream(std::ostream& os, const std::string& vname) const {
   switch (tag) {
     case LB_UB: {
       os << "0 " << lb << " " << ub << "   # " << lb << " =< " << vname << " =< " << ub;
@@ -182,7 +180,7 @@ ostream& NLBound::printToStream(ostream& os, const string& vname) const {
 }
 
 /** Default printing */
-ostream& NLBound::printToStream(ostream& os) const {
+std::ostream& NLBound::printToStream(std::ostream& os) const {
   printToStream(os, "body");
   return os;
 }
@@ -362,7 +360,7 @@ NLToken NLToken::n(double value) {
   return tok;
 }
 
-NLToken NLToken::v(string vname) {
+NLToken NLToken::v(std::string vname) {
   NLToken tok;
   tok.kind = Kind::VARIABLE;
   tok.str = std::move(vname);
@@ -388,7 +386,7 @@ bool NLToken::isVariable() const { return kind == VARIABLE; }
 
 bool NLToken::isConstant() const { return kind == NUMERIC; }
 
-ostream& NLToken::printToStream(ostream& os, const NLFile& nl_file) const {
+std::ostream& NLToken::printToStream(std::ostream& os, const NLFile& nl_file) const {
   switch (kind) {
     case Kind::NUMERIC: {
       os << "n" << numericValue;
@@ -429,11 +427,11 @@ ostream& NLToken::printToStream(ostream& os, const NLFile& nl_file) const {
 /* *** *** *** NLAlgCons *** *** *** */
 
 /** Method to build the var_coeff vector. */
-void NLAlgCons::setJacobian(const vector<string>& vnames, const vector<double>& coeffs,
-                            NLFile* nl_file) {
+void NLAlgCons::setJacobian(const std::vector<std::string>& vnames,
+                            const std::vector<double>& coeffs, NLFile* nl_file) {
   assert(vnames.size() == coeffs.size());
   for (int i = 0; i < vnames.size(); ++i) {
-    string vn = vnames[i];
+    std::string vn = vnames[i];
     nl_file->variables.at(vn).jacobianCount++;
     jacobian.emplace_back(vn, coeffs[i]);
   }
@@ -443,7 +441,7 @@ void NLAlgCons::setJacobian(const vector<string>& vnames, const vector<double>& 
 bool NLAlgCons::isLinear() const { return expressionGraph.empty(); }
 
 /** Printing. */
-ostream& NLAlgCons::printToStream(ostream& os, const NLFile& nl_file) const {
+std::ostream& NLAlgCons::printToStream(std::ostream& os, const NLFile& nl_file) const {
   int idx = nl_file.constraintIndexes.at(name);
 
   // Print the 'C' segment: if no expression graph, print "n0".
@@ -460,9 +458,8 @@ ostream& NLAlgCons::printToStream(ostream& os, const NLFile& nl_file) const {
   // Print the 'J' segment if present.
   if (!jacobian.empty()) {
     os << "J" << idx << " " << jacobian.size() << "   # Linear part of " << name << '\n';
-    for (const auto& vn_coef : jacobian) {
-      os << nl_file.variableIndexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
-         << vn_coef.first << '\n';
+    for (const auto& [vn, coef] : jacobian) {
+      os << nl_file.variableIndexes.at(vn) << " " << coef << "   # " << vn << '\n';
     }
   }
 
@@ -472,7 +469,7 @@ ostream& NLAlgCons::printToStream(ostream& os, const NLFile& nl_file) const {
 /* *** *** *** NLLogicalCons *** *** *** */
 
 /** Printing. */
-ostream& NLLogicalCons::printToStream(ostream& os, const NLFile& nl_file) const {
+std::ostream& NLLogicalCons::printToStream(std::ostream& os, const NLFile& nl_file) const {
   os << "L" << index << "   # Logical constraint " << name << '\n';
   for (const auto& t : expressionGraph) {
     t.printToStream(os, nl_file);
@@ -487,7 +484,7 @@ ostream& NLLogicalCons::printToStream(ostream& os, const NLFile& nl_file) const 
 /** Printing the header.
  *  The header is composed of then lines that we describe as we proceed.
  *  A '#' starts a comment until the end of the line. However, it cannot be a line on its own!*/
-ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
+std::ostream& NLHeader::printToStream(std::ostream& os, const NLFile& nl_file) {
   // 1st line:
   // 'g': file will be in text format
   // other numbers: as given in the doc (no other explanation...)
@@ -574,10 +571,11 @@ ostream& NLHeader::printToStream(ostream& os, const NLFile& nl_file) {
 int NLObjective::gradientCount() const { return static_cast<int>(gradient.size()); }
 
 /** Set the gradient. */
-void NLObjective::setGradient(const vector<string>& vnames, const vector<double>& coeffs) {
+void NLObjective::setGradient(const std::vector<std::string>& vnames,
+                              const std::vector<double>& coeffs) {
   assert(vnames.size() == coeffs.size());
   for (int i = 0; i < vnames.size(); ++i) {
-    string vn = vnames[i];
+    std::string vn = vnames[i];
     gradient.emplace_back(vn, coeffs[i]);
   }
 }
@@ -590,7 +588,7 @@ bool NLObjective::isLinear() const { return expressionGraph.empty(); }
 bool NLObjective::isOptimisation() const { return minmax >= MINIMIZE; }
 
 /** Printing. */
-ostream& NLObjective::printToStream(ostream& os, const NLFile& nl_file) const {
+std::ostream& NLObjective::printToStream(std::ostream& os, const NLFile& nl_file) const {
   if (minmax != UNDEF) {
     if (minmax == SATISFY) {
       os << "O0 0   # Satisfy objectif implemented as 'minimize 0'\n";
@@ -607,9 +605,8 @@ ostream& NLObjective::printToStream(ostream& os, const NLFile& nl_file) const {
       // Print gradient
       if (!gradient.empty()) {
         os << "G0 " << gradient.size() << "   # Objective Linear part\n";
-        for (const auto& vn_coef : gradient) {
-          os << nl_file.variableIndexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
-             << vn_coef.first << '\n';
+        for (const auto& [vn, coef] : gradient) {
+          os << nl_file.variableIndexes.at(vn) << " " << coef << "   # " << vn << '\n';
         }
       }
     }

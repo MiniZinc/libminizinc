@@ -26,9 +26,8 @@
 
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <regex>
-
-using namespace std;
 
 int mzn_yylex_init(void** scanner);
 void mzn_yyset_extra(void* user_defined, void* yyscanner);
@@ -256,11 +255,8 @@ std::string ParserState::canonicalFilename(const std::string& f) const {
       return fullname;
     }
   }
-  std::string parentPath = FileUtils::dir_name(filename);
-  if (parentPath.empty()) {
-    parentPath = ".";
-  }
-  std::string fullname = FileUtils::file_path(parentPath + "/" + f);
+  std::string fullname =
+      FileUtils::file_path(FileUtils::join_path(FileUtils::dir_name(filename), f));
   if (FileUtils::file_exists(fullname)) {
     return fullname;
   }
@@ -285,7 +281,7 @@ std::unordered_set<std::string> global_includes(const std::string& stdPath,
     if (!FileUtils::file_exists(stdPath + "/globals.mzn")) {
       return {};
     }
-    std::ifstream ifs(FILE_PATH(FileUtils::file_path(stdPath + "/globals.mzn")));
+    std::ifstream ifs(FileUtils::to_path(FileUtils::file_path(stdPath + "/globals.mzn")));
     content.assign((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
   }
 
@@ -306,18 +302,19 @@ void ParserState::addWarning(const Location& loc, const std::string& msg) {
   env.addWarning(loc, msg, false);
 }
 
-void parse(Env& env, Model*& model, const vector<string>& filenames,
-           const vector<string>& datafiles, const std::string& modelString,
-           const std::string& modelStringName, const vector<string>& ip, bool checkGlobalOverrides,
-           bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err) {
-  vector<string> includePaths;
+void parse(Env& env, Model*& model, const std::vector<std::string>& filenames,
+           const std::vector<std::string>& datafiles, const std::string& modelString,
+           const std::string& modelStringName, const std::vector<std::string>& ip,
+           bool checkGlobalOverrides, bool isFlatZinc, bool ignoreStdlib, bool parseDocComments,
+           bool verbose, std::ostream& err) {
+  std::vector<std::string> includePaths;
   includePaths.reserve(ip.size());
   for (const auto& i : ip) {
     includePaths.push_back(i);
   }
 
-  vector<ParseWorkItem> files;
-  map<string, Model*> seenModels;
+  std::vector<ParseWorkItem> files;
+  std::map<std::string, Model*> seenModels;
   // Owned by this parse, so no bundle stays resident once it returns
   LibraryBundleCache bundles;
   std::unordered_set<std::string> globalInc;
@@ -325,7 +322,8 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     globalInc = global_includes(includePaths.back(), bundles);
   }
 
-  string workingDir = FileUtils::working_directory();
+  std::error_code ec;
+  std::string workingDir = FileUtils::to_utf8(std::filesystem::current_path(ec));
 
   if (!filenames.empty()) {
     auto rootFileName = FileUtils::file_path(filenames[0], workingDir);
@@ -341,7 +339,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         auto* includedModel = new Model;
         includedModel->setFilename(fullName);
         files.emplace_back(includedModel, nullptr, "", fullName);
-        seenModels.insert(pair<string, Model*>(fullName, includedModel));
+        seenModels.insert(std::pair<std::string, Model*>(fullName, includedModel));
         Location loc(ASTString(filenames[i]), 0, 0, 0, 0);
         auto inc = make<IncludeI>(loc, includedModel->filename());
         inc->m(includedModel, true);
@@ -352,7 +350,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       auto* includedModel = new Model;
       includedModel->setFilename(modelStringName);
       files.emplace_back(includedModel, nullptr, modelString, modelStringName, false, true);
-      seenModels.insert(pair<string, Model*>(modelStringName, includedModel));
+      seenModels.insert(std::pair<std::string, Model*>(modelStringName, includedModel));
       Location loc(ASTString(modelStringName), 0, 0, 0, 0);
       auto inc = make<IncludeI>(loc, includedModel->filename());
       inc->m(includedModel, true);
@@ -383,7 +381,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     }
     lib->setFilename(fullname);
     files.emplace_back(lib, nullptr, "./", fullname, builtin);
-    seenModels.insert(pair<string, Model*>(fullname, lib));
+    seenModels.insert(std::pair<std::string, Model*>(fullname, lib));
     Location libloc(ASTString(model->filename()), 0, 0, 0, 0);
     auto libinc = make<IncludeI>(libloc, ASTString(libname));
     libinc->m(lib, true);
@@ -402,12 +400,12 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   while (!files.empty()) {
     ParseWorkItem& np = files.back();
-    string parentPath = np.dirName;
+    std::string parentPath = np.dirName;
     Model* m = np.m;
     bool isModelString = np.isModelString;
     bool isSTDLib = np.isSTDLib;
     IncludeI* np_ii = np.ii;
-    string f(np.fileName);
+    std::string f(np.fileName);
     files.pop_back();
 
     std::string s;
@@ -457,7 +455,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       }
       for (const auto& includePath : includePaths) {
         std::string deprecatedName;
-        string deprecatedFullPath;
+        std::string deprecatedFullPath;
         const LibraryBundle* deprecatedBundle = bundles.get(includePath);
         if (deprecatedBundle != nullptr) {
           std::string key = basename + ".deprecated.mzn";
@@ -473,11 +471,11 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           }
           deprecatedFullPath = FileUtils::file_path(deprecatedName);
         }
-        string deprecatedDirName = FileUtils::dir_name(deprecatedFullPath);
+        std::string deprecatedDirName = FileUtils::dir_name(deprecatedFullPath);
         auto* includedModel = new Model;
         includedModel->setFilename(deprecatedName);
         files.emplace_back(includedModel, nullptr, "", deprecatedName, isSTDLib, false);
-        seenModels.insert(pair<string, Model*>(deprecatedName, includedModel));
+        seenModels.insert(std::pair<std::string, Model*>(deprecatedName, includedModel));
         Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
         auto inc = make<IncludeI>(loc, includedModel->filename());
         inc->m(includedModel, true);
@@ -529,14 +527,14 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   std::unique_ptr<DataRecordCompleter> recordCompleter;
   for (const auto& f : datafiles) {
-    if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
+    if (f.size() >= 6 && f.substr(f.size() - 5, std::string::npos) == ".json") {
       JSONParser jp(env.envi());
       jp.parse(model, f, true);
     } else if (f.size() >= 6 && f.substr(0, 6) == "json:/") {
       JSONParser jp(env.envi());
       jp.parseFromString(model, f.substr(6), true);
     } else {
-      string s;
+      std::string s;
       if (f.size() > 5 && f.substr(0, 5) == "cmd:/") {
         s = f.substr(5);
       } else {
@@ -550,7 +548,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       }
 
       if (recordCompleter == nullptr) {
-        recordCompleter.reset(new DataRecordCompleter(model));
+        recordCompleter = std::make_unique<DataRecordCompleter>(model);
       }
       unsigned int firstItem = model->size();
       ParserState pp(f, s, env.envi(), err, includePaths, files, seenModels, bundles, model,
@@ -568,10 +566,11 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   }
 }
 
-Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
-             const string& textModel, const string& textModelName,
-             const vector<string>& includePaths, bool checkGlobalOverrides, bool isFlatZinc,
-             bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err) {
+Model* parse(Env& env, const std::vector<std::string>& filenames,
+             const std::vector<std::string>& datafiles, const std::string& textModel,
+             const std::string& textModelName, const std::vector<std::string>& includePaths,
+             bool checkGlobalOverrides, bool isFlatZinc, bool ignoreStdlib, bool parseDocComments,
+             bool verbose, std::ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     throw Error("No model given.");
   }
@@ -589,20 +588,21 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
   return model;
 }
 
-Model* parse_data(Env& env, Model* model, const vector<string>& datafiles,
-                  const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                  bool parseDocComments, bool verbose, ostream& err) {
-  vector<string> filenames;
+Model* parse_data(Env& env, Model* model, const std::vector<std::string>& datafiles,
+                  const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
+                  bool parseDocComments, bool verbose, std::ostream& err) {
+  std::vector<std::string> filenames;
   parse(env, model, filenames, datafiles, "", "", includePaths, false, isFlatZinc, ignoreStdlib,
         parseDocComments, verbose, err);
   return model;
 }
 
-Model* parse_from_string(Env& env, const string& text, const string& filename,
-                         const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                         bool parseDocComments, bool verbose, ostream& err) {
-  vector<string> filenames;
-  vector<string> datafiles;
+Model* parse_from_string(Env& env, const std::string& text, const std::string& filename,
+                         const std::vector<std::string>& includePaths, bool isFlatZinc,
+                         bool ignoreStdlib, bool parseDocComments, bool verbose,
+                         std::ostream& err) {
+  std::vector<std::string> filenames;
+  std::vector<std::string> datafiles;
   Model* model;
   model = new Model();
   try {

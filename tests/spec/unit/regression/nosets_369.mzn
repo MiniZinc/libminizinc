@@ -1,5 +1,6 @@
 /***
 !Test
+solvers: [cbc, chuffed, highs]
 expected: !Result
   status: SATISFIED
 ***/

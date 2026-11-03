@@ -302,17 +302,17 @@ function var float: sum(array [$T] of var float: x)
   :: promise_commutative
   :: mzn_internal_representation;
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function var int: sum(array [int] of var opt int: x) :: promise_commutative =
-  sum (i in index_set(x)) (x[i] default 0);
+function var int: sum(array [$T] of var opt int: x) :: promise_commutative =
+  sum (xi in array1d(x)) (xi default 0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function int: sum(array [int] of opt int: x) :: promise_commutative =
-  sum (i in index_set(x)) (x[i] default 0);
+function int: sum(array [$T] of opt int: x) :: promise_commutative =
+  sum (xi in array1d(x)) (xi default 0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function var float: sum(array [int] of var opt float: x) :: promise_commutative =
-  sum (i in index_set(x)) (x[i] default 0.0);
+function var float: sum(array [$T] of var opt float: x) :: promise_commutative =
+  sum (xi in array1d(x)) (xi default 0.0);
 /** @group stdlib.builtins.arithmetic Return sum of non-absent elements of \a x. */
-function float: sum(array [int] of opt float: x) :: promise_commutative =
-  sum (i in index_set(x)) (x[i] default 0.0);
+function float: sum(array [$T] of opt float: x) :: promise_commutative =
+  sum (xi in array1d(x)) (xi default 0.0);
 
 /** @group stdlib.builtins.arithmetic Return product of elements in array \a x */
 function int: product(array [$T] of int: x) :: promise_commutative;

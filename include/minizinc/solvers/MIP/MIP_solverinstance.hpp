@@ -114,29 +114,27 @@ void MIPSolverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<
 }
 
 template <class MIPWrapper>
-std::pair<double, bool> MIPSolverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
-  std::pair<double, bool> res{0.0, true};
+std::optional<double> MIPSolverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
   if (auto* il = Expression::dynamicCast<IntLit>(e)) {
-    res.first = (static_cast<double>(IntLit::v(il).toInt()));
-  } else if (auto* fl = Expression::dynamicCast<FloatLit>(e)) {
-    res.first = (FloatLit::v(fl).toDouble());
-  } else if (auto* bl = Expression::dynamicCast<BoolLit>(e)) {
-    res.first = static_cast<double>(bl->v());
-  } else {
-    res.second = false;
+    return static_cast<double>(IntLit::v(il).toInt());
   }
-  return res;
+  if (auto* fl = Expression::dynamicCast<FloatLit>(e)) {
+    return FloatLit::v(fl).toDouble();
+  }
+  if (auto* bl = Expression::dynamicCast<BoolLit>(e)) {
+    return static_cast<double>(bl->v());
+  }
+  return std::nullopt;
 }
 
 template <class MIPWrapper>
 double MIPSolverinstance<MIPWrapper>::exprToConst(Expression* e) {
-  const auto e2ce = exprToConstEasy(e);
-  if (!e2ce.second) {
-    std::ostringstream oss;
-    oss << "ExprToConst: expected a numeric/bool literal, getting " << *e;
-    throw InternalError(oss.str());
+  if (auto value = exprToConstEasy(e)) {
+    return *value;
   }
-  return e2ce.first;
+  std::ostringstream oss;
+  oss << "ExprToConst: expected a numeric/bool literal, getting " << *e;
+  throw InternalError(oss.str());
 }
 
 template <class MIPWrapper>
@@ -188,8 +186,8 @@ void MIPSolverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& a
     /// so that we can index them by priority.
     const auto cVarSel = Expression::cast<Id>(annotation->arg(1))->str();
     const auto cValSel = Expression::cast<Id>(annotation->arg(2))->str();
-    variableSelection.emplace_front(cVarSel.c_str());
-    valueSelection.emplace_front(cValSel.c_str());
+    variableSelection.emplace_front(cVarSel);
+    valueSelection.emplace_front(cValSel);
 
     ++nArrayAnns;
 
@@ -255,11 +253,10 @@ void MIPSolverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotation
         MZN_ASSERT_HARD_MSG(nullptr != alV, "ERROR: warm_start needs 2 array args");
         vars.reserve(alV->size());
         for (unsigned int i = 0; i < alV->size() && i < alC->size(); i++) {
-          const auto e2c = exprToConstEasy((*alC)[i]);
           /// Check if it is not an opt int etc. and a proper variable
-          if (e2c.second) {
+          if (auto coef = exprToConstEasy((*alC)[i])) {
             if (Id* ident = Expression::dynamicCast<Id>((*alV)[i])) {
-              coefs.push_back(e2c.first);
+              coefs.push_back(*coef);
               vars.push_back(exprToVar(ident));
             }  // else ignore
           }
@@ -400,7 +397,7 @@ void MIPSolverinstance<MIPWrapper>::processFlatZinc() {
             getMIPWrapper()->colObj.at(res) = obj;
           }
         } else {
-          res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
+          res = getMIPWrapper()->addVar(obj, lb, ub, vType, std::string(id->str()));
         }
       }
       /// Test infeasibility
@@ -710,9 +707,9 @@ void remove_duplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
   rmi.resize(linExp.size());
   rmv.resize(linExp.size());
   int i = 0;
-  for (const auto& iv : linExp) {
-    rmi[i] = iv.first;
-    rmv[i] = iv.second;
+  for (const auto& [idx, coef] : linExp) {
+    rmi[i] = idx;
+    rmv[i] = coef;
     ++i;
   }
 }
@@ -1027,8 +1024,7 @@ template <class MIPWrapper>
 void p_xbz_cutgen(SolverInstanceBase& si, const Call* call) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
-  //     auto pCG = make_unique<XBZCutGen>();
-  std::unique_ptr<XBZCutGen> pCG(new XBZCutGen(gi.getMIPWrapper()));
+  auto pCG = std::make_unique<XBZCutGen>(gi.getMIPWrapper());
 
   assert(call->argCount() == 3);
   gi.exprToVarArray(call->arg(0), pCG->varX);
@@ -1046,7 +1042,7 @@ template <class MIPWrapper>
 void p_sec_cutgen(SolverInstanceBase& si, const Call* call) {
   auto& gi = dynamic_cast<MIPSolverinstance<MIPWrapper>&>(si);
 
-  std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
+  auto pCG = std::make_unique<SECCutGen>(gi.getMIPWrapper());
 
   assert(call->argCount() == 1);
   gi.exprToVarArray(call->arg(0), pCG->varXij);  // WHAT ABOUT CONSTANTS?

@@ -57,7 +57,9 @@ if(POLICY CMP0074)
   cmake_policy(SET CMP0074 NEW)
 endif(POLICY CMP0074)
 find_package(Geas)
-find_package(Gecode 6.2 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
+find_package(Gecode CONFIG
+             COMPONENTS driver float int kernel minimodel search set support
+             HINTS ${CMAKE_CURRENT_SOURCE_DIR}/vendor/gecode)
 find_package(atlantis)
 find_package(chuffed)
 if(NOT HIGHS_PLUGIN)

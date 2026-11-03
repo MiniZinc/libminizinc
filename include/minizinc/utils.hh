@@ -27,7 +27,9 @@
 #include <ratio>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 namespace MiniZinc {
@@ -69,8 +71,8 @@ unsigned long parse_unsigned_long_option(const std::string& value, const std::st
     }                                                                             \
   } while (0)
 
-inline bool beginswith(const std::string& s, const std::string& t) {
-  return s.compare(0, t.length(), t) == 0;
+inline bool beginswith(std::string_view s, std::string_view t) {
+  return s.substr(0, t.size()) == t;
 }
 
 inline void check_io_status(bool fOk, const std::string& msg, bool fHard = true) {
@@ -84,16 +86,6 @@ inline void check_io_status(bool fOk, const std::string& msg, bool fHard = true)
     std::cerr << "\n  " << msg << ":   " << errBuf << ".\n";
     MZN_ASSERT_HARD_MSG(!fHard, msg << ": " << errBuf);
   }
-}
-
-template <class T>
-inline bool assign_string(T* /*t*/, const std::string& /*s*/) {
-  return false;
-}
-template <>
-inline bool assign_string(std::string* pS, const std::string& s) {
-  *pS = s;
-  return true;
 }
 
 /// A simple per-cmdline option parser
@@ -149,18 +141,19 @@ public:
         arg = _argv[_i];
       }
       assert(pResult);
-      if (assign_string(pResult, arg)) {
-        return true;
-      }
-      std::istringstream iss(arg);
-      Value tmp;
-      if (!(iss >> tmp)) {
-        if (!combinedArg) {
-          --_i;
+      if constexpr (std::is_same_v<Value, std::string>) {
+        *pResult = arg;
+      } else {
+        std::istringstream iss(arg);
+        Value tmp;
+        if (!(iss >> tmp)) {
+          if (!combinedArg) {
+            --_i;
+          }
+          return fValueOptional;
         }
-        return fValueOptional;
+        *pResult = tmp;
       }
-      *pResult = tmp;
       return true;
     }
     return false;

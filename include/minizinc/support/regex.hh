@@ -41,14 +41,12 @@ extern "C" int isatty(int);
 #endif
 
 // Anonymous struct for when yyparse is exported
-typedef struct REContext REContext;
+struct REContext;
 // Parser generated header
 #include <minizinc/support/regex_parser.tab.hh>
 
-using namespace Gecode;
-using namespace MiniZinc;
-
 // Parsing function
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain);
+std::unique_ptr<Gecode::REG> regex_from_string(const std::string& regex_str,
+                                               const MiniZinc::IntSetVal& domain);
 
 #endif  // HAS_GECODE

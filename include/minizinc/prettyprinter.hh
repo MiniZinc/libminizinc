@@ -44,12 +44,10 @@ public:
   void print(const Item* i);
   void print(const Model* m);
 
-  template <class S>
-  static std::string escapeStringLit(const S& s) {
-    const char* sc = s.c_str();
+  static std::string escapeStringLit(std::string_view s) {
     std::ostringstream ret;
-    for (unsigned int i = 0; i < s.size(); i++) {
-      switch (sc[i]) {
+    for (char c : s) {
+      switch (c) {
         case '\n':
           ret << "\\n";
           break;
@@ -63,25 +61,21 @@ public:
           ret << "\\\\";
           break;
         default:
-          ret << sc[i];
+          ret << c;
       }
     }
     return ret.str();
   }
 
-  template <class S>
-  static std::string quoteId(const S& s) {
-    char idChars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
-    char idBegin[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    const char* str = s.c_str();
-    if (str == nullptr) {
-      return "";
+  static std::string quoteId(std::string_view s) {
+    constexpr std::string_view idChars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_";
+    constexpr std::string_view idBegin = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    if (s.empty() || s[0] == '\'') {
+      // Empty or already quoted
+      return std::string(s);
     }
-    if (str[0] == '\'') {
-      // Already quoted
-      return std::string(str);
-    }
-    const std::vector<std::string> reserved = {
+    constexpr std::string_view reserved[] = {
         "ann",       "annotation", "any",      "array",    "bool",     "case",      "constraint",
         "default",   "diff",       "div",      "else",     "elseif",   "endif",     "enum",
         "false",     "float",      "function", "if",       "in",       "include",   "int",
@@ -90,19 +84,13 @@ public:
         "satisfy",   "set",        "solve",    "string",   "subset",   "superset",  "symdiff",
         "test",      "then",       "true",     "tuple",    "type",     "union",     "var",
         "where",     "xor"};
-    bool is_reserved =
-        std::find(reserved.begin(), reserved.end(), std::string(str)) != reserved.end();
-    int offset = str[0] == '_' ? 1 : 0;
-    if (is_reserved || strchr(idBegin, str[offset]) == nullptr) {
-      return "'" + std::string(str) + "'";
+    bool is_reserved = std::find(std::begin(reserved), std::end(reserved), s) != std::end(reserved);
+    size_t offset = s[0] == '_' ? 1 : 0;
+    if (is_reserved || (offset < s.size() && idBegin.find(s[offset]) == std::string_view::npos) ||
+        s.find_first_not_of(idChars, offset + 1) != std::string_view::npos) {
+      return "'" + std::string(s) + "'";
     }
-    auto n = s.size();
-    for (auto i = 1 + offset; i < n; i++) {
-      if (strchr(idChars, str[i]) == nullptr) {
-        return "'" + std::string(str) + "'";
-      }
-    }
-    return std::string(str);
+    return std::string(s);
   }
 };
 

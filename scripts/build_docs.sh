@@ -4,8 +4,9 @@
 # Expects Sphinx + a LaTeX toolchain on PATH and mzn2doc already built at
 # $ROOT/build (see .github/workflows/docs.yml).
 #
-# gecode.mzn and chuffed.mzn come from the vendor.lock versions of the
-# minizinc-vendor archives: only their declarations are needed to document them.
+# The solver libraries come from the vendor.lock versions of the minizinc-vendor
+# archives, in their installed layout. std goes first on the include path, so
+# solver redefinitions of std files do not end up in the std documentation.
 # Keep this step identical to .readthedocs.yaml's.
 set -eux
 
@@ -13,10 +14,14 @@ ROOT="${ROOT:-$PWD}"
 cd "$ROOT"
 
 bash scripts/fetch_vendor.sh x86_64-linux-gnu gecode chuffed
-cp vendor/gecode/share/minizinc/gecode/gecode.mzn vendor/chuffed/share/minizinc/chuffed/chuffed.mzn share/minizinc/std/
+MZN2DOC_INCLUDES=(
+  -I "$ROOT/share/minizinc/std"
+  -I "$ROOT/vendor/gecode/share/minizinc/gecode"
+  -I "$ROOT/vendor/chuffed/share/minizinc/chuffed"
+)
 
-./build/mzn2doc --rst-output --include-stdlib --output-base "$ROOT/docs/en/lib" "$ROOT/docs/all.mzn"
-./build/mzn2doc --rst-output --include-stdlib --output-base "$ROOT/docs/chi/lib" "$ROOT/docs/all.mzn"
+./build/mzn2doc "${MZN2DOC_INCLUDES[@]}" --rst-output --include-stdlib --output-base "$ROOT/docs/en/lib" "$ROOT/docs/all.mzn"
+./build/mzn2doc "${MZN2DOC_INCLUDES[@]}" --rst-output --include-stdlib --output-base "$ROOT/docs/chi/lib" "$ROOT/docs/all.mzn"
 
 cd "$ROOT/docs"
 make BUILDDIR="en/_build" html latexpdf

@@ -11,6 +11,7 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
+-  Building MiniZinc from source now requires a C++17 compiler.
 -  Normalize linear expressions (term order, sign, and common divisor), so that
    common subexpression elimination finds more equal expressions.
 -  Add support for optional set variables (``var opt set of int``, including sets
@@ -27,6 +28,12 @@ Changes:
    tree-sitter runtime only to report syntax errors in models.
 -  Download the tree-sitter runtime when configuring instead of vendoring it,
    which raises the CMake required to build MiniZinc to 3.20.
+-  Decide at the end of flattening which linear expressions get a variable of
+   their own. An expression that more than one item reads is defined once, and
+   an expression with a single reader is written out in that reader. Linear
+   expressions that differ only by a constant offset or a common factor share
+   one definition. The option ``mzn_opt_eager_linear_aggregation`` restores the
+   old behaviour, and the linear library sets it.
 -  Update URLs in documentation to use minizinc.org as the canonical domain for
    all MiniZinc resources.
 -  Report a type error when a ``var`` type-inst variable (for example in a
@@ -60,9 +67,43 @@ Changes:
    now uses the mimalloc memory allocator.
 -  Make return type of internal ``var_dom(set of int: x, set of int: s)``
    function par.
+-  Flatten the definitions of ``var bool`` variables (top-level and in lets), and
+   of the elements of ``var bool`` arrays, after their uses, in the context of
+   those uses. A variable that is only used positively can now be half-reified,
+   together with the expressions in its definition, as when the definition is
+   written in place.
 
 Bug fixes:
 ^^^^^^^^^^
+-  Allow multi-dimensional arrays in ``sum`` over optional values,
+   ``forall``/``exists`` over optional Booleans, ``array2set`` and
+   ``has_element``.
+-  Fix optional variables whose definition turns out to be non-optional during
+   compilation (for example an if-then-else with a fixed condition) being
+   disconnected from their definition, which could lead to incorrect solutions.
+-  Fix the FlatZinc optimiser removing the definition of a variable that had
+   been unified with another variable, which could lead to incorrect solutions.
+-  Fix a crash in polymorphic functions with a comprehension over an array of
+   tuples or records with an ``any $T`` field (such as ``[x_i.2 | x_i in x]``
+   for ``x`` of type ``array [int] of tuple(int, any $T)``).
+-  Fix an assertion failure when instantiating a polymorphic function whose
+   parameter is a tuple or record with an ``any $T`` field with a par argument.
+-  Fix the evaluation of variables (an assertion failure or crash) in par tuple
+   or record expressions that depend on variables, such as a tuple literal
+   containing a par function call with variable arguments, or a field access
+   of such a call.
+-  Fix a crash when printing an output tuple or record variable whose fields
+   are defined in a let expression (or otherwise not top-level variables),
+   including when another variable is defined from one of its fields.
+-  Fix the evaluation of if-then-else expressions whose condition is par but
+   depends on variables (e.g. a par function applied to an array of variables
+   defined by a comprehension), which could fail with an evaluation error or
+   crash.
+-  Fix the type of ``fix`` (and other functions with a par return type) applied
+   to an array of tuples or records with var fields, which kept the fields var.
+-  Report an error for a top-level variable or let variable of a tuple or
+   record type with par fields that is not defined, instead of failing with
+   an obscure evaluation error or output syntax error.
 -  Make the output model deterministic for output sections that bind local
    declarations (such as those created by the visualisation library). The
    order of these declarations depended on memory addresses, so it could
@@ -121,6 +162,7 @@ Bug fixes:
    operator precedence error made the prefix sum definitions part of the
    reified condition, which could produce an incorrect value for the control
    variable.
+-  Make MIPdomains process the variables of a clique in a deterministic order.
 
 .. _v2.10.1:
 

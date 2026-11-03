@@ -14,8 +14,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/solver_instance_base.hh>
 
-namespace MiniZinc {
-namespace GeasConstraints {
+namespace MiniZinc::GeasConstraints {
 
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
@@ -158,5 +157,4 @@ PosterImpl(p_table_int);
 /* Coercion Constraints */
 //    PosterImpl(p_int2float);
 
-}  // namespace GeasConstraints
-}  // namespace MiniZinc
+}  // namespace MiniZinc::GeasConstraints

@@ -1,0 +1,10 @@
+
+predicate foo_reif(var int: x,int: i,var bool: r);
+var 0..10: x:: output_var;
+var bool: q:: output_var;
+var bool: t1:: is_defined_var;
+var bool: t2:: is_defined_var;
+constraint bool_clause([t1,t2],[]);
+constraint bool_clause([q],[t1,t2]):: defines_var(t2);
+constraint foo_reif(x,1,t1):: defines_var(t1);
+solve  satisfy;

@@ -23,8 +23,7 @@ namespace MiniZinc {
 class FlatteningError : public LocationException {
 public:
   FlatteningError(EnvI& env, const Location& loc, const std::string& msg);
-  ~FlatteningError() throw() override {}
-  const char* what() const throw() override { return "flattening error"; }
+  const char* what() const noexcept override { return "flattening error"; }
 };
 
 /// Options for the flattener
@@ -43,6 +42,10 @@ struct FlatteningOptions {
   bool onlyRangeDomains;
   /// Allow the use of Half Reifications
   bool enableHalfReification;
+  /// Aggregate linear expressions while they are built, with a variable for
+  /// every named expression, instead of at the end, with a variable for the
+  /// shared ones. Set from `mzn_opt_eager_linear_aggregation`.
+  bool eagerLinearAggregation;
   /// Create standard, DZN or JSON output
   enum OutputMode { OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON, OUTPUT_CHECKER } outputMode;
   /// Output objective value (only for DZN and JSON mode)
@@ -76,6 +79,7 @@ struct FlatteningOptions {
         recordDomainChanges(false),
         onlyRangeDomains(false),
         enableHalfReification(true),
+        eagerLinearAggregation(false),
         outputMode(OUTPUT_ITEM),
         outputObjective(false),
         outputOutputItem(false),

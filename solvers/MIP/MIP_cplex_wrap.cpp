@@ -38,8 +38,6 @@
 
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
 
-using namespace std;
-
 #ifdef CPLEX_PLUGIN
 
 namespace {
@@ -66,7 +64,7 @@ void* dll_sym(void* dll, const char* sym) {
   void* ret = dlsym(dll, sym);
 #endif
   if (ret == nullptr) {
-    throw MiniZinc::Error("cannot load symbol " + string(sym) + " from CPLEX dll");
+    throw MiniZinc::Error("cannot load symbol " + std::string(sym) + " from CPLEX dll");
   }
   return ret;
 }
@@ -81,8 +79,8 @@ void dll_close(void* dll) {
 
 #endif
 
-const vector<string>& cplex_dlls() {
-  static const vector<string> sCPLEXDLLs = {
+const std::vector<std::string>& cplex_dlls() {
+  static const std::vector<std::string> sCPLEXDLLs = {
       "cplex2412", "cplex2411",  "cplex2410", "cplex2312", "cplex2311", "cplex2310",
       "cplex2222", "cplex2221",  "cplex2220", "cplex2212", "cplex2211", "cplex2210",
       "cplex2010", "cplex12100", "cplex1290", "cplex1280", "cplex1270"};
@@ -226,9 +224,9 @@ void MIPCplexWrapper::checkDLL() {
 #endif
 }
 
-string MIPCplexWrapper::getDescription(FactoryOptions& factoryOpt,
-                                       MiniZinc::SolverInstanceBase::Options* opt) {
-  string v = "MIP wrapper for IBM ILOG CPLEX  ";
+std::string MIPCplexWrapper::getDescription(FactoryOptions& factoryOpt,
+                                            MiniZinc::SolverInstanceBase::Options* opt) {
+  std::string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
   Options def_options;
   Options* options = opt != nullptr ? static_cast<Options*>(opt) : &def_options;
@@ -248,9 +246,9 @@ string MIPCplexWrapper::getDescription(FactoryOptions& factoryOpt,
   return v;
 }
 
-string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
-                                   MiniZinc::SolverInstanceBase::Options* opt) {
-  string v;
+std::string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
+                                        MiniZinc::SolverInstanceBase::Options* opt) {
+  std::string v;
   int status;
   Options def_options;
   Options* options = opt != nullptr ? static_cast<Options*>(opt) : &def_options;
@@ -269,7 +267,7 @@ string MIPCplexWrapper::getVersion(FactoryOptions& factoryOpt,
   return v;
 }
 
-vector<string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
+std::vector<std::string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
   int status;
   FactoryOptions factoryOptions;
   Options options;
@@ -284,17 +282,17 @@ vector<string> MIPCplexWrapper::getRequiredFlags(FactoryOptions& f) {
   return {"--cplex-dll"};
 }
 
-vector<string> MIPCplexWrapper::getFactoryFlags() { return {"--cplex-dll"}; }
+std::vector<std::string> MIPCplexWrapper::getFactoryFlags() { return {"--cplex-dll"}; }
 
-string MIPCplexWrapper::getId() { return "cplex"; }
+std::string MIPCplexWrapper::getId() { return "cplex"; }
 
-string MIPCplexWrapper::getName() { return "CPLEX"; }
+std::string MIPCplexWrapper::getName() { return "CPLEX"; }
 
-vector<string> MIPCplexWrapper::getTags() { return {"mip", "float", "api"}; }
+std::vector<std::string> MIPCplexWrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIPCplexWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
+std::vector<std::string> MIPCplexWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
     FactoryOptions& factoryOpt) {
   // CPLEX doesn't seem to have a way to enumerate all parameters
   static std::vector<std::string> all_params = {
@@ -515,7 +513,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPCplexWrapper::getExtraFlags(
   return {};
 }
 
-void MIPCplexWrapper::Options::printHelp(ostream& os) {
+void MIPCplexWrapper::Options::printHelp(std::ostream& os) {
   os << "IBM ILOG CPLEX  MIP wrapper options:\n"
      // -s                  print statistics
      //            << "  --readParam <file>  read CPLEX parameters from file
@@ -565,8 +563,8 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   std::string buffer;
   if (cop.get("-i")) {
     flagIntermediate = true;
-  } else if (string(argv[i]) == "-f" ||
-             string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
+  } else if (std::string(argv[i]) == "-f" ||
+             std::string(argv[i]) == "--free-search") {  // NOLINT: Allow repeated empty if
     //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus",
                      &nMIPFocus)) {  // NOLINT: Allow repeated empty if
@@ -594,15 +592,15 @@ bool MIPCplexWrapper::Options::processOption(int& i, std::vector<std::string>& a
   return true;
 }
 
-void MIPCplexWrapper::wrapAssert(bool cond, const string& msg, bool fTerm) {
+void MIPCplexWrapper::wrapAssert(bool cond, const std::string& msg, bool fTerm) {
   if (!cond) {
     strcpy(_cplexBuffer, "[NO ERROR STRING GIVEN]");
     dll_CPXgeterrorstring(_env, _status, _cplexBuffer);
-    string msgAll = ("  MIPCplexWrapper runtime error:  " + msg + "  " + _cplexBuffer);
+    std::string msgAll = ("  MIPCplexWrapper runtime error:  " + msg + "  " + _cplexBuffer);
     if (fTerm) {
       throw MiniZinc::Error(msgAll);
     }
-    cerr << msgAll << '\n';
+    std::cerr << msgAll << '\n';
   }
 }
 
@@ -652,10 +650,10 @@ void MIPCplexWrapper::closeCPLEX() {
 }
 
 void MIPCplexWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub,
-                                MIPWrapper::VarType* vt, string* names) {
+                                MIPWrapper::VarType* vt, std::string* names) {
   /// Convert var types:
-  vector<char> ctype(n);
-  vector<char*> pcNames(n);
+  std::vector<char> ctype(n);
+  std::vector<char*> pcNames(n);
   for (size_t i = 0; i < n; ++i) {
     pcNames[i] = (char*)names[i].c_str();
     switch (vt[i]) {
@@ -691,7 +689,7 @@ static char get_cplex_constr_cense(MIPWrapper::LinConType sense) {
 }
 
 void MIPCplexWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper::LinConType sense,
-                             double rhs, int mask, const string& rowName) {
+                             double rhs, int mask, const std::string& rowName) {
   /// Convert var types:
   char ssense = get_cplex_constr_cense(sense);
   const int ccnt = 0;
@@ -717,7 +715,7 @@ void MIPCplexWrapper::addRow(int nnz, int* rmatind, double* rmatval, MIPWrapper:
 
 void MIPCplexWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                              double* rmatval, MIPWrapper::LinConType sense,
-                                             double rhs, const string& rowName) {
+                                             double rhs, const std::string& rowName) {
   wrapAssert(0 <= bVal && 1 >= bVal, "mzn-cplex: addIndicatorConstraint: bVal not 0/1");
   char ssense = get_cplex_constr_cense(sense);
   _status = dll_CPXaddindconstr(_env, _lp, iBVar, 1 - bVal, nnz, rhs, ssense, rmatind, rmatval,
@@ -807,7 +805,7 @@ static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, vo
       goto TERMINATE;
     }
 
-    if (fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
+    if (std::fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + std::fabs(objVal))) {
       newincumbent = 1;
       info->pOutput->objVal = objVal;
       info->pOutput->status = MIPWrapper::SAT;
@@ -1079,7 +1077,7 @@ MIPCplexWrapper::Status MIPCplexWrapper::convertStatus(int cplexStatus) {
   return s;
 }
 
-void msgfunction(void* handle, const char* msg_string) { cerr << msg_string << flush; }
+void msgfunction(void* handle, const char* msg_string) { std::cerr << msg_string << std::flush; }
 
 void MIPCplexWrapper::solve() {  // Move into ancestor?
 
@@ -1187,7 +1185,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
       // For user cuts, needs to keep some info after presolve
       if (fVerbose) {
-        cerr << "  MIPCplexWrapper: user cut callback enabled, setting params\n";
+        std::cerr << "  MIPCplexWrapper: user cut callback enabled, setting params\n";
       }
       CUTINFO usercutinfo;  // THREADS?  TODO
       usercutinfo.info = &cbui;
@@ -1211,7 +1209,7 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
     }
     if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
       if (fVerbose) {
-        cerr << "  MIPCplexWrapper: lazy cut callback enabled, setting params\n";
+        std::cerr << "  MIPCplexWrapper: lazy cut callback enabled, setting params\n";
       }
       CUTINFO lazyconinfo;
       lazyconinfo.info = &cbui;
@@ -1240,29 +1238,29 @@ void MIPCplexWrapper::solve() {  // Move into ancestor?
   }
 
   // Process extra flags
-  for (auto& it : _options->extraParams) {
+  for (auto& [key, value] : _options->extraParams) {
     int param;
     int param_type;
-    auto name = it.first.substr(8);
+    auto name = key.substr(8);
     _status = dll_CPXgetparamnum(_env, name.c_str(), &param);
     wrapAssert(_status == 0, "CPLEX: could not find parameter " + name);
     _status = dll_CPXgetparamtype(_env, param, &param_type);
     wrapAssert(_status == 0, "CPLEX: could not get type for parameter " + name);
     switch (param_type) {
       case CPX_PARAMTYPE_INT:
-        _status = dll_CPXsetintparam(_env, param, stoi(it.second));
+        _status = dll_CPXsetintparam(_env, param, std::stoi(value));
         wrapAssert(_status == 0, "CPLEX: failed to set parameter " + name);
         break;
       case CPX_PARAMTYPE_LONG:
-        _status = dll_CPXsetlongparam(_env, param, stoll(it.second));
+        _status = dll_CPXsetlongparam(_env, param, std::stoll(value));
         wrapAssert(_status == 0, "CPLEX: failed to set parameter " + name);
         break;
       case CPX_PARAMTYPE_DOUBLE:
-        _status = dll_CPXsetdblparam(_env, param, stod(it.second));
+        _status = dll_CPXsetdblparam(_env, param, std::stod(value));
         wrapAssert(_status == 0, "CPLEX: failed to set parameter " + name);
         break;
       case CPX_PARAMTYPE_STRING:
-        _status = dll_CPXsetstrparam(_env, param, it.second.c_str());
+        _status = dll_CPXsetstrparam(_env, param, value.c_str());
         wrapAssert(_status == 0, "CPLEX: failed to set parameter " + name);
         break;
       default:

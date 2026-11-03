@@ -84,16 +84,16 @@
 using namespace Gecode;
 using namespace MiniZinc;
 
-typedef struct yy_buffer_state *YY_BUFFER_STATE;
-YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
+struct yy_buffer_state;
+yy_buffer_state* regex_yy_scan_string(const char* yy_str);
 
 extern int yylex();
 extern FILE* yyin;
 
-typedef struct REContext{
+struct REContext {
   REG* expr;
   const IntSetVal& dom;
-} REContext;
+};
 
 void yyerror(REContext& ctx, const char* s);
 
@@ -539,8 +539,8 @@ static const yytype_int8 yytranslate[] =
 static const yytype_uint8 yyrline[] =
 {
        0,    71,    71,    78,    79,    87,    88,    96,    97,   102,
-     107,   112,   117,   122,   129,   131,   137,   147,   162,   166,
-     167,   177,   181
+     107,   112,   117,   122,   129,   131,   137,   143,   158,   162,
+     163,   171,   175
 };
 #endif
 
@@ -1196,11 +1196,7 @@ yyreduce:
 
   case 16: /* atom: "[" set_items "]"  */
     {
-      std::vector<int> v;
-      v.reserve((yyvsp[-1].setValue)->size());
-      for(auto i : *(yyvsp[-1].setValue)) {
-        v.push_back(i);
-      }
+      std::vector<int> v((yyvsp[-1].setValue)->begin(), (yyvsp[-1].setValue)->end());
       delete (yyvsp[-1].setValue);
       (yyval.rValue) = new REG(IntArgs(v));
     }
@@ -1230,9 +1226,7 @@ yyreduce:
   case 20: /* set_items: set_item set_items  */
     {
       (yyval.setValue) = (yyvsp[-1].setValue);
-      for (auto i : *(yyvsp[0].setValue)) {
-        (yyvsp[-1].setValue)->insert(i);
-      }
+      (yyvsp[-1].setValue)->merge(*(yyvsp[0].setValue));
       delete (yyvsp[0].setValue);
     }
     break;
@@ -1458,12 +1452,12 @@ void yyerror(REContext& ctx, const char* s) {
 }
 
 std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain) {
-    REG* expr = new REG();
+    auto expr = std::make_unique<REG>();
     regex_yy_scan_string(regex_str.c_str());
-    REContext rctx = REContext{expr, domain};
+    REContext rctx{expr.get(), domain};
     int err = yyparse(rctx);
     if (err != 0) {
         throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));
     }
-    return std::unique_ptr<REG>(expr);
+    return expr;
 }

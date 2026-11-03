@@ -50,9 +50,7 @@ class ParamException : public Exception {
 public:
   /// Construct with message \a msg
   ParamException(const std::string& msg) : Exception(msg) {}
-  /// Destructor
-  ~ParamException() throw() override {}
   /// Return description
-  const char* what() const throw() override { return "solver parameter error"; }
+  const char* what() const noexcept override { return "solver parameter error"; }
 };
 }  // namespace MiniZinc

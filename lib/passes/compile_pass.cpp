@@ -24,28 +24,22 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/timer.hh>
 #include <minizinc/typecheck.hh>
+#include <minizinc/utils.hh>
 
 #include <fstream>
 #include <functional>
+#include <string_view>
 #include <utility>
 
 namespace MiniZinc {
 
-using std::string;
-using std::vector;
-
-ASTString strip_stdlib_path(const vector<string>& includePaths, const ASTString& fs) {
-  // Some synthetic includes, such as models assembled from stdin input, do not have
-  // a backing filepath. Leave those unchanged instead of dereferencing a null ASTString.
-  if (fs.empty()) {
-    return fs;
-  }
-  std::string f(fs.c_str());
+ASTString strip_stdlib_path(const std::vector<std::string>& includePaths, const ASTString& fs) {
+  std::string_view f(fs);
   for (const auto& p : includePaths) {
-    if (f.size() > p.size() && f.substr(0, p.size()) == p) {
-      f = f.substr(p.size());
+    if (f.size() > p.size() && beginswith(f, p)) {
+      f.remove_prefix(p.size());
       while (!f.empty() && f[0] == '/') {
-        f = f.substr(1);
+        f.remove_prefix(1);
       }
       return ASTString(f);
     }
@@ -53,15 +47,16 @@ ASTString strip_stdlib_path(const vector<string>& includePaths, const ASTString&
   return fs;
 }
 
-Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& globals_dirs,
-                    CompilePassFlags& compflags, bool verbose = false) {
+Env* change_library(Env& e, std::vector<std::string>& includePaths,
+                    const std::vector<std::string>& globals_dirs, CompilePassFlags& compflags,
+                    bool verbose = false) {
   CopyMap cm;
   Model* m = e.envi().originalModel != nullptr ? e.envi().originalModel : e.envi().model;
   auto* new_mod = new Model();
   new_mod->setFilename(m->filename());
   new_mod->setFilepath(m->filepath());
 
-  vector<string> new_includePaths;
+  std::vector<std::string> new_includePaths;
 
   for (const auto& globals_dir : globals_dirs) {
     if (std::find(includePaths.begin(), includePaths.end(), globals_dir) == includePaths.end()) {
@@ -71,7 +66,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& 
   new_includePaths.insert(new_includePaths.end(), includePaths.begin(), includePaths.end());
 
   // Collect include items
-  vector<ASTString> include_names;
+  std::vector<ASTString> include_names;
   std::function<void(Item*)> collect_item = [&](Item* item) {
     if (auto* inc = item->dynamicCast<IncludeI>()) {
       // The optimization pipeline rebuilds the model against a different library.
@@ -83,7 +78,7 @@ Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& 
         }
         return;
       }
-      if (!inc->f().empty() && FileUtils::is_absolute(inc->f().c_str())) {
+      if (!inc->f().empty() && FileUtils::is_absolute(inc->f())) {
         include_names.push_back(inc->f());
       } else {
         ASTString include_path = inc->m()->filepath();
@@ -122,8 +117,9 @@ Env* change_library(Env& e, vector<string>& includePaths, const vector<string>& 
 }
 
 CompilePass::CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cflags,
-                         vector<string> globals_library, vector<string> include_paths,
-                         bool change_lib, bool ignore_unknown)
+                         std::vector<std::string> globals_library,
+                         std::vector<std::string> include_paths, bool change_lib,
+                         bool ignore_unknown)
     : _env(e),
       _fopts(opts),
       _compflags(cflags),
@@ -155,7 +151,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   }
   new_env->envi().ignoreUnknownIds = _ignoreUnknownIds;
 
-  vector<TypeError> typeErrors;
+  std::vector<TypeError> typeErrors;
   MiniZinc::typecheck(*new_env, new_env->model(), typeErrors,
                       _compflags.modelCheckOnly || _compflags.modelInterfaceOnly,
                       _compflags.allowMultiAssign);

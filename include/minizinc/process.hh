@@ -325,9 +325,9 @@ void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs,
         }
       }
       nl_buffer[nl_count] = 0;
-      std::lock_guard<std::mutex> lck(*mtx);
+      std::lock_guard lck(*mtx);
       if (outputQueue) {
-        std::unique_lock<std::mutex> lk(*cv_mutex);
+        std::unique_lock lk(*cv_mutex);
         bool wasEmpty = outputQueue->empty();
         outputQueue->push_back(nl_buffer);
         lk.unlock();
@@ -338,7 +338,7 @@ void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs,
       if (pOs) (*pOs) << nl_buffer << std::flush;
     } else {
       if (outputQueue) {
-        std::unique_lock<std::mutex> lk(*cv_mutex);
+        std::unique_lock lk(*cv_mutex);
         bool wasEmpty = outputQueue->empty();
         outputQueue->push_back("\n");
         done = true;
@@ -518,22 +518,20 @@ inline WinSpawnResult spawn_solver_windows(const std::vector<std::string>& cmd, 
 
   std::string cmdline = FileUtils::combine_cmd_line(cmd);
   std::wstring cmdwide = FileUtils::utf8_to_wide(cmdline);
-  std::vector<wchar_t> cmdbuf(cmdwide.begin(), cmdwide.end());
-  cmdbuf.push_back(L'\0');
 
   PROCESS_INFORMATION piProcInfo;
   ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
 
   SetDllDirectoryW(FileUtils::utf8_to_wide(FileUtils::progpath()).c_str());
-  BOOL processStarted = CreateProcessW(NULL, cmdbuf.data(), NULL, NULL, TRUE,
+  BOOL processStarted = CreateProcessW(NULL, cmdwide.data(), NULL, NULL, TRUE,
                                        EXTENDED_STARTUPINFO_PRESENT | CREATE_SUSPENDED, NULL, NULL,
                                        &siStartInfo.StartupInfo, &piProcInfo);
   DWORD createErr = GetLastError();
   SetDllDirectoryW(L"");
   if (!processStarted) {
     SetLastError(createErr);
-    throw Error(win_error("Error occurred when executing FZN solver with command \"" +
-                          FileUtils::wide_to_utf8(cmdwide) + "\""));
+    throw Error(
+        win_error("Error occurred when executing FZN solver with command \"" + cmdline + "\""));
   }
   WindowsHandle process(piProcInfo.hProcess);
   WindowsHandle thread(piProcInfo.hThread);
@@ -585,7 +583,7 @@ protected:
   static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
       case CTRL_C_EVENT: {
-        std::unique_lock<std::mutex> lck(_interruptMutex);
+        std::unique_lock lck(_interruptMutex);
         hadInterrupt = true;
         _interruptCondition.notify_all();
         return TRUE;
@@ -662,7 +660,7 @@ public:
                           nullptr, &pipeMutex, nullptr, nullptr);
     std::thread thrTimeout([&] {
       auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
-      std::unique_lock<std::mutex> lck(_interruptMutex);
+      std::unique_lock lck(_interruptMutex);
       if (_interactive) {
         // The solver drives its own session and owns Ctrl-C; wait for it to
         // finish on its own without enforcing a time limit or terminating it.
@@ -692,7 +690,7 @@ public:
     });
 
     while (true) {
-      std::unique_lock<std::mutex> lk(cv_mutex);
+      std::unique_lock lk(cv_mutex);
       cv.wait(lk, [&] { return !outputQueue.empty(); });
       while (!outputQueue.empty()) {
         try {
@@ -707,7 +705,7 @@ public:
           thrStderr.join();
           {
             // Make sure thrTimeout terminates
-            std::unique_lock<std::mutex> lck(_interruptMutex);
+            std::unique_lock lck(_interruptMutex);
             _interruptCondition.notify_all();
           }
           thrTimeout.join();
@@ -724,7 +722,7 @@ public:
     thrStderr.join();
     {
       // Make sure thrTimeout terminates
-      std::unique_lock<std::mutex> lck(_interruptMutex);
+      std::unique_lock lck(_interruptMutex);
       _interruptCondition.notify_all();
     }
     thrTimeout.join();

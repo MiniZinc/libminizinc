@@ -1,0 +1,15 @@
+
+predicate foo_reif(var int: x,int: i,var bool: r);
+array [1..2] of int: X_INTRODUCED_5_ = [1,1];
+var 0..10: x:: output_var;
+var bool: q:: output_var;
+var bool: X_INTRODUCED_0_ ::var_is_introduced :: is_defined_var;
+var bool: X_INTRODUCED_1_ ::var_is_introduced :: is_defined_var;
+var 0..1: X_INTRODUCED_2_ ::var_is_introduced :: is_defined_var;
+var 0..1: X_INTRODUCED_3_ ::var_is_introduced :: is_defined_var;
+constraint int_lin_eq(X_INTRODUCED_5_,[X_INTRODUCED_2_,X_INTRODUCED_3_],1);
+constraint foo_reif(x,1,X_INTRODUCED_0_):: defines_var(X_INTRODUCED_0_);
+constraint foo_reif(x,2,X_INTRODUCED_1_):: defines_var(X_INTRODUCED_1_);
+constraint bool2int(X_INTRODUCED_0_,X_INTRODUCED_2_):: defines_var(X_INTRODUCED_2_);
+constraint bool2int(X_INTRODUCED_1_,X_INTRODUCED_3_):: defines_var(X_INTRODUCED_3_);
+solve  satisfy;

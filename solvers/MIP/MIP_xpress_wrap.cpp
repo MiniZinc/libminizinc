@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -52,9 +53,9 @@ static void XPRS_CC xpress_message_callback(XPRSprob prob, void* context, const 
   }
 }
 
-class XpressException : public runtime_error {
+class XpressException : public std::runtime_error {
 public:
-  XpressException(const string& msg) : runtime_error(" MIPxpressWrapper: " + msg) {}
+  XpressException(const std::string& msg) : std::runtime_error(" MIPxpressWrapper: " + msg) {}
 };
 
 // Helper to check Xpress return codes and throw on error
@@ -187,8 +188,8 @@ void MIPxpressWrapper::checkDLL() {
     paths.push_back(_factoryOptions.xprsPassword);
   } else {
     paths.emplace_back("");  // Try builtin xpress dirs
-    auto dir = MiniZinc::FileUtils::dir_name(_plugin->path());
-    auto file = dir + "/../bin/xpauth.xpr";
+    auto dir = MiniZinc::FileUtils::to_path(_plugin->path()).parent_path();
+    auto file = MiniZinc::FileUtils::to_utf8(dir / ".." / "bin" / "xpauth.xpr");
     if (!dir.empty() && MiniZinc::FileUtils::file_exists(file)) {
       paths.push_back(file);  // Try the bin dir license file if it exists
     }
@@ -215,16 +216,16 @@ void MIPxpressWrapper::checkDLL() {
   throw XpressException(message);
 }
 
-string MIPxpressWrapper::getDescription(FactoryOptions& factoryOpt,
-                                        MiniZinc::SolverInstanceBase::Options* opt) {
-  ostringstream oss;
+std::string MIPxpressWrapper::getDescription(FactoryOptions& factoryOpt,
+                                             MiniZinc::SolverInstanceBase::Options* opt) {
+  std::ostringstream oss;
   oss << "  MIP wrapper for FICO Xpress Optimiser version " << getVersion(factoryOpt, opt);
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
-                                    MiniZinc::SolverInstanceBase::Options* opt) {
+std::string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
+                                         MiniZinc::SolverInstanceBase::Options* opt) {
   try {
     auto* p =
         factoryOpt.xpressDll.empty() ? new XpressPlugin : new XpressPlugin(factoryOpt.xpressDll);
@@ -237,10 +238,10 @@ string MIPxpressWrapper::getVersion(FactoryOptions& factoryOpt,
   }
 }
 
-vector<string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
+std::vector<std::string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   Options opts;
   FactoryOptions triedFactoryOpts;
-  vector<string> ret;
+  std::vector<std::string> ret;
   // TODO: This is more complex than it should be
   // We only know if --xpress-password is required if we have the DLL available
   // So we have to try the user supplied --xpress-dll if given
@@ -265,23 +266,23 @@ vector<string> MIPxpressWrapper::getRequiredFlags(FactoryOptions& factoryOpt) {
   }
 }
 
-vector<string> MIPxpressWrapper::getFactoryFlags() {
+std::vector<std::string> MIPxpressWrapper::getFactoryFlags() {
   return {"--xpress-dll", "--xpress-password"};
 };
 
-string MIPxpressWrapper::getId() { return "xpress"; }
+std::string MIPxpressWrapper::getId() { return "xpress"; }
 
-string MIPxpressWrapper::getName() { return "Xpress"; }
+std::string MIPxpressWrapper::getName() { return "Xpress"; }
 
-vector<string> MIPxpressWrapper::getTags() {
+std::vector<std::string> MIPxpressWrapper::getTags() {
   // Quadratic constraints now supported via XPRSchgqrowcoeff
   // Current C API migration supports: LP, MIP, indicator constraints, warm start, quadratic
   return {"mip", "float", "api", "float_times"};
 }
 
-vector<string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s", "-p", "-r"}; }
+std::vector<std::string> MIPxpressWrapper::getStdFlags() { return {"-i", "-s", "-p", "-r"}; }
 
-vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
+std::vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
     FactoryOptions& factoryOpt) {
   try {
     Options opts;
@@ -652,21 +653,21 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
           int d;
           p._plugin->XPRSgetintcontrol(prb, n, &d);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
-          param_default = to_string(d);
+          param_default = std::to_string(d);
           break;
         }
         case XPRS_TYPE_INT64: {
           XPRSint64 d;
           p._plugin->XPRSgetintcontrol64(prb, n, &d);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_INT;
-          param_default = to_string(d);
+          param_default = std::to_string(d);
           break;
         }
         case XPRS_TYPE_DOUBLE: {
           double d;
           p._plugin->XPRSgetdblcontrol(prb, n, &d);
           param_type = MiniZinc::SolverConfig::ExtraFlag::FlagType::T_FLOAT;
-          param_default = to_string(d);
+          param_default = std::to_string(d);
           break;
         }
         case XPRS_TYPE_STRING: {
@@ -696,7 +697,7 @@ vector<MiniZinc::SolverConfig::ExtraFlag> MIPxpressWrapper::getExtraFlags(
   return {};
 }
 
-void MIPxpressWrapper::Options::printHelp(ostream& os) {
+void MIPxpressWrapper::Options::printHelp(std::ostream& os) {
   os << "XPRESS MIP wrapper options:\n"
      << "--msgLevel <n>       print solver output, default: 0\n"
      << "--logFile <file>     log file\n"
@@ -773,8 +774,8 @@ void MIPxpressWrapper::setOptions() {
     _plugin->XPRSsetintcontrol(_problem, XPRS_RANDOMSEED, _options->randomSeed);
   }
 
-  for (auto& it : _options->extraParams) {
-    auto name = it.first.substr(9);
+  for (auto& [key, value] : _options->extraParams) {
+    auto name = key.substr(9);
     int n;
     int t;
     int rc = _plugin->XPRSgetcontrolinfo(_problem, name.c_str(), &n, &t);
@@ -784,16 +785,16 @@ void MIPxpressWrapper::setOptions() {
     }
     switch (t) {
       case XPRS_TYPE_INT:
-        _plugin->XPRSsetintcontrol(_problem, n, stoi(it.second));
+        _plugin->XPRSsetintcontrol(_problem, n, std::stoi(value));
         break;
       case XPRS_TYPE_INT64:
-        _plugin->XPRSsetintcontrol64(_problem, n, stoll(it.second));
+        _plugin->XPRSsetintcontrol64(_problem, n, std::stoll(value));
         break;
       case XPRS_TYPE_DOUBLE:
-        _plugin->XPRSsetdblcontrol(_problem, n, stod(it.second));
+        _plugin->XPRSsetdblcontrol(_problem, n, std::stod(value));
         break;
       case XPRS_TYPE_STRING:
-        _plugin->XPRSsetstrcontrol(_problem, n, it.second.c_str());
+        _plugin->XPRSsetstrcontrol(_problem, n, value.c_str());
         break;
       default:
         throw XpressException("Unknown type for parameter " + name);
@@ -816,7 +817,7 @@ static MIPWrapper::Status convert_status(int solStatus) {
   }
 }
 
-static string get_status_name(int solStatus) {
+static std::string get_status_name(int solStatus) {
   switch (solStatus) {
     case XPRS_SOLSTATUS_OPTIMAL:
       return "optimal";
@@ -956,7 +957,7 @@ static void XPRS_CC user_cut_round_callback(XPRSprob prob, void* cbdata, int ifx
 }
 
 void MIPxpressWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
-                                 string* names) {
+                                 std::string* names) {
   if (_problemLoaded) {
     throw XpressException("Cannot add variables after problem is loaded");
   }
@@ -988,7 +989,7 @@ void MIPxpressWrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, 
 }
 
 void MIPxpressWrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType sense, double rhs,
-                              int mask, const string& rowName) {
+                              int mask, const std::string& rowName) {
   if (_problemLoaded) {
     throw XpressException("Cannot add rows after problem is loaded");
   }
@@ -1243,7 +1244,8 @@ void MIPxpressWrapper::setUserSolutionCallback() {
   }
 
   // Owned by _solCbData so it stays alive for the whole solve and is freed with the wrapper.
-  _solCbData.reset(new UserSolutionCallbackData{&cbui, _problem, _plugin, _nCols, &_x});
+  _solCbData = std::make_unique<UserSolutionCallbackData>(
+      UserSolutionCallbackData{&cbui, _problem, _plugin, _nCols, &_x});
 
   // Clear any previously registered callback of this type first (nullptr removes all), so a
   // repeated solve() on the same problem does not stack duplicate callbacks.
@@ -1272,7 +1274,8 @@ void MIPxpressWrapper::setUserCutCallback() {
   }
 
   // Owned by _cutCbData so it stays alive for the whole solve and is freed with the wrapper.
-  _cutCbData.reset(new UserCutCallbackData{&cbui, _plugin, _nCols, {}});
+  _cutCbData =
+      std::make_unique<UserCutCallbackData>(UserCutCallbackData{&cbui, _plugin, _nCols, {}});
   // Clear any previously registered callback of this type first (nullptr removes all), so a
   // repeated solve() on the same problem does not stack duplicate callbacks.
   _plugin->XPRSremovecbcutround(_problem, nullptr, nullptr);
@@ -1317,7 +1320,7 @@ void MIPxpressWrapper::setVarBounds(int iVar, double lb, double ub) {
 
 void MIPxpressWrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
                                               double* rmatval, LinConType sense, double rhs,
-                                              const string& rowName) {
+                                              const std::string& rowName) {
   // Check if XPRSaddindicators is available
   if (_plugin->XPRSaddindicators == nullptr) {
     throw XpressException("Indicator constraints not supported in this version of Xpress");
@@ -1381,7 +1384,7 @@ bool MIPxpressWrapper::addWarmStart(const std::vector<VarId>& vars,
   return true;
 }
 
-void MIPxpressWrapper::addTimes(int x, int y, int z, const string& rowName) {
+void MIPxpressWrapper::addTimes(int x, int y, int z, const std::string& rowName) {
   // Bilinear equality constraint: z = x * y
   // Implemented via XPRSchgqrowcoeff (sets the x*y quadratic coefficient on the row)
 

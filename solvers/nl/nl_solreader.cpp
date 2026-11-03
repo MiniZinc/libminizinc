@@ -4,24 +4,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/file_utils.hh>
 #include <minizinc/solvers/nl/nl_solreader.hh>
-
-using namespace std;
 
 namespace MiniZinc {
 
 // *** *** *** NLSol *** *** ***
 
 // Parse a string into a NLSol object
-NLSol NLSol::parseSolution(istream& in) {
-  string buffer;
-  string msg;
-  vector<double> vec;
+NLSol NLSol::parseSolution(std::istream& in) {
+  std::string buffer;
+  std::string msg;
+  std::vector<double> vec;
   NL_Solver_Status st;
 
   try {
     // Read the message
-    while (getline(in, buffer) && !buffer.empty()) {
+    while (std::getline(in, buffer) && !buffer.empty()) {
       msg += buffer + '\n';
     }
 
@@ -30,12 +29,12 @@ NLSol NLSol::parseSolution(istream& in) {
     }
 
     // Check if we have 'Options', and skip them
-    if (getline(in, buffer)) {
+    if (std::getline(in, buffer)) {
       if (buffer == "Options") {
-        if (getline(in, buffer)) {
-          int nb_options = stoi(buffer);
+        if (std::getline(in, buffer)) {
+          int nb_options = std::stoi(buffer);
           while (nb_options > 0) {
-            getline(in, buffer);
+            std::getline(in, buffer);
             nb_options--;
           }
         }
@@ -48,21 +47,21 @@ NLSol NLSol::parseSolution(istream& in) {
 
     // Check the dual: we ignore the first, read the second. If non zero, some lines are to be
     // skipped
-    bool success = (getline(in, buffer) && getline(in, buffer));
+    bool success = (std::getline(in, buffer) && std::getline(in, buffer));
     if (!success || in.bad()) {
       return NLSol("Error reading the number of dual", NL_Solver_Status::PARSE_ERROR, {});
     }
-    int nb_duals = stoi(buffer);
+    int nb_duals = std::stoi(buffer);
 
     // Check the primal: we ignore the first, read the second
-    success = getline(in, buffer) && getline(in, buffer);
+    success = std::getline(in, buffer) && std::getline(in, buffer);
     if (!success || in.bad()) {
       return NLSol("Error reading the number of primal", NL_Solver_Status::PARSE_ERROR, {});
     }
-    int nb_vars = stoi(buffer);
+    int nb_vars = std::stoi(buffer);
 
     // Skip the duals
-    while (nb_duals > 0 && getline(in, buffer)) {
+    while (nb_duals > 0 && std::getline(in, buffer)) {
       nb_duals--;
     }
 
@@ -71,8 +70,8 @@ NLSol NLSol::parseSolution(istream& in) {
     }
 
     // Read the vars
-    while (nb_vars > 0 && getline(in, buffer)) {
-      double d = stod(buffer);
+    while (nb_vars > 0 && std::getline(in, buffer)) {
+      double d = std::stod(buffer);
       vec.push_back(d);
       nb_vars--;
     }
@@ -85,9 +84,9 @@ NLSol NLSol::parseSolution(istream& in) {
     // objno 0 EXIT
     // ........
     // 8 char
-    getline(in, buffer);
-    string sub = buffer.substr(8, buffer.length() - 8);
-    int resultCode = stoi(sub);
+    std::getline(in, buffer);
+    std::string sub = buffer.substr(8, buffer.length() - 8);
+    int resultCode = std::stoi(sub);
     st = NL_Solver_Status::UNKNOWN;
     // Not this case, this one is our own: case -2: st = NL_Solver_Status::PARSE_ERROR;
     if (resultCode == -1) {
@@ -125,9 +124,9 @@ NLSol NLSol::parseSolution(istream& in) {
 bool NLSolns2Out::feedRawDataChunk(const char* data) {
   if (data != nullptr) {
     std::stringstream ss(data);
-    string to;
+    std::string to;
 
-    while (getline(ss, to)) {
+    while (std::getline(ss, to)) {
       if (ss.eof()) {
         if (_inLine) {  // Must complete a line, and the line is not over yet
           getLog() << to << '\n';
@@ -148,8 +147,8 @@ bool NLSolns2Out::feedRawDataChunk(const char* data) {
   return true;
 }
 
-void NLSolns2Out::parseSolution(const string& filename) {
-  ifstream f(FILE_PATH(filename));
+void NLSolns2Out::parseSolution(const std::string& filename) {
+  std::ifstream f(FileUtils::to_path(filename));
   NLSol sol = NLSol::parseSolution(f);
 
   switch (sol.status) {
@@ -168,14 +167,14 @@ void NLSolns2Out::parseSolution(const string& filename) {
     case NL_Solver_Status::SOLVED: {
       DEBUG_MSG("NL_Solver_Status: SOLVED\n");
 
-      stringstream sb;
+      std::stringstream sb;
       // sb << std::hexfloat;  // Use hexadecimal format for FP
       sb << std::showpoint;  // Always shows the decimal point, so we have e.g. '256.0' when 256 is
                              // the answer for a fp value.
-      sb.precision(numeric_limits<double>::digits10 + 2);
+      sb.precision(std::numeric_limits<double>::digits10 + 2);
 
       for (int i = 0; i < _nlFile.variables.size(); ++i) {
-        string n = _nlFile.vnames[i];
+        std::string n = _nlFile.vnames[i];
         NLVar v = _nlFile.variables[n];
         if (v.toReport) {
           sb << v.name << " = ";
@@ -193,7 +192,7 @@ void NLSolns2Out::parseSolution(const string& filename) {
       // Output the arrays
       for (auto& a : _nlFile.outputArrays) {
         sb << a.name << " = array" << a.dimensions.size() << "d( ";
-        for (const string& s : a.dimensions) {
+        for (const std::string& s : a.dimensions) {
           sb << s << ", ";
         }
         sb << "[";
@@ -226,7 +225,7 @@ void NLSolns2Out::parseSolution(const string& filename) {
         sb << "]);\n";
       }
 
-      string s = sb.str();
+      std::string s = sb.str();
       _out->feedRawDataChunk(s.c_str());
       _out->feedRawDataChunk(_out->opt.solutionSeparatorDef);
       if (_nlFile.objective.isOptimisation()) {
@@ -275,6 +274,6 @@ void NLSolns2Out::parseSolution(const string& filename) {
   _out->feedRawDataChunk("\n");
 }
 
-ostream& NLSolns2Out::getLog() { return _verbose ? _out->getLog() : _dummyOfstream; }
+std::ostream& NLSolns2Out::getLog() { return _verbose ? _out->getLog() : _dummyOfstream; }
 
 }  // namespace MiniZinc

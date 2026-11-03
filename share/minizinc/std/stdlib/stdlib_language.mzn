@@ -116,6 +116,22 @@ opt bool: mzn_absent_zero;
 test mzn_check_absent_zero() =
   if absent(mzn_absent_zero) then true else deopt(mzn_absent_zero) endif;
 
+/** @group stdlib.options Whether to aggregate linear expressions while they are built
+
+    When true, every named linear expression keeps its variable. When false
+    (the default), linear expressions are aggregated at the end of flattening,
+    and only an expression that more than one item reads keeps a variable.
+*/
+opt bool: mzn_opt_eager_linear_aggregation;
+
+/** @group stdlib.options Check whether to aggregate linear expressions while they are built */
+test mzn_check_eager_linear_aggregation() =
+  if absent(mzn_opt_eager_linear_aggregation) then
+    false
+  else
+    deopt(mzn_opt_eager_linear_aggregation)
+  endif;
+
 /** @group stdlib.options Whether to half reify bool_clause constraints */
 opt bool: mzn_half_reify_clause;
 

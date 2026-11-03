@@ -31,15 +31,7 @@ if(TARGET minizinc_geas)
   set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Geas)\n")
 endif()
 if(TARGET minizinc_gecode)
-  install(
-    FILES cmake/modules/FindGecode.cmake cmake/modules/FindMPFR.cmake
-    DESTINATION ${REL_CMAKE_DIR}
-    COMPONENT dev
-  )
-  if(GECODE_HAS_GIST)
-    set(_CONF_GIST " Gist")
-  endif()
-  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support${_CONF_GIST})\n")
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Gecode CONFIG COMPONENTS driver float set)\n")
 endif()
 if(NOT HIGHS_PLUGIN)
   set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(HIGHS)\n")

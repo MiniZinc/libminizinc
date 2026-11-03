@@ -97,8 +97,8 @@ bool can_hold_itself(const Item* i) {
 void Model::cycleCandidates(std::vector<Weak<ASTNode>>& candidates) const {
   std::unordered_set<FunctionI*> seen;  // (a function can be registered more than once)
   // (registered functions are not always items: the instances of polymorphic functions are not)
-  for (const auto& entries : _fnmap) {
-    for (const auto& entry : entries.second) {
+  for (const auto& [name, entries] : _fnmap) {
+    for (const auto& entry : entries) {
       if (can_hold_itself(entry.fi.get()) && seen.insert(entry.fi.get()).second) {
         candidates.emplace_back(entry.fi.get());
       }
@@ -885,7 +885,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
         if (has_name_only_sibling(v, i.fi)) {
           throw InternalError(
               "type-only matchFn(id, types) resolved a name-only-overloaded function `" +
-              std::string(id.c_str()) +
+              std::string(id) +
               "'; an existing-call re-match must go through a name-aware matcher. This indicates "
               "a library with name-only overloads that fail the parameter-name consistency "
               "checks.");
@@ -898,8 +898,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
 }
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
-  for (const auto& it : _fnmap) {
-    for (const auto& cit : it.second) {
+  for (const auto& [name, entries] : _fnmap) {
+    for (const auto& cit : entries) {
       if (cit.fi->fromStdLib() && !cit.isPolymorphicVariant) {
         (void)m->registerFn(env, cit.fi);
       }
@@ -926,9 +926,9 @@ void Model::sortFn(const EnvI& env) {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->_fnmap) {
+  for (auto& [name, entries] : m->_fnmap) {
     // Sort all functions by type
-    std::sort(it.second.begin(), it.second.end(),
+    std::sort(entries.begin(), entries.end(),
               [&env](const Model::FnEntry& e1, const Model::FnEntry& e2) {
                 return Model::FnEntry::compare(env, e1, e2);
               });
@@ -960,8 +960,7 @@ void Model::checkFnValid(EnvI& env, std::vector<TypeError>& errors) {
   }
   // Walk through registered functions check that functions that contain a non-FlatZinc type
   // argument are either a builtin (registed with a C++ function), or have a body.
-  for (const auto& it : m->_fnmap) {
-    const std::vector<FnEntry>& variants = it.second;
+  for (const auto& [name, variants] : m->_fnmap) {
     for (const auto& fe : variants) {
       FunctionI* fi = fe.fi;
       Type ret = fi->ti()->type();
@@ -1023,8 +1022,7 @@ void Model::checkFnOverloading(EnvI& env) {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (auto& it : m->_fnmap) {
-    std::vector<FnEntry>& fs = it.second;
+  for (auto& [name, fs] : m->_fnmap) {
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
       FunctionI* cur = fs[i].fi;
       for (unsigned int j = i + 1; j < fs.size(); j++) {
@@ -1378,8 +1376,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   }
   if (has_name_only_sibling(v, matched[0])) {
     throw InternalError(
-        "type-only matchFn(id, args) resolved a name-only-overloaded function `" +
-        std::string(id.c_str()) +
+        "type-only matchFn(id, args) resolved a name-only-overloaded function `" + std::string(id) +
         "'; an existing-call re-match must go through a name-aware matcher. This indicates a "
         "library with name-only overloads that fail the parameter-name consistency checks.");
   }
@@ -1415,13 +1412,12 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 
       ASTString mostSimilar;
       int minEdits = 3;
-      for (const auto& decls : m->_fnmap) {
-        if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <=
-            3) {
-          int edits = c->id().levenshteinDistance(decls.first);
-          if (edits < minEdits && edits < std::min(c->id().size(), decls.first.size())) {
+      for (const auto& [name, entries] : m->_fnmap) {
+        if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(name.size())) <= 3) {
+          int edits = c->id().levenshteinDistance(name);
+          if (edits < minEdits && edits < std::min(c->id().size(), name.size())) {
             minEdits = edits;
-            mostSimilar = decls.first;
+            mostSimilar = name;
           }
         }
       }
@@ -1680,18 +1676,18 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
     if (fi->paramCount() < total) {
       return false;
     }
-    for (const auto& np : named) {
-      if (positional_prefix_has_name(fi, np.first, k)) {
+    for (const auto& [name, arg] : named) {
+      if (positional_prefix_has_name(fi, name, k)) {
         return false;
       }
-      if (find_param_named(fi, np.first, k) < 0) {
+      if (find_param_named(fi, name, k) < 0) {
         return false;
       }
     }
     for (unsigned int j = k; j < fi->paramCount(); j++) {
       bool boundByName = false;
-      for (const auto& np : named) {
-        if (fi->param(j)->id()->v() == np.first) {
+      for (const auto& [name, arg] : named) {
+        if (fi->param(j)->id()->v() == name) {
           boundByName = true;
           break;
         }
@@ -1712,9 +1708,9 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
         return false;
       }
     }
-    for (const auto& np : named) {
-      const int ia = find_param_named(a.fi, np.first, k);
-      const int ib = find_param_named(b.fi, np.first, k);
+    for (const auto& [name, arg] : named) {
+      const int ia = find_param_named(a.fi, name, k);
+      const int ib = find_param_named(b.fi, name, k);
       if (ia < 0 || ib < 0) {
         return false;
       }
@@ -1757,15 +1753,15 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
     if (!subOk) {
       continue;
     }
-    for (const auto& np : named) {
-      int idx = find_param_named(fi, np.first, k);
+    for (const auto& [name, arg] : named) {
+      int idx = find_param_named(fi, name, k);
       assert(idx >= 0);
-      if (!env.isSubtype(Expression::type(np.second), fe.t[idx], strictEnums)) {
+      if (!env.isSubtype(Expression::type(arg), fe.t[idx], strictEnums)) {
         subOk = false;
         break;
       }
-      if (Expression::type(np.second).isbot() && fe.t[idx].bt() != Type::BT_TOP) {
-        localBotarg = np.second;
+      if (Expression::type(arg).isbot() && fe.t[idx].bt() != Type::BT_TOP) {
+        localBotarg = arg;
       }
     }
     if (!subOk) {
@@ -1825,11 +1821,11 @@ FunctionI* Model::matchFnNamed(EnvI& env, Call* c, const std::vector<Expression*
         oss << Expression::type(positional[i]).toString(env);
         first = false;
       }
-      for (const auto& np : named) {
+      for (const auto& [name, arg] : named) {
         if (!first) {
           oss << ",";
         }
-        oss << np.first << ": " << Expression::type(np.second).toString(env);
+        oss << name << ": " << Expression::type(arg).toString(env);
         first = false;
       }
       oss << ")'";
@@ -1922,13 +1918,13 @@ void Model::checkSiblingParameterNames(EnvI& env) const {
     return strict;
   };
 
-  for (const auto& bucket : m->_fnmap) {
+  for (const auto& [name, entries] : m->_fnmap) {
     // Compare only the source declarations, skipping generated polymorphic
     // instances (which would duplicate warnings and point at synthetic decls).
     // The bucket is sorted by FnEntry::compare: arity ascending (primary key),
     // then more-concrete-types-first. Filtering preserves that order.
     std::vector<FunctionI*> decls;
-    for (const auto& fe : bucket.second) {
+    for (const auto& fe : entries) {
       if (!fe.isPolymorphicVariant && !fe.fi->isMonomorphised()) {
         decls.push_back(fe.fi);
       }
@@ -1938,7 +1934,7 @@ void Model::checkSiblingParameterNames(EnvI& env) const {
     // narrowing pairs in that class are handled there. Skip them here to avoid warning
     // twice. A strict narrowing has the same normalised signature as its target, so a
     // single anchor lookup per declaration classifies the whole pair.
-    auto anchorIt = m->_fnAnchors.find(bucket.first);
+    auto anchorIt = m->_fnAnchors.find(name);
     auto governedByAnchor = [&](FunctionI* d) {
       if (anchorIt == m->_fnAnchors.end()) {
         return false;
@@ -2042,8 +2038,7 @@ void Model::checkReifParameterNames(EnvI& env) const {
     return true;
   };
 
-  for (const auto& bucket : m->_fnmap) {
-    const ASTString& rid = bucket.first;
+  for (const auto& [rid, entries] : m->_fnmap) {
     size_t suffixLen = 0;
     if (rid.endsWith("_reif")) {
       suffixLen = 5;
@@ -2057,7 +2052,7 @@ void Model::checkReifParameterNames(EnvI& env) const {
       continue;
     }
     const ASTString& baseId = bit->first;
-    for (const auto& rfe : bucket.second) {
+    for (const auto& rfe : entries) {
       // Skip generated instances, which would duplicate warnings and point at synthetic decls.
       if (rfe.isPolymorphicVariant || rfe.fi->isMonomorphised()) {
         continue;
@@ -2133,8 +2128,8 @@ void Model::checkAuthoritativeParameterNames(EnvI& env) const {
   while (m->_parent != nullptr) {
     m = m->_parent;
   }
-  for (const auto& bucket : m->_fnmap) {
-    auto ait = m->_fnAnchors.find(bucket.first);
+  for (const auto& [name, entries] : m->_fnmap) {
+    auto ait = m->_fnAnchors.find(name);
     if (ait == m->_fnAnchors.end()) {
       continue;
     }
@@ -2148,7 +2143,7 @@ void Model::checkAuthoritativeParameterNames(EnvI& env) const {
     // location and parameter names, and coexists with the source in the bucket. Report each
     // source location only once so such a pair does not warn twice.
     std::unordered_set<std::string> warnedLocs;
-    for (const auto& fe : bucket.second) {
+    for (const auto& fe : entries) {
       // Generated instances duplicate their source's names; the source is checked directly.
       if (fe.isPolymorphicVariant || fe.fi->isMonomorphised()) {
         continue;
@@ -2226,12 +2221,12 @@ std::vector<FunctionI*> Model::potentialOverloads(EnvI& env, Call* c) const {
 
     ASTString mostSimilar;
     int minEdits = 3;
-    for (const auto& decls : m->_fnmap) {
-      if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <= 3) {
-        int edits = c->id().levenshteinDistance(decls.first);
-        if (edits < minEdits && edits < std::min(c->id().size(), decls.first.size())) {
+    for (const auto& [name, entries] : m->_fnmap) {
+      if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(name.size())) <= 3) {
+        int edits = c->id().levenshteinDistance(name);
+        if (edits < minEdits && edits < std::min(c->id().size(), name.size())) {
           minEdits = edits;
-          mostSimilar = decls.first;
+          mostSimilar = name;
         }
       }
     }

@@ -1574,9 +1574,9 @@ void Lowerer::addDocComment(Item* it, const std::string& doc, const Child& c) {
 }
 
 void Lowerer::commitFileDocComments(uint32_t before) {
-  for (const auto& d : _fileDocComments) {
-    if (d.first >= _lastItemEnd && d.second <= before && _pp.parseDocComments) {
-      std::string t(_buf + d.first, _buf + d.second);
+  for (const auto& [start, end] : _fileDocComments) {
+    if (start >= _lastItemEnd && end <= before && _pp.parseDocComments) {
+      std::string t(_buf + start, _buf + end);
       // strip the `/***` and `*/` delimiters
       _items->addDocComment(t.size() > 6 ? t.substr(4, t.size() - 6) : std::string());
     }
@@ -1589,19 +1589,15 @@ Item* Lowerer::includeItem(const Node& n) {
     return nullptr;
   }
   const ASTString& v = Expression::cast<StringLit>(static_cast<Expression*>(fileNode->value))->v();
-  std::string file(v.c_str(), v.size());
+  std::string file(v);
   std::string canonicalName = _pp.canonicalFilename(file);
-  auto* ii = _owned.keep(make<IncludeI>(loc(n), ASTString(file)));
+  auto* ii = _owned.keep(make<IncludeI>(loc(n), v));
   auto seen = _pp.seenModels.find(canonicalName);
   if (seen == _pp.seenModels.end()) {
     auto* im = new Model;
     im->setParent(_pp.model);
     im->setFilename(canonicalName);
-    std::string fpath = FileUtils::dir_name(_pp.filename);
-    if (fpath.empty()) {
-      fpath = "./";
-    }
-    _pp.files.emplace_back(im, ii, fpath, canonicalName, _pp.isSTDLib);
+    _pp.files.emplace_back(im, ii, FileUtils::dir_name(_pp.filename), canonicalName, _pp.isSTDLib);
     ii->m(im);
     _pp.seenModels.insert(std::make_pair(canonicalName, im));
   } else {
@@ -1753,7 +1749,7 @@ ASTString Lowerer::calleeName(const Child* c) {
     if (id.empty()) {
       return id;
     }
-    return ASTString(std::string(id.c_str(), id.size()) + "⁻¹");
+    return ASTString(std::string(id) + "⁻¹");
   }
   return identifier(c);
 }
@@ -1898,9 +1894,9 @@ Item* Lowerer::enumerationItem(const Node& n) {
     if (kind(*c) == K::ArrayLiteral) {
       // `enum E = ["a", "b"]` names the members with strings (parser.yxx:567),
       // and is the whole body rather than one case of a `++` chain
-      for (const auto& a : _nonStringArrays) {
-        if (a.first == e) {
-          error(a.second, "syntax error, enum members given as an array must be strings");
+      for (const auto& [arr, child] : _nonStringArrays) {
+        if (arr == e) {
+          error(child, "syntax error, enum members given as an array must be strings");
           return nullptr;
         }
       }
@@ -2104,7 +2100,7 @@ Expression* Lowerer::argOrParam(const Node& n) {
     error(*nameNode, "invalid name for named argument");
     return nullptr;
   }
-  if (!id->v().empty() && id->v().c_str()[0] == '_') {
+  if (id->v().beginsWith("_")) {
     std::ostringstream oss;
     oss << "parameter `" << id->v()
         << "' starts with '_' and cannot be used as a named argument (pass it positionally)";
@@ -2509,7 +2505,7 @@ bool Lowerer::generators(const Node& n, Generators& gens, bool idLocations) {
         std::vector<Id*> ids{_owned.keep(make<Id>(loc(*nameNode), name, nullptr))};
         gens.g.emplace_back(ids, nullptr, value);
       } else {
-        std::vector<std::string> ids{std::string(name.c_str(), name.size())};
+        std::vector<std::string> ids{std::string(name)};
         gens.g.emplace_back(ids, nullptr, value);
       }
       const Child* where = child(g, F::Where);
@@ -2531,7 +2527,7 @@ bool Lowerer::generators(const Node& n, Generators& gens, bool idLocations) {
       if (!patternName(nameNode, name)) {
         return false;
       }
-      ids.emplace_back(name.c_str(), name.size());
+      ids.emplace_back(name);
       if (idLocations) {
         idExprs.push_back(_owned.keep(make<Id>(loc(*nameNode), name, nullptr)));
       }
@@ -3283,7 +3279,7 @@ void parse_tree_sitter(ParserState& pp) {
   // parses the whole file again.
   Snapshot before(pp);
   {
-    std::unique_ptr<Model> items(new Model);
+    auto items = std::make_unique<Model>();
     if (parse_datazinc(pp, items.get(), error)) {
       for (Item* i : *items) {
         pp.model->addItem(i);
@@ -3296,7 +3292,7 @@ void parse_tree_sitter(ParserState& pp) {
   // Valid MiniZinc is still accepted: a model item is an error, but an
   // expression only earns a warning.
   {
-    std::unique_ptr<Model> items(new Model);
+    auto items = std::make_unique<Model>();
     TFError modelError;
     bool rejectedModelItem = false;
     if (parse_minizinc(pp, items.get(), modelError, &rejectedModelItem)) {

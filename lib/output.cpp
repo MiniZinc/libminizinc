@@ -11,6 +11,7 @@
 
 #include <minizinc/ast.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/flat_exp.hh>
 #include <minizinc/optimize.hh>
 #include <minizinc/output.hh>
 #include <minizinc/typecheck.hh>
@@ -32,6 +33,24 @@ bool is_completely_par(EnvI& env, FunctionI* fi, const std::vector<Type>& tv) {
     }
   }
   return fi->rtype(env, tv, nullptr, false).isPar();
+}
+
+// Mark vd as output. Reading its value is a mixed use.
+void add_output_var_ann(EnvI& env, VarDecl* vd) {
+  Expression::addAnnotation(vd, env.constants.ann.output_var);
+  if (vd->type().isvarbool()) {
+    env.addCtxAnn(vd, C_MIX);
+  }
+}
+
+// Mark the array vd of flatSize elements as output. Reading the values is a mixed use.
+void add_output_array_ann(EnvI& env, VarDecl* vd, IntVal flatSize) {
+  std::vector<Ref<Expression>> alArgs(
+      {make<SetLit>(Location().introduce(), IntSetVal::a(1, flatSize))});
+  auto al = make<ArrayLit>(Location().introduce(), alArgs);
+  Expression::addAnnotation(vd,
+                            Call::a(Location().introduce(), env.constants.ann.output_array, {al}));
+  add_ctx_ann_elements(env, vd->id(), C_MIX);
 }
 
 }  // namespace
@@ -215,7 +234,9 @@ bool cannot_use_rhs_for_output(EnvI& env, Expression* e,
       }
       if (success) {
         t = decl->rtype(env, tv, nullptr, false);
-        if (!t.isPar()) {
+        // A par overload that returns something else than a Boolean cannot replace a predicate
+        if (!t.isPar() || (baseDecl != nullptr && baseDecl->ti()->type().bt() == Type::BT_BOOL &&
+                           t.bt() != Type::BT_BOOL)) {
           success = false;
         }
       }
@@ -921,7 +942,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
           std::vector<Ref<Expression>> args(dims);
           IntVal flatSize = 1;
           if (nvi->e()->type().dim() == 0) {
-            Expression::addAnnotation(reallyFlat, env.constants.ann.output_var);
+            add_output_var_ann(env, reallyFlat);
           } else {
             flatSize = output_index_sets(env, nvi->e(), reallyFlat, args);
             if (env.fopts.ignoreStdlib) {
@@ -950,11 +971,7 @@ void output_vardecls(EnvI& env, Item* ci, Expression* e) {
                 env.output->addItem(decl);
               }
             }
-            std::vector<Ref<Expression>> alArgs(
-                {make<SetLit>(Location().introduce(), IntSetVal::a(1, flatSize))});
-            auto al = make<ArrayLit>(Location().introduce(), alArgs);
-            Expression::addAnnotation(
-                reallyFlat, Call::a(Location().introduce(), env.constants.ann.output_array, {al}));
+            add_output_array_ann(env, reallyFlat, flatSize);
           }
           check_rename_var(env, nvi->e(), raw(args), flatSize);
         } else {
@@ -1327,8 +1344,7 @@ Ref<Expression> create_dzn_output(EnvI& e, bool includeObjective, bool includeOu
 
               auto sl = make<StringLit>(Location().introduce(), s.str());
               outputVars.emplace_back(sl);
-              ASTString toString(std::string("_toString_") +
-                                 e.getEnum(enumId)->e()->id()->str().c_str());
+              ASTString toString("_toString_" + std::string(e.getEnum(enumId)->e()->id()->str()));
 
               auto idxMinLit = IntLit::a(idxMin);
               auto toStringMin =
@@ -1621,9 +1637,8 @@ void process_toplevel_output_vars(EnvI& e) {
   if (!outputForChecker) {
     // Insert implicit output variables
     int inserted = 0;
-    for (auto& it : ovv.todo) {
-      int idx = static_cast<int>(it.first);
-      auto* vd = it.second;
+    for (auto& [pos, vd] : ovv.todo) {
+      int idx = static_cast<int>(pos);
       if (Expression::ann(vd).contains(e.constants.ann.no_output) || Expression::type(vd).isPar()) {
         continue;
       }
@@ -1948,7 +1963,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                 vd_followed->e(nullptr);
                 assert(vd_followed->flat());
                 if (vd_followed->type().dim() == 0) {
-                  Expression::addAnnotation(vd_followed->flat(), env.constants.ann.output_var);
+                  add_output_var_ann(env, vd_followed->flat());
                   check_rename_var(env, vd_followed, {}, 0);
                 } else {
                   // We need to create an output annotation for the FlatZinc decl,
@@ -2001,12 +2016,7 @@ void create_output(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outpu
                         env.output->addItem(decl);
                       }
                     }
-                    std::vector<Ref<Expression>> alArgs(
-                        {make<SetLit>(Location().introduce(), IntSetVal::a(1, flatSize))});
-                    auto al = make<ArrayLit>(Location().introduce(), alArgs);
-                    Expression::addAnnotation(
-                        vd_followed->flat(),
-                        Call::a(Location().introduce(), env.constants.ann.output_array, {al}));
+                    add_output_array_ann(env, vd_followed->flat(), flatSize);
                     check_rename_var(env, vd_followed, raw(args), flatSize);
                   }
                 }
@@ -2134,11 +2144,18 @@ void finalise_output(EnvI& e) {
             } else {
               auto it = e.reverseMappers.find(vd->id());
               if (it != e.reverseMappers.end()) {
-                auto rhs = copy(e, e.cmap, it->second).cast<Call>();
-                check_output_par_fn(e, rhs);
+                // The reverse mapper is either a call or a tuple/record literal
+                Ref<Expression> rhs = copy(e, e.cmap, it->second);
+                if (Call* crhs = Expression::dynamicCast<Call>(rhs)) {
+                  check_output_par_fn(e, crhs);
+                } else {
+                  Type rhs_t(Expression::type(rhs));
+                  rhs_t.mkPar(e);
+                  Expression::type(rhs, rhs_t);
+                }
                 remove_is_output(reallyFlat);
 
-                output_vardecls(e, item, Expression::cast<Call>(it->second));
+                output_vardecls(e, item, it->second);
                 vd->e(rhs);
 
                 if (e.varOccurrences.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
@@ -2212,7 +2229,7 @@ void finalise_output(EnvI& e) {
                     std::vector<Ref<Expression>> args(dims);
                     IntVal flatSize = 1;
                     if (dims == 0) {
-                      Expression::addAnnotation(vd->flat(), e.constants.ann.output_var);
+                      add_output_var_ann(e, vd->flat());
                     } else {
                       flatSize = output_index_sets(e, vd, vd->flat(), args);
                       if (e.fopts.ignoreStdlib) {
@@ -2241,23 +2258,20 @@ void finalise_output(EnvI& e) {
                           e.output->addItem(decl);
                         }
                       }
-                      std::vector<Ref<Expression>> alArgs(
-                          {make<SetLit>(Location().introduce(), IntSetVal::a(1, flatSize))});
-                      auto al = make<ArrayLit>(Location().introduce(), alArgs);
-                      Expression::addAnnotation(
-                          vd->flat(),
-                          Call::a(Location().introduce(), e.constants.ann.output_array, {al}));
+                      add_output_array_ann(e, vd->flat(), flatSize);
                     }
                     check_rename_var(e, vd, raw(args), flatSize);
                   }
                 }
               }
             }
-            // Remove enum type
-            Type vdt = vd->type();
-            vdt.typeId(0);
-            vd->type(vdt);
-            vd->ti()->type(vdt);
+            // Remove enum type (the type id of a tuple or record type is required)
+            if (!vd->type().structBT()) {
+              Type vdt = vd->type();
+              vdt.typeId(0);
+              vd->type(vdt);
+              vd->ti()->type(vdt);
+            }
           }
           e.outputVarOccurrences.addIndex(item->cast<VarDeclI>(), i);
           CollectOccurrencesE ce(e, e.outputVarOccurrences, item);
