@@ -80,7 +80,7 @@ bool directory_exists(std::string_view dirname) {
   return fs::is_directory(to_path(dirname), ec);
 }
 
-std::string file_path(const std::string& filename, const std::string& basePath) {
+std::string file_path(std::string_view filename, const std::string& basePath) {
   std::filesystem::path path(filename);
   if (!basePath.empty() && !path.is_absolute()) {
     path = std::filesystem::path(basePath) / path;
