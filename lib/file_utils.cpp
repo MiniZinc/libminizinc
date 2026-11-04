@@ -90,7 +90,7 @@ std::string file_path(std::string_view filename, std::string_view basePath) {
 
   // Extract the UTF-8 representation (std::string in C++17, std::u8string in C++20)
   auto u8str = final_path.u8string();
-  
+
   return std::string(reinterpret_cast<const char*>(u8str.data()), u8str.size());
 }
 
