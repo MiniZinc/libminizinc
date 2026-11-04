@@ -81,16 +81,17 @@ bool directory_exists(std::string_view dirname) {
 }
 
 std::string file_path(std::string_view filename, std::string_view basePath) {
-  std::filesystem::path path(filename);
-  if (!basePath.empty() && !path.is_absolute()) {
-    path = std::filesystem::path(basePath) / path;
-  }
+  fs::path path(filename);
+  
+  // operator/ correctly ignores basePath if 'path' is already absolute
+  fs::path f = basePath.empty() ? path : fs::path(basePath) / path;
 
-  if (!path.is_absolute()) {
-    path = std::filesystem::current_path() / path;
-  }
+  fs::path final_path = fs::absolute(f).lexically_normal();
 
-  return path.lexically_normal();
+  // Extract the UTF-8 representation (std::string in C++17, std::u8string in C++20)
+  auto u8str = final_path.u8string();
+  
+  return std::string(reinterpret_cast<const char*>(u8str.data()), u8str.size());
 }
 
 std::string join_path(std::string_view dir, std::string_view name) {
