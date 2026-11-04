@@ -166,6 +166,10 @@ Bug fixes:
    reified condition, which could produce an incorrect value for the control
    variable.
 -  Make MIPdomains process the variables of a clique in a deterministic order.
+-  Fix optional variables with a declared domain that are defined by an
+   if-then-else expression with an absent branch, such as
+   ``var opt 1..2: x = if c then 2 else <> endif``. The bounds of the branches
+   could fix the variable (losing the absent branch) or make the model fail.
 
 .. _v2.10.1:
 
