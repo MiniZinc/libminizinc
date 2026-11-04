@@ -465,13 +465,15 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
         } else {
           changeDom = true;
         }
-        if (ident->type().st() == Type::ST_PLAIN && newdom->empty()) {
+        // An optional variable with an empty domain is absent, and one with a singleton domain
+        // is not fixed, since it can still be absent.
+        if (ident->type().st() == Type::ST_PLAIN && !ident->type().isOpt() && newdom->empty()) {
           env.fail();
         } else if (changeDom) {
           auto sl = make<SetLit>(Location().introduce(), newdom);
           set_computed_domain(env, ident->decl(), sl, false);
           if (ident->decl()->e() == nullptr && !newdom->empty() && newdom->min() == newdom->max() &&
-              !vd->type().isSet()) {
+              !vd->type().isSet() && !ident->type().isOpt()) {
             ident->decl()->e(LinearTraits<Lit>::newLit(newdom->min()));
           }
         }
@@ -491,9 +493,10 @@ bool flatten_dom_constraint(EnvI& env, Ctx& ctx, VarDecl* vd, Expression* dom, V
       ret.r = bind(env, ctx, r, env.constants.literalTrue);
       return true;
     }
-    if (vd->type().st() == Type::ST_PLAIN && LinearTraits<Lit>::domainDisjoint(check_dom, domain)) {
+    if (vd->type().st() == Type::ST_PLAIN && !vd->type().isOpt() &&
+        LinearTraits<Lit>::domainDisjoint(check_dom, domain)) {
       // only for var int/var float (for var set of int, subset can never fail because of the
-      // domain)
+      // domain, and an optional variable can be absent)
       // the constraint is false
       ret.r = bind(env, ctx, r, env.constants.literalFalse);
       return true;
