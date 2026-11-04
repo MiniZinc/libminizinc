@@ -22,6 +22,7 @@
 #include <cstdint>  // Required on some platforms for miniz
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <random>
@@ -80,17 +81,17 @@ bool directory_exists(std::string_view dirname) {
 }
 
 std::string file_path(std::string_view filename, std::string_view basePath) {
-  // Add base path to relative paths if there is one
-  auto f = to_path(basePath) / to_path(filename);
-  std::error_code ec;
-#ifdef _WIN32
-  // Like GetFullPathName: make absolute, but leave links in place
-  auto full = fs::absolute(f, ec);
-#else
-  // Like realpath: resolve links, and fail if the file does not exist
-  auto full = fs::canonical(f, ec);
-#endif
-  return to_utf8(ec ? f : full);
+  fs::path path(filename);
+  
+  // operator/ correctly ignores basePath if 'path' is already absolute
+  fs::path f = basePath.empty() ? path : fs::path(basePath) / path;
+
+  fs::path final_path = fs::absolute(f).lexically_normal();
+
+  // Extract the UTF-8 representation (std::string in C++17, std::u8string in C++20)
+  auto u8str = final_path.u8string();
+
+  return std::string(reinterpret_cast<const char*>(u8str.data()), u8str.size());
 }
 
 std::string join_path(std::string_view dir, std::string_view name) {
