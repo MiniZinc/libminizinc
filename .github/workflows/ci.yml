@@ -34,7 +34,7 @@ jobs:
           - { platform: linux-arm64, triple: aarch64-linux-gnu,  runner: ubuntu-24.04-arm, container: "quay.io/pypa/manylinux_2_28_aarch64", setup: "",                                                   generator: "Unix Makefiles" }
           - { platform: musl,        triple: x86_64-linux-musl,  runner: ubuntu-24.04,     container: "alpine:3.20",                         setup: "apk add --no-cache bash build-base cmake ninja git zlib-dev python3", generator: "Ninja" }
           - { platform: musl-arm64,  triple: aarch64-linux-musl, runner: ubuntu-24.04-arm, container: "alpine:3.20",                         setup: "apk add --no-cache bash build-base cmake ninja git zlib-dev python3", generator: "Ninja" }
-          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-14,       container: "",                                    setup: "",                                                   generator: "Ninja" }
+          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-26,       container: "",                                    setup: "",                                                   generator: "Ninja" }
           - { platform: osx-intel,   triple: x86_64-apple-darwin,  runner: macos-26-intel, container: "",                                    setup: "",                                                   generator: "Ninja" }
           - { platform: win64,       triple: x86_64-windows,     runner: windows-2022,     container: "",                                    setup: "",                                                   generator: "Ninja" }
           - { platform: win64-arm,   triple: aarch64-windows,    runner: windows-11-arm,   container: "",                                    setup: "",                                                   generator: "Ninja" }
@@ -146,7 +146,7 @@ jobs:
       matrix:
         include:
           - { platform: linux, triple: x86_64-linux-gnu,        runner: ubuntu-24.04 }
-          - { platform: osx,   triple: aarch64-apple-darwin,    runner: macos-14 }
+          - { platform: osx,   triple: aarch64-apple-darwin,    runner: macos-26 }
           - { platform: win64, triple: x86_64-windows,          runner: windows-2022 }
     runs-on: ${{ matrix.runner }}
     name: test (${{ matrix.platform }})
