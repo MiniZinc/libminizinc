@@ -40,7 +40,7 @@ jobs:
           # archives, so it never has to run the binaries it packages.
           - { platform: musl,        triple: x86_64-linux-musl,    runner: ubuntu-24.04 }
           - { platform: musl-arm64,  triple: aarch64-linux-musl,   runner: ubuntu-24.04-arm }
-          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-14 }
+          - { platform: osx,         triple: aarch64-apple-darwin, runner: macos-26 }
           - { platform: osx-intel,   triple: x86_64-apple-darwin,  runner: macos-26-intel }
           - { platform: win64,       triple: x86_64-windows,       runner: windows-2022 }
           - { platform: win64-arm,   triple: aarch64-windows,      runner: windows-11-arm }
