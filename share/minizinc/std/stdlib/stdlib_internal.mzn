@@ -3468,3 +3468,12 @@ function int: mzn_safe_default(var int: x) =
   if lb(x) != -infinity then lb(x) elseif ub(x) != infinity then ub(x) else 0 endif;
 function float: mzn_safe_default(var float: x) =
   if lb(x) != -infinity then lb(x) elseif ub(x) != infinity then ub(x) else 0.0 endif;
+
+% The image {m[x] | x in s} of the set s under the map m, which must be
+% injective. 
+function set of $$F: mzn_injective_image(set of $$E: s, array [$$E] of $$F: m) = {m[x] | x in s};
+function var set of $$F: mzn_injective_image(var set of $$E: s, array [$$E] of $$F: m) =
+        let {
+                var set of {m[x] | x in index_set(m)}: t;
+                constraint forall (x in index_set(m)) (x in s <-> m[x] in t);
+        } in t;
