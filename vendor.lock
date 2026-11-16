@@ -7,7 +7,7 @@
 cbc=2.10.13
 gecode=6.5.0
 chuffed=0.14.0
-highs=v1.15.1
+highs=v1.16.0
 or-tools=v9.15
 # Bundled alongside the compiler. Globalizer has its own version numbering, so it
 # cannot be resolved from the release tag the way findMUS and mzn-analyse are.
