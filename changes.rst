@@ -4,25 +4,18 @@ MiniZinc Change Log
 For detailed bug reports consult the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues.
 
-.. _upcoming:
+.. _v2.11.0:
 
-`Upcoming Release <https://github.com/MiniZinc/MiniZincIDE/releases/tag/edge>`__
+`Version 2.11.0 <https://github.com/MiniZinc/MiniZincIDE/releases/tag/2.11.0>`__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(released 18 November 2026)
 
 Changes:
 ^^^^^^^^
 -  Building MiniZinc from source now requires a C++17 compiler.
 -  Normalize linear expressions (term order, sign, and common divisor), so that
    common subexpression elimination finds more equal expressions.
--  Add support for optional set variables (``var opt set of int``, including sets
-   of enums). A ``var opt set`` is either a set or absent (``<>``), and absent is
-   different from the empty set. The set operations (``in``, ``subset``,
-   ``union``, ``intersect``, ``card`` etc.) ignore absent operands, like the
-   other operations on option types. Par optional sets support the same
-   operations, including optional sets of floats.
--  Warn when ``op`` or ``lambda`` is used as an identifier or ``==`` is used
-   where assignment syntax requires ``=``. These forms are not accepted by the
-   new parser.
 -  Parse files selected by ``MZN_TREE_SITTER_PARSER`` directly with
    `tree-feller <https://github.com/Dekker1/tree-feller>`__, using the
    tree-sitter runtime only to report syntax errors in models.
@@ -41,16 +34,6 @@ Changes:
    ``var`` version, such as ``string`` or ``set of float``. Such calls used to
    produce invalid types like ``var string``. Use ``any $T`` for parameters
    that can be both par and var.
--  Make ``x in S`` true when the optional value ``x`` is absent (it was false).
-   An absent value is now ignored consistently: ``<> in S`` is equivalent to
-   ``{<>} subset S``, and agrees with the ``set_in`` constraint on optional
-   integers and with the other relations on optional values, such as ``<=``.
--  Allow record literals in data files (``.dzn`` files and data given with
-   ``-D``) to omit optional fields of the declared record type. The missing
-   fields are absent, so an array of records can be given as
-   ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
-   was already the case for JSON input, which now also supports record types
-   that are combined using ``++``.
 -  Make ``arg_val`` and ``arg_val_weak`` on par arrays of strings, integers or
    enums use a hash map that is built on the first call for an array and reused
    by later calls, so that repeated lookups in a large array no longer scan it.
@@ -72,6 +55,28 @@ Changes:
    those uses. A variable that is only used positively can now be half-reified,
    together with the expressions in its definition, as when the definition is
    written in place.
+
+Language changes:
+^^^^^^^^^^^^^^^^^
+-  Add support for optional set variables (``var opt set of int``, including sets
+   of enums). A ``var opt set`` is either a set or absent (``<>``), and absent is
+   different from the empty set. The set operations (``in``, ``subset``,
+   ``union``, ``intersect``, ``card`` etc.) ignore absent operands, like the
+   other operations on option types. Par optional sets support the same
+   operations, including optional sets of floats.
+-  Allow record literals in data files (``.dzn`` files and data given with
+   ``-D``) to omit optional fields of the declared record type. The missing
+   fields are absent, so an array of records can be given as
+   ``[(y: 1), (x: 2, y: 3)]`` for type ``record(opt int: x, int: y)``. This
+   was already the case for JSON input, which now also supports record types
+   that are combined using ``++``.
+-  Make ``x in S`` true when the optional value ``x`` is absent (it was false).
+   An absent value is now ignored consistently: ``<> in S`` is equivalent to
+   ``{<>} subset S``, and agrees with the ``set_in`` constraint on optional
+   integers and with the other relations on optional values, such as ``<=``.
+-  Warn when ``op`` or ``lambda`` is used as an identifier or ``==`` is used
+   where assignment syntax requires ``=``. These forms are not accepted by the
+   new parser.
 
 Bug fixes:
 ^^^^^^^^^^
