@@ -3731,7 +3731,7 @@ IntVal b_enum_prev(EnvI& env, Call* call) {
 }
 
 IntVal b_mzn_compiler_version(EnvI& /*env*/, Call* /*call*/) {
-  return parse_int(std::string(MZN_VERSION_MAJOR)) * 10000 +
+  return parse_int(std::string(MZN_VERSION_MAJOR)) * 1000000 +
          parse_int(std::string(MZN_VERSION_MINOR)) * 1000 +
          parse_int(std::string(MZN_VERSION_PATCH));
 }
