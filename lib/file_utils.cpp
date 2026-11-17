@@ -82,15 +82,11 @@ bool directory_exists(std::string_view dirname) {
 std::string file_path(std::string_view filename, std::string_view basePath) {
   // Add base path to relative paths if there is one
   auto f = to_path(basePath) / to_path(filename);
+  // Make absolute and remove "." and ".." components, but leave symbolic links
+  // in place (the file does not need to exist)
   std::error_code ec;
-#ifdef _WIN32
-  // Like GetFullPathName: make absolute, but leave links in place
   auto full = fs::absolute(f, ec);
-#else
-  // Like realpath: resolve links, and fail if the file does not exist
-  auto full = fs::canonical(f, ec);
-#endif
-  return to_utf8(ec ? f : full);
+  return to_utf8(ec ? f : full.lexically_normal());
 }
 
 std::string join_path(std::string_view dir, std::string_view name) {
