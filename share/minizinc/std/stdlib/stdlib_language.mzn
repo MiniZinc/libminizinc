@@ -4,13 +4,13 @@
   These functions return information about the MiniZinc system.
 */
 
-/** @group stdlib.language Return MiniZinc version encoded as an integer (major*10000+minor*1000+patch). */
+/** @group stdlib.language Return MiniZinc version encoded as an integer (major*1000000+minor*1000+patch). */
 function int: mzn_compiler_version();
 
-/** @group stdlib.language Return string representation of \a v given an integer major*10000+minor*1000+patch
+/** @group stdlib.language Return string representation of \a v given an integer major*1000000+minor*1000+patch
 */
 function string: mzn_version_to_string(int: v) =
-  show(v div 10000) ++ "." ++ show((v div 1000) mod 10) ++ "." ++ show(v mod 100);
+  show(v div 1000000) ++ "." ++ show((v div 1000) mod 1000) ++ "." ++ show(v mod 1000);
 
 /** @group stdlib.language If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
 opt int: mzn_min_version_required;

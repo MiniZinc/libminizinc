@@ -170,6 +170,8 @@ Bug fixes:
    if-then-else expression with an absent branch, such as
    ``var opt 1..2: x = if c then 2 else <> endif``. The bounds of the branches
    could fix the variable (losing the absent branch) or make the model fail.
+-  Fix ``mzn_compiler_version`` so that it can encode versions with a minor
+   version greater than 9.
 
 .. _v2.10.1:
 
