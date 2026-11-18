@@ -1,0 +1,79 @@
+name: build-mingw
+on:
+  push:
+    branches: [develop, master]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mingw:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { msystem: UCRT64,  prefix: ucrt64,  cxxflags: '-Wa,-mbig-obj' }
+          - { msystem: CLANG64, prefix: clang64, cxxflags: '' }
+    env:
+      # Lets `gh release download` read minizinc-vendor's (public) releases.
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: msys2/setup-msys2@v2
+        id: msys2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - id: gecode-version
+        shell: bash
+        run: |
+          v=$(grep '^gecode=' vendor.lock | cut -d= -f2)
+          echo "tag=release-${v%-rebuild*}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          repository: Gecode/gecode
+          ref: ${{ steps.gecode-version.outputs.tag }}
+          path: gecode-src
+      - shell: msys2 {0}
+        run: |
+          cmake -S gecode-src -B gecode-build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="${{ matrix.cxxflags }}" \
+            -DCMAKE_INSTALL_PREFIX="$PWD/vendor/gecode" \
+            -DGECODE_BUILD_SHARED=OFF \
+            -DGECODE_BUILD_STATIC=ON \
+            -DGECODE_ENABLE_GIST=FALSE \
+            -DGECODE_ENABLE_QT=FALSE \
+            -DGECODE_ENABLE_CPPROFILER=FALSE \
+            -DGECODE_ENABLE_MPFR=FALSE \
+            -DGECODE_ENABLE_EXAMPLES=FALSE \
+            -DBUILD_TESTING=OFF
+          cmake --build gecode-build --target install
+      - shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/minizinc"
+          cmake --build build --config Release --target install
+      - shell: bash
+        run: bash scripts/fetch_vendor.sh x86_64-windows chuffed highs or-tools
+      - shell: cmd
+        env:
+          MZN_TEST_TAGS_PRESENT: gecode_presolver,highs
+        run: |
+          set PATH=%CD%\minizinc\bin;${{ steps.msys2.outputs.msys2-location }}\${{ matrix.prefix }}\bin;%CD%\vendor\highs\bin;%PATH%
+          set MZN_SOLVER_PATH=%CD%\vendor\chuffed\share\minizinc\solvers\;%CD%\vendor\gecode\share\minizinc\solvers\;%CD%\vendor\or-tools\share\minizinc\solvers\
+          minizinc --solvers || exit /b 1
+          cd tests
+          python -m venv env || exit /b 1
+          call env\Scripts\activate.bat
+          pip install -r requirements.txt || exit /b 1
+          pytest
