@@ -11,7 +11,19 @@ https://github.com/MiniZinc/libminizinc/issues.
 
 Changes:
 ^^^^^^^^
--  Changes will be documented here as they are merged into the ``develop`` branch.
+-  Find the Gurobi, CPLEX and SCIP libraries by listing their install
+   directories and the library search path, instead of trying a fixed list of
+   versions, so that new solver releases (such as Gurobi 14) are found without
+   a MiniZinc update (:bugref:`1110`). Gurobi also uses ``GUROBI_HOME``, and
+   CPLEX also finds Community edition installs. The newest version in the first
+   location that has one is loaded.
+
+Bug fixes:
+^^^^^^^^^^
+-  Load Gurobi and CPLEX libraries from paths with non-ASCII characters on
+   Windows.
+-  Load ``lib<name>.dylib`` for a base name given to ``--gurobi-dll`` or
+   ``--cplex-dll`` on macOS.
 
 .. _v2.11.0:
 

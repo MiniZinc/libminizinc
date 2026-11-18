@@ -18,11 +18,15 @@
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils.hh>
 
+#include <algorithm>
+#include <array>
+#include <cctype>
 #include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -43,14 +47,20 @@
 namespace {
 void* dll_open(const std::string& file) {
 #ifdef _WIN32
+  // The file name is UTF-8, so convert it to a wide string for LoadLibraryW
   if (MiniZinc::FileUtils::is_absolute(file)) {
-    return LoadLibrary(file.c_str());
+    return LoadLibraryW(MiniZinc::FileUtils::to_path(file).c_str());
   }
-  return LoadLibrary((file + ".dll").c_str());
+  return LoadLibraryW(MiniZinc::FileUtils::to_path(file + ".dll").c_str());
 #else
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return dlopen(file.c_str(), RTLD_NOW);
   }
+#ifdef __APPLE__
+  if (void* dylib = dlopen(("lib" + file + ".dylib").c_str(), RTLD_NOW)) {
+    return dylib;
+  }
+#endif
   if (void* so = dlopen(("lib" + file + ".so").c_str(), RTLD_NOW)) {
     return so;
   }
@@ -79,13 +89,123 @@ void dll_close(void* dll) {
 
 #endif
 
-const std::vector<std::string>& cplex_dlls() {
-  static const std::vector<std::string> sCPLEXDLLs = {
-      "cplex2412", "cplex2411",  "cplex2410", "cplex2312", "cplex2311", "cplex2310",
-      "cplex2222", "cplex2221",  "cplex2220", "cplex2212", "cplex2211", "cplex2210",
-      "cplex2010", "cplex12100", "cplex1290", "cplex1280", "cplex1270"};
-  return sCPLEXDLLs;
+namespace {
+// The default CPLEX library directory on this platform, for help text
+#ifdef _WIN32
+const char* const CPLEX_DEFAULT_DIR =
+    "C:\\Program Files\\IBM\\ILOG\\CPLEX_Studio<version>\\cplex\\bin\\x64_win64";
+#elif __APPLE__
+const char* const CPLEX_DEFAULT_DIR =
+    "(~)/Applications/CPLEX_Studio<version>/cplex/bin/<arm64_osx or x86-64_osx>";
+#else
+const char* const CPLEX_DEFAULT_DIR = "/opt/ibm/ILOG/CPLEX_Studio<version>/cplex/bin/x86-64_linux";
+#endif
+
+#ifdef CPLEX_PLUGIN
+// Where CPLEX keeps its library on this platform. An installation has the form
+// `<root>/<edition prefix><version>/cplex/bin/<platform>/<lib prefix><version><lib suffix>`.
+// The roots and edition prefixes are the default installation locations in the IBM ILOG CPLEX
+// Optimization Studio documentation ("Installing CPLEX Optimization Studio", 20.1 and 22.1.2).
+// IBM does not document the platform directories in `cplex/bin`. Like JuMP's CPLEX.jl, only the
+// known directory for each platform is searched: x64_win64, x86-64_osx and x86-64_linux (as in
+// CPLEX.jl), and arm64_osx (the Apple silicon build of 22.1.1).
+const std::vector<std::string> CPLEX_EDITION_PREFIXES = {"CPLEX_Studio", "CPLEX_Studio_Community"};
+#ifdef _WIN32
+const char* const CPLEX_LIB_PREFIX = "cplex";
+const std::vector<std::string> CPLEX_LIB_SUFFIXES = {".dll"};
+const std::vector<std::string> CPLEX_PLATFORMS = {"x64_win64"};
+std::vector<std::string> cplex_roots() { return {"C:\\Program Files\\IBM\\ILOG"}; }
+#elif __APPLE__
+const char* const CPLEX_LIB_PREFIX = "libcplex";
+// CPLEX 22.1 ships libcplex<N>.dylib. CPLEX 12.9 ships only libcplex<N>.jnilib.
+const std::vector<std::string> CPLEX_LIB_SUFFIXES = {".dylib", ".jnilib"};
+const std::vector<std::string> CPLEX_PLATFORMS = {"arm64_osx", "x86-64_osx"};
+std::vector<std::string> cplex_roots() {
+  // 22.1.2 installs in ~/Applications, earlier versions in /Applications
+  std::vector<std::string> roots;
+  if (auto home = MiniZinc::FileUtils::get_env("HOME")) {
+    roots.push_back(MiniZinc::FileUtils::join_path(*home, "Applications"));
+  }
+  roots.emplace_back("/Applications");
+  return roots;
 }
+#else
+const char* const CPLEX_LIB_PREFIX = "libcplex";
+const std::vector<std::string> CPLEX_LIB_SUFFIXES = {".so"};
+const std::vector<std::string> CPLEX_PLATFORMS = {"x86-64_linux"};
+std::vector<std::string> cplex_roots() {
+  // The documentation names /opt/ibm/ILOG for Linux and /opt/IBM/ILOG for other UNIX systems
+  return {"/opt/ibm/ILOG", "/opt/IBM/ILOG"};
+}
+#endif
+
+/// Sort key (major, minor, patch) for a CPLEX version number in a directory or library name.
+/// The names use two digits for the major version, then the minor and patch version, sometimes
+/// with a trailing 0: 1263 (12.6.3), 129 (12.9), 1290 (12.9.0), 1210 and 12100 (12.10),
+/// 201 and 20100 (20.1.0), 2211 and 22110 (22.1.1).
+std::array<long, 3> cplex_version_key(const std::string& version) {
+  if (version.size() < 3 || !std::all_of(version.begin(), version.end(),
+                                         [](unsigned char c) { return std::isdigit(c) != 0; })) {
+    return {-1, -1, -1};
+  }
+  long major = std::stol(version.substr(0, 2));
+  std::string rest = version.substr(2);
+  long minor;
+  if (major == 12 && rest.compare(0, 2, "10") == 0) {
+    minor = 10;
+    rest = rest.substr(2);
+  } else {
+    minor = rest[0] - '0';
+    rest = rest.substr(1);
+  }
+  long patch = rest.empty() ? 0 : rest[0] - '0';
+  return {major, minor, patch};
+}
+
+/// Sort \a entries newest CPLEX version first. The sort is stable, so entries of the same version
+/// keep the order of versioned_entries (the earlier suffix first).
+void sort_cplex_versions(std::vector<MiniZinc::FileUtils::VersionedEntry>& entries) {
+  std::stable_sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+    return cplex_version_key(a.version) > cplex_version_key(b.version);
+  });
+}
+
+/// The CPLEX libraries to try, in order: those in the library search path, then those in the
+/// default installation directories, newest version first. The list is built from the files that
+/// exist, so it needs no change for a new CPLEX release.
+std::vector<std::string> cplex_dlls() {
+  using MiniZinc::FileUtils::join_path;
+  using MiniZinc::FileUtils::versioned_entries;
+  std::vector<std::string> dlls;
+  auto add_libs_in = [&](const std::string& dir) {
+    auto libs = versioned_entries(dir, CPLEX_LIB_PREFIX, CPLEX_LIB_SUFFIXES);
+    sort_cplex_versions(libs);
+    for (auto& lib : libs) {
+      dlls.push_back(std::move(lib.path));
+    }
+  };
+  for (const auto& dir : MiniZinc::FileUtils::library_search_dirs()) {
+    add_libs_in(dir);
+  }
+  std::vector<MiniZinc::FileUtils::VersionedEntry> installs;
+  for (const auto& root : cplex_roots()) {
+    for (const auto& prefix : CPLEX_EDITION_PREFIXES) {
+      auto found = versioned_entries(root, prefix, {""});
+      installs.insert(installs.end(), std::make_move_iterator(found.begin()),
+                      std::make_move_iterator(found.end()));
+    }
+  }
+  sort_cplex_versions(installs);
+  for (const auto& install : installs) {
+    const std::string bin = join_path(join_path(install.path, "cplex"), "bin");
+    for (const auto& platform : CPLEX_PLATFORMS) {
+      add_libs_in(join_path(bin, platform));
+    }
+  }
+  return dlls;
+}
+#endif
+}  // namespace
 
 void MIPCplexWrapper::checkDLL() {
 #ifdef CPLEX_PLUGIN
@@ -93,7 +213,9 @@ void MIPCplexWrapper::checkDLL() {
   if (!_factoryOptions.cplexDll.empty()) {
     _cplexDll = dll_open(_factoryOptions.cplexDll);
   } else {
-    for (const auto& s : cplex_dlls()) {
+    // The scan lists many directories, so do it once per process
+    static const std::vector<std::string> candidates = cplex_dlls();
+    for (const auto& s : candidates) {
       _cplexDll = dll_open(s);
       if (nullptr != _cplexDll) {
         break;
@@ -542,10 +664,10 @@ void MIPCplexWrapper::Options::printHelp(std::ostream& os) {
      << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 "
         "to use backend's default\n"
      << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8\n"
-     << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex1280, "
-        "when using plugin. Default range tried: "
-     << cplex_dlls().front() << " .. " << cplex_dlls().back()
-     << '\n'
+     << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex2211, "
+        "when using plugin. By default, MiniZinc searches "
+     << MiniZinc::FileUtils::library_search_path_description() << ", then " << CPLEX_DEFAULT_DIR
+     << ", and loads the newest version in the first place that has one.\n"
      //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
      << '\n';

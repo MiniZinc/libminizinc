@@ -14,6 +14,7 @@
 #endif
 
 #include <minizinc/exception.hh>
+#include <minizinc/file_utils.hh>
 #include <minizinc/solvers/MIP/MIP_scip_wrap.hh>
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/utils.hh>
@@ -31,39 +32,41 @@
 /// Load SCIP DLL with the given path
 ScipPlugin::ScipPlugin(const std::string& dll) : _inner(dll) { load(); }
 
-/// Load SCIP DLL with default search paths on Windows
-ScipPlugin::ScipPlugin()
-    : _inner(
+namespace {
+/// The SCIP libraries to try, in order. On Windows, the installations in Program Files come after
+/// the library search path, newest version first. The list is built from the files that exist, so
+/// it needs no change for a new SCIP release. The SCIP Optimization Suite installer is made by
+/// CPack, so it installs in `<Program Files>\<project name> <version>`, which is
+/// `C:\Program Files\SCIPOptSuite <version>`.
+std::vector<std::string> scip_dlls() {
 #ifdef _WIN32
-          {
-              "libscip",
-              "scip",
-              "C:\\Program Files\\SCIPOptSuite 10.2.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.2.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.2.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.2.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.2.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.1.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.1.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.1.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.1.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.1.0\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.0.4\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.0.3\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.0.2\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.0.1\\bin\\libscip.dll",
-              "C:\\Program Files\\SCIPOptSuite 10.0.0\\bin\\libscip.dll",
-          }
+  std::vector<std::string> dlls = {"libscip", "scip"};
+  for (const auto& install :
+       MiniZinc::FileUtils::versioned_entries("C:\\Program Files", "SCIPOptSuite ", {""})) {
+    std::string dll = MiniZinc::FileUtils::join_path(install.path, "bin\\libscip.dll");
+    if (MiniZinc::FileUtils::file_exists(dll)) {
+      dlls.push_back(dll);
+    }
+  }
+  return dlls;
 #else
-          std::vector<std::string>({
-              "libscip",
-              "/home/linuxbrew/.linuxbrew/lib/libscip.so",
-              "/opt/homebrew/lib/libscip.dylib",
-          })
+  return {
+      "libscip",
+      "/home/linuxbrew/.linuxbrew/lib/libscip.so",
+      "/opt/homebrew/lib/libscip.dylib",
+  };
 #endif
-      ) {
-  load();
 }
+
+/// The SCIP libraries to try. The scan lists many directories, so it runs once per process.
+const std::vector<std::string>& default_scip_dlls() {
+  static const std::vector<std::string> dlls = scip_dlls();
+  return dlls;
+}
+}  // namespace
+
+/// Load SCIP DLL with default search paths
+ScipPlugin::ScipPlugin() : _inner(default_scip_dlls()) { load(); }
 
 void ScipPlugin::load() {
   load_symbol_dynamic(_inner, SCIPmajorVersion);

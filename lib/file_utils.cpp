@@ -18,6 +18,7 @@
 #include <minizinc/file_utils.hh>
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <cstdint>  // Required on some platforms for miniz
 #include <cstdlib>
@@ -196,6 +197,116 @@ std::string find_executable(const std::string& filename, const std::string& base
   return "";
 }
 
+std::vector<std::string> library_search_dirs() {
+#ifdef _WIN32
+  return get_env_list("PATH");
+#else
+#ifdef __APPLE__
+  auto dirs = get_env_list("DYLD_LIBRARY_PATH");
+#else
+  auto dirs = get_env_list("LD_LIBRARY_PATH");
+#endif
+  dirs.emplace_back("/usr/local/lib");
+  dirs.emplace_back("/usr/lib");
+  dirs.emplace_back("/lib");
+  return dirs;
+#endif
+}
+
+std::string library_search_path_description() {
+#ifdef _WIN32
+  return "$PATH";
+#elif defined(__APPLE__)
+  return "$DYLD_LIBRARY_PATH, /usr/local/lib, /usr/lib, /lib";
+#else
+  return "$LD_LIBRARY_PATH, /usr/local/lib, /usr/lib, /lib";
+#endif
+}
+
+namespace {
+/// The numbers in \a version if it has the form `<digits>(.<digits>)*`, otherwise nothing
+std::optional<std::vector<long>> parse_version(std::string_view version) {
+  std::vector<long> numbers;
+  size_t start = 0;
+  while (true) {
+    size_t end = version.find('.', start);
+    std::string_view part =
+        version.substr(start, end == std::string_view::npos ? end : end - start);
+    if (part.empty() || part.size() > 9 ||
+        !std::all_of(part.begin(), part.end(),
+                     [](unsigned char c) { return std::isdigit(c) != 0; })) {
+      return std::nullopt;
+    }
+    numbers.push_back(std::stol(std::string(part)));
+    if (end == std::string_view::npos) {
+      return numbers;
+    }
+    start = end + 1;
+  }
+}
+
+/// Test if file name part \a a equals \a b. Windows and macOS (by default) ignore the letter case
+/// of file names, so the test ignores ASCII letter case there.
+bool file_name_part_equal(std::string_view a, std::string_view b) {
+#if defined(_WIN32) || defined(__APPLE__)
+  return a.size() == b.size() &&
+         std::equal(a.begin(), a.end(), b.begin(), [](unsigned char x, unsigned char y) {
+           return std::tolower(x) == std::tolower(y);
+         });
+#else
+  return a == b;
+#endif
+}
+}  // namespace
+
+std::vector<VersionedEntry> versioned_entries(std::string_view dir, std::string_view prefix,
+                                              const std::vector<std::string>& suffixes) {
+  struct Found {
+    std::vector<long> numbers;
+    size_t suffixIndex;
+    VersionedEntry entry;
+  };
+  std::vector<Found> found;
+  std::error_code ec;
+  for (auto it = fs::directory_iterator(to_path(dir), ec); !ec && it != fs::directory_iterator();
+       it.increment(ec)) {
+    std::string name = to_utf8(it->path().filename());
+    std::string_view name_view(name);
+    if (name.size() <= prefix.size() ||
+        !file_name_part_equal(name_view.substr(0, prefix.size()), prefix)) {
+      continue;
+    }
+    for (size_t i = 0; i < suffixes.size(); ++i) {
+      const std::string& suffix = suffixes[i];
+      if (name.size() <= prefix.size() + suffix.size() ||
+          !file_name_part_equal(name_view.substr(name.size() - suffix.size()), suffix)) {
+        continue;
+      }
+      std::string version = name.substr(prefix.size(), name.size() - prefix.size() - suffix.size());
+      if (auto numbers = parse_version(version)) {
+        found.push_back(
+            {std::move(*numbers), i, {file_path(to_utf8(it->path())), std::move(version)}});
+        break;
+      }
+    }
+  }
+  std::sort(found.begin(), found.end(), [](const Found& a, const Found& b) {
+    if (a.numbers != b.numbers) {
+      return a.numbers > b.numbers;
+    }
+    if (a.suffixIndex != b.suffixIndex) {
+      return a.suffixIndex < b.suffixIndex;
+    }
+    return a.entry.path < b.entry.path;
+  });
+  std::vector<VersionedEntry> entries;
+  entries.reserve(found.size());
+  for (auto& f : found) {
+    entries.push_back(std::move(f.entry));
+  }
+  return entries;
+}
+
 std::string find_library(const std::string& name, const std::string& basePath) {
   const bool bare = (base_name(name) == name) && !is_absolute(name);
 
@@ -229,19 +340,8 @@ std::string find_library(const std::string& name, const std::string& basePath) {
     if (!basePath.empty()) {
       dirs.push_back(basePath);
     }
-#ifdef _WIN32
-    auto env_dirs = get_env_list("PATH");
-#elif defined(__APPLE__)
-    auto env_dirs = get_env_list("DYLD_LIBRARY_PATH");
-#else
-    auto env_dirs = get_env_list("LD_LIBRARY_PATH");
-#endif
-    dirs.insert(dirs.end(), env_dirs.begin(), env_dirs.end());
-#ifndef _WIN32
-    dirs.emplace_back("/usr/local/lib");
-    dirs.emplace_back("/usr/lib");
-    dirs.emplace_back("/lib");
-#endif
+    auto search_dirs = library_search_dirs();
+    dirs.insert(dirs.end(), search_dirs.begin(), search_dirs.end());
   } else if (is_absolute(name)) {
     dirs.emplace_back("");  // the leaves are (or resolve to) absolute paths
   } else {

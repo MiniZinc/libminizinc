@@ -49,6 +49,26 @@ std::string find_executable(const std::string& filename, const std::string& base
 /// the dynamic-loader search path, and common system library directories.
 /// Returns the absolute path if found, or the empty string otherwise.
 std::string find_library(const std::string& name, const std::string& basePath = "");
+/// Return the directories that the dynamic loader searches for a library given by a bare name:
+/// the PATH on Windows, otherwise DYLD_LIBRARY_PATH (macOS) or LD_LIBRARY_PATH, followed by
+/// the common system library directories.
+std::vector<std::string> library_search_dirs();
+/// Return a description of the directories that library_search_dirs() returns, for help text
+std::string library_search_path_description();
+/// A directory entry whose name contains a version number
+struct VersionedEntry {
+  /// The absolute path of the entry
+  std::string path;
+  /// The version part of the entry name, such as `1301` or `10.2.4`
+  std::string version;
+};
+/// Return the entries of directory \a dir named `<prefix><version><suffix>`, where the suffix is
+/// one of \a suffixes and the version is a sequence of numbers separated by dots. The highest
+/// version comes first, and for the same version, the entry with the earlier suffix in
+/// \a suffixes. A directory that does not exist or cannot be read has no entries. On Windows and
+/// macOS, the match of \a prefix and the suffixes ignores letter case, as the file system does.
+std::vector<VersionedEntry> versioned_entries(std::string_view dir, std::string_view prefix,
+                                              const std::vector<std::string>& suffixes);
 /// Return full path to file. If \a basePath is not empty, resolve
 /// relative paths with respect to \a basePath.
 std::string file_path(std::string_view filename, std::string_view basePath = {});

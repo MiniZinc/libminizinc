@@ -84,39 +84,60 @@ std::vector<std::string> MIPGurobiWrapper::getTags() { return {"mip", "float", "
 
 std::vector<std::string> MIPGurobiWrapper::getStdFlags() { return {"-i", "-p", "-s", "-v"}; }
 
-std::vector<std::string> gurobi_dlls() {
-  const std::vector<std::string> versions = {
-      "1303", "1302", "1301",  // Potential future versions which should load correctly
-      "1300", "1203", "1202", "1201", "1200", "1103", "1102", "1101", "1100",
-      "1003", "1002", "1001", "1000", "952",  "951",  "950",  "912",  "911",
-      "910",  "903",  "902",  "901",  "900",  "811",  "810",  "801",  "800",
-      "752",  "751",  "750",  "702",  "701",  "700",  "652",  "651",  "650"};
-  std::vector<std::string> dlls;
-  std::string lastMajorVersion;
-  for (const auto& version : versions) {
-    std::string majorVersion = version.substr(0, version.length() - 1);
-    if (majorVersion != lastMajorVersion) {
-      dlls.push_back("gurobi" + majorVersion);
-      lastMajorVersion = majorVersion;
-    }
-    // The library path for this version, from the parts around the version numbers
-    auto libPath = [&](const char* prefix, const char* middle, const char* suffix) {
-      std::string path(prefix);
-      path.append(version).append(middle).append(majorVersion).append(suffix);
-      return path;
-    };
+namespace {
+// Where Gurobi keeps its library on this platform. An installation has the form
+// `<root>/gurobi<version>/<platform>/<lib dir>/<lib prefix><major version><lib suffix>`, and
+// GUROBI_HOME names the `<root>/gurobi<version>/<platform>` directory.
 #ifdef _WIN32
-    dlls.push_back(libPath("C:\\gurobi", "\\win64\\bin\\gurobi", ".dll"));
+const char* const GUROBI_LIB_PREFIX = "gurobi";
+const char* const GUROBI_LIB_SUFFIX = ".dll";
+const char* const GUROBI_LIB_DIR = "bin";
+const char* const GUROBI_ROOT = "C:\\";
+const char* const GUROBI_DEFAULT_DIR = "C:\\gurobi<version>\\win64\\bin";
+const std::vector<std::string> GUROBI_PLATFORMS = {"win64"};
 #elif __APPLE__
-    dlls.push_back(libPath("/Library/gurobi", "/mac64/lib/libgurobi", ".dylib"));
-    dlls.push_back(libPath("/Library/gurobi", "/macos_universal2/lib/libgurobi", ".dylib"));
+const char* const GUROBI_LIB_PREFIX = "libgurobi";
+const char* const GUROBI_LIB_SUFFIX = ".dylib";
+const char* const GUROBI_LIB_DIR = "lib";
+const char* const GUROBI_ROOT = "/Library";
+const char* const GUROBI_DEFAULT_DIR = "/Library/gurobi<version>/macos_universal2/lib";
+const std::vector<std::string> GUROBI_PLATFORMS = {"macos_universal2", "mac64"};
 #else
-    dlls.push_back(libPath("/opt/gurobi", "/linux64/lib/libgurobi", ".so"));
+const char* const GUROBI_LIB_PREFIX = "libgurobi";
+const char* const GUROBI_LIB_SUFFIX = ".so";
+const char* const GUROBI_LIB_DIR = "lib";
+const char* const GUROBI_ROOT = "/opt";
+const char* const GUROBI_DEFAULT_DIR = "/opt/gurobi<version>/linux64/lib";
+const std::vector<std::string> GUROBI_PLATFORMS = {"linux64", "armlinux64"};
 #endif
+/// The Gurobi libraries to try, in order: the one in GUROBI_HOME, those in the library search
+/// path, and those in the default installation directories, newest version first. The list is
+/// built from the files that exist, so it needs no change for a new Gurobi release.
+std::vector<std::string> gurobi_dlls() {
+  using MiniZinc::FileUtils::join_path;
+  using MiniZinc::FileUtils::versioned_entries;
+  std::vector<std::string> dlls;
+  auto add_libs_in = [&](const std::string& dir) {
+    for (auto& lib : versioned_entries(dir, GUROBI_LIB_PREFIX, {GUROBI_LIB_SUFFIX})) {
+      dlls.push_back(std::move(lib.path));
+    }
+  };
+  if (auto home = MiniZinc::FileUtils::get_env("GUROBI_HOME")) {
+    if (!home->empty()) {
+      add_libs_in(join_path(*home, GUROBI_LIB_DIR));
+    }
   }
-
+  for (const auto& dir : MiniZinc::FileUtils::library_search_dirs()) {
+    add_libs_in(dir);
+  }
+  for (const auto& install : versioned_entries(GUROBI_ROOT, "gurobi", {""})) {
+    for (const auto& platform : GUROBI_PLATFORMS) {
+      add_libs_in(join_path(join_path(install.path, platform), GUROBI_LIB_DIR));
+    }
+  }
   return dlls;
 }
+}  // namespace
 
 void MIPGurobiWrapper::Options::printHelp(std::ostream& os) {
   os << "GUROBI MIP wrapper options:\n"
@@ -166,9 +187,11 @@ void MIPGurobiWrapper::Options::printHelp(std::ostream& os) {
      << "  --nonConvex <n>\n    non-convexity. -1: solver default, 0: none, 1: if presolved, 2: "
         "global. Default value 2.\n"
 
-     << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, "
-        "when using plugin. Default range tried: "
-     << gurobi_dlls().front() << " .. " << gurobi_dlls().back() << "\n\n";
+     << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi120, "
+        "when using plugin. By default, MiniZinc searches $GUROBI_HOME/"
+     << GUROBI_LIB_DIR << ", then " << MiniZinc::FileUtils::library_search_path_description()
+     << ", then " << GUROBI_DEFAULT_DIR
+     << ", and loads the newest version in the first place that has one.\n\n";
 }
 
 bool MIPGurobiWrapper::FactoryOptions::processOption(int& i, std::vector<std::string>& argv,
@@ -241,15 +264,20 @@ void MIPGurobiWrapper::wrapAssert(bool cond, const std::string& msg, bool fTerm)
 namespace {
 void* dll_open(const char* file) {
 #ifdef _WIN32
+  // The file name is UTF-8, so convert it to a wide string for LoadLibraryW
   if (MiniZinc::FileUtils::is_absolute(file)) {
-    return LoadLibrary(file);
+    return LoadLibraryW(MiniZinc::FileUtils::to_path(file).c_str());
   }
-  return LoadLibrary((std::string(file) + ".dll").c_str());
+  return LoadLibraryW(MiniZinc::FileUtils::to_path(std::string(file) + ".dll").c_str());
 #else
   if (MiniZinc::FileUtils::is_absolute(file)) {
     return dlopen(file, RTLD_NOW);
   }
+#ifdef __APPLE__
+  return dlopen((std::string("lib") + file + ".dylib").c_str(), RTLD_NOW);
+#else
   return dlopen((std::string("lib") + file + ".so").c_str(), RTLD_NOW);
+#endif
 #endif
 }
 void* try_dll_sym(void* dll, const char* sym) {
@@ -291,7 +319,9 @@ void MIPGurobiWrapper::checkDLL() {
   if (!_factoryOptions.gurobiDll.empty()) {
     _gurobiDll = dll_open(_factoryOptions.gurobiDll.c_str());
   } else {
-    for (const auto& s : gurobi_dlls()) {
+    // The scan lists many directories, so do it once per process
+    static const std::vector<std::string> candidates = gurobi_dlls();
+    for (const auto& s : candidates) {
       _gurobiDll = dll_open(s.c_str());
       if (nullptr != _gurobiDll) {
         break;
