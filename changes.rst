@@ -24,6 +24,8 @@ Bug fixes:
    Windows.
 -  Load ``lib<name>.dylib`` for a base name given to ``--gurobi-dll`` or
    ``--cplex-dll`` on macOS.
+-  Link the libraries that mimalloc needs, such as ``libatomic``, which fixes
+   the build on 32-bit targets such as PowerPC (:bugref:`1112`).
 
 .. _v2.11.0:
 

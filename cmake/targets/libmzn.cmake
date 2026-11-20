@@ -165,6 +165,12 @@ if(MZN_USE_MIMALLOC)
   # As for tree-sitter: embed the objects in libmzn
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:mimalloc-obj>)
   target_include_directories(mzn PRIVATE $<TARGET_PROPERTY:mimalloc-obj,INTERFACE_INCLUDE_DIRECTORIES>)
+  # The objects do not carry the libraries that mimalloc links (e.g. libatomic for 64-bit
+  # atomics on 32-bit targets). Copy them from mimalloc-static, which is not built.
+  get_target_property(mzn_mimalloc_libs mimalloc-static LINK_LIBRARIES)
+  if(mzn_mimalloc_libs)
+    target_link_libraries(mzn ${mzn_mimalloc_libs})
+  endif()
   target_compile_definitions(mzn PRIVATE MZN_USE_MIMALLOC)
 endif()
 
