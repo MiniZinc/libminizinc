@@ -9,11 +9,20 @@ set -o pipefail # or the tee below would mask a cmake failure
 
 : "${ROOT:?ROOT must be set}"
 
+# Only depend on the shared libraries the binaries use (the manylinux linker
+# does not do this by default).
+LINKER_FLAGS=""
+if [ "$(uname -s)" = Linux ] && [ -z "${CMAKE_WRAPPER:-}" ]; then
+	LINKER_FLAGS="-Wl,--as-needed"
+fi
+
 # wasm sets CMAKE_WRAPPER=emcmake, whose toolchain confines find_package to the
 # emscripten sysroot -- hence CMAKE_FIND_ROOT_PATH=/ to reach vendor/. Empty is
 # CMake's own default, so both are inert elsewhere.
 ${CMAKE_WRAPPER:-} cmake -S "$ROOT" -B "$ROOT/build" -G "${CMAKE_GENERATOR:-Ninja}" \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXE_LINKER_FLAGS="$LINKER_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LINKER_FLAGS" \
   -DBUILD_REF="${BUILD_REF:-0}" \
   -DGecode_ROOT="$ROOT/vendor/gecode" \
   -DOsiCBC_ROOT="$ROOT/vendor/cbc" \
