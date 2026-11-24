@@ -1,0 +1,9 @@
+
+array [1..4] of int: X_INTRODUCED_13_ = [2,2,2,-1];
+var 0..5: X_INTRODUCED_0_;
+var 0..5: X_INTRODUCED_1_;
+var 0..5: X_INTRODUCED_2_;
+var 0..30: objective:: is_defined_var:: output_var;
+array [1..3] of var int: x:: output_array([1..3]) = [X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_];
+constraint int_lin_eq(X_INTRODUCED_13_,[X_INTRODUCED_0_,X_INTRODUCED_1_,X_INTRODUCED_2_,objective],0):: defines_var(objective);
+solve  minimize objective;

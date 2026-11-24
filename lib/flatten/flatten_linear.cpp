@@ -438,16 +438,32 @@ namespace {
 template <class Lit>
 bool build_linear_relation(EnvI& env, BinOp* bo, VarDecl* r, const Ctx& ctx, Ref<Call>& inPlace) {
   BinOpType bot = bo->op();
-  if (ctx.neg || (ctx.b == C_ROOT && (bot == BOT_EQ || r != env.constants.varTrue))) {
+  if (ctx.neg || (ctx.b == C_ROOT && r != env.constants.varTrue)) {
+    return false;
+  }
+  if (ctx.b == C_ROOT && bot == BOT_EQ &&
+      (Expression::isa<Id>(bo->lhs()) || Expression::isa<Id>(bo->rhs()))) {
     // A root equality can name a variable, which flatten_binop handles.
     return false;
   }
-  if (Expression::isa<Call>(bo->lhs()) || Expression::isa<Call>(bo->rhs())) {
-    // Flattening a call can inline the definitions it reads.
+  auto isLinExp = [&](Expression* e) {
+    return Expression::isa<Call>(e) && Expression::cast<Call>(e)->id() == env.constants.ids.lin_exp;
+  };
+  if ((Expression::isa<Call>(bo->lhs()) && !isLinExp(bo->lhs())) ||
+      (Expression::isa<Call>(bo->rhs()) && !isLinExp(bo->rhs()))) {
     return false;
   }
-  Ref<Expression> le0 = get_linexp<Lit>(env, bo->lhs());
-  Ref<Expression> le1 = get_linexp<Lit>(env, bo->rhs());
+  // Flattening a lin_exp inlines the definitions it reads.
+  auto operand = [&](Expression* e) -> Ref<Expression> {
+    if (isLinExp(e)) {
+      return flat_exp(env, Ctx(), e, nullptr, env.constants.varTrue).r;
+    }
+    return e;
+  };
+  Ref<Expression> lhs = operand(bo->lhs());
+  Ref<Expression> rhs = operand(bo->rhs());
+  Ref<Expression> le0 = get_linexp<Lit>(env, lhs);
+  Ref<Expression> le1 = get_linexp<Lit>(env, rhs);
   if (le0 == nullptr || le1 == nullptr) {
     return false;
   }

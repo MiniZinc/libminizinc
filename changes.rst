@@ -26,6 +26,9 @@ Bug fixes:
    ``--cplex-dll`` on macOS.
 -  Link the libraries that mimalloc needs, such as ``libatomic``, which fixes
    the build on 32-bit targets such as PowerPC (:bugref:`1112`).
+-  Keep the ``defines_var`` annotation on a linear equality that defines a
+   variable, such as the objective, when the compiler rebuilds the equality to
+   inline an intermediate sum (:bugref:`1115`).
 
 .. _v2.11.0:
 
