@@ -29,6 +29,8 @@ Bug fixes:
 -  Keep the ``defines_var`` annotation on a linear equality that defines a
    variable, such as the objective, when the compiler rebuilds the equality to
    inline an intermediate sum (:bugref:`1115`).
+-  Fix ``-O2`` and ``-O3`` making some models with linear expressions
+   unsatisfiable (:bugref:`1114`).
 
 .. _v2.11.0:
 

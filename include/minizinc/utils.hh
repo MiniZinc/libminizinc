@@ -30,6 +30,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -242,6 +243,20 @@ public:
     stream << ver.patch;
     return stream;
   };
+};
+
+/// Sets \a ref to \a value for the lifetime of this object, then restores it.
+template <class T>
+class ScopedValue {
+public:
+  ScopedValue(T& ref, T value) : _ref(ref), _previous(std::exchange(ref, std::move(value))) {}
+  ~ScopedValue() { _ref = std::move(_previous); }
+  ScopedValue(const ScopedValue&) = delete;
+  ScopedValue& operator=(const ScopedValue&) = delete;
+
+private:
+  T& _ref;
+  T _previous;
 };
 
 }  // namespace MiniZinc

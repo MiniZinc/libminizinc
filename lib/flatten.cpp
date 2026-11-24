@@ -924,7 +924,8 @@ Ref<VarDecl> new_vardecl(EnvI& env, const Ctx& ctx, TypeInst* ti, Id* origId, Va
   bool hasBeenAdded = false;
 
   // Don't use paths for arrays, structs, or annotations
-  if (ti->type().dim() == 0 && !ti->type().structBT() && !ti->type().isAnn()) {
+  if (ti->type().dim() == 0 && !ti->type().structBT() && !ti->type().isAnn() &&
+      !env.varsWithoutPath) {
     PathStore::Path path = env.currentPath();
     if (path != nullptr) {
       VarPathStore::ReversePathMap& reversePathMap = env.varPathStore.getReversePathMap();

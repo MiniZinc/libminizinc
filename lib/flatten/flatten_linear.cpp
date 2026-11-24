@@ -13,25 +13,13 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/flat_exp.hh>
 #include <minizinc/flatten_linear.hh>
+#include <minizinc/utils.hh>
+
+#include <optional>
 
 namespace MiniZinc {
 
 namespace {
-
-class DisableLinearRelationDeferral {
-public:
-  explicit DisableLinearRelationDeferral(EnvI& env)
-      : _env(env), _previous(env.deferLinearRelations) {
-    _env.deferLinearRelations = false;
-  }
-  ~DisableLinearRelationDeferral() { _env.deferLinearRelations = _previous; }
-  DisableLinearRelationDeferral(const DisableLinearRelationDeferral&) = delete;
-  DisableLinearRelationDeferral& operator=(const DisableLinearRelationDeferral&) = delete;
-
-private:
-  EnvI& _env;
-  bool _previous;
-};
 
 /// Name the coefficient arrays of a call built from linear terms, as
 /// flattening the call would.
@@ -236,7 +224,7 @@ bool release_linear_definition(EnvI& env, VarDeclI* vdi, Call* def) {
   // The expression is not getting a name, so the bound goes straight into it;
   // deferring it again would capture the expression in a new variable, whose
   // domain would absorb the bound, and so on.
-  DisableLinearRelationDeferral disableDeferral(env);
+  ScopedValue noDeferral(env.deferLinearRelations, false);
   // Build each bound from the terms of the definition. Flattening `def <= bound`
   // as an expression would first give the definition a new variable.
   auto post = [&](BinOpType bot, Val bound) {
@@ -522,6 +510,22 @@ void rebuild_linear(EnvI& env, Item* i, Call* c, Expression* e, VarDecl* reified
   Ref<Call> cKeep = c;
   Ref<Expression> eKeep = e;
   auto* vdi = i->dynamicCast<VarDeclI>();
+  // Rebuild under the recorded paths, as the other end-of-flattening rewrites do.
+  std::optional<CallStackItem> itemFrame;
+  std::optional<CallStackItem> callFrame;
+  if (vdi != nullptr) {
+    if (PathStore::Path vpath = get_recorded_path(env, vdi->e())) {
+      itemFrame.emplace(env, vdi->e());
+      env.setPathSplice(vpath);
+    }
+  }
+  if (PathStore::Path cpath = get_recorded_path(env, c)) {
+    callFrame.emplace(env, c);
+    env.setPathSplice(cpath);
+  }
+  // The sums built here depend on what earlier passes fixed, so a path does not
+  // identify them.
+  ScopedValue withoutPath(env.varsWithoutPath, true);
   // Prefer an explicit reification variable, then the item's result, then true.
   VarDecl* r = reifiedInto;
   if (r == nullptr) {
@@ -551,7 +555,7 @@ void rebuild_linear(EnvI& env, Item* i, Call* c, Expression* e, VarDecl* reified
   {
     // The names in this expression are decided, so build it rather than
     // deferring it again.
-    DisableLinearRelationDeferral disableDeferral(env);
+    ScopedValue noDeferral(env.deferLinearRelations, false);
     auto* bo = Expression::dynamicCast<BinOp>(e);
     // A separate reification variable is defined elsewhere, so it is not in place.
     bool built = false;
@@ -1320,6 +1324,8 @@ void flatten_linexp_call(EnvI& env, const Ctx& ctx, const Ctx& nctx, ASTString& 
       core->decl(env.model->matchFn(env, core, false));
       if (core->decl() != nullptr) {
         core->type(c->type());
+        // The core depends on what earlier passes fixed, so a path does not identify it.
+        ScopedValue withoutPath(env.varsWithoutPath, true);
         EE coreEE = flat_exp(env, nctx, core, nullptr, env.constants.varTrue);
         args_ee.push_back(coreEE);
         coeffv.clear();

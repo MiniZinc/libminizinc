@@ -443,6 +443,8 @@ public:
   /// to the negation of FlatteningOptions::eagerLinearAggregation, and it becomes
   /// false once the main agenda is done, or while a linear definition is rebuilt.
   bool deferLinearRelations = false;
+  /// Whether new_vardecl keeps new variables out of the path map
+  bool varsWithoutPath = false;
   /// The comparisons that linear_relation decodes, by call name: the operator,
   /// the number of relation arguments, and whether the name is half reified.
   /// Filled on first use.

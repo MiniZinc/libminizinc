@@ -490,6 +490,9 @@ struct LinearRelation {
 /// reject relations that no longer need deferred rebuilding.
 LinearRelation linear_relation(EnvI& env, Call* c, bool deferredOnly);
 
+/// Path recorded for \a e while flattening, or nullptr.
+PathStore::Path get_recorded_path(EnvI& env, const Expression* e);
+
 /// Rebuild the linear expression or relation \a c held by \a i as \a e, now
 /// that the names in it are decided. A relation not \a reifiedInto a variable of
 /// its own is bound to the variable \a i declares, if any.
