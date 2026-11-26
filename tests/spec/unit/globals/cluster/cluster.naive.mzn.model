@@ -1,0 +1,32 @@
+include "reachable.mzn";
+include "subgraph.mzn";
+
+predicate cluster_naive(array[$$E] of $$N: from, array[$$E] of $$N: to,
+                        array[$$N,$$N] of var bool: r,
+                        array[$$N] of var bool: ns, array[$$E] of var bool: es) =
+    let {
+        array [index_set(ns),index_set(es)] of var bool: des,
+    } in
+        symmetry_breaking_constraint(forall (j,i in index_set(ns) where i > j)(
+            r[i,j] == r[j,i]
+        )) /\
+        forall (c in index_set(ns))(
+            r[c,c] == true
+        ) /\
+        forall (j,i in index_set(ns) where i > j)(
+            r[j,i] -> (ns[j] /\ ns[i])
+        ) /\
+        forall (e in index_set(es))(
+            es[e] -> r[from[e],to[e]]
+        ) /\
+        forall (j,i,k in index_set(ns) where i > j /\ k != j /\ k != i)(
+            (r[j,k] /\ r[k,i]) -> r[j,i]
+        ) /\
+        forall (j in index_set(ns), i in index_set(es))(
+            des[j,i] -> es[i]
+        ) /\
+        forall (j in index_set(ns))(
+            reachable(from, to, j, r[j,..], array1d(index_set(es),des[j,..]))
+        ) /\
+        % nodes connected by chosen edges must be chosen
+        subgraph(from,to,ns,es);
